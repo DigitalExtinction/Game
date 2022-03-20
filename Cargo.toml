@@ -1,5 +1,5 @@
 [package]
-name = "game"
+name = "coe"
 version = "0.1.0"
 edition = "2021"
 authors = ["Martin Indra <martin.indra@mgn.cz>"]
@@ -7,3 +7,13 @@ readme = "README.md"
 repository = "https://github.com/CradleOfExpansion/game"
 
 [dependencies]
+bevy = "^0.6.1"
+ndarray = "^0.15.4"
+
+[dev-dependencies]
+rand = "0.8.4"
+criterion = "0.3"
+
+[[bench]]
+name = "rtin_benchmark"
+harness = false
