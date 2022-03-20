@@ -10,3 +10,12 @@ repository = "https://github.com/Indy2222/Digital-Extinction"
 
 [dependencies]
 bevy = "^0.6.1"
+ndarray = "^0.15.4"
+
+[dev-dependencies]
+rand = "0.8.4"
+criterion = "0.3"
+
+[[bench]]
+name = "rtin_benchmark"
+harness = false

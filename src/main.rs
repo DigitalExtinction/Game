@@ -1,4 +1,14 @@
-use bevy::{prelude::*, window::WindowMode};
+use bevy::{
+    diagnostic::{FrameTimeDiagnosticsPlugin, LogDiagnosticsPlugin},
+    prelude::*,
+    window::WindowMode,
+};
+use de::{camera, terrain};
+
+// u32 needs to be converted to usize at various places. Make sure that this
+// module is not complided for samller pointer width.
+#[cfg(not(any(target_pointer_width = "32", target_pointer_width = "64")))]
+compile_error!("`target_pointer_width` has to be at least 32 bits.");
 
 fn main() {
     App::new()
@@ -9,7 +19,13 @@ fn main() {
         })
         .insert_resource(Msaa { samples: 4 })
         .add_plugins(DefaultPlugins)
+        .add_plugin(LogDiagnosticsPlugin::default())
+        .add_plugin(FrameTimeDiagnosticsPlugin::default())
         .add_startup_system(setup)
+        .add_startup_system(camera::setup)
+        .add_system(camera::mouse_movement)
+        .add_system(camera::move_horizontaly)
+        .add_system(camera::zoom)
         .run();
 }
 
@@ -21,10 +37,12 @@ fn setup(
 ) {
     // plane
     commands.spawn_bundle(PbrBundle {
-        mesh: meshes.add(Mesh::from(shape::Plane { size: 5.0 })),
-        material: materials.add(Color::rgb(0.3, 0.5, 0.3).into()),
+        mesh: meshes.add(terrain::mesh::build_mesh()),
+        material: materials.add(Color::rgb(0.1, 0.8, 0.3).into()),
+        transform: Transform::from_xyz(0.0, -0.5, 0.0),
         ..Default::default()
     });
+
     // cube
     commands.spawn_bundle(PbrBundle {
         mesh: meshes.add(Mesh::from(shape::Cube { size: 1.0 })),
@@ -40,11 +58,6 @@ fn setup(
             ..Default::default()
         },
         transform: Transform::from_xyz(4.0, 8.0, 4.0),
-        ..Default::default()
-    });
-    // camera
-    commands.spawn_bundle(PerspectiveCameraBundle {
-        transform: Transform::from_xyz(-2.0, 2.5, 5.0).looking_at(Vec3::ZERO, Vec3::Y),
         ..Default::default()
     });
 }
