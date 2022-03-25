@@ -8,6 +8,7 @@ repository = "https://github.com/CradleOfExpansion/game"
 
 [dependencies]
 bevy = "^0.6.1"
+glam = "^0.20.2"
 ndarray = "^0.15.4"
 
 [dev-dependencies]
