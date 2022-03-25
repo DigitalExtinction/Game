@@ -10,6 +10,7 @@ repository = "https://github.com/Indy2222/Digital-Extinction"
 
 [dependencies]
 bevy = "^0.6.1"
+glam = "^0.20.2"
 ndarray = "^0.15.4"
 
 [dev-dependencies]

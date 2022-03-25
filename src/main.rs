@@ -35,13 +35,14 @@ fn setup(
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
 ) {
-    // plane
-    commands.spawn_bundle(PbrBundle {
-        mesh: meshes.add(terrain::mesh::build_mesh()),
-        material: materials.add(Color::rgb(0.1, 0.8, 0.3).into()),
-        transform: Transform::from_xyz(0.0, -0.5, 0.0),
-        ..Default::default()
-    });
+    commands
+        .spawn_bundle(PbrBundle {
+            mesh: meshes.add(terrain::mesh::build_mesh()),
+            material: materials.add(Color::rgb(0.1, 0.8, 0.3).into()),
+            transform: Transform::from_xyz(0.0, -0.5, 0.0),
+            ..Default::default()
+        })
+        .insert(terrain::components::Terrain);
 
     // cube
     commands.spawn_bundle(PbrBundle {

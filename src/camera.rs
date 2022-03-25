@@ -1,3 +1,5 @@
+use crate::intersection::{ray_mesh_intersection, Ray};
+use crate::terrain::components::Terrain;
 use bevy::ecs::prelude::*;
 use bevy::input::mouse::MouseWheel;
 use bevy::prelude::*;
@@ -83,6 +85,8 @@ pub fn move_horizontaly(query: Query<&Movement>, mut camera: Query<&mut Transfor
 pub fn zoom(
     mut mouse_wheel: EventReader<MouseWheel>,
     mut camera: Query<&mut Transform, With<Camera>>,
+    meshes: Res<Assets<Mesh>>,
+    mut terrain: Query<(&Handle<Mesh>, &Transform), With<Terrain>>,
 ) {
     let mut transform = camera.single_mut();
     let direction = transform.forward();
@@ -92,5 +96,16 @@ pub fn zoom(
     // TODO limit to some minimum and maximum distance to terrain
     for event in mouse_wheel.iter() {
         transform.translation += (event.y as f32) * direction;
+    }
+
+    let ray = Ray::new(transform.translation, transform.forward());
+
+    let (terrain_mesh_handle, terrain_transform) = terrain.single();
+    let terrain = meshes.get(terrain_mesh_handle).unwrap();
+
+    let intersection = ray_mesh_intersection(&ray, terrain, &terrain_transform.compute_matrix());
+    match intersection {
+        Some(intersection) => println!("Distance: {}", intersection.distance()),
+        None => println!("No intersection"),
     }
 }
