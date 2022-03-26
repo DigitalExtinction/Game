@@ -1,4 +1,4 @@
-use crate::intersection::{ray_mesh_intersection, Ray};
+use crate::intersection::{ray_mesh_intersection, ray_plane_intersection, Ray};
 use crate::terrain::components::Terrain;
 use bevy::ecs::prelude::*;
 use bevy::input::mouse::MouseWheel;
@@ -83,29 +83,34 @@ pub fn move_horizontaly(query: Query<&Movement>, mut camera: Query<&mut Transfor
 }
 
 pub fn zoom(
-    mut mouse_wheel: EventReader<MouseWheel>,
-    mut camera: Query<&mut Transform, With<Camera>>,
+    mut queries: QuerySet<(
+        QueryState<&mut Transform, With<Camera>>,
+        QueryState<(&Handle<Mesh>, &Transform), With<Terrain>>,
+    )>,
     meshes: Res<Assets<Mesh>>,
-    mut terrain: Query<(&Handle<Mesh>, &Transform), With<Terrain>>,
+    mut mouse_wheel: EventReader<MouseWheel>,
 ) {
-    let mut transform = camera.single_mut();
-    let direction = transform.forward();
-    // TODO calculate intersection with terrain and multiply direction by
-    // distance from that point
-
-    // TODO limit to some minimum and maximum distance to terrain
-    for event in mouse_wheel.iter() {
-        transform.translation += (event.y as f32) * direction;
+    let displacement: f32 = mouse_wheel.iter().map(|e| e.y as f32).sum();
+    if displacement == 0. {
+        return;
     }
 
-    let ray = Ray::new(transform.translation, transform.forward());
+    let camera_query = queries.q0();
+    let camera_transform = camera_query.single();
+    let camera_ray = Ray::new(camera_transform.translation, camera_transform.forward());
 
-    let (terrain_mesh_handle, terrain_transform) = terrain.single();
+    let terrain_query = queries.q1();
+    let (terrain_mesh_handle, terrain_transform) = terrain_query.single();
     let terrain = meshes.get(terrain_mesh_handle).unwrap();
+    let terrain_intersection =
+        ray_mesh_intersection(&camera_ray, terrain, &terrain_transform.compute_matrix())
+            .unwrap_or_else(|| {
+                ray_plane_intersection(&camera_ray, Vec3::ZERO, Vec3::Y)
+                    .expect("Camera ray does not intersect 0 elevation terrain plane.")
+            });
 
-    let intersection = ray_mesh_intersection(&ray, terrain, &terrain_transform.compute_matrix());
-    match intersection {
-        Some(intersection) => println!("Distance: {}", intersection.distance()),
-        None => println!("No intersection"),
-    }
+    let distance_delta = terrain_intersection.distance() * displacement * 0.1;
+    let mut camera_query = queries.q0();
+    let mut camera_transform = camera_query.single_mut();
+    camera_transform.translation -= camera_ray.direction() * distance_delta;
 }

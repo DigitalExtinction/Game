@@ -145,29 +145,33 @@ fn ray_triangle_intersection(ray: &Ray, a: Vec3, b: Vec3, c: Vec3) -> Option<Ray
     let edge1 = a - c;
     let edge2 = c - b;
     let normal = edge1.cross(edge2);
-    let n_dot_d = normal.dot(ray.direction);
+    let intersection = ray_plane_intersection(ray, c, normal)?;
 
+    if edge1.cross(intersection.position() - c).dot(normal) > 0. {
+        return None;
+    }
+    if edge2.cross(intersection.position() - b).dot(normal) > 0. {
+        return None;
+    }
+    if (b - a).cross(intersection.position() - a).dot(normal) > 0. {
+        return None;
+    }
+    Some(intersection)
+}
+
+pub fn ray_plane_intersection(ray: &Ray, point: Vec3, normal: Vec3) -> Option<RayIntersection> {
+    let n_dot_d = normal.dot(ray.direction);
     if n_dot_d.abs() <= f32::EPSILON {
         return None;
     }
-
-    let distance = (c - ray.origin).dot(normal) / n_dot_d;
+    let distance = (point - ray.origin).dot(normal) / n_dot_d;
     if distance < 0. {
         return None;
     }
-
-    let intersection = ray.origin + ray.direction * distance;
-    if edge1.cross(intersection - c).dot(normal) > 0. {
-        return None;
-    }
-    if edge2.cross(intersection - b).dot(normal) > 0. {
-        return None;
-    }
-    if (b - a).cross(intersection - a).dot(normal) > 0. {
-        return None;
-    }
-
-    Some(RayIntersection::new(intersection, distance))
+    Some(RayIntersection::new(
+        ray.origin + ray.direction * distance,
+        distance,
+    ))
 }
 
 #[cfg(test)]
