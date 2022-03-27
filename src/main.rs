@@ -23,9 +23,13 @@ fn main() {
         .add_plugin(FrameTimeDiagnosticsPlugin::default())
         .add_startup_system(setup)
         .add_startup_system(camera::setup)
-        .add_system(camera::mouse_movement)
-        .add_system(camera::move_horizontaly)
-        .add_system(camera::zoom)
+        .add_system(camera::mouse_movement.label("mouse.movement"))
+        .add_system(camera::mouse_wheel.label("mouse.wheel"))
+        .add_system(
+            camera::move_camera
+                .after("mouse.movement")
+                .after("mouse.wheel"),
+        )
         .run();
 }
 
