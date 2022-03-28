@@ -9,3 +9,4 @@ repository = "https://github.com/Indy2222/Digital-Extinction"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+bevy = "^0.6.1"
