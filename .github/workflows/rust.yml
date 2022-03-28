@@ -5,8 +5,34 @@ on:
 
 env:
   CARGO_TERM_COLOR: always
+  RUSTFLAGS: --deny warnings
 
 jobs:
+  build:
+    name: Build & Test
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest]
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          profile: minimal
+          override: true
+      - name: Install Linux Dependencies
+        if: ${{ matrix.os == 'ubuntu-latest' }}
+        run: |
+          sudo apt-get update
+          sudo apt-get install --no-install-recommends -y libasound2-dev libudev-dev
+      - run: rustc --version && cargo --version
+      - name: Build
+        run: cargo build --verbose --all-targets --all-features
+      - name: Test
+        run: cargo test --verbose --all-features
+
   format:
     name: Test Formatting
     runs-on: ubuntu-latest
