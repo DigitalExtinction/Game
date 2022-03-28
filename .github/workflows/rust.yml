@@ -23,6 +23,11 @@ jobs:
           profile: minimal
           components: clippy
           override: true
+      - name: Rust Cache
+        uses: actions/cache@v3
+        with:
+          path: target
+          key: tests-${{ runner.os }}
       - name: Install Linux Dependencies
         if: ${{ matrix.os == 'ubuntu-latest' }}
         run: |
