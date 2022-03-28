@@ -40,6 +40,8 @@ jobs:
         run: cargo clippy --all-targets --all-features -- --deny warnings
       - name: Test
         run: cargo test --verbose --all-features
+      - name: Build Docs
+        run: cargo doc --no-deps --all-features
 
   format:
     name: Test Formatting
