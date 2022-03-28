@@ -1,0 +1,14 @@
+name: Rust
+
+on:
+  push
+
+jobs:
+  format:
+    name: Test Formatting
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - run: rustup update
+      - run: cargo fmt --version
+      - run: cargo fmt -- --check
