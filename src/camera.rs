@@ -86,6 +86,7 @@ pub fn move_camera(
     time: Res<Time>,
     meshes: Res<Assets<Mesh>>,
 ) {
+    // TODO Use global resource with map dimensions instead
     let (map_width, map_height) = match queries.q1().single().2 {
         Some(aabb) => (aabb.max().x, aabb.max().z),
         None => return,
@@ -128,12 +129,12 @@ fn rotate_camera(
         return;
     }
 
-    let off_nadir_rotation = Quat::from_rotation_x(camera_movement.off_nadir - FRAC_PI_2);
-    let azimuth_rotation = Quat::from_axis_angle(
-        off_nadir_rotation.inverse().mul_vec3(Vec3::Y),
+    camera_transform.rotation = Quat::from_euler(
+        EulerRot::YXZ,
         -camera_movement.azimuth,
+        camera_movement.off_nadir - FRAC_PI_2,
+        0.,
     );
-    camera_transform.rotation = off_nadir_rotation.mul_quat(azimuth_rotation).normalize();
     camera_transform.translation = focus.position() - focus.distance() * camera_transform.forward();
     camera_movement.is_rotation_synced = true;
 }
