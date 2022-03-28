@@ -1,0 +1,97 @@
+name: Rust
+
+on:
+  push
+
+env:
+  CARGO_TERM_COLOR: always
+  RUSTFLAGS: --deny warnings
+
+jobs:
+  build:
+    name: Build & Test
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest]
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          profile: minimal
+          components: clippy
+          override: true
+      - name: Rust Cache
+        uses: actions/cache@v3
+        with:
+          path: target
+          key: tests-${{ runner.os }}
+      - name: Install Linux Dependencies
+        if: ${{ matrix.os == 'ubuntu-latest' }}
+        run: |
+          sudo apt-get update
+          sudo apt-get install --no-install-recommends -y libasound2-dev libudev-dev
+      - run: rustc --version && cargo --version && cargo clippy --version
+      - name: Build
+        run: cargo build --verbose --all-targets --all-features
+      - name: Store Debug Build
+        uses: actions/upload-artifact@v3
+        with:
+          name: debug-binary-${{ runner.os }}
+          retention-days: 1
+          path: |
+            target/debug/de
+            target/debug/de.exe
+      - name: Clippy
+        run: cargo clippy --all-targets --all-features -- --deny warnings
+      - name: Test
+        run: cargo test --verbose --all-features
+      - name: Build Docs
+        run: cargo doc --no-deps --all-features
+
+  format:
+    name: Test Formatting
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - run: rustup update
+      - run: cargo fmt --version
+      - run: cargo fmt -- --check
+
+  build_release:
+    name: Release Build
+    runs-on: ${{ matrix.os }}
+    if: github.ref == 'refs/heads/main'
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          profile: minimal
+          override: true
+      - name: Rust Cache
+        uses: actions/cache@v3
+        with:
+          path: target
+          key: build-release-${{ runner.os }}
+      - name: Install Linux Dependencies
+        if: ${{ matrix.os == 'ubuntu-latest' }}
+        run: |
+          sudo apt-get update
+          sudo apt-get install --no-install-recommends -y libasound2-dev libudev-dev
+      - run: rustc --version && cargo --version
+      - name: Build
+        run: cargo build --release
+      - name: Store Release Build
+        uses: actions/upload-artifact@v3
+        with:
+          name: de-binary-${{ runner.os }}
+          path: |
+            target/release/de
+            target/release/de.exe
