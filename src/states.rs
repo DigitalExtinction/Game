@@ -1,3 +1,4 @@
+use crate::map::plugin::MapPlugin;
 use bevy::{app::PluginGroupBuilder, prelude::PluginGroup};
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
@@ -9,7 +10,9 @@ pub enum GameStates {
 pub struct GameLoadingPluginGroup;
 
 impl PluginGroup for GameLoadingPluginGroup {
-    fn build(&mut self, _group: &mut PluginGroupBuilder) {}
+    fn build(&mut self, group: &mut PluginGroupBuilder) {
+        group.add(MapPlugin);
+    }
 }
 
 pub struct InGamePluginGroup;
