@@ -1190,6 +1190,7 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "bevy",
+ "glam",
  "serde",
  "serde_json",
  "tar",
