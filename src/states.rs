@@ -1,3 +1,4 @@
+use crate::camera::MainCameraPlugin;
 use crate::map::plugin::MapPlugin;
 use bevy::{app::PluginGroupBuilder, prelude::PluginGroup};
 
@@ -18,5 +19,7 @@ impl PluginGroup for GameLoadingPluginGroup {
 pub struct InGamePluginGroup;
 
 impl PluginGroup for InGamePluginGroup {
-    fn build(&mut self, _group: &mut PluginGroupBuilder) {}
+    fn build(&mut self, group: &mut PluginGroupBuilder) {
+        group.add(MainCameraPlugin);
+    }
 }

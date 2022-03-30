@@ -1,5 +1,5 @@
 use super::file::{load_from_slice, MapDescription};
-use crate::{game::GameConfig, states::GameStates};
+use crate::{game::GameConfig, states::GameStates, terrain::Terrain};
 use anyhow::Context;
 use bevy::{
     asset::{AssetLoader, BoxedFuture, LoadContext, LoadState, LoadedAsset},
@@ -62,15 +62,17 @@ fn spawn_map(
             commands.insert_resource(map_description.size);
 
             let map_size = map_description.size.0;
-            commands.spawn_bundle(PbrBundle {
-                mesh: meshes.add(Mesh::from(Plane { size: map_size })),
-                material: materials.add(Color::rgb(0.3, 0.5, 0.3).into()),
-                transform: Transform {
-                    translation: Vec3::new(map_size / 2., 0., map_size / 2.),
+            commands
+                .spawn_bundle(PbrBundle {
+                    mesh: meshes.add(Mesh::from(Plane { size: map_size })),
+                    material: materials.add(Color::rgb(0.3, 0.5, 0.3).into()),
+                    transform: Transform {
+                        translation: Vec3::new(map_size / 2., 0., map_size / 2.),
+                        ..Default::default()
+                    },
                     ..Default::default()
-                },
-                ..Default::default()
-            });
+                })
+                .insert(Terrain);
 
             app_state.set(GameStates::InGame).unwrap();
         }
