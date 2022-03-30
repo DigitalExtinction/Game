@@ -4,7 +4,11 @@ use crate::{
     states::GameStates,
     terrain::Terrain,
 };
-use bevy::{prelude::*, render::primitives::Aabb};
+use bevy::{
+    input::mouse::{MouseScrollUnit, MouseWheel},
+    prelude::*,
+    render::primitives::Aabb,
+};
 use glam::Vec3A;
 
 /// Horizontal camera movement is initiated if mouse cursor is within this
@@ -13,6 +17,21 @@ const MOVE_MARGIN_LOGICAL_PX: f32 = 40.;
 /// Camera moves horizontally at speed `distance * CAMERA_HORIZONTAL_SPEED`
 /// meters per second.
 const CAMERA_HORIZONTAL_SPEED: f32 = 1.0;
+/// Minimum camera distance to terrain.
+const MIN_CAMERA_DISTANCE: f32 = 8.;
+/// Maximum camera distance from terrain.
+const MAX_CAMERA_DISTANCE: f32 = 50.;
+/// Camera moves along forward axis (zooming) at speed `distance *
+/// CAMERA_VERTICAL_SPEED` meters per second.
+const CAMERA_VERTICAL_SPEED: f32 = 2.0;
+/// Do not zoom camera if it is within this distance of the desired distance.
+const DISTANCE_TOLERATION: f32 = 0.001;
+/// Scale factor (i.e `distance * factor`) applied after single mouse wheel
+/// click.
+const WHEEL_ZOOM_FACTOR: f32 = 1.1;
+/// Scale factor (i.e. `distance * drag_size * factor`) applied after sliding
+/// on touch pad.
+const TOUCH_PAD_ZOOM_FACTOR: f32 = 1.1;
 
 pub struct MainCameraPlugin;
 
@@ -23,12 +42,17 @@ impl Plugin for MainCameraPlugin {
             .add_system_set(
                 SystemSet::on_update(GameStates::InGame)
                     .with_system(update_focus.label("update_focus"))
+                    .with_system(zoom_event.label("zoom_event"))
                     .with_system(move_horizontaly_event.label("move_horizontaly_event"))
+                    .with_system(zoom.label("zoom").after("zoom_event").after("update_focus"))
                     .with_system(
                         move_horizontaly
                             .label("move_horizontaly")
                             .after("move_horizontaly_event")
-                            .after("update_focus"),
+                            .after("update_focus")
+                            // Zooming changes camera focus point so do it
+                            // after other types of camera movement.
+                            .after("zoom"),
                     ),
             );
     }
@@ -51,6 +75,10 @@ impl CameraFocus {
     fn update<V: Into<Vec3>>(&mut self, point: V, distance: f32) {
         self.point = point.into();
         self.distance = distance;
+    }
+
+    fn update_distance(&mut self, forward_move: f32) {
+        self.distance -= forward_move;
     }
 }
 
@@ -83,9 +111,26 @@ impl HorizontalMovement {
     }
 }
 
+struct DesiredPoW {
+    distance: f32,
+}
+
+impl DesiredPoW {
+    fn distance(&self) -> f32 {
+        self.distance
+    }
+
+    fn zoom_clamped(&mut self, factor: f32) {
+        self.distance = (self.distance * factor).clamp(MIN_CAMERA_DISTANCE, MAX_CAMERA_DISTANCE);
+    }
+}
+
 fn setup(mut commands: Commands) {
-    let initial_camera_distance = 10.0;
+    let initial_camera_distance = (MIN_CAMERA_DISTANCE * MAX_CAMERA_DISTANCE).sqrt();
     commands.insert_resource(HorizontalMovement::default());
+    commands.insert_resource(DesiredPoW {
+        distance: initial_camera_distance,
+    });
     commands.insert_resource(CameraFocus {
         point: Vec3::ZERO,
         distance: initial_camera_distance,
@@ -161,6 +206,25 @@ fn move_horizontaly(
     event.send(FocusInvalidatedEvent);
 }
 
+fn zoom(
+    desired_pow: Res<DesiredPoW>,
+    time: Res<Time>,
+    mut focus: ResMut<CameraFocus>,
+    mut camera_query: Query<&mut Transform, With<Camera>>,
+) {
+    let error = focus.distance() - desired_pow.distance();
+    if error.abs() <= DISTANCE_TOLERATION {
+        return;
+    }
+
+    let mut transform = camera_query.single_mut();
+    let max_delta = focus.distance() * time.delta().as_secs_f32() * CAMERA_VERTICAL_SPEED;
+    let delta_scalar = error.clamp(-max_delta, max_delta);
+    let delta_vec = delta_scalar * transform.forward();
+    transform.translation += delta_vec;
+    focus.update_distance(delta_scalar);
+}
+
 fn move_horizontaly_event(
     mut horizontal_movement: ResMut<HorizontalMovement>,
     windows: Res<Windows>,
@@ -188,4 +252,12 @@ fn move_horizontaly_event(
     } else {
         horizontal_movement.stop();
     }
+}
+
+fn zoom_event(mut desired_pow: ResMut<DesiredPoW>, mut events: EventReader<MouseWheel>) {
+    let factor = events.iter().fold(1.0, |factor, event| match event.unit {
+        MouseScrollUnit::Line => factor * WHEEL_ZOOM_FACTOR.powf(event.y),
+        MouseScrollUnit::Pixel => factor * TOUCH_PAD_ZOOM_FACTOR.powf(event.y),
+    });
+    desired_pow.zoom_clamped(factor);
 }
