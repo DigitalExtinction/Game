@@ -5,11 +5,12 @@ use crate::{
     terrain::Terrain,
 };
 use bevy::{
-    input::mouse::{MouseScrollUnit, MouseWheel},
+    input::mouse::{MouseMotion, MouseScrollUnit, MouseWheel},
     prelude::*,
     render::primitives::Aabb,
 };
 use glam::Vec3A;
+use std::f32::consts::{FRAC_PI_2, PI};
 
 /// Horizontal camera movement is initiated if mouse cursor is within this
 /// distance to window edge.
@@ -31,20 +32,35 @@ const DISTANCE_TOLERATION: f32 = 0.001;
 const WHEEL_ZOOM_FACTOR: f32 = 1.1;
 /// Scale factor (i.e. `distance * drag_size * factor`) applied after sliding
 /// on touch pad.
-const TOUCH_PAD_ZOOM_FACTOR: f32 = 1.1;
+const TOUCH_PAD_ZOOM_FACTOR: f32 = 1.01;
+/// Minimum camera tilt in radians.
+const MIN_OFF_NADIR: f32 = 0.;
+/// Maximum camera tilt in radians.
+const MAX_OFF_NADIR: f32 = 0.7 * FRAC_PI_2;
+/// Mouse drag by `d` logical pixels will lead to rotation by `d *
+/// ROTATION_SENSITIVITY` radians.
+const ROTATION_SENSITIVITY: f32 = 0.008;
 
 pub struct MainCameraPlugin;
 
 impl Plugin for MainCameraPlugin {
     fn build(&self, app: &mut App) {
         app.add_event::<FocusInvalidatedEvent>()
+            .add_event::<PivotEvent>()
             .add_system_set(SystemSet::on_enter(GameStates::InGame).with_system(setup))
             .add_system_set(
                 SystemSet::on_update(GameStates::InGame)
                     .with_system(update_focus.label("update_focus"))
                     .with_system(zoom_event.label("zoom_event"))
+                    .with_system(pivot_event.label("pivot_event"))
                     .with_system(move_horizontaly_event.label("move_horizontaly_event"))
                     .with_system(zoom.label("zoom").after("zoom_event").after("update_focus"))
+                    .with_system(
+                        pivot
+                            .label("pivot")
+                            .after("pivot_event")
+                            .after("update_focus"),
+                    )
                     .with_system(
                         move_horizontaly
                             .label("move_horizontaly")
@@ -52,7 +68,8 @@ impl Plugin for MainCameraPlugin {
                             .after("update_focus")
                             // Zooming changes camera focus point so do it
                             // after other types of camera movement.
-                            .after("zoom"),
+                            .after("zoom")
+                            .after("pivot"),
                     ),
             );
     }
@@ -84,6 +101,8 @@ impl CameraFocus {
 
 struct FocusInvalidatedEvent;
 
+struct PivotEvent;
+
 #[derive(Copy, Clone)]
 enum HorizontalMovementDirection {
     Up,
@@ -113,6 +132,8 @@ impl HorizontalMovement {
 
 struct DesiredPoW {
     distance: f32,
+    off_nadir: f32,
+    azimuth: f32,
 }
 
 impl DesiredPoW {
@@ -120,8 +141,24 @@ impl DesiredPoW {
         self.distance
     }
 
+    fn off_nadir(&self) -> f32 {
+        self.off_nadir
+    }
+
+    fn azimuth(&self) -> f32 {
+        self.azimuth
+    }
+
     fn zoom_clamped(&mut self, factor: f32) {
         self.distance = (self.distance * factor).clamp(MIN_CAMERA_DISTANCE, MAX_CAMERA_DISTANCE);
+    }
+
+    fn tilt_clamped(&mut self, delta: f32) {
+        self.off_nadir = (self.off_nadir + delta).clamp(MIN_OFF_NADIR, MAX_OFF_NADIR);
+    }
+
+    fn rotate(&mut self, delta: f32) {
+        self.azimuth = (self.azimuth + delta).rem_euclid(2. * PI);
     }
 }
 
@@ -130,6 +167,8 @@ fn setup(mut commands: Commands) {
     commands.insert_resource(HorizontalMovement::default());
     commands.insert_resource(DesiredPoW {
         distance: initial_camera_distance,
+        off_nadir: 0.,
+        azimuth: 0.,
     });
     commands.insert_resource(CameraFocus {
         point: Vec3::ZERO,
@@ -225,6 +264,26 @@ fn zoom(
     focus.update_distance(delta_scalar);
 }
 
+fn pivot(
+    mut event: EventReader<PivotEvent>,
+    desired_pow: Res<DesiredPoW>,
+    focus: Res<CameraFocus>,
+    mut camera_query: Query<&mut Transform, With<Camera>>,
+) {
+    if event.iter().next().is_none() {
+        return;
+    }
+
+    let mut transform = camera_query.single_mut();
+    transform.rotation = Quat::from_euler(
+        EulerRot::YXZ,
+        -desired_pow.azimuth(),
+        desired_pow.off_nadir() - FRAC_PI_2,
+        0.,
+    );
+    transform.translation = focus.point() - focus.distance() * transform.forward();
+}
+
 fn move_horizontaly_event(
     mut horizontal_movement: ResMut<HorizontalMovement>,
     windows: Res<Windows>,
@@ -260,4 +319,25 @@ fn zoom_event(mut desired_pow: ResMut<DesiredPoW>, mut events: EventReader<Mouse
         MouseScrollUnit::Pixel => factor * TOUCH_PAD_ZOOM_FACTOR.powf(event.y),
     });
     desired_pow.zoom_clamped(factor);
+}
+
+fn pivot_event(
+    mut desired_pow: ResMut<DesiredPoW>,
+    mut pivot_event: EventWriter<PivotEvent>,
+    buttons: Res<Input<MouseButton>>,
+    keys: Res<Input<KeyCode>>,
+    mut mouse_event: EventReader<MouseMotion>,
+) {
+    if !buttons.pressed(MouseButton::Middle) && !keys.pressed(KeyCode::LShift) {
+        return;
+    }
+
+    let delta = mouse_event.iter().fold(Vec2::ZERO, |sum, e| sum + e.delta);
+    if delta == Vec2::ZERO {
+        return;
+    }
+
+    desired_pow.rotate(ROTATION_SENSITIVITY * delta.x);
+    desired_pow.tilt_clamped(-ROTATION_SENSITIVITY * delta.y);
+    pivot_event.send(PivotEvent);
 }
