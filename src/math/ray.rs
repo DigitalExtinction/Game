@@ -2,6 +2,7 @@ use bevy::{
     prelude::Mesh,
     render::{
         mesh::{Indices, VertexAttributeValues},
+        primitives::Aabb,
         render_resource::PrimitiveTopology,
     },
 };
@@ -53,6 +54,78 @@ impl RayIntersection {
     pub fn distance(&self) -> f32 {
         self.distance
     }
+}
+
+pub fn ray_aabb_intersection(ray: &Ray, aabb: &Aabb, aabb_to_world: &Mat4) -> Option<Vec3A> {
+    // Inspire by: Andrew Woo. 1990. Fast ray-box intersection. Graphics gems.
+    // Academic Press Professional, Inc., USA, 395–396.
+    #[derive(Copy, Clone, PartialEq)]
+    enum Side {
+        Left,
+        Right,
+        Middle,
+    }
+
+    let mut inside = true;
+    let mut quadrant = [Side::Middle; 3];
+
+    let world_to_aabb = aabb_to_world.inverse();
+    let origin_vec = world_to_aabb.transform_point3a(ray.origin());
+    let origin = [origin_vec.x, origin_vec.y, origin_vec.z];
+    let direction_vec = world_to_aabb.transform_vector3a(ray.direction());
+    let direction = [direction_vec.x, direction_vec.y, direction_vec.z];
+
+    let min_vec = aabb.min();
+    let max_vec = aabb.max();
+    let min = [min_vec.x, min_vec.y, min_vec.z];
+    let max = [max_vec.x, max_vec.y, max_vec.z];
+
+    let mut candidate_plane = max;
+
+    for i in 0..3 {
+        if origin[i] < min[i] {
+            quadrant[i] = Side::Left;
+            candidate_plane[i] = min[i];
+            inside = false;
+        } else if origin[i] > max[i] {
+            quadrant[i] = Side::Right;
+            inside = false;
+        }
+    }
+
+    if inside {
+        return Some(ray.origin());
+    }
+
+    let mut max_t = [-1.; 3];
+    for i in 0..3 {
+        if quadrant[i] != Side::Middle && direction[i] != 0. {
+            max_t[i] = (candidate_plane[i] - origin[i]) / direction[i];
+        }
+    }
+
+    let mut which_plane = 0;
+    for i in 0..3 {
+        if max_t[which_plane] < max_t[i] {
+            which_plane = i;
+        }
+    }
+
+    if max_t[which_plane] < 0. {
+        return None;
+    }
+
+    let mut intersection = candidate_plane;
+    for i in 0..3 {
+        if which_plane != i {
+            intersection[i] = origin[i] + max_t[which_plane] * direction[i];
+            if intersection[i] < min[i] || intersection[i] > max[i] {
+                return None;
+            }
+        }
+    }
+
+    Some(aabb_to_world.transform_point3a(Vec3A::from_slice(&intersection)))
 }
 
 pub fn ray_mesh_intersection(
@@ -176,6 +249,27 @@ mod tests {
     use super::*;
     use bevy::prelude::{shape::Plane, Transform};
     use glam::Vec3;
+    use std::f32::consts::FRAC_PI_4;
+
+    #[test]
+    fn test_ray_aab_intersection() {
+        let aabb = Aabb::from_min_max(Vec3::new(-4., -4., -4.), Vec3::new(5., 6., 7.));
+        let aabb_to_world = Mat4::from_rotation_z(-FRAC_PI_4);
+
+        let ray = Ray::new(Vec3A::new(1., 2., 3.), Vec3A::new(-1., -1., 0.));
+        let intersection = ray_aabb_intersection(&ray, &aabb, &aabb_to_world);
+        assert_eq!(
+            intersection.expect("Intersection expected but not found."),
+            Vec3A::new(1., 2., 3.)
+        );
+
+        let ray = Ray::new(Vec3A::new(15., 15., 3.), Vec3A::new(-1., -1., 0.));
+        let intersection = ray_aabb_intersection(&ray, &aabb, &aabb_to_world);
+        assert_eq!(
+            intersection.expect("Intersection expected but not found."),
+            Vec3A::new(4.242641, 4.2426405, 3.)
+        );
+    }
 
     #[test]
     fn test_ray_triangle_intersection() {
