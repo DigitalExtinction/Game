@@ -15,3 +15,10 @@ tar = "0.4"
 serde = "1.0"
 serde_json = "1.0"
 glam = "^0.20.2"
+
+[dev-dependencies]
+criterion = "0.3"
+
+[[bench]]
+name = "ray_intersection"
+harness = false
