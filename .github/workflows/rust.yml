@@ -35,12 +35,19 @@ jobs:
           profile: minimal
           components: clippy
           override: true
+
       - name: Rust Cache
         uses: actions/cache@v3
         id: rust-cache
         with:
-          path: target
+          path:  |
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            target/
           key: tests-${{ runner.os }}
+
       - name: Install Linux Dependencies
         if: ${{ matrix.os == 'ubuntu-latest' }}
         run: |
@@ -100,12 +107,19 @@ jobs:
           toolchain: stable
           profile: minimal
           override: true
+
       - name: Rust Cache
         uses: actions/cache@v3
         id: rust-cache
         with:
-          path: target
+          path: |
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            target/
           key: build-release-${{ runner.os }}
+
       - name: Install Linux Dependencies
         if: ${{ matrix.os == 'ubuntu-latest' }}
         run: |
