@@ -26,6 +26,7 @@ impl Plugin for MapPlugin {
             )
             .add_system_set(
                 SystemSet::on_enter(MapStates::Spawning)
+                    .with_system(setup_light)
                     .with_system(spawn_terrain.label("spawn_terrain"))
                     .with_system(spawn_objects.label("spawn_objects"))
                     .with_system(finalize.after("spawn_terrain").after("spawn_objects")),
@@ -93,6 +94,36 @@ fn add_map_resources(
     let map_size = map_assets.get(map_handle.as_ref()).unwrap().size;
     commands.insert_resource(map_size);
     map_state.set(MapStates::Spawning).unwrap();
+}
+
+fn setup_light(mut commands: Commands, map_size: Res<MapSize>) {
+    commands.insert_resource(AmbientLight {
+        color: Color::WHITE,
+        brightness: 0.6,
+    });
+
+    let mut transform = Transform::identity();
+    transform.look_at(Vec3::new(1., -1., 0.), Vec3::new(1., 1., 0.));
+    commands.spawn_bundle(DirectionalLightBundle {
+        directional_light: DirectionalLight {
+            color: Color::WHITE,
+            illuminance: 30000.,
+            shadow_projection: OrthographicProjection {
+                left: 0.,
+                right: map_size.0,
+                bottom: 0.,
+                top: map_size.0,
+                near: -10.,
+                far: 2. * map_size.0,
+                ..Default::default()
+            },
+            shadow_depth_bias: 0.2,
+            shadow_normal_bias: 0.2,
+            shadows_enabled: true,
+        },
+        transform,
+        ..Default::default()
+    });
 }
 
 fn spawn_terrain(
