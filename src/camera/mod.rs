@@ -1,6 +1,6 @@
 use crate::{
     collisions::SolidObjects,
-    map::file::MapSize,
+    map::description::MapSize,
     math::ray::{ray_plane_intersection, Ray},
     states::GameStates,
     terrain::Terrain,

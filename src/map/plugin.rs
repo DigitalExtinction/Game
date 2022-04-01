@@ -1,8 +1,12 @@
-use super::file::{load_from_slice, MapDescription};
-use crate::{game::GameConfig, states::GameStates, terrain::Terrain};
+use super::{
+    description::{MapDescription, MapObjectType, MapSize},
+    file::load_from_slice,
+};
+use crate::{game::GameConfig, object::Object, states::GameStates, terrain::Terrain};
 use anyhow::Context;
 use bevy::{
     asset::{AssetLoader, BoxedFuture, LoadContext, LoadState, LoadedAsset},
+    ecs::system::EntityCommands,
     pbr::{PbrBundle, StandardMaterial},
     prelude::{shape::Plane, *},
 };
@@ -14,9 +18,27 @@ impl Plugin for MapPlugin {
         app.insert_resource(GameConfig::new("map.tar"))
             .add_asset::<MapDescription>()
             .add_asset_loader(MapLoader)
-            .add_system_set(SystemSet::on_enter(GameStates::MapLoading).with_system(load_map))
-            .add_system_set(SystemSet::on_update(GameStates::MapLoading).with_system(spawn_map));
+            .add_state(MapStates::Waiting)
+            .add_system_set(SystemSet::on_enter(GameStates::Loading).with_system(load_map))
+            .add_system_set(SystemSet::on_update(MapStates::Loading).with_system(wait_for_map))
+            .add_system_set(
+                SystemSet::on_enter(MapStates::InitingRes).with_system(add_map_resources),
+            )
+            .add_system_set(
+                SystemSet::on_enter(MapStates::Spawning)
+                    .with_system(spawn_terrain.label("spawn_terrain"))
+                    .with_system(spawn_objects.label("spawn_objects"))
+                    .with_system(finalize.after("spawn_terrain").after("spawn_objects")),
+            );
     }
+}
+
+#[derive(Debug, Clone, Eq, PartialEq, Hash)]
+pub enum MapStates {
+    Waiting,
+    Loading,
+    InitingRes,
+    Spawning,
 }
 
 struct MapLoader;
@@ -39,43 +61,103 @@ impl AssetLoader for MapLoader {
     }
 }
 
-fn load_map(mut commands: Commands, server: Res<AssetServer>, game_config: Res<GameConfig>) {
-    let handle: Handle<MapDescription> = server.load(game_config.map_path());
-    commands.insert_resource(handle);
-}
-
-fn spawn_map(
+fn load_map(
     mut commands: Commands,
     server: Res<AssetServer>,
+    game_config: Res<GameConfig>,
+    mut map_state: ResMut<State<MapStates>>,
+) {
+    let handle: Handle<MapDescription> = server.load(game_config.map_path());
+    commands.insert_resource(handle);
+    map_state.set(MapStates::Loading).unwrap();
+}
+
+fn wait_for_map(
+    server: Res<AssetServer>,
     map_handle: Res<Handle<MapDescription>>,
-    mut maps: ResMut<Assets<MapDescription>>,
-    mut meshes: ResMut<Assets<Mesh>>,
-    mut materials: ResMut<Assets<StandardMaterial>>,
-    mut app_state: ResMut<State<GameStates>>,
+    mut map_state: ResMut<State<MapStates>>,
 ) {
     match server.get_load_state(map_handle.as_ref()) {
         LoadState::Failed => panic!("Map loading has failed."),
-        LoadState::Loaded => {
-            commands.remove_resource::<Handle<MapDescription>>();
-
-            let map_description = maps.remove(map_handle.as_ref()).unwrap();
-            commands.insert_resource(map_description.size);
-
-            let map_size = map_description.size.0;
-            commands
-                .spawn_bundle(PbrBundle {
-                    mesh: meshes.add(Mesh::from(Plane { size: map_size })),
-                    material: materials.add(Color::rgb(0.3, 0.5, 0.3).into()),
-                    transform: Transform {
-                        translation: Vec3::new(map_size / 2., 0., map_size / 2.),
-                        ..Default::default()
-                    },
-                    ..Default::default()
-                })
-                .insert(Terrain);
-
-            app_state.set(GameStates::InGame).unwrap();
-        }
+        LoadState::Loaded => map_state.set(MapStates::InitingRes).unwrap(),
         _ => (),
     }
+}
+
+fn add_map_resources(
+    mut commands: Commands,
+    map_handle: Res<Handle<MapDescription>>,
+    map_assets: Res<Assets<MapDescription>>,
+    mut map_state: ResMut<State<MapStates>>,
+) {
+    let map_size = map_assets.get(map_handle.as_ref()).unwrap().size;
+    commands.insert_resource(map_size);
+    map_state.set(MapStates::Spawning).unwrap();
+}
+
+fn spawn_terrain(
+    mut commands: Commands,
+    mut meshes: ResMut<Assets<Mesh>>,
+    mut materials: ResMut<Assets<StandardMaterial>>,
+    map_size: Res<MapSize>,
+) {
+    commands
+        .spawn_bundle(PbrBundle {
+            mesh: meshes.add(Mesh::from(Plane { size: map_size.0 })),
+            material: materials.add(Color::rgb(0.3, 0.5, 0.3).into()),
+            transform: Transform {
+                translation: Vec3::new(map_size.0 / 2., 0., map_size.0 / 2.),
+                ..Default::default()
+            },
+            ..Default::default()
+        })
+        .insert(Terrain);
+}
+
+fn spawn_objects(
+    mut commands: Commands,
+    map_handle: Res<Handle<MapDescription>>,
+    maps: Res<Assets<MapDescription>>,
+    server: Res<AssetServer>,
+) {
+    let map_description = maps.get(map_handle.as_ref()).unwrap();
+
+    for description in map_description.objects() {
+        let object = Object {};
+
+        let transform = description.transform();
+
+        let mut entity_commands =
+            commands.spawn_bundle((GlobalTransform::identity(), transform, object));
+        spawn_model_as_children(
+            &mut entity_commands,
+            server.as_ref(),
+            description.object_type(),
+        );
+    }
+}
+
+fn spawn_model_as_children(
+    commands: &mut EntityCommands,
+    server: &AssetServer,
+    object_type: MapObjectType,
+) {
+    let model = match object_type {
+        MapObjectType::Tree => "tree01",
+    };
+    let gltf = server.load(&format!("{}.glb#Scene0", model));
+    commands.with_children(|parent| {
+        parent.spawn_scene(gltf);
+    });
+}
+
+fn finalize(
+    mut commands: Commands,
+    mut maps: ResMut<Assets<MapDescription>>,
+    map_handle: Res<Handle<MapDescription>>,
+    mut game_state: ResMut<State<GameStates>>,
+) {
+    commands.remove_resource::<Handle<MapDescription>>();
+    maps.remove(map_handle.as_ref()).unwrap();
+    game_state.set(GameStates::InGame).unwrap();
 }
