@@ -17,19 +17,37 @@ jobs:
         os: [ubuntu-latest]
     steps:
       - uses: actions/checkout@v3
+
+      - name: Create LFS file list
+        run: git lfs ls-files -l | cut -d' ' -f1 | sort > .lfs-assets-id
+      - name: Restore LFS cache
+        uses: actions/cache@v2
+        id: lfs-cache
         with:
-          lfs: true
+          path: .git/lfs
+          key: ${{ runner.os }}-lfs-${{ hashFiles('.lfs-assets-id') }}-v1
+      - name: Git LFS Pull
+        run: git lfs pull
+
       - uses: actions-rs/toolchain@v1
         with:
           toolchain: stable
           profile: minimal
           components: clippy
           override: true
+
       - name: Rust Cache
         uses: actions/cache@v3
+        id: rust-cache
         with:
-          path: target
-          key: tests-${{ runner.os }}
+          path:  |
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            target/
+          key: tests-${{ runner.os }}-${{ hashFiles('**/Cargo.lock') }}
+
       - name: Install Linux Dependencies
         if: ${{ matrix.os == 'ubuntu-latest' }}
         run: |
@@ -72,16 +90,36 @@ jobs:
         os: [ubuntu-latest, macos-latest, windows-latest]
     steps:
       - uses: actions/checkout@v3
+
+      - name: Create LFS file list
+        run: git lfs ls-files -l | cut -d' ' -f1 | sort > .lfs-assets-id
+      - name: Restore LFS cache
+        uses: actions/cache@v2
+        id: lfs-cache
+        with:
+          path: .git/lfs
+          key: ${{ runner.os }}-lfs-${{ hashFiles('.lfs-assets-id') }}-v1
+      - name: Git LFS Pull
+        run: git lfs pull
+
       - uses: actions-rs/toolchain@v1
         with:
           toolchain: stable
           profile: minimal
           override: true
+
       - name: Rust Cache
         uses: actions/cache@v3
+        id: rust-cache
         with:
-          path: target
-          key: build-release-${{ runner.os }}
+          path: |
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            target/
+          key: build-release-${{ runner.os }}-${{ hashFiles('**/Cargo.lock') }}
+
       - name: Install Linux Dependencies
         if: ${{ matrix.os == 'ubuntu-latest' }}
         run: |
@@ -90,10 +128,15 @@ jobs:
       - run: rustc --version && cargo --version
       - name: Build
         run: cargo build --release
+
+      - name: Prepare Build Files
+        run: |
+          mkdir pack
+          mv target/release/de pack/ || :
+          mv target/release/de.exe pack/ || :
+          mv assets pack/
       - name: Store Release Build
         uses: actions/upload-artifact@v3
         with:
           name: de-binary-${{ runner.os }}
-          path: |
-            target/release/de
-            target/release/de.exe
+          path: pack
