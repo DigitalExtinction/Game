@@ -17,8 +17,18 @@ jobs:
         os: [ubuntu-latest]
     steps:
       - uses: actions/checkout@v3
+
+      - name: Create LFS file list
+        run: git lfs ls-files -l | cut -d' ' -f1 | sort > .lfs-assets-id
+      - name: Restore LFS cache
+        uses: actions/cache@v2
+        id: lfs-cache
         with:
-          lfs: true
+          path: .git/lfs
+          key: ${{ runner.os }}-lfs-${{ hashFiles('.lfs-assets-id') }}-v1
+      - name: Git LFS Pull
+        run: git lfs pull
+
       - uses: actions-rs/toolchain@v1
         with:
           toolchain: stable
@@ -27,6 +37,7 @@ jobs:
           override: true
       - name: Rust Cache
         uses: actions/cache@v3
+        id: rust-cache
         with:
           path: target
           key: tests-${{ runner.os }}
@@ -72,6 +83,18 @@ jobs:
         os: [ubuntu-latest, macos-latest, windows-latest]
     steps:
       - uses: actions/checkout@v3
+
+      - name: Create LFS file list
+        run: git lfs ls-files -l | cut -d' ' -f1 | sort > .lfs-assets-id
+      - name: Restore LFS cache
+        uses: actions/cache@v2
+        id: lfs-cache
+        with:
+          path: .git/lfs
+          key: ${{ runner.os }}-lfs-${{ hashFiles('.lfs-assets-id') }}-v1
+      - name: Git LFS Pull
+        run: git lfs pull
+
       - uses: actions-rs/toolchain@v1
         with:
           toolchain: stable
@@ -79,6 +102,7 @@ jobs:
           override: true
       - name: Rust Cache
         uses: actions/cache@v3
+        id: rust-cache
         with:
           path: target
           key: build-release-${{ runner.os }}
