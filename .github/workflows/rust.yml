@@ -128,10 +128,15 @@ jobs:
       - run: rustc --version && cargo --version
       - name: Build
         run: cargo build --release
+
+      - name: Prepare Build Files
+        run: |
+          mkdir pack
+          mv target/release/de pack/ || :
+          mv target/release/de.exe pack/ || :
+          mv assets pack/
       - name: Store Release Build
         uses: actions/upload-artifact@v3
         with:
           name: de-binary-${{ runner.os }}
-          path: |
-            target/release/de
-            target/release/de.exe
+          path: pack
