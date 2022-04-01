@@ -46,7 +46,7 @@ jobs:
             ~/.cargo/registry/cache/
             ~/.cargo/git/db/
             target/
-          key: tests-${{ runner.os }}
+          key: tests-${{ runner.os }}-${{ hashFiles('**/Cargo.lock') }}
 
       - name: Install Linux Dependencies
         if: ${{ matrix.os == 'ubuntu-latest' }}
@@ -118,7 +118,7 @@ jobs:
             ~/.cargo/registry/cache/
             ~/.cargo/git/db/
             target/
-          key: build-release-${{ runner.os }}
+          key: build-release-${{ runner.os }}-${{ hashFiles('**/Cargo.lock') }}
 
       - name: Install Linux Dependencies
         if: ${{ matrix.os == 'ubuntu-latest' }}
