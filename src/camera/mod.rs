@@ -1,13 +1,13 @@
 use crate::{
+    collisions::SolidObjects,
     map::file::MapSize,
-    math::ray::{ray_aabb_intersection, ray_mesh_intersection, ray_plane_intersection, Ray},
+    math::ray::{ray_plane_intersection, Ray},
     states::GameStates,
     terrain::Terrain,
 };
 use bevy::{
     input::mouse::{MouseMotion, MouseScrollUnit, MouseWheel},
     prelude::*,
-    render::primitives::Aabb,
 };
 use glam::Vec3A;
 use std::f32::consts::{FRAC_PI_2, PI};
@@ -184,9 +184,8 @@ fn setup(mut commands: Commands) {
 fn update_focus(
     mut event: EventReader<FocusInvalidatedEvent>,
     mut focus: ResMut<CameraFocus>,
-    meshes: Res<Assets<Mesh>>,
+    terrain: SolidObjects<With<Terrain>>,
     camera_query: Query<&GlobalTransform, With<Camera>>,
-    terrain_query: Query<(&Handle<Mesh>, &GlobalTransform, &Aabb), With<Terrain>>,
 ) {
     if event.iter().next().is_none() {
         return;
@@ -194,21 +193,11 @@ fn update_focus(
 
     let camera_transform = camera_query.single();
     let ray = Ray::new(camera_transform.translation, camera_transform.forward());
-
-    for (mesh_handle, terrain_transform, aabb) in terrain_query.iter() {
-        let mesh_to_world = terrain_transform.compute_matrix();
-        if ray_aabb_intersection(&ray, aabb, &mesh_to_world).is_none() {
-            continue;
-        }
-        let mesh = meshes.get(mesh_handle).unwrap();
-        if let Some(intersection) = ray_mesh_intersection(&ray, mesh, &mesh_to_world) {
-            focus.update(intersection.position(), intersection.distance());
-            return;
-        }
-    }
-
-    let intersection = ray_plane_intersection(&ray, Vec3A::ZERO, Vec3A::Y)
-        .expect("Camera ray does not intersect base ground plane.");
+    let intersection = match terrain.ray_intersection(&ray) {
+        Some((_, intersection)) => intersection,
+        None => ray_plane_intersection(&ray, Vec3A::ZERO, Vec3A::Y)
+            .expect("Camera ray does not intersect base ground plane."),
+    };
     focus.update(intersection.position(), intersection.distance());
 }
 

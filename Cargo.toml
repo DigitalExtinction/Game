@@ -9,7 +9,7 @@ repository = "https://github.com/Indy2222/Digital-Extinction"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-bevy = "^0.6.1"
+bevy = { git = "https://github.com/Indy2222/bevy", branch = "de" }
 anyhow = "^1.0"
 tar = "0.4"
 serde = "1.0"

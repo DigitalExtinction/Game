@@ -141,7 +141,7 @@ pub fn ray_mesh_intersection(
         .expect("Mesh does not contain vertex positions.");
     let vertices: &Vec<[f32; 3]> = match vertex_position_atribute {
         VertexAttributeValues::Float32x3(positions) => positions,
-        _ => panic!("Unexpected types in {}", Mesh::ATTRIBUTE_POSITION),
+        _ => panic!("Unexpected types in {:?}", Mesh::ATTRIBUTE_POSITION),
     };
 
     let world_to_mesh = mesh_to_world.inverse();
