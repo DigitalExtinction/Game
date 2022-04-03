@@ -10,7 +10,7 @@ fn main() {
         })
         .insert_resource(Msaa { samples: 4 })
         .add_plugins(DefaultPlugins)
-        .add_state(GameStates::MapLoading)
+        .add_state(GameStates::Loading)
         .add_plugins(GameLoadingPluginGroup)
         .add_plugins(InGamePluginGroup)
         .add_startup_system(setup)
@@ -28,16 +28,6 @@ fn setup(
         mesh: meshes.add(Mesh::from(shape::Cube { size: 1.0 })),
         material: materials.add(Color::rgb(0.8, 0.7, 0.6).into()),
         transform: Transform::from_xyz(0.0, 0.5, 0.0),
-        ..Default::default()
-    });
-    // light
-    commands.spawn_bundle(PointLightBundle {
-        point_light: PointLight {
-            intensity: 1500.0,
-            shadows_enabled: true,
-            ..Default::default()
-        },
-        transform: Transform::from_xyz(4.0, 8.0, 4.0),
         ..Default::default()
     });
 }

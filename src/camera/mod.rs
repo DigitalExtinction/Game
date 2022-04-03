@@ -1,6 +1,6 @@
 use crate::{
     collisions::SolidObjects,
-    map::file::MapSize,
+    map::description::MapSize,
     math::ray::{ray_plane_intersection, Ray},
     states::GameStates,
     terrain::Terrain,
@@ -40,6 +40,8 @@ const MAX_OFF_NADIR: f32 = 0.7 * FRAC_PI_2;
 /// Mouse drag by `d` logical pixels will lead to rotation by `d *
 /// ROTATION_SENSITIVITY` radians.
 const ROTATION_SENSITIVITY: f32 = 0.008;
+/// Never move camera focus point closer than this to a map edge.
+const MAP_FOCUS_MARGIN: f32 = 1.0;
 
 pub struct MainCameraPlugin;
 
@@ -223,11 +225,15 @@ fn move_horizontaly(
         HorizontalMovementDirection::Down => transform.local_y() * delta_scalar,
     };
 
-    let min_delta_vec = Vec3::new(-focus.point().x.max(0.), 0., -focus.point().z.max(0.));
-    let max_delta_vec = Vec3::new(
-        (map_size.0 - focus.point().x).max(0.),
+    let min_delta_vec = Vec3::new(
+        -(focus.point().x - MAP_FOCUS_MARGIN).max(0.),
         0.,
-        (map_size.0 - focus.point().z).max(0.),
+        -(focus.point().z - MAP_FOCUS_MARGIN).max(0.),
+    );
+    let max_delta_vec = Vec3::new(
+        (map_size.0 - focus.point().x - MAP_FOCUS_MARGIN).max(0.),
+        0.,
+        (map_size.0 - focus.point().z - MAP_FOCUS_MARGIN).max(0.),
     );
 
     transform.translation += delta_vec.clamp(min_delta_vec, max_delta_vec);

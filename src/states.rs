@@ -4,7 +4,7 @@ use bevy::{app::PluginGroupBuilder, prelude::PluginGroup};
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub enum GameStates {
-    MapLoading,
+    Loading,
     InGame,
 }
 
