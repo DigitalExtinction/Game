@@ -2,10 +2,10 @@ use super::{collisions::Intersector, objects::Playable, GameStates};
 use crate::math::ray::Ray;
 use bevy::{
     ecs::system::SystemParam,
-    input::{mouse::MouseButtonInput, ElementState},
+    input::{mouse::MouseButtonInput, ElementState, Input},
     prelude::{
-        App, Camera, Commands, Component, Entity, EventReader, GlobalTransform, MouseButton,
-        Plugin, Query, Res, SystemSet, With,
+        App, Camera, Commands, Component, Entity, EventReader, GlobalTransform, KeyCode,
+        MouseButton, Plugin, Query, Res, SystemSet, With,
     },
     window::Windows,
 };
@@ -60,6 +60,12 @@ impl<'w, 's> MouseInWorld<'w, 's> {
     }
 }
 
+#[derive(Clone, Copy, PartialEq)]
+enum SelectionMode {
+    Replace,
+    Add,
+}
+
 #[derive(SystemParam)]
 struct Selector<'w, 's> {
     commands: Commands<'w, 's>,
@@ -67,20 +73,22 @@ struct Selector<'w, 's> {
 }
 
 impl<'w, 's> Selector<'w, 's> {
-    fn select_single(&mut self, entity: Option<Entity>) {
+    fn select_single(&mut self, entity: Option<Entity>, mode: SelectionMode) {
         let entities = match entity {
             Some(entity) => vec![entity],
             None => Vec::new(),
         };
-        self.select(&entities);
+        self.select(&entities, mode);
     }
 
-    fn select(&mut self, entities: &[Entity]) {
+    fn select(&mut self, entities: &[Entity], mode: SelectionMode) {
         let selected: HashSet<Entity> = self.selected.iter().collect();
         let desired: HashSet<Entity> = entities.iter().cloned().collect();
 
-        for deselect in &selected - &desired {
-            self.commands.entity(deselect).remove::<Selected>();
+        if mode == SelectionMode::Replace {
+            for deselect in &selected - &desired {
+                self.commands.entity(deselect).remove::<Selected>();
+            }
         }
         for select in &desired - &selected {
             self.commands.entity(select).insert(Selected);
@@ -90,6 +98,7 @@ impl<'w, 's> Selector<'w, 's> {
 
 fn mouse_click_event(
     mut event: EventReader<MouseButtonInput>,
+    keys: Res<Input<KeyCode>>,
     playable: Intersector<With<Playable>>,
     mouse: MouseInWorld,
     mut selector: Selector,
@@ -105,9 +114,17 @@ fn mouse_click_event(
         Some(ray) => ray,
         None => return,
     };
+
+    let mode = if keys.pressed(KeyCode::LControl) {
+        SelectionMode::Add
+    } else {
+        SelectionMode::Replace
+    };
+
     selector.select_single(
         playable
             .ray_intersection(&mouse_ray)
             .map(|(entity, _)| entity),
+        mode,
     );
 }
