@@ -56,14 +56,6 @@ jobs:
       - run: rustc --version && cargo --version && cargo clippy --version
       - name: Build
         run: cargo build --verbose --all-targets --all-features
-      - name: Store Debug Build
-        uses: actions/upload-artifact@v3
-        with:
-          name: debug-binary-${{ runner.os }}
-          retention-days: 1
-          path: |
-            target/debug/de
-            target/debug/de.exe
       - name: Clippy
         run: cargo clippy --all-targets --all-features -- --deny warnings
       - name: Test
