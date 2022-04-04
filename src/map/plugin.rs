@@ -2,7 +2,7 @@ use super::{
     description::{MapDescription, MapObjectType, MapSize},
     file::load_from_slice,
 };
-use crate::{game::GameConfig, object::Object, states::GameStates, terrain::Terrain};
+use crate::{game::GameConfig, object::SolidObject, states::GameStates, terrain::Terrain};
 use anyhow::Context;
 use bevy::{
     asset::{AssetLoader, BoxedFuture, LoadContext, LoadState, LoadedAsset},
@@ -154,12 +154,9 @@ fn spawn_objects(
     let map_description = maps.get(map_handle.as_ref()).unwrap();
 
     for description in map_description.objects() {
-        let object = Object {};
-
         let transform = description.transform();
-
         let mut entity_commands =
-            commands.spawn_bundle((GlobalTransform::identity(), transform, object));
+            commands.spawn_bundle((GlobalTransform::identity(), transform, SolidObject));
         spawn_model_as_children(
             &mut entity_commands,
             server.as_ref(),
