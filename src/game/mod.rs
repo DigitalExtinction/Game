@@ -35,7 +35,7 @@ struct GamePlugin;
 impl Plugin for GamePlugin {
     fn build(&self, app: &mut App) {
         app.add_state(GameStates::Waiting)
-            .insert_resource(GameConfig::new("map.tar"))
+            .insert_resource(GameConfig::new("map.tar", 0))
             .add_system_set(SystemSet::on_enter(AppStates::Game).with_system(start_game));
     }
 }
