@@ -10,7 +10,7 @@ use bevy::{
 };
 
 #[derive(SystemParam)]
-pub struct SolidObjects<'w, 's, F = ()>
+pub struct Intersector<'w, 's, F = ()>
 where
     F: WorldQuery + Sync + Send + 'static,
     <F as WorldQuery>::Fetch: FilterFetch,
@@ -29,7 +29,7 @@ where
     meshes: ResMut<'w, Assets<Mesh>>,
 }
 
-impl<'w, 's, F> SolidObjects<'w, 's, F>
+impl<'w, 's, F> Intersector<'w, 's, F>
 where
     F: WorldQuery + Sync + Send + 'static,
     <F as WorldQuery>::Fetch: FilterFetch,

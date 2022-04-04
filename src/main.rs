@@ -1,5 +1,5 @@
 use bevy::{prelude::*, window::WindowMode};
-use de::states::{GameLoadingPluginGroup, GameStates, InGamePluginGroup};
+use de::{game::GamePluginGroup, AppStates};
 
 fn main() {
     App::new()
@@ -10,9 +10,8 @@ fn main() {
         })
         .insert_resource(Msaa { samples: 4 })
         .add_plugins(DefaultPlugins)
-        .add_state(GameStates::Loading)
-        .add_plugins(GameLoadingPluginGroup)
-        .add_plugins(InGamePluginGroup)
+        .add_state(AppStates::Game)
+        .add_plugins(GamePluginGroup)
         .add_startup_system(setup)
         .run();
 }

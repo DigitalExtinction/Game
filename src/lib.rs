@@ -1,9 +1,8 @@
-pub mod camera;
-pub mod collisions;
 pub mod game;
-pub mod map;
 pub mod math;
-pub mod object;
-pub mod selection;
-pub mod states;
-pub mod terrain;
+
+#[derive(Debug, Clone, Eq, PartialEq, Hash)]
+pub enum AppStates {
+    Menu,
+    Game,
+}
