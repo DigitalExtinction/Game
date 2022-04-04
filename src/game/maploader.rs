@@ -1,7 +1,7 @@
 use super::{
     config::GameConfig,
-    mapdescr::{MapDescription, MapObjectType, MapSize},
-    objects::SolidObject,
+    mapdescr::{MapDescription, MapObject, MapSize},
+    objects::{Active, Playable, SolidObject},
     terrain::Terrain,
     GameStates,
 };
@@ -175,33 +175,41 @@ fn spawn_objects(
     map_handle: Res<Handle<MapDescription>>,
     maps: Res<Assets<MapDescription>>,
     server: Res<AssetServer>,
+    game_config: Res<GameConfig>,
 ) {
     let map_description = maps.get(map_handle.as_ref()).unwrap();
 
-    for description in map_description.objects() {
-        let transform = description.transform();
-        let mut entity_commands =
-            commands.spawn_bundle((GlobalTransform::identity(), transform, SolidObject));
-        spawn_model_as_children(
-            &mut entity_commands,
-            server.as_ref(),
-            description.object_type(),
-        );
+    for object in map_description.inactive_objects() {
+        spawn_object(&mut commands, server.as_ref(), object);
+    }
+    for object in map_description.active_objects() {
+        let mut entity_commands = spawn_object(&mut commands, server.as_ref(), object);
+        entity_commands.insert(Active);
+        if object.player() == game_config.player() {
+            entity_commands.insert(Playable);
+        }
     }
 }
 
-fn spawn_model_as_children(
-    commands: &mut EntityCommands,
+fn spawn_object<'w, 's, 'a, 'b, O>(
+    commands: &'a mut Commands<'w, 's>,
     server: &AssetServer,
-    object_type: MapObjectType,
-) {
-    let model = match object_type {
-        MapObjectType::Tree => "tree01",
-    };
-    let gltf = server.load(&format!("{}.glb#Scene0", model));
-    commands.with_children(|parent| {
+    object: &O,
+) -> EntityCommands<'w, 's, 'a>
+where
+    O: 'b + MapObject,
+{
+    let bundle = (
+        GlobalTransform::identity(),
+        object.position().transform(),
+        SolidObject,
+    );
+    let gltf = server.load(&format!("{}.glb#Scene0", object.model_name()));
+    let mut entity_commands = commands.spawn_bundle(bundle);
+    entity_commands.with_children(|parent| {
         parent.spawn_scene(gltf);
     });
+    entity_commands
 }
 
 fn finalize(
