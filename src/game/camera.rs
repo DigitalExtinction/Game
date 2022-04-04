@@ -1,10 +1,5 @@
-use crate::{
-    collisions::SolidObjects,
-    map::description::MapSize,
-    math::ray::{ray_plane_intersection, Ray},
-    states::GameStates,
-    terrain::Terrain,
-};
+use super::{collisions::Intersector, mapdescr::MapSize, terrain::Terrain, GameStates};
+use crate::math::ray::{ray_plane_intersection, Ray};
 use bevy::{
     input::mouse::{MouseMotion, MouseScrollUnit, MouseWheel},
     prelude::*,
@@ -43,15 +38,15 @@ const ROTATION_SENSITIVITY: f32 = 0.008;
 /// Never move camera focus point closer than this to a map edge.
 const MAP_FOCUS_MARGIN: f32 = 1.0;
 
-pub struct MainCameraPlugin;
+pub struct CameraPlugin;
 
-impl Plugin for MainCameraPlugin {
+impl Plugin for CameraPlugin {
     fn build(&self, app: &mut App) {
         app.add_event::<FocusInvalidatedEvent>()
             .add_event::<PivotEvent>()
-            .add_system_set(SystemSet::on_enter(GameStates::InGame).with_system(setup))
+            .add_system_set(SystemSet::on_enter(GameStates::Playing).with_system(setup))
             .add_system_set(
-                SystemSet::on_update(GameStates::InGame)
+                SystemSet::on_update(GameStates::Playing)
                     .with_system(update_focus.label("update_focus"))
                     .with_system(zoom_event.label("zoom_event"))
                     .with_system(pivot_event.label("pivot_event"))
@@ -186,7 +181,7 @@ fn setup(mut commands: Commands) {
 fn update_focus(
     mut event: EventReader<FocusInvalidatedEvent>,
     mut focus: ResMut<CameraFocus>,
-    terrain: SolidObjects<With<Terrain>>,
+    terrain: Intersector<With<Terrain>>,
     camera_query: Query<&GlobalTransform, With<Camera>>,
 ) {
     if event.iter().next().is_none() {

@@ -1,22 +1,25 @@
 use super::{
-    description::{MapDescription, MapObjectType, MapSize},
-    file::load_from_slice,
+    config::GameConfig,
+    mapdescr::{MapDescription, MapObjectType, MapSize},
+    objects::SolidObject,
+    terrain::Terrain,
+    GameStates,
 };
-use crate::{game::GameConfig, object::SolidObject, states::GameStates, terrain::Terrain};
-use anyhow::Context;
+use anyhow::{bail, Context};
 use bevy::{
     asset::{AssetLoader, BoxedFuture, LoadContext, LoadState, LoadedAsset},
     ecs::system::EntityCommands,
     pbr::{PbrBundle, StandardMaterial},
     prelude::{shape::Plane, *},
 };
+use std::io::Read;
+use tar::Archive;
 
-pub struct MapPlugin;
+pub struct MapLoaderPlugin;
 
-impl Plugin for MapPlugin {
+impl Plugin for MapLoaderPlugin {
     fn build(&self, app: &mut App) {
-        app.insert_resource(GameConfig::new("map.tar"))
-            .add_asset::<MapDescription>()
+        app.add_asset::<MapDescription>()
             .add_asset_loader(MapLoader)
             .add_state(MapStates::Waiting)
             .add_system_set(SystemSet::on_enter(GameStates::Loading).with_system(load_map))
@@ -60,6 +63,28 @@ impl AssetLoader for MapLoader {
     fn extensions(&self) -> &[&str] {
         &["tar"]
     }
+}
+
+pub fn load_from_slice(bytes: &[u8]) -> anyhow::Result<MapDescription> {
+    let mut map: Option<MapDescription> = None;
+
+    let mut archive = Archive::new(bytes);
+    for entry in archive.entries()? {
+        let mut entry = entry?;
+        if entry.path()?.to_str().map_or(false, |p| p == "map.json") {
+            let mut buf: Vec<u8> = Vec::new();
+            entry.read_to_end(&mut buf)?;
+            map = Some(serde_json::from_slice(buf.as_slice()).context("Failed to parse map.json")?);
+        }
+    }
+
+    let map = match map {
+        Some(map_description) => map_description,
+        None => bail!("map.json entry is not present"),
+    };
+
+    map.validate()?;
+    Ok(map)
 }
 
 fn load_map(
@@ -187,5 +212,24 @@ fn finalize(
 ) {
     commands.remove_resource::<Handle<MapDescription>>();
     maps.remove(map_handle.as_ref()).unwrap();
-    game_state.set(GameStates::InGame).unwrap();
+    game_state.set(GameStates::Playing).unwrap();
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::{fs::File, path::PathBuf};
+
+    #[test]
+    fn test_map_parsing() {
+        let mut map_bytes = Vec::new();
+        let mut test_map = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+        test_map.push("test_data/test-map.tar");
+        File::open(test_map)
+            .unwrap()
+            .read_to_end(&mut map_bytes)
+            .unwrap();
+        let map = load_from_slice(map_bytes.as_slice()).unwrap();
+        assert_eq!(map.size.0, 108.1);
+    }
 }

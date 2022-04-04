@@ -1,4 +1,5 @@
-use crate::{collisions::SolidObjects, math::ray::Ray, object::Playable, states::GameStates};
+use super::{collisions::Intersector, objects::Playable, GameStates};
+use crate::math::ray::Ray;
 use bevy::{
     ecs::system::SystemParam,
     input::{mouse::MouseButtonInput, ElementState},
@@ -15,7 +16,9 @@ pub struct SelectionPlugin;
 
 impl Plugin for SelectionPlugin {
     fn build(&self, app: &mut App) {
-        app.add_system_set(SystemSet::on_update(GameStates::InGame).with_system(mouse_click_event));
+        app.add_system_set(
+            SystemSet::on_update(GameStates::Playing).with_system(mouse_click_event),
+        );
     }
 }
 
@@ -87,7 +90,7 @@ impl<'w, 's> Selector<'w, 's> {
 
 fn mouse_click_event(
     mut event: EventReader<MouseButtonInput>,
-    playable: SolidObjects<With<Playable>>,
+    playable: Intersector<With<Playable>>,
     mouse: MouseInWorld,
     mut selector: Selector,
 ) {
