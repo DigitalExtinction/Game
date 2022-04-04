@@ -10,7 +10,7 @@ use bevy::{
 };
 
 #[derive(SystemParam)]
-pub struct SolidObjects<'w, 's, F>
+pub struct SolidObjects<'w, 's, F = ()>
 where
     F: WorldQuery + Sync + Send + 'static,
     <F as WorldQuery>::Fetch: FilterFetch,
