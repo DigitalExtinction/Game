@@ -16,7 +16,7 @@ const CAMERA_HORIZONTAL_SPEED: f32 = 1.0;
 /// Minimum camera distance to terrain.
 const MIN_CAMERA_DISTANCE: f32 = 8.;
 /// Maximum camera distance from terrain.
-const MAX_CAMERA_DISTANCE: f32 = 50.;
+const MAX_CAMERA_DISTANCE: f32 = 100.;
 /// Camera moves along forward axis (zooming) at speed `distance *
 /// CAMERA_VERTICAL_SPEED` meters per second.
 const CAMERA_VERTICAL_SPEED: f32 = 2.0;
