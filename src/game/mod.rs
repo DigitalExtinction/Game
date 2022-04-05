@@ -1,11 +1,11 @@
 use self::{
-    camera::CameraPlugin, config::GameConfig, maploader::MapLoaderPlugin,
+    camera::CameraPlugin, config::GameConfig, maploader::MapLoaderPlugin, pointer::PointerPlugin,
     selection::SelectionPlugin,
 };
 use crate::AppStates;
 use bevy::{
     app::PluginGroupBuilder,
-    prelude::{App, Plugin, PluginGroup, ResMut, State, SystemSet},
+    prelude::{App, Plugin, PluginGroup, ResMut, State, SystemLabel, SystemSet},
 };
 
 pub mod config;
@@ -15,6 +15,7 @@ mod collisions;
 mod mapdescr;
 mod maploader;
 mod objects;
+mod pointer;
 mod selection;
 mod terrain;
 
@@ -26,8 +27,14 @@ impl PluginGroup for GamePluginGroup {
             .add(GamePlugin)
             .add(MapLoaderPlugin)
             .add(CameraPlugin)
-            .add(SelectionPlugin);
+            .add(SelectionPlugin)
+            .add(PointerPlugin);
     }
+}
+
+#[derive(Copy, Clone, Hash, Debug, PartialEq, Eq, SystemLabel)]
+enum Labels {
+    PreInputUpdate,
 }
 
 struct GamePlugin;
