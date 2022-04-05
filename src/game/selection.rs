@@ -17,7 +17,7 @@ pub struct SelectionPlugin;
 impl Plugin for SelectionPlugin {
     fn build(&self, app: &mut App) {
         app.add_system_set(
-            SystemSet::on_update(GameStates::Playing).with_system(mouse_click_event),
+            SystemSet::on_update(GameStates::Playing).with_system(mouse_click_handler),
         );
     }
 }
@@ -96,7 +96,7 @@ impl<'w, 's> Selector<'w, 's> {
     }
 }
 
-fn mouse_click_event(
+fn mouse_click_handler(
     mut event: EventReader<MouseButtonInput>,
     keys: Res<Input<KeyCode>>,
     playable: Intersector<With<Playable>>,
