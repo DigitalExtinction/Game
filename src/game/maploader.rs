@@ -1,7 +1,7 @@
 use super::{
     config::GameConfig,
-    mapdescr::{MapDescription, MapObject, MapSize},
-    objects::{Active, Playable, SolidObject},
+    mapdescr::{ActiveObjectType, MapDescription, MapObject, MapSize},
+    objects::{Active, Movable, Playable, SolidObject},
     terrain::Terrain,
     GameStates,
 };
@@ -187,6 +187,9 @@ fn spawn_objects(
         entity_commands.insert(Active);
         if object.player() == game_config.player() {
             entity_commands.insert(Playable);
+        }
+        if object.object_type() == ActiveObjectType::Attacker {
+            entity_commands.insert(Movable);
         }
     }
 }

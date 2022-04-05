@@ -143,7 +143,7 @@ impl MapObject for InactiveObject {
     }
 }
 
-#[derive(Copy, Clone, Deserialize)]
+#[derive(Copy, Clone, Deserialize, PartialEq)]
 pub enum ActiveObjectType {
     Base,
     PowerHub,
@@ -160,6 +160,10 @@ pub struct ActiveObject {
 impl ActiveObject {
     pub fn player(&self) -> u8 {
         self.player
+    }
+
+    pub fn object_type(&self) -> ActiveObjectType {
+        self.object_type
     }
 }
 
