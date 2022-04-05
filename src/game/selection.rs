@@ -14,8 +14,11 @@ pub struct SelectionPlugin;
 impl Plugin for SelectionPlugin {
     fn build(&self, app: &mut App) {
         app.add_system_set(
-            SystemSet::on_update(GameStates::Playing)
-                .with_system(mouse_click_handler.after(Labels::PreInputUpdate)),
+            SystemSet::on_update(GameStates::Playing).with_system(
+                mouse_click_handler
+                    .label(Labels::InputUpdate)
+                    .after(Labels::PreInputUpdate),
+            ),
         );
     }
 }

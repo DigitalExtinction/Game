@@ -1,4 +1,4 @@
-use super::{collisions::Intersector, objects::Playable, GameStates, Labels};
+use super::{collisions::Intersector, objects::Playable, terrain::Terrain, GameStates, Labels};
 use crate::math::ray::Ray;
 use bevy::{
     ecs::system::SystemParam,
@@ -25,6 +25,7 @@ impl Plugin for PointerPlugin {
 #[derive(Default)]
 pub struct Pointer {
     entity: Option<Entity>,
+    terrain: Option<Vec3>,
 }
 
 impl Pointer {
@@ -34,8 +35,19 @@ impl Pointer {
         self.entity
     }
 
+    /// Pointed to 3D position on the surface of the terrain. This can be below
+    /// (occluded) another entity. It is None if the mouse is not over terrain
+    /// at all.
+    pub fn terrain_point(&self) -> Option<Vec3> {
+        self.terrain
+    }
+
     fn set_entity(&mut self, entity: Option<Entity>) {
         self.entity = entity;
+    }
+
+    fn set_terrain_point(&mut self, point: Option<Vec3>) {
+        self.terrain = point;
     }
 }
 
@@ -79,14 +91,23 @@ fn mouse_move_handler(
     event: EventReader<MouseMotion>,
     mouse: MouseInWorld,
     playable: Intersector<With<Playable>>,
+    terrain: Intersector<With<Terrain>>,
 ) {
     if event.is_empty() {
         return;
     }
 
-    let entity = mouse
-        .mouse_ray()
-        .and_then(|ray| playable.ray_intersection(&ray))
+    let ray = mouse.mouse_ray();
+
+    let entity = ray
+        .as_ref()
+        .and_then(|ray| playable.ray_intersection(ray))
         .map(|(entity, _)| entity);
     resource.set_entity(entity);
+
+    let terrain_point = ray
+        .as_ref()
+        .and_then(|ray| terrain.ray_intersection(ray))
+        .map(|(_, intersection)| intersection.position().into());
+    resource.set_terrain_point(terrain_point);
 }
