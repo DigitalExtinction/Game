@@ -5,7 +5,7 @@ use bevy::{
         system::SystemParam,
     },
     hierarchy::Children,
-    prelude::{Assets, Entity, GlobalTransform, Handle, Mesh, Query, ResMut},
+    prelude::{Assets, Entity, GlobalTransform, Handle, Mesh, Query, Res},
     render::primitives::Aabb,
 };
 
@@ -26,7 +26,7 @@ where
             &'static Handle<Mesh>,
         ),
     >,
-    meshes: ResMut<'w, Assets<Mesh>>,
+    meshes: Res<'w, Assets<Mesh>>,
 }
 
 impl<'w, 's, F> Intersector<'w, 's, F>

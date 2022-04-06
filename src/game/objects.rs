@@ -10,3 +10,7 @@ pub struct Active;
 /// Active object which can be played by the local player.
 #[derive(Component)]
 pub struct Playable;
+
+/// A unit which can move around the map.
+#[derive(Component)]
+pub struct Movable;

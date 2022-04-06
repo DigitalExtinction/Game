@@ -1,15 +1,12 @@
-use super::{collisions::Intersector, objects::Playable, GameStates};
-use crate::math::ray::Ray;
+use super::{pointer::Pointer, GameStates, Labels};
 use bevy::{
     ecs::system::SystemParam,
-    input::{mouse::MouseButtonInput, ElementState},
+    input::{mouse::MouseButtonInput, ElementState, Input},
     prelude::{
-        App, Camera, Commands, Component, Entity, EventReader, GlobalTransform, MouseButton,
-        Plugin, Query, Res, SystemSet, With,
+        App, Commands, Component, Entity, EventReader, KeyCode, MouseButton,
+        ParallelSystemDescriptorCoercion, Plugin, Query, Res, SystemSet, With,
     },
-    window::Windows,
 };
-use glam::{Vec2, Vec3};
 use std::collections::HashSet;
 
 pub struct SelectionPlugin;
@@ -17,7 +14,11 @@ pub struct SelectionPlugin;
 impl Plugin for SelectionPlugin {
     fn build(&self, app: &mut App) {
         app.add_system_set(
-            SystemSet::on_update(GameStates::Playing).with_system(mouse_click_event),
+            SystemSet::on_update(GameStates::Playing).with_system(
+                mouse_click_handler
+                    .label(Labels::InputUpdate)
+                    .after(Labels::PreInputUpdate),
+            ),
         );
     }
 }
@@ -25,39 +26,10 @@ impl Plugin for SelectionPlugin {
 #[derive(Component)]
 pub struct Selected;
 
-#[derive(SystemParam)]
-struct MouseInWorld<'w, 's> {
-    windows: Res<'w, Windows>,
-    cameras: Query<'w, 's, (&'static GlobalTransform, &'static Camera)>,
-}
-
-impl<'w, 's> MouseInWorld<'w, 's> {
-    fn mouse_ray(&self) -> Option<Ray> {
-        let window = self.windows.get_primary().unwrap();
-
-        // Normalized to values between -1.0 to 1.0 with (0.0, 0.0) in the
-        // middle of the screen.
-        let cursor_position = match window.cursor_position() {
-            Some(position) => {
-                let screen_size = Vec2::new(window.width() as f32, window.height() as f32);
-                (position / screen_size) * 2.0 - Vec2::ONE
-            }
-            None => return None,
-        };
-
-        let (camera_transform, camera) = self.cameras.single();
-        let camera_transform_mat = camera_transform.compute_matrix();
-        let camera_projection = camera.projection_matrix;
-
-        let screen_to_world = camera_transform_mat * camera_projection.inverse();
-        let world_to_screen = camera_projection * camera_transform_mat;
-
-        // Depth of camera near plane in screen coordinates.
-        let near_plane = world_to_screen.transform_point3(-Vec3::Z * camera.near).z;
-        let ray_origin = screen_to_world.transform_point3(cursor_position.extend(near_plane));
-        let ray_direction = ray_origin - camera_transform.translation;
-        Some(Ray::new(ray_origin, ray_direction))
-    }
+#[derive(Clone, Copy, PartialEq)]
+enum SelectionMode {
+    Replace,
+    Add,
 }
 
 #[derive(SystemParam)]
@@ -67,20 +39,22 @@ struct Selector<'w, 's> {
 }
 
 impl<'w, 's> Selector<'w, 's> {
-    fn select_single(&mut self, entity: Option<Entity>) {
+    fn select_single(&mut self, entity: Option<Entity>, mode: SelectionMode) {
         let entities = match entity {
             Some(entity) => vec![entity],
             None => Vec::new(),
         };
-        self.select(&entities);
+        self.select(&entities, mode);
     }
 
-    fn select(&mut self, entities: &[Entity]) {
+    fn select(&mut self, entities: &[Entity], mode: SelectionMode) {
         let selected: HashSet<Entity> = self.selected.iter().collect();
         let desired: HashSet<Entity> = entities.iter().cloned().collect();
 
-        for deselect in &selected - &desired {
-            self.commands.entity(deselect).remove::<Selected>();
+        if mode == SelectionMode::Replace {
+            for deselect in &selected - &desired {
+                self.commands.entity(deselect).remove::<Selected>();
+            }
         }
         for select in &desired - &selected {
             self.commands.entity(select).insert(Selected);
@@ -88,10 +62,10 @@ impl<'w, 's> Selector<'w, 's> {
     }
 }
 
-fn mouse_click_event(
+fn mouse_click_handler(
     mut event: EventReader<MouseButtonInput>,
-    playable: Intersector<With<Playable>>,
-    mouse: MouseInWorld,
+    keys: Res<Input<KeyCode>>,
+    pointer: Res<Pointer>,
     mut selector: Selector,
 ) {
     if !event
@@ -101,13 +75,11 @@ fn mouse_click_event(
         return;
     }
 
-    let mouse_ray = match mouse.mouse_ray() {
-        Some(ray) => ray,
-        None => return,
+    let mode = if keys.pressed(KeyCode::LControl) {
+        SelectionMode::Add
+    } else {
+        SelectionMode::Replace
     };
-    selector.select_single(
-        playable
-            .ray_intersection(&mouse_ray)
-            .map(|(entity, _)| entity),
-    );
+
+    selector.select_single(pointer.entity(), mode);
 }
