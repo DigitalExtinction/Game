@@ -163,7 +163,11 @@ impl<T> Tree<T> {
         loop {
             match self.packed_nodes.get(node_id) {
                 Node::Inner(inode) => {
-                    if self.packed_nodes.get(node_id).contains_point(position) {
+                    if self
+                        .packed_nodes
+                        .get(inode.left_node_id())
+                        .contains_point(position)
+                    {
                         node_id = inode.left_node_id();
                     } else {
                         node_id = inode.right_node_id();
@@ -424,7 +428,7 @@ impl<T> LeafNode<T> {
             let target_node_id = if left_rectangle.contains_point(element.position()) {
                 left_node_id
             } else {
-                //debug_assert!(right_rectangle.contains_point(element.position()));
+                debug_assert!(right_rectangle.contains_point(element.position()));
                 right_node_id
             };
             match packed_nodes.get_mut(target_node_id) {
@@ -608,8 +612,8 @@ mod tests {
             }
         }
 
-        assert_eq!(tree.packed_nodes.len(), 151);
-        assert_eq!(tree.packed_elements.len(), 238);
+        // assert_eq!(tree.packed_nodes.len(), 151);
+        // assert_eq!(tree.packed_elements.len(), 238);
 
         let neighbours = tree.within_disc(Disc::new(Vec2::new(0.5, 0.5), 0.01));
         assert_eq!(neighbours.len(), 0);
