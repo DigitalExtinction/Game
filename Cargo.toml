@@ -23,3 +23,7 @@ criterion = "0.3"
 [[bench]]
 name = "ray_intersection"
 harness = false
+
+[[bench]]
+name = "tree"
+harness = false
