@@ -1,4 +1,4 @@
-use criterion::{criterion_group, criterion_main, Criterion};
+use criterion::{black_box, criterion_group, criterion_main, Criterion};
 use de::game::tree::{Disc, Rectangle, Tree};
 use glam::Vec2;
 use rand::prelude::*;
@@ -40,7 +40,7 @@ fn tree_within_benchmark(c: &mut Criterion) {
         }
 
         b.iter(|| {
-            tree.within_disc(discs[disc_index]);
+            black_box(tree.within_disc(black_box(discs[disc_index])));
             disc_index = (disc_index + 1).div_euclid(discs.len());
         })
     });
