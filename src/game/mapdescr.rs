@@ -1,6 +1,6 @@
 use anyhow::bail;
-use bevy::{prelude::Transform, reflect::TypeUuid};
-use glam::{Quat, Vec3};
+use bevy::reflect::TypeUuid;
+use glam::Vec2;
 use serde::Deserialize;
 use std::collections::HashSet;
 
@@ -94,7 +94,6 @@ impl MapDescription {
 }
 
 pub trait MapObject {
-    fn model_name(&self) -> &'static str;
     fn position(&self) -> &ObjectPosition;
 }
 
@@ -109,14 +108,12 @@ pub struct ObjectPosition {
 }
 
 impl ObjectPosition {
-    pub fn transform(&self) -> Transform {
-        let translation = Vec3::new(self.position[0], 0., self.position[1]);
-        let rotation = Quat::from_rotation_y(self.rotation);
-        Transform {
-            translation,
-            rotation,
-            ..Default::default()
-        }
+    pub fn position(&self) -> Vec2 {
+        Vec2::from_slice(&self.position)
+    }
+
+    pub fn rotation(&self) -> f32 {
+        self.rotation
     }
 }
 
@@ -131,13 +128,15 @@ pub struct InactiveObject {
     position: ObjectPosition,
 }
 
-impl MapObject for InactiveObject {
+impl InactiveObject {
     fn model_name(&self) -> &'static str {
         match self.object_type {
             InactiveObjectType::Tree => "tree01",
         }
     }
+}
 
+impl MapObject for InactiveObject {
     fn position(&self) -> &ObjectPosition {
         &self.position
     }
@@ -168,14 +167,6 @@ impl ActiveObject {
 }
 
 impl MapObject for ActiveObject {
-    fn model_name(&self) -> &'static str {
-        match self.object_type {
-            ActiveObjectType::Base => "base",
-            ActiveObjectType::PowerHub => "powerhub",
-            ActiveObjectType::Attacker => "attacker",
-        }
-    }
-
     fn position(&self) -> &ObjectPosition {
         &self.position
     }

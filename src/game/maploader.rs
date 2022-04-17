@@ -1,14 +1,14 @@
 use super::{
     config::GameConfig,
-    mapdescr::{ActiveObjectType, MapDescription, MapObject, MapSize},
-    objects::{Active, Movable, Playable, SolidObject},
+    mapdescr::{self, MapDescription, MapObject, MapSize},
+    objects,
+    spawner::ToBeSpawnedEvent,
     terrain::Terrain,
     GameStates,
 };
 use anyhow::{bail, Context};
 use bevy::{
     asset::{AssetLoader, BoxedFuture, LoadContext, LoadState, LoadedAsset},
-    ecs::system::EntityCommands,
     pbr::{PbrBundle, StandardMaterial},
     prelude::{shape::Plane, *},
 };
@@ -171,48 +171,31 @@ fn spawn_terrain(
 }
 
 fn spawn_objects(
-    mut commands: Commands,
     map_handle: Res<Handle<MapDescription>>,
     maps: Res<Assets<MapDescription>>,
-    server: Res<AssetServer>,
-    game_config: Res<GameConfig>,
+    mut spawn_events: EventWriter<ToBeSpawnedEvent>,
 ) {
     let map_description = maps.get(map_handle.as_ref()).unwrap();
 
-    for object in map_description.inactive_objects() {
-        spawn_object(&mut commands, server.as_ref(), object);
-    }
-    for object in map_description.active_objects() {
-        let mut entity_commands = spawn_object(&mut commands, server.as_ref(), object);
-        entity_commands.insert(Active);
-        if object.player() == game_config.player() {
-            entity_commands.insert(Playable);
-        }
-        if object.object_type() == ActiveObjectType::Attacker {
-            entity_commands.insert(Movable);
-        }
-    }
-}
+    // TODO inactive objects
+    // for object in map_description.inactive_objects() {
+    //     spawn_object(&mut commands, server.as_ref(), object);
+    // }
 
-fn spawn_object<'w, 's, 'a, 'b, O>(
-    commands: &'a mut Commands<'w, 's>,
-    server: &AssetServer,
-    object: &O,
-) -> EntityCommands<'w, 's, 'a>
-where
-    O: 'b + MapObject,
-{
-    let bundle = (
-        GlobalTransform::identity(),
-        object.position().transform(),
-        SolidObject,
-    );
-    let gltf = server.load(&format!("{}.glb#Scene0", object.model_name()));
-    let mut entity_commands = commands.spawn_bundle(bundle);
-    entity_commands.with_children(|parent| {
-        parent.spawn_scene(gltf);
-    });
-    entity_commands
+    for object in map_description.active_objects() {
+        let object_type = match object.object_type() {
+            mapdescr::ActiveObjectType::Base => objects::ActiveObjectType::Base,
+            mapdescr::ActiveObjectType::PowerHub => objects::ActiveObjectType::PowerHub,
+            mapdescr::ActiveObjectType::Attacker => objects::ActiveObjectType::Attacker,
+        };
+
+        spawn_events.send(ToBeSpawnedEvent::new(
+            object.position().position(),
+            object.position().rotation(),
+            object_type,
+            object.player(),
+        ));
+    }
 }
 
 fn finalize(

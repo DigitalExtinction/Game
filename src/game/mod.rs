@@ -1,6 +1,7 @@
 use self::{
     camera::CameraPlugin, command::CommandPlugin, config::GameConfig, maploader::MapLoaderPlugin,
     movement::MovementPlugin, pointer::PointerPlugin, selection::SelectionPlugin,
+    spawner::SpawnerPlugin,
 };
 use crate::AppStates;
 use bevy::{
@@ -19,6 +20,7 @@ mod movement;
 mod objects;
 mod pointer;
 mod selection;
+mod spawner;
 mod terrain;
 pub mod tree;
 
@@ -33,7 +35,8 @@ impl PluginGroup for GamePluginGroup {
             .add(SelectionPlugin)
             .add(PointerPlugin)
             .add(CommandPlugin)
-            .add(MovementPlugin);
+            .add(MovementPlugin)
+            .add(SpawnerPlugin);
     }
 }
 
