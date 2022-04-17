@@ -127,7 +127,7 @@ where
                 }
                 Node::Leaf(leaf_node_id) => {
                     let leaf_node = self.packed_lnodes.get_mut(leaf_node_id);
-                    leaf_node.remove(leaf_node.find(tree_item));
+                    leaf_node.remove(leaf_node.find(&tree_item));
                     break;
                 }
             }
@@ -146,8 +146,11 @@ where
     /// depth surpassing `MAX_DEPTH`. This might happen when more than
     /// `MAX_LEAFS` elements are on the same position or very close to each
     /// other.
-    pub fn update_position(&mut self, tree_item: TreeItem<T>, new_position: Vec2) {
+    pub fn update_position(&mut self, tree_item: &mut TreeItem<T>, new_position: Vec2) {
         self.check_point(new_position);
+
+        let old_position = tree_item.position();
+        tree_item.update_position(new_position);
 
         let mut next_node = Node::Inner(self.root_inode_id);
         let mut next_rect = self.bounds;
@@ -162,7 +165,7 @@ where
                         .get_children()
                         .iter()
                         .enumerate()
-                        .find(|(_, &rect)| rect.contains_point(tree_item.position()))
+                        .find(|(_, &rect)| rect.contains_point(old_position))
                         .unwrap();
 
                     if last_common_ancestor.is_none() {
@@ -346,6 +349,11 @@ impl<T> TreeItem<T> {
     fn hash(&self) -> u64 {
         self.hash
     }
+
+    #[inline]
+    fn update_position(&mut self, new_position: Vec2) {
+        self.position = new_position;
+    }
 }
 
 enum Node<T> {
@@ -438,7 +446,7 @@ impl<T> LeafNode<T> {
         self.size += 1;
     }
 
-    fn find(&self, item: TreeItem<T>) -> usize {
+    fn find(&self, item: &TreeItem<T>) -> usize {
         if self.size == 0 {
             panic!("Child not found, the node is empty.");
         }
@@ -631,6 +639,23 @@ mod tests {
     use super::*;
 
     #[test]
+    fn test_update_position() {
+        let mut tree = Tree::with_capacity(10, Rectangle::new(Vec2::ZERO, Vec2::ONE));
+
+        let mut item = tree.insert(1, Vec2::ZERO);
+        assert_eq!(tree.within_disc(Disc::new(Vec2::ZERO, 0.5)).len(), 1);
+        assert_eq!(tree.within_disc(Disc::new(Vec2::ONE, 0.5)).len(), 0);
+
+        tree.update_position(&mut item, Vec2::ONE);
+        assert_eq!(tree.within_disc(Disc::new(Vec2::ZERO, 0.5)).len(), 0);
+        assert_eq!(tree.within_disc(Disc::new(Vec2::ONE, 0.5)).len(), 1);
+
+        tree.update_position(&mut item, Vec2::ZERO);
+        assert_eq!(tree.within_disc(Disc::new(Vec2::ZERO, 0.5)).len(), 1);
+        assert_eq!(tree.within_disc(Disc::new(Vec2::ONE, 0.5)).len(), 0);
+    }
+
+    #[test]
     #[should_panic]
     fn test_tree_too_deep() {
         let mut tree: Tree<u32> =
@@ -693,7 +718,7 @@ mod tests {
         );
 
         // Add a few points very close together.
-        let almost_in_center_item = tree.insert(1, Vec2::new(0.0001, 0.0001));
+        let mut almost_in_center_item = tree.insert(1, Vec2::new(0.0001, 0.0001));
         tree.insert(2, Vec2::new(0.0002, 0.0002));
         tree.insert(3, Vec2::new(0.0003, 0.0003));
 
@@ -740,7 +765,7 @@ mod tests {
         assert_eq!(neighbours.len(), 4);
         let neighbours = tree.within_disc(Disc::new(Vec2::new(21.21, 22.21), 0.1));
         assert_eq!(neighbours.len(), 0);
-        tree.update_position(almost_in_center_item, Vec2::new(21.2, 22.2));
+        tree.update_position(&mut almost_in_center_item, Vec2::new(21.2, 22.2));
         let neighbours = tree.within_disc(Disc::new(Vec2::ZERO, 1.));
         assert_eq!(neighbours.len(), 3);
         let neighbours = tree.within_disc(Disc::new(Vec2::new(21.21, 22.21), 0.1));
@@ -826,7 +851,7 @@ mod tests {
         assert_eq!(target[2].1, Vec2::new(17., 8.));
 
         // Test removal of an element
-        leaf_node.remove(leaf_node.find(TreeItem::new(12, Vec2::ZERO)));
+        leaf_node.remove(leaf_node.find(&TreeItem::new(12, Vec2::ZERO)));
         let mut target = Vec::new();
         leaf_node.push_within_disc(Disc::new(Vec2::new(5., 4.), 1000.), &mut target);
         assert_eq!(target.len(), 2);
@@ -836,8 +861,8 @@ mod tests {
         assert_eq!(target[1].1, Vec2::new(17., 8.));
 
         // Test empty node after removal of all nodes
-        leaf_node.remove(leaf_node.find(TreeItem::new(11, Vec2::ZERO)));
-        leaf_node.remove(leaf_node.find(TreeItem::new(13, Vec2::ZERO)));
+        leaf_node.remove(leaf_node.find(&TreeItem::new(11, Vec2::ZERO)));
+        leaf_node.remove(leaf_node.find(&TreeItem::new(13, Vec2::ZERO)));
         let mut target = Vec::new();
         leaf_node.push_within_disc(Disc::new(Vec2::new(5., 4.), 1000.), &mut target);
         assert_eq!(target.len(), 0);
