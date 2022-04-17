@@ -1,7 +1,7 @@
 use self::{
     camera::CameraPlugin, command::CommandPlugin, config::GameConfig, maploader::MapLoaderPlugin,
-    movement::MovementPlugin, pointer::PointerPlugin, selection::SelectionPlugin,
-    spawner::SpawnerPlugin,
+    movement::MovementPlugin, pointer::PointerPlugin, positions::PositionPlugin,
+    selection::SelectionPlugin, spawner::SpawnerPlugin,
 };
 use crate::AppStates;
 use bevy::{
@@ -19,10 +19,13 @@ mod maploader;
 mod movement;
 mod objects;
 mod pointer;
+mod positions;
 mod selection;
 mod spawner;
 mod terrain;
 pub mod tree;
+
+const MAX_ACTIVE_OBJECTS: usize = 10000;
 
 pub struct GamePluginGroup;
 
@@ -36,7 +39,8 @@ impl PluginGroup for GamePluginGroup {
             .add(PointerPlugin)
             .add(CommandPlugin)
             .add(MovementPlugin)
-            .add(SpawnerPlugin);
+            .add(SpawnerPlugin)
+            .add(PositionPlugin);
     }
 }
 

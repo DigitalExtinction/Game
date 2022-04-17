@@ -1,13 +1,14 @@
 use super::{
     config::GameConfig,
     objects::{Active, ActiveObjectType, Movable, Playable, SolidObject},
+    positions::{MovingEntitiesTree, MovingTreeItem},
     GameStates,
 };
 use bevy::{
     hierarchy::BuildChildren,
     prelude::{
         App, AssetServer, Commands, EventReader, GlobalTransform, ParallelSystemDescriptorCoercion,
-        Plugin, Res, SpawnSceneAsChildCommands, SystemLabel, SystemSet, Transform,
+        Plugin, Res, ResMut, SpawnSceneAsChildCommands, SystemLabel, SystemSet, Transform,
     },
 };
 use glam::{Quat, Vec2, Vec3};
@@ -44,9 +45,11 @@ impl ToBeSpawnedEvent {
             player,
         }
     }
-}
 
-impl ToBeSpawnedEvent {
+    fn position(&self) -> Vec2 {
+        self.position
+    }
+
     fn transform(&self) -> Transform {
         let translation = Vec3::new(self.position.x, 0., self.position.y);
         let rotation = Quat::from_rotation_y(self.rotation);
@@ -60,6 +63,7 @@ impl ToBeSpawnedEvent {
 
 fn spawn(
     mut commands: Commands,
+    mut tree: ResMut<MovingEntitiesTree>,
     server: Res<AssetServer>,
     game_config: Res<GameConfig>,
     mut to_be_spawned: EventReader<ToBeSpawnedEvent>,
@@ -85,6 +89,8 @@ fn spawn(
         }
         if spawn_event.object_type == ActiveObjectType::Attacker {
             entity_commands.insert(Movable);
+            let moving_tree_item = tree.insert(entity_commands.id(), spawn_event.position());
+            entity_commands.insert(moving_tree_item);
         }
 
         entity_commands.with_children(|parent| {

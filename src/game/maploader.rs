@@ -2,6 +2,7 @@ use super::{
     config::GameConfig,
     mapdescr::{self, MapDescription, MapObject, MapSize},
     objects,
+    positions::MovingEntitiesTree,
     spawner::ToBeSpawnedEvent,
     terrain::Terrain,
     GameStates,
@@ -118,6 +119,8 @@ fn add_map_resources(
 ) {
     let map_size = map_assets.get(map_handle.as_ref()).unwrap().size;
     commands.insert_resource(map_size);
+    commands.insert_resource(MovingEntitiesTree::new(map_size));
+
     map_state.set(MapStates::Spawning).unwrap();
 }
 
