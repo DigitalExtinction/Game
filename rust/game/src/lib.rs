@@ -20,6 +20,5 @@ pub fn start() {
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 enum AppStates {
-    Menu,
     Game,
 }
