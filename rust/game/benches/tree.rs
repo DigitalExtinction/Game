@@ -8,7 +8,7 @@ use criterion::{
     black_box, criterion_group, criterion_main, AxisScale, BenchmarkId, Criterion,
     PlotConfiguration, Throughput,
 };
-use de::game::tree::{Disc, Rectangle, Tree};
+use de_game::game::tree::{Disc, Rectangle, Tree};
 use glam::Vec2;
 
 fn load_points(number: u32, suffix: &str) -> Vec<Vec2> {

@@ -3,7 +3,7 @@ use bevy::{
     render::{mesh::Indices, render_resource::PrimitiveTopology},
 };
 use criterion::{criterion_group, criterion_main, Criterion};
-use de::math::ray::{ray_mesh_intersection, Ray};
+use de_game::math::ray::{ray_mesh_intersection, Ray};
 use glam::{Mat4, Vec3A};
 
 fn generate_mesh(grid_size: usize) -> Mesh {

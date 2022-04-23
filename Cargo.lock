@@ -1351,6 +1351,13 @@ dependencies = [
 name = "de"
 version = "0.1.0"
 dependencies = [
+ "de_game",
+]
+
+[[package]]
+name = "de_game"
+version = "0.1.0"
+dependencies = [
  "anyhow",
  "bevy",
  "criterion",
