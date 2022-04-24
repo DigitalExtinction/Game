@@ -1,5 +1,6 @@
 use bevy::prelude::Component;
 
+/// Any rigid object on the map which cannot be passed through.
 #[derive(Component)]
 pub struct SolidObject;
 
@@ -11,6 +12,6 @@ pub struct Active;
 #[derive(Component)]
 pub struct Playable;
 
-/// A unit which can move around the map.
+/// An object which can move.
 #[derive(Component)]
 pub struct Movable;

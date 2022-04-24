@@ -1,4 +1,4 @@
-use super::{collisions::Intersector, objects::Playable, terrain::Terrain, GameStates, Labels};
+use super::{collisions::Intersector, terrain::Terrain, GameStates, Labels};
 use crate::math::ray::Ray;
 use bevy::{
     ecs::system::SystemParam,
@@ -9,6 +9,7 @@ use bevy::{
     },
     window::Windows,
 };
+use de_objects::Playable;
 use glam::{Vec2, Vec3};
 
 pub struct PointerPlugin;

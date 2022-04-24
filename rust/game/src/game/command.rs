@@ -1,6 +1,4 @@
-use super::{
-    movement::SendEntityEvent, objects::Movable, pointer::Pointer, selection::Selected, Labels,
-};
+use super::{movement::SendEntityEvent, pointer::Pointer, selection::Selected, Labels};
 use bevy::{
     input::mouse::MouseButtonInput,
     prelude::{
@@ -8,6 +6,7 @@ use bevy::{
         Plugin, Query, Res, SystemSet, With,
     },
 };
+use de_objects::Movable;
 use glam::Vec2;
 
 pub struct CommandPlugin;

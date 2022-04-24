@@ -1361,11 +1361,19 @@ dependencies = [
  "anyhow",
  "bevy",
  "criterion",
+ "de_objects",
  "depacked",
  "glam",
  "serde",
  "serde_json",
  "tar",
+]
+
+[[package]]
+name = "de_objects"
+version = "0.1.0"
+dependencies = [
+ "bevy",
 ]
 
 [[package]]

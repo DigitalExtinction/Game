@@ -6,6 +6,7 @@ authors = ["Martin Indra <martin.indra@mgn.cz>"]
 repository = "https://github.com/Indy2222/Digital-Extinction"
 
 [dependencies]
+de_objects = { path = "../objects" }
 bevy = "0.7"
 anyhow = "^1.0"
 tar = "0.4"

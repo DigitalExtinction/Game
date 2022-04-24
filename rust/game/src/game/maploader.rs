@@ -1,7 +1,6 @@
 use super::{
     config::GameConfig,
     mapdescr::{ActiveObjectType, MapDescription, MapObject, MapSize},
-    objects::{Active, Movable, Playable, SolidObject},
     terrain::Terrain,
     GameStates,
 };
@@ -12,6 +11,7 @@ use bevy::{
     pbr::{PbrBundle, StandardMaterial},
     prelude::{shape::Plane, *},
 };
+use de_objects::{Active, Movable, Playable, SolidObject};
 use std::io::Read;
 use tar::Archive;
 
