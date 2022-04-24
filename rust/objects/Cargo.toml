@@ -7,3 +7,4 @@ repository = "https://github.com/Indy2222/Digital-Extinction"
 
 [dependencies]
 bevy = "0.7"
+serde = "1.0"

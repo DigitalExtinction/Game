@@ -1,5 +1,5 @@
 [package]
-name = "de_game"
+name = "de_map"
 version = "0.1.0"
 edition = "2021"
 authors = ["Martin Indra <martin.indra@mgn.cz>"]
@@ -7,22 +7,9 @@ repository = "https://github.com/Indy2222/Digital-Extinction"
 
 [dependencies]
 de_objects = { path = "../objects" }
-de_map = { path = "../map" }
 bevy = "0.7"
-anyhow = "^1.0"
-tar = "0.4"
+glam = "0.20.2"
 serde = "1.0"
 serde_json = "1.0"
-glam = "^0.20.2"
-depacked = "0.2.1"
-
-[dev-dependencies]
-criterion = "0.3"
-
-[[bench]]
-name = "ray_intersection"
-harness = false
-
-[[bench]]
-name = "tree"
-harness = false
+tar = "0.4"
+thiserror = "1.0"

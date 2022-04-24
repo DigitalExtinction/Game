@@ -1361,6 +1361,7 @@ dependencies = [
  "anyhow",
  "bevy",
  "criterion",
+ "de_map",
  "de_objects",
  "depacked",
  "glam",
@@ -1370,10 +1371,24 @@ dependencies = [
 ]
 
 [[package]]
+name = "de_map"
+version = "0.1.0"
+dependencies = [
+ "bevy",
+ "de_objects",
+ "glam",
+ "serde",
+ "serde_json",
+ "tar",
+ "thiserror",
+]
+
+[[package]]
 name = "de_objects"
 version = "0.1.0"
 dependencies = [
  "bevy",
+ "serde",
 ]
 
 [[package]]

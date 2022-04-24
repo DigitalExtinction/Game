@@ -13,4 +13,5 @@ de_game = { path = "rust/game" }
 members = [
     "rust/game",
     "rust/objects",
+    "rust/map",
 ]
