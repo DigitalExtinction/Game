@@ -15,3 +15,6 @@ tar = "0.4"
 thiserror = "1.0"
 async-std = "1.11"
 async-tar = "0.4.2"
+
+[dev-dependencies]
+tempfile = "3.3"
