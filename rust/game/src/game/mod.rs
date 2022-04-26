@@ -16,7 +16,6 @@ mod command;
 mod mapdescr;
 mod maploader;
 mod movement;
-mod objects;
 mod pointer;
 mod selection;
 mod terrain;
