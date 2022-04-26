@@ -1,24 +1,24 @@
-use super::{pointer::Pointer, GameStates, Labels};
+use super::{pointer::Pointer, GameState, Labels};
 use bevy::{
     ecs::system::SystemParam,
     input::{mouse::MouseButtonInput, ElementState, Input},
     prelude::{
-        App, Commands, Component, Entity, EventReader, KeyCode, MouseButton,
-        ParallelSystemDescriptorCoercion, Plugin, Query, Res, SystemSet, With,
+        App, Commands, Component, Entity, EventReader, KeyCode, MouseButton, Plugin, Query, Res,
+        With,
     },
 };
+use iyes_loopless::prelude::*;
 use std::collections::HashSet;
 
 pub struct SelectionPlugin;
 
 impl Plugin for SelectionPlugin {
     fn build(&self, app: &mut App) {
-        app.add_system_set(
-            SystemSet::on_update(GameStates::Playing).with_system(
-                mouse_click_handler
-                    .label(Labels::InputUpdate)
-                    .after(Labels::PreInputUpdate),
-            ),
+        app.add_system(
+            mouse_click_handler
+                .run_in_state(GameState::Playing)
+                .label(Labels::InputUpdate)
+                .after(Labels::PreInputUpdate),
         );
     }
 }

@@ -9,6 +9,7 @@ repository = "https://github.com/Indy2222/Digital-Extinction"
 de_objects = { path = "../objects" }
 de_map = { path = "../map" }
 bevy = "0.7"
+iyes_loopless = "0.5.1"
 anyhow = "^1.0"
 tar = "0.4"
 serde = "1.0"

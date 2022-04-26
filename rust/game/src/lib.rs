@@ -13,12 +13,6 @@ pub fn start() {
         })
         .insert_resource(Msaa { samples: 4 })
         .add_plugins(DefaultPlugins)
-        .add_state(AppStates::Game)
         .add_plugins(GamePluginGroup)
         .run();
-}
-
-#[derive(Debug, Clone, Eq, PartialEq, Hash)]
-enum AppStates {
-    Game,
 }
