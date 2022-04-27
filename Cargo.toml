@@ -12,6 +12,6 @@ de_game = { path = "rust/game" }
 [workspace]
 members = [
     "rust/game",
-    "rust/objects",
+    "rust/core",
     "rust/map",
 ]

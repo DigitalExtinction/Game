@@ -1,5 +1,5 @@
 [package]
-name = "de_objects"
+name = "de_core"
 version = "0.1.0"
 edition = "2021"
 authors = ["Martin Indra <martin.indra@mgn.cz>"]

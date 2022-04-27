@@ -1,7 +1,10 @@
 use crate::size::{MapBounds, MapBoundsValidationError};
 use bevy::prelude::Transform;
 use core::f32::consts::TAU;
-use de_objects::{ActiveObjectType, InactiveObjectType, Player};
+use de_core::{
+    objects::{ActiveObjectType, InactiveObjectType},
+    player::Player,
+};
 use glam::{Quat, Vec2, Vec3};
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
@@ -21,7 +24,8 @@ impl Map {
     /// * `bounds` - bounds of the map.
     ///
     /// * `max_player` - maximum number of players which can play on the map.
-    ///   For example, if the value is [de_objects::Player::Player3], then Player1 to `PlayerN` can play.
+    ///   For example, if the value is [de_core::player::Player::Player3], then
+    ///   Player1 to `PlayerN` can play.
     ///
     /// # Panics
     ///

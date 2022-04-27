@@ -8,7 +8,7 @@ use bevy::{
     },
     window::Windows,
 };
-use de_objects::Playable;
+use de_core::objects::Playable;
 use glam::{Vec2, Vec3};
 use iyes_loopless::prelude::*;
 

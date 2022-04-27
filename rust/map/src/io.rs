@@ -118,7 +118,7 @@ pub enum MapStoringError {
 #[cfg(test)]
 mod test {
     use async_std::task;
-    use de_objects::{ActiveObjectType, Player};
+    use de_core::{objects::ActiveObjectType, player::Player};
     use glam::Vec2;
     use std::path::PathBuf;
     use tempfile::Builder;

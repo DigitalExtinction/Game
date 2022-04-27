@@ -1,14 +1,13 @@
 use self::{
-    camera::CameraPlugin, command::CommandPlugin, config::GameConfig, maploader::MapLoaderPlugin,
+    camera::CameraPlugin, command::CommandPlugin, maploader::MapLoaderPlugin,
     movement::MovementPlugin, pointer::PointerPlugin, selection::SelectionPlugin,
 };
 use bevy::{
     app::PluginGroupBuilder,
     prelude::{App, Plugin, PluginGroup, SystemLabel},
 };
+use de_core::gconfig::GameConfig;
 use iyes_loopless::prelude::*;
-
-pub mod config;
 
 mod camera;
 mod collisions;

@@ -1479,14 +1479,22 @@ dependencies = [
 ]
 
 [[package]]
+name = "de_core"
+version = "0.1.0"
+dependencies = [
+ "bevy",
+ "serde",
+]
+
+[[package]]
 name = "de_game"
 version = "0.1.0"
 dependencies = [
  "anyhow",
  "bevy",
  "criterion",
+ "de_core",
  "de_map",
- "de_objects",
  "depacked",
  "glam",
  "iyes_loopless",
@@ -1502,21 +1510,13 @@ dependencies = [
  "async-std",
  "async-tar",
  "bevy",
- "de_objects",
+ "de_core",
  "glam",
  "serde",
  "serde_json",
  "tar",
  "tempfile",
  "thiserror",
-]
-
-[[package]]
-name = "de_objects"
-version = "0.1.0"
-dependencies = [
- "bevy",
- "serde",
 ]
 
 [[package]]

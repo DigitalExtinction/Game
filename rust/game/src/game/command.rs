@@ -6,7 +6,7 @@ use bevy::{
         Plugin, Query, Res, SystemSet, With,
     },
 };
-use de_objects::Movable;
+use de_core::objects::Movable;
 use glam::Vec2;
 
 pub struct CommandPlugin;
