@@ -1,12 +1,15 @@
 [package]
 name = "de_map"
-version = "0.1.0"
+version = "0.1.0-dev"
 edition = "2021"
 authors = ["Martin Indra <martin.indra@mgn.cz>"]
 repository = "https://github.com/Indy2222/Digital-Extinction"
 
 [dependencies]
-de_objects = { path = "../objects" }
+# DE
+de_core = { path = "../core", version = "0.1.0-dev" }
+
+# other
 bevy = "0.7"
 glam = "0.20.2"
 serde = "1.0"

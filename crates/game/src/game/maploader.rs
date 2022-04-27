@@ -1,5 +1,4 @@
 use super::{
-    config::GameConfig,
     mapdescr::{ActiveObjectType, MapDescription, MapObject},
     terrain::Terrain,
     GameState,
@@ -11,7 +10,10 @@ use bevy::{
     pbr::{PbrBundle, StandardMaterial},
     prelude::{shape::Plane, *},
 };
-use de_objects::{Active, Movable, Playable, SolidObject};
+use de_core::{
+    gconfig::GameConfig,
+    objects::{Active, Movable, Playable, SolidObject},
+};
 use iyes_loopless::prelude::*;
 use std::io::Read;
 use tar::Archive;
