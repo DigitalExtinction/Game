@@ -1,4 +1,4 @@
-use bevy::prelude::Component;
+use bevy_ecs::prelude::*;
 use serde::{Deserialize, Serialize};
 
 /// Any rigid object on the map which cannot be passed through.

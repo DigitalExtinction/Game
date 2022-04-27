@@ -1482,7 +1482,7 @@ dependencies = [
 name = "de_core"
 version = "0.1.0-dev"
 dependencies = [
- "bevy",
+ "bevy_ecs",
  "serde",
 ]
 

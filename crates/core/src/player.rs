@@ -1,4 +1,4 @@
-use bevy::prelude::Component;
+use bevy_ecs::prelude::*;
 use core::fmt;
 use serde::{Deserialize, Serialize};
 use std::cmp::Ordering;

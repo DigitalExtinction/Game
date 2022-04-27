@@ -6,5 +6,5 @@ authors = ["Martin Indra <martin.indra@mgn.cz>"]
 repository = "https://github.com/Indy2222/Digital-Extinction"
 
 [dependencies]
-bevy = "0.7"
-serde = "1.0"
+serde = { version = "1.0", features = ["derive"] }
+bevy_ecs = "0.7.0"
