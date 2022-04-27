@@ -1489,6 +1489,7 @@ dependencies = [
  "de_objects",
  "depacked",
  "glam",
+ "iyes_loopless",
  "serde",
  "serde_json",
  "tar",
@@ -2033,6 +2034,18 @@ name = "itoa"
 version = "1.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1aab8fc367588b89dcee83ab0fd66b72b50b72fa1904d7095045ace2b0c81c35"
+
+[[package]]
+name = "iyes_loopless"
+version = "0.5.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e37cbe1fdc9aeed2d5ec064d3306ba4318723c20c5b0e4662d03c49fedcd491b"
+dependencies = [
+ "bevy_app",
+ "bevy_core",
+ "bevy_ecs",
+ "bevy_utils",
+]
 
 [[package]]
 name = "jni"

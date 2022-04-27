@@ -1,10 +1,11 @@
-use super::{collisions::Intersector, mapdescr::MapSize, terrain::Terrain, GameStates};
+use super::{collisions::Intersector, mapdescr::MapSize, terrain::Terrain, GameState};
 use crate::math::ray::{ray_plane_intersection, Ray};
 use bevy::{
     input::mouse::{MouseMotion, MouseScrollUnit, MouseWheel},
     prelude::*,
 };
 use glam::Vec3A;
+use iyes_loopless::prelude::*;
 use std::f32::consts::{FRAC_PI_2, PI};
 
 /// Horizontal camera movement is initiated if mouse cursor is within this
@@ -44,30 +45,50 @@ impl Plugin for CameraPlugin {
     fn build(&self, app: &mut App) {
         app.add_event::<FocusInvalidatedEvent>()
             .add_event::<PivotEvent>()
-            .add_system_set(SystemSet::on_enter(GameStates::Playing).with_system(setup))
-            .add_system_set(
-                SystemSet::on_update(GameStates::Playing)
-                    .with_system(update_focus.label("update_focus"))
-                    .with_system(zoom_event.label("zoom_event"))
-                    .with_system(pivot_event.label("pivot_event"))
-                    .with_system(move_horizontaly_event.label("move_horizontaly_event"))
-                    .with_system(zoom.label("zoom").after("zoom_event").after("update_focus"))
-                    .with_system(
-                        pivot
-                            .label("pivot")
-                            .after("pivot_event")
-                            .after("update_focus"),
-                    )
-                    .with_system(
-                        move_horizontaly
-                            .label("move_horizontaly")
-                            .after("move_horizontaly_event")
-                            .after("update_focus")
-                            // Zooming changes camera focus point so do it
-                            // after other types of camera movement.
-                            .after("zoom")
-                            .after("pivot"),
-                    ),
+            .add_enter_system(GameState::Playing, setup)
+            .add_system(
+                update_focus
+                    .run_in_state(GameState::Playing)
+                    .label("update_focus"),
+            )
+            .add_system(
+                zoom_event
+                    .run_in_state(GameState::Playing)
+                    .label("zoom_event"),
+            )
+            .add_system(
+                pivot_event
+                    .run_in_state(GameState::Playing)
+                    .label("pivot_event"),
+            )
+            .add_system(
+                move_horizontaly_event
+                    .run_in_state(GameState::Playing)
+                    .label("move_horizontaly_event"),
+            )
+            .add_system(
+                zoom.run_in_state(GameState::Playing)
+                    .label("zoom")
+                    .after("update_focus")
+                    .after("zoom_event"),
+            )
+            .add_system(
+                pivot
+                    .run_in_state(GameState::Playing)
+                    .label("pivot")
+                    .after("update_focus")
+                    .after("pivot_event"),
+            )
+            .add_system(
+                move_horizontaly
+                    .run_in_state(GameState::Playing)
+                    .label("move_horizontaly")
+                    .after("update_focus")
+                    .after("move_horizontaly_event")
+                    // Zooming changes camera focus point so do it
+                    // after other types of camera movement.
+                    .after("zoom")
+                    .after("pivot"),
             );
     }
 }

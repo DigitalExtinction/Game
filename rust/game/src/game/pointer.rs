@@ -1,24 +1,25 @@
-use super::{collisions::Intersector, terrain::Terrain, GameStates, Labels};
+use super::{collisions::Intersector, terrain::Terrain, GameState, Labels};
 use crate::math::ray::Ray;
 use bevy::{
     ecs::system::SystemParam,
     input::mouse::MouseMotion,
     prelude::{
-        App, Camera, Entity, EventReader, GlobalTransform, ParallelSystemDescriptorCoercion,
-        Plugin, Query, Res, ResMut, SystemSet, With,
+        App, Camera, Entity, EventReader, GlobalTransform, Plugin, Query, Res, ResMut, With,
     },
     window::Windows,
 };
 use de_objects::Playable;
 use glam::{Vec2, Vec3};
+use iyes_loopless::prelude::*;
 
 pub struct PointerPlugin;
 
 impl Plugin for PointerPlugin {
     fn build(&self, app: &mut App) {
-        app.init_resource::<Pointer>().add_system_set(
-            SystemSet::on_update(GameStates::Playing)
-                .with_system(mouse_move_handler.label(Labels::PreInputUpdate)),
+        app.init_resource::<Pointer>().add_system(
+            mouse_move_handler
+                .run_in_state(GameState::Playing)
+                .label(Labels::PreInputUpdate),
         );
     }
 }

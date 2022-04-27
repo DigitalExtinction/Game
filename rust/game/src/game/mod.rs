@@ -2,11 +2,11 @@ use self::{
     camera::CameraPlugin, command::CommandPlugin, config::GameConfig, maploader::MapLoaderPlugin,
     movement::MovementPlugin, pointer::PointerPlugin, selection::SelectionPlugin,
 };
-use crate::AppStates;
 use bevy::{
     app::PluginGroupBuilder,
-    prelude::{App, Plugin, PluginGroup, ResMut, State, SystemLabel, SystemSet},
+    prelude::{App, Plugin, PluginGroup, SystemLabel},
 };
+use iyes_loopless::prelude::*;
 
 pub mod config;
 
@@ -46,19 +46,13 @@ struct GamePlugin;
 
 impl Plugin for GamePlugin {
     fn build(&self, app: &mut App) {
-        app.add_state(GameStates::Waiting)
-            .insert_resource(GameConfig::new("map.tar", 0))
-            .add_system_set(SystemSet::on_enter(AppStates::Game).with_system(start_game));
+        app.add_loopless_state(GameState::Loading)
+            .insert_resource(GameConfig::new("map.tar", 0));
     }
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, Hash)]
-enum GameStates {
-    Waiting,
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+enum GameState {
     Loading,
     Playing,
-}
-
-fn start_game(mut game_state: ResMut<State<GameStates>>) {
-    game_state.set(GameStates::Loading).unwrap();
 }
