@@ -1473,14 +1473,14 @@ dependencies = [
 
 [[package]]
 name = "de"
-version = "0.1.0"
+version = "0.1.0-dev"
 dependencies = [
  "de_game",
 ]
 
 [[package]]
 name = "de_core"
-version = "0.1.0"
+version = "0.1.0-dev"
 dependencies = [
  "bevy",
  "serde",
@@ -1488,7 +1488,7 @@ dependencies = [
 
 [[package]]
 name = "de_game"
-version = "0.1.0"
+version = "0.1.0-dev"
 dependencies = [
  "anyhow",
  "bevy",
@@ -1505,7 +1505,7 @@ dependencies = [
 
 [[package]]
 name = "de_map"
-version = "0.1.0"
+version = "0.1.0-dev"
 dependencies = [
  "async-std",
  "async-tar",
