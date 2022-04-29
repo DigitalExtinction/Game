@@ -1475,6 +1475,7 @@ dependencies = [
 name = "de"
 version = "0.1.0-dev"
 dependencies = [
+ "bevy",
  "de_game",
 ]
 
