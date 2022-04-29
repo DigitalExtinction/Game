@@ -4,10 +4,11 @@ use bevy::{
     input::mouse::{MouseMotion, MouseScrollUnit, MouseWheel},
     prelude::*,
 };
+use de_map::size::MapBounds;
 use glam::Vec3A;
 use iyes_loopless::prelude::*;
 
-use super::{collisions::Intersector, mapdescr::MapSize, terrain::Terrain, GameState};
+use super::{collisions::Intersector, terrain::Terrain, GameState};
 use crate::math::ray::{ray_plane_intersection, Ray};
 
 /// Horizontal camera movement is initiated if mouse cursor is within this
@@ -224,7 +225,7 @@ fn update_focus(
 fn move_horizontaly(
     horizontal_movement: Res<HorizontalMovement>,
     focus: Res<CameraFocus>,
-    map_size: Res<MapSize>,
+    map_bounds: Res<MapBounds>,
     time: Res<Time>,
     mut camera_query: Query<&mut Transform, With<Camera>>,
     mut event: EventWriter<FocusInvalidatedEvent>,
@@ -244,14 +245,14 @@ fn move_horizontaly(
     };
 
     let min_delta_vec = Vec3::new(
-        -(focus.point().x - MAP_FOCUS_MARGIN).max(0.),
+        -(focus.point().x - map_bounds.min().x - MAP_FOCUS_MARGIN).max(0.),
         0.,
-        -(focus.point().z - MAP_FOCUS_MARGIN).max(0.),
+        -(focus.point().z - map_bounds.min().y - MAP_FOCUS_MARGIN).max(0.),
     );
     let max_delta_vec = Vec3::new(
-        (map_size.0 - focus.point().x - MAP_FOCUS_MARGIN).max(0.),
+        (map_bounds.max().x - focus.point().x - MAP_FOCUS_MARGIN).max(0.),
         0.,
-        (map_size.0 - focus.point().z - MAP_FOCUS_MARGIN).max(0.),
+        (map_bounds.max().y - focus.point().z - MAP_FOCUS_MARGIN).max(0.),
     );
 
     transform.translation += delta_vec.clamp(min_delta_vec, max_delta_vec);

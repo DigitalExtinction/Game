@@ -32,6 +32,11 @@ impl MapBounds {
         self.0
     }
 
+    /// Map width and height.
+    pub fn size(&self) -> Vec2 {
+        self.0
+    }
+
     /// Return true if the point lies within map boundaries. Note that map
     /// boundaries are inclusive.
     pub fn contains(&self, point: Vec2) -> bool {

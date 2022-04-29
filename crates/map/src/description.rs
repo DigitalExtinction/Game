@@ -120,7 +120,7 @@ pub enum MapValidationError {
     },
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Clone, Serialize, Deserialize)]
 pub struct Object {
     placement: Placement,
     object_type: ObjectType,
@@ -173,13 +173,13 @@ pub enum ObjectValidationError {
     ActiveObjectError { source: ActiveObjectValidationError },
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Clone, Serialize, Deserialize)]
 pub enum ObjectType {
     Active(ActiveObject),
     Inactive(InactiveObject),
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Clone, Serialize, Deserialize)]
 pub struct ActiveObject {
     object_type: ActiveObjectType,
     player: Player,
@@ -218,7 +218,7 @@ pub enum ActiveObjectValidationError {
     MaxPlayerError { max_player: Player, player: Player },
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Clone, Serialize, Deserialize)]
 pub struct InactiveObject {
     object_type: InactiveObjectType,
 }

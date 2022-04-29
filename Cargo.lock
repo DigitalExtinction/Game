@@ -1498,6 +1498,7 @@ dependencies = [
  "de_core",
  "de_map",
  "depacked",
+ "futures-lite",
  "glam",
  "iyes_loopless",
  "serde",
