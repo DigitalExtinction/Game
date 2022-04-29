@@ -1,12 +1,14 @@
-use super::{collisions::Intersector, mapdescr::MapSize, terrain::Terrain, GameState};
-use crate::math::ray::{ray_plane_intersection, Ray};
+use std::f32::consts::{FRAC_PI_2, PI};
+
 use bevy::{
     input::mouse::{MouseMotion, MouseScrollUnit, MouseWheel},
     prelude::*,
 };
 use glam::Vec3A;
 use iyes_loopless::prelude::*;
-use std::f32::consts::{FRAC_PI_2, PI};
+
+use super::{collisions::Intersector, mapdescr::MapSize, terrain::Terrain, GameState};
+use crate::math::ray::{ray_plane_intersection, Ray};
 
 /// Horizontal camera movement is initiated if mouse cursor is within this
 /// distance to window edge.

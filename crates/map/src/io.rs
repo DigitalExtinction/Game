@@ -1,10 +1,12 @@
-use crate::description::{Map, MapValidationError};
+use std::io;
+
 use async_std::fs::{File, OpenOptions};
 use async_std::path::Path;
 use async_std::prelude::*;
 use async_tar::{Archive, Builder, EntryType, Header};
-use std::io;
 use thiserror::Error;
+
+use crate::description::{Map, MapValidationError};
 
 macro_rules! loading_io_error {
     ($expression:expr) => {
@@ -117,10 +119,11 @@ pub enum MapStoringError {
 
 #[cfg(test)]
 mod test {
+    use std::path::PathBuf;
+
     use async_std::task;
     use de_core::{objects::ActiveObjectType, player::Player};
     use glam::Vec2;
-    use std::path::PathBuf;
     use tempfile::Builder;
 
     use super::*;

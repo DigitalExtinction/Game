@@ -1,8 +1,9 @@
+use std::collections::HashSet;
+
 use anyhow::bail;
 use bevy::{prelude::Transform, reflect::TypeUuid};
 use glam::{Quat, Vec3};
 use serde::Deserialize;
-use std::collections::HashSet;
 
 const MAX_PLAYERS: u8 = 16;
 

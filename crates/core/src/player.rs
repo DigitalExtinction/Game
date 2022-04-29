@@ -1,7 +1,8 @@
-use bevy_ecs::prelude::*;
 use core::fmt;
-use serde::{Deserialize, Serialize};
 use std::cmp::Ordering;
+
+use bevy_ecs::prelude::*;
+use serde::{Deserialize, Serialize};
 
 #[derive(Copy, Clone, Debug, Serialize, Deserialize, Component, PartialEq, Eq)]
 pub enum Player {

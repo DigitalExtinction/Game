@@ -1,4 +1,5 @@
-use super::{pointer::Pointer, GameState, Labels};
+use std::collections::HashSet;
+
 use bevy::{
     ecs::system::SystemParam,
     input::{mouse::MouseButtonInput, ElementState, Input},
@@ -8,7 +9,8 @@ use bevy::{
     },
 };
 use iyes_loopless::prelude::*;
-use std::collections::HashSet;
+
+use super::{pointer::Pointer, GameState, Labels};
 
 pub struct SelectionPlugin;
 

@@ -1,11 +1,12 @@
-use depacked::{Item, PackedData};
-use glam::Vec2;
 use std::{
     collections::hash_map::DefaultHasher,
     hash::{Hash, Hasher},
     marker::PhantomData,
     mem::MaybeUninit,
 };
+
+use depacked::{Item, PackedData};
+use glam::Vec2;
 
 pub const MAX_LEAFS: usize = 50;
 const MAX_LEAFS_FOR_MERGE: usize = 40;

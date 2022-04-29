@@ -1,7 +1,9 @@
-use super::Labels;
+use std::f32::consts::{FRAC_2_PI, PI};
+
 use bevy::prelude::*;
 use glam::Vec2;
-use std::f32::consts::{FRAC_2_PI, PI};
+
+use super::Labels;
 
 const TARGET_ACCURACY: f32 = 0.1;
 const MAX_ANGULAR_SPEED: f32 = PI;

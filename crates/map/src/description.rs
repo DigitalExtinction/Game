@@ -1,6 +1,6 @@
-use crate::size::{MapBounds, MapBoundsValidationError};
-use bevy::prelude::Transform;
 use core::f32::consts::TAU;
+
+use bevy::prelude::Transform;
 use de_core::{
     objects::{ActiveObjectType, InactiveObjectType},
     player::Player,
@@ -8,6 +8,8 @@ use de_core::{
 use glam::{Quat, Vec2, Vec3};
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
+
+use crate::size::{MapBounds, MapBoundsValidationError};
 
 #[derive(Serialize, Deserialize)]
 pub struct Map {
