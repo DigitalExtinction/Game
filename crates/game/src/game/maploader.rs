@@ -1,8 +1,5 @@
-use super::{
-    mapdescr::{ActiveObjectType, MapDescription, MapObject},
-    terrain::Terrain,
-    GameState,
-};
+use std::io::Read;
+
 use anyhow::{bail, Context};
 use bevy::{
     asset::{AssetLoader, BoxedFuture, LoadContext, LoadState, LoadedAsset},
@@ -15,8 +12,13 @@ use de_core::{
     objects::{Active, Movable, Playable, SolidObject},
 };
 use iyes_loopless::prelude::*;
-use std::io::Read;
 use tar::Archive;
+
+use super::{
+    mapdescr::{ActiveObjectType, MapDescription, MapObject},
+    terrain::Terrain,
+    GameState,
+};
 
 pub struct MapLoaderPlugin;
 
@@ -179,8 +181,9 @@ where
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use std::{fs::File, path::PathBuf};
+
+    use super::*;
 
     #[test]
     fn test_map_parsing() {

@@ -1,3 +1,5 @@
+use std::cmp::Ordering;
+
 use bevy::{
     prelude::Mesh,
     render::{
@@ -7,7 +9,6 @@ use bevy::{
     },
 };
 use glam::{Mat4, Vec3A};
-use std::cmp::Ordering;
 
 pub struct Ray {
     origin: Vec3A,
@@ -246,10 +247,12 @@ pub fn ray_plane_intersection(ray: &Ray, point: Vec3A, normal: Vec3A) -> Option<
 #[cfg(test)]
 mod tests {
 
-    use super::*;
+    use std::f32::consts::FRAC_PI_4;
+
     use bevy::prelude::{shape::Plane, Transform};
     use glam::Vec3;
-    use std::f32::consts::FRAC_PI_4;
+
+    use super::*;
 
     #[test]
     fn test_ray_aab_intersection() {

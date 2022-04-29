@@ -1,4 +1,3 @@
-use crate::math::ray::{ray_aabb_intersection, ray_mesh_intersection, Ray, RayIntersection};
 use bevy::{
     ecs::{
         query::{FilterFetch, WorldQuery},
@@ -8,6 +7,8 @@ use bevy::{
     prelude::{Assets, Entity, GlobalTransform, Handle, Mesh, Query, Res},
     render::primitives::Aabb,
 };
+
+use crate::math::ray::{ray_aabb_intersection, ray_mesh_intersection, Ray, RayIntersection};
 
 #[derive(SystemParam)]
 pub struct Intersector<'w, 's, F = ()>

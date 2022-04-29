@@ -1,5 +1,3 @@
-use super::{collisions::Intersector, terrain::Terrain, GameState, Labels};
-use crate::math::ray::Ray;
 use bevy::{
     ecs::system::SystemParam,
     input::mouse::MouseMotion,
@@ -11,6 +9,9 @@ use bevy::{
 use de_core::objects::Playable;
 use glam::{Vec2, Vec3};
 use iyes_loopless::prelude::*;
+
+use super::{collisions::Intersector, terrain::Terrain, GameState, Labels};
+use crate::math::ray::Ray;
 
 pub struct PointerPlugin;
 
