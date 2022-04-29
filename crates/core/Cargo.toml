@@ -8,3 +8,4 @@ repository = "https://github.com/Indy2222/Digital-Extinction"
 [dependencies]
 serde = { version = "1.0", features = ["derive"] }
 bevy_ecs = "0.7.0"
+glam = "0.20.2"

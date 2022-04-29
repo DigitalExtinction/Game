@@ -1484,6 +1484,7 @@ name = "de_core"
 version = "0.1.0-dev"
 dependencies = [
  "bevy_ecs",
+ "glam",
  "serde",
 ]
 
