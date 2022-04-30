@@ -110,18 +110,7 @@ fn setup_map(
         directional_light: DirectionalLight {
             color: Color::WHITE,
             illuminance: 30000.,
-            shadow_projection: OrthographicProjection {
-                left: 0.,
-                right: map.size.0,
-                bottom: 0.,
-                top: map.size.0,
-                near: -10.,
-                far: 2. * map.size.0,
-                ..Default::default()
-            },
-            shadow_depth_bias: 0.2,
-            shadow_normal_bias: 0.2,
-            shadows_enabled: true,
+            ..Default::default()
         },
         transform,
         ..Default::default()
