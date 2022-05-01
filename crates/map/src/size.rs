@@ -8,14 +8,14 @@ use thiserror::Error;
 pub struct MapBounds(Vec2);
 
 impl MapBounds {
-    /// Create new map bounds spanning a rectangle between (0, 0) and a
-    /// maximum.
+    /// Create new map bounds spanning a rectangle between -(size / 2.0) and a
+    /// (size / 2.0).
     ///
     /// # Panics
     ///
     /// Panics if invalid maximum does not have positive finite coordinates.
-    pub fn new(max: Vec2) -> Self {
-        let bounds = Self(max);
+    pub fn new(size: Vec2) -> Self {
+        let bounds = Self(size / 2.);
         bounds.validate().unwrap();
         bounds
     }
@@ -23,17 +23,12 @@ impl MapBounds {
     /// Minimum point of the map. The 2D vector X, Y coordinates correspond to
     /// X, Z coordinates in 3D respectively.
     pub fn min(&self) -> Vec2 {
-        Vec2::ZERO
+        -self.0
     }
 
     /// Maximum point of the map. The 2D vector X, Y coordinates correspond to
     /// X, Z coordinates in 3D respectively.
     pub fn max(&self) -> Vec2 {
-        self.0
-    }
-
-    /// Map width and height.
-    pub fn size(&self) -> Vec2 {
         self.0
     }
 
@@ -45,16 +40,16 @@ impl MapBounds {
 
     pub(crate) fn validate(&self) -> Result<(), MapBoundsValidationError> {
         if !self.0.is_finite() || self.0.cmple(Vec2::ZERO).any() {
-            return Err(MapBoundsValidationError { bounds: self.0 });
+            return Err(MapBoundsValidationError { half_size: self.0 });
         }
         Ok(())
     }
 }
 
 #[derive(Error, Debug)]
-#[error("Map bounds have to be positive finite numbers: got ({}, {})", .bounds.x, .bounds.y)]
+#[error("Map half-size has to be a positive and finite: got ({}, {})", .half_size.x, .half_size.y)]
 pub struct MapBoundsValidationError {
-    bounds: Vec2,
+    half_size: Vec2,
 }
 
 #[cfg(test)]
@@ -64,7 +59,7 @@ mod test {
     #[test]
     fn test_min_max() {
         let bounds = MapBounds(Vec2::new(2.5, 3.5));
-        assert_eq!(bounds.min(), Vec2::ZERO);
+        assert_eq!(bounds.min(), Vec2::new(-2.5, -3.5));
         assert_eq!(bounds.max(), Vec2::new(2.5, 3.5));
     }
 
@@ -92,10 +87,10 @@ mod test {
         let bounds = MapBounds(Vec2::new(-2.5, 3.));
         match bounds.validate() {
             Err(error) => {
-                assert_eq!(error.bounds, Vec2::new(-2.5, 3.));
+                assert_eq!(error.half_size, Vec2::new(-2.5, 3.));
                 assert_eq!(
                     format!("{}", error),
-                    "Map bounds have to be positive finite numbers: got (-2.5, 3)"
+                    "Map half-size has to be a positive and finite: got (-2.5, 3)"
                 );
             }
             Ok(()) => unreachable!(),

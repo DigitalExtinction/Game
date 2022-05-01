@@ -3,7 +3,7 @@ use bevy::{
     render::mesh::{Indices, PrimitiveTopology},
     tasks::{IoTaskPool, Task},
 };
-use de_core::{gconfig::GameConfig, log_full_error, utils::ToMsl};
+use de_core::{gconfig::GameConfig, log_full_error};
 use de_map::{
     description::Map,
     io::{load_map, MapLoadingError},
@@ -97,27 +97,21 @@ fn setup_terrain(
     materials: &mut Assets<StandardMaterial>,
     bounds: MapBounds,
 ) {
-    let map_size = bounds.size();
-
     commands
         .spawn_bundle(PbrBundle {
-            mesh: meshes.add(terrain_mesh(map_size)),
+            mesh: meshes.add(terrain_mesh(bounds)),
             material: materials.add(Color::rgb(0.3, 0.5, 0.3).into()),
-            transform: Transform {
-                translation: bounds.min().to_msl(),
-                ..Default::default()
-            },
             ..Default::default()
         })
         .insert(Terrain);
 }
 
-fn terrain_mesh(size: Vec2) -> Mesh {
+fn terrain_mesh(bounds: MapBounds) -> Mesh {
     let vertices = [
-        ([0., 0., 0.], [0., 1., 0.], [0., 0.]),
-        ([0., 0., size.y], [0., 1., 0.], [0., 1.]),
-        ([size.x, 0., size.y], [0., 1., 0.], [1., 1.]),
-        ([size.x, 0., 0.], [0., 1., 0.], [1., 0.]),
+        ([bounds.min().x, 0., bounds.min().y], [0., 1., 0.], [0., 0.]),
+        ([bounds.min().x, 0., bounds.max().y], [0., 1., 0.], [0., 1.]),
+        ([bounds.max().x, 0., bounds.max().y], [0., 1., 0.], [1., 1.]),
+        ([bounds.max().x, 0., bounds.min().y], [0., 1., 0.], [1., 0.]),
     ];
 
     let indices = Indices::U32(vec![0, 1, 2, 0, 2, 3]);
