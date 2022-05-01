@@ -8,6 +8,18 @@ use thiserror::Error;
 pub struct MapBounds(Vec2);
 
 impl MapBounds {
+    /// Create new map bounds spanning a rectangle between (0, 0) and a
+    /// maximum.
+    ///
+    /// # Panics
+    ///
+    /// Panics if invalid maximum does not have positive finite coordinates.
+    pub fn new(max: Vec2) -> Self {
+        let bounds = Self(max);
+        bounds.validate().unwrap();
+        bounds
+    }
+
     /// Minimum point of the map. The 2D vector X, Y coordinates correspond to
     /// X, Z coordinates in 3D respectively.
     pub fn min(&self) -> Vec2 {
@@ -17,6 +29,11 @@ impl MapBounds {
     /// Maximum point of the map. The 2D vector X, Y coordinates correspond to
     /// X, Z coordinates in 3D respectively.
     pub fn max(&self) -> Vec2 {
+        self.0
+    }
+
+    /// Map width and height.
+    pub fn size(&self) -> Vec2 {
         self.0
     }
 
@@ -31,20 +48,6 @@ impl MapBounds {
             return Err(MapBoundsValidationError { bounds: self.0 });
         }
         Ok(())
-    }
-}
-
-impl MapBounds {
-    /// Create new map bounds spanning a rectangle between (0, 0) and a
-    /// maximum.
-    ///
-    /// # Panics
-    ///
-    /// Panics if invalid maximum does not have positive finite coordinates.
-    pub fn new(max: Vec2) -> Self {
-        let bounds = Self(max);
-        bounds.validate().unwrap();
-        bounds
     }
 }
 

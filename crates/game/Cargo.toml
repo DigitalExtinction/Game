@@ -19,6 +19,7 @@ serde = "1.0"
 serde_json = "1.0"
 glam = "^0.20.2"
 depacked = "0.2.1"
+futures-lite = "1.11"
 
 [dev-dependencies]
 criterion = "0.3"

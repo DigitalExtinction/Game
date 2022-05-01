@@ -4,8 +4,9 @@ use bevy::prelude::Transform;
 use de_core::{
     objects::{ActiveObjectType, InactiveObjectType},
     player::Player,
+    utils::ToMsl,
 };
-use glam::{Quat, Vec2, Vec3};
+use glam::{Quat, Vec2};
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
@@ -119,7 +120,7 @@ pub enum MapValidationError {
     },
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Clone, Serialize, Deserialize)]
 pub struct Object {
     placement: Placement,
     object_type: ObjectType,
@@ -172,13 +173,13 @@ pub enum ObjectValidationError {
     ActiveObjectError { source: ActiveObjectValidationError },
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Clone, Serialize, Deserialize)]
 pub enum ObjectType {
     Active(ActiveObject),
     Inactive(InactiveObject),
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Clone, Serialize, Deserialize)]
 pub struct ActiveObject {
     object_type: ActiveObjectType,
     player: Player,
@@ -217,7 +218,7 @@ pub enum ActiveObjectValidationError {
     MaxPlayerError { max_player: Player, player: Player },
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Clone, Serialize, Deserialize)]
 pub struct InactiveObject {
     object_type: InactiveObjectType,
 }
@@ -248,10 +249,9 @@ impl Placement {
     /// Produces world to object transform which can be used to position the
     /// object on the map.
     pub fn to_transform(self) -> Transform {
-        let translation = Vec3::new(self.position.x, 0., self.position.y);
         let rotation = Quat::from_rotation_y(self.heading);
         Transform {
-            translation,
+            translation: self.position.to_msl(),
             rotation,
             ..Default::default()
         }

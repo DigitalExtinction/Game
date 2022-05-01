@@ -1484,6 +1484,7 @@ name = "de_core"
 version = "0.1.0-dev"
 dependencies = [
  "bevy_ecs",
+ "glam",
  "serde",
 ]
 
@@ -1497,6 +1498,7 @@ dependencies = [
  "de_core",
  "de_map",
  "depacked",
+ "futures-lite",
  "glam",
  "iyes_loopless",
  "serde",

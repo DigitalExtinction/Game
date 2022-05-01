@@ -2,22 +2,23 @@ use bevy::{
     app::PluginGroupBuilder,
     prelude::{App, Plugin, PluginGroup, SystemLabel},
 };
-use de_core::gconfig::GameConfig;
+use de_core::{gconfig::GameConfig, player::Player};
 use iyes_loopless::prelude::*;
 
 use self::{
     camera::CameraPlugin, command::CommandPlugin, maploader::MapLoaderPlugin,
     movement::MovementPlugin, pointer::PointerPlugin, selection::SelectionPlugin,
+    spawner::SpawnerPlugin,
 };
 
 mod camera;
 mod collisions;
 mod command;
-mod mapdescr;
 mod maploader;
 mod movement;
 mod pointer;
 mod selection;
+mod spawner;
 mod terrain;
 pub mod tree;
 
@@ -32,7 +33,8 @@ impl PluginGroup for GamePluginGroup {
             .add(SelectionPlugin)
             .add(PointerPlugin)
             .add(CommandPlugin)
-            .add(MovementPlugin);
+            .add(MovementPlugin)
+            .add(SpawnerPlugin);
     }
 }
 
@@ -47,7 +49,7 @@ struct GamePlugin;
 impl Plugin for GamePlugin {
     fn build(&self, app: &mut App) {
         app.add_loopless_state(GameState::Loading)
-            .insert_resource(GameConfig::new("map.tar", 0));
+            .insert_resource(GameConfig::new("map.tar", Player::Player1));
     }
 }
 
