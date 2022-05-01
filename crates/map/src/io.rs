@@ -50,15 +50,19 @@ pub async fn load_map<P: AsRef<Path>>(path: P) -> Result<Map, MapLoadingError> {
         }
     }
 
-    let map = match map {
+    let map: Map = match map {
         Some(map) => map,
         None => {
             return Err(MapLoadingError::ArchiveContent(format!(
                 "{} entry is not present",
                 MAP_JSON_ENTRY
-            )))
+            )));
         }
     };
+
+    if let Err(error) = map.validate() {
+        return Err(MapLoadingError::Validation { source: error });
+    }
 
     Ok(map)
 }
