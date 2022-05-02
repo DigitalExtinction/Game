@@ -209,7 +209,7 @@ fn update_focus(
     terrain: Intersector<With<Terrain>>,
     camera_query: Query<&GlobalTransform, With<Camera>>,
 ) {
-    if event.iter().next().is_none() {
+    if event.iter().count() == 0 {
         return;
     }
 
