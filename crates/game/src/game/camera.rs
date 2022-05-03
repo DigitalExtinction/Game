@@ -218,19 +218,18 @@ impl DesiredPoW {
 }
 
 fn setup(mut commands: Commands) {
-    let initial_camera_distance = (MIN_CAMERA_DISTANCE * MAX_CAMERA_DISTANCE).sqrt();
     commands.insert_resource(HorizontalMovement::default());
     commands.insert_resource(DesiredPoW {
-        distance: initial_camera_distance,
+        distance: MAX_CAMERA_DISTANCE,
         off_nadir: 0.,
         azimuth: 0.,
     });
     commands.insert_resource(CameraFocus {
         point: Vec3::ZERO,
-        distance: initial_camera_distance,
+        distance: MAX_CAMERA_DISTANCE,
     });
     commands.spawn_bundle(PerspectiveCameraBundle {
-        transform: Transform::from_xyz(0.0, initial_camera_distance, 0.0)
+        transform: Transform::from_xyz(0.0, MAX_CAMERA_DISTANCE, 0.0)
             .looking_at(Vec3::ZERO, -Vec3::Z),
         ..Default::default()
     });
