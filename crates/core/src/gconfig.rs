@@ -22,6 +22,10 @@ impl GameConfig {
     pub fn player(&self) -> Player {
         self.player
     }
+
+    pub fn is_local_player(&self, player: Player) -> bool {
+        self.player == player
+    }
 }
 
 #[cfg(test)]

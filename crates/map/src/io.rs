@@ -50,15 +50,19 @@ pub async fn load_map<P: AsRef<Path>>(path: P) -> Result<Map, MapLoadingError> {
         }
     }
 
-    let map = match map {
+    let map: Map = match map {
         Some(map) => map,
         None => {
             return Err(MapLoadingError::ArchiveContent(format!(
                 "{} entry is not present",
                 MAP_JSON_ENTRY
-            )))
+            )));
         }
     };
+
+    if let Err(error) = map.validate() {
+        return Err(MapLoadingError::Validation { source: error });
+    }
 
     Ok(map)
 }
@@ -138,10 +142,10 @@ mod test {
         let mut map = Map::empty(bounds, Player::Player4);
 
         let bases = [
-            (Vec2::new(100., 100.), Player::Player1),
-            (Vec2::new(900., 100.), Player::Player2),
-            (Vec2::new(900., 1900.), Player::Player3),
-            (Vec2::new(100., 1900.), Player::Player4),
+            (Vec2::new(-400., -900.), Player::Player1),
+            (Vec2::new(400., -900.), Player::Player2),
+            (Vec2::new(400., 900.), Player::Player3),
+            (Vec2::new(-400., 900.), Player::Player4),
         ];
 
         for (base_position, player) in bases {
@@ -158,6 +162,7 @@ mod test {
         task::block_on(store_map(&map, tmp_dir_path.as_path())).unwrap();
         let loaded_map = task::block_on(load_map(tmp_dir_path.as_path())).unwrap();
 
-        assert_eq!(loaded_map.bounds().max(), Vec2::new(1000., 2000.));
+        assert_eq!(loaded_map.bounds().min(), Vec2::new(-500., -1000.));
+        assert_eq!(loaded_map.bounds().max(), Vec2::new(500., 1000.));
     }
 }

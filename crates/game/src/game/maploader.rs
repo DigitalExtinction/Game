@@ -3,9 +3,9 @@ use bevy::{
     render::mesh::{Indices, PrimitiveTopology},
     tasks::{IoTaskPool, Task},
 };
-use de_core::{gconfig::GameConfig, log_full_error, utils::ToMsl};
+use de_core::{gconfig::GameConfig, log_full_error, objects::ActiveObjectType};
 use de_map::{
-    description::Map,
+    description::{Map, ObjectType},
     io::{load_map, MapLoadingError},
     size::MapBounds,
 };
@@ -13,7 +13,10 @@ use futures_lite::future;
 use iyes_loopless::prelude::*;
 
 use super::{terrain::Terrain, GameState};
-use crate::{assets::asset_path, game::spawner::SpawnEvent};
+use crate::{
+    assets::asset_path,
+    game::{camera::MoveFocusEvent, spawner::SpawnEvent},
+};
 
 pub struct MapLoaderPlugin;
 
@@ -47,7 +50,9 @@ fn spawn_map(
     mut task: ResMut<MapLoadingTask>,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
-    mut events: EventWriter<SpawnEvent>,
+    mut spawn_events: EventWriter<SpawnEvent>,
+    mut move_focus_events: EventWriter<MoveFocusEvent>,
+    game_config: Res<GameConfig>,
 ) {
     let loading_result = match future::block_on(future::poll_once(&mut task.0)) {
         Some(result) => result,
@@ -65,9 +70,29 @@ fn spawn_map(
         }
     };
 
+    let initial_focus = map
+        .objects()
+        .iter()
+        .filter_map(|object| match object.object_type() {
+            ObjectType::Active(active_object) => {
+                if game_config.is_local_player(active_object.player())
+                    && active_object.object_type() == ActiveObjectType::Base
+                {
+                    Some(object.placement().position())
+                } else {
+                    None
+                }
+            }
+            _ => None,
+        })
+        .next();
+    if let Some(focus) = initial_focus {
+        move_focus_events.send(MoveFocusEvent::new(focus));
+    }
+
     setup_light(&mut commands);
     setup_terrain(&mut commands, &mut meshes, &mut materials, map.bounds());
-    events.send_batch(map.objects().iter().cloned().map(SpawnEvent::new));
+    spawn_events.send_batch(map.objects().iter().cloned().map(SpawnEvent::new));
     commands.insert_resource(map.bounds());
     commands.insert_resource(NextState(GameState::Playing));
 }
@@ -97,27 +122,21 @@ fn setup_terrain(
     materials: &mut Assets<StandardMaterial>,
     bounds: MapBounds,
 ) {
-    let map_size = bounds.size();
-
     commands
         .spawn_bundle(PbrBundle {
-            mesh: meshes.add(terrain_mesh(map_size)),
+            mesh: meshes.add(terrain_mesh(bounds)),
             material: materials.add(Color::rgb(0.3, 0.5, 0.3).into()),
-            transform: Transform {
-                translation: bounds.min().to_msl(),
-                ..Default::default()
-            },
             ..Default::default()
         })
         .insert(Terrain);
 }
 
-fn terrain_mesh(size: Vec2) -> Mesh {
+fn terrain_mesh(bounds: MapBounds) -> Mesh {
     let vertices = [
-        ([0., 0., 0.], [0., 1., 0.], [0., 0.]),
-        ([0., 0., size.y], [0., 1., 0.], [0., 1.]),
-        ([size.x, 0., size.y], [0., 1., 0.], [1., 1.]),
-        ([size.x, 0., 0.], [0., 1., 0.], [1., 0.]),
+        ([bounds.min().x, 0., bounds.min().y], [0., 1., 0.], [0., 0.]),
+        ([bounds.min().x, 0., bounds.max().y], [0., 1., 0.], [0., 1.]),
+        ([bounds.max().x, 0., bounds.max().y], [0., 1., 0.], [1., 1.]),
+        ([bounds.max().x, 0., bounds.min().y], [0., 1., 0.], [1., 0.]),
     ];
 
     let indices = Indices::U32(vec![0, 1, 2, 0, 2, 3]);

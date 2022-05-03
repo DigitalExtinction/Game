@@ -17,11 +17,17 @@ use crate::math::ray::{ray_plane_intersection, Ray};
 const MOVE_MARGIN_LOGICAL_PX: f32 = 40.;
 /// Camera moves horizontally at speed `distance * CAMERA_HORIZONTAL_SPEED`
 /// meters per second.
-const CAMERA_HORIZONTAL_SPEED: f32 = 1.0;
-/// Minimum camera distance to terrain.
-const MIN_CAMERA_DISTANCE: f32 = 8.;
-/// Maximum camera distance from terrain.
+const CAMERA_HORIZONTAL_SPEED: f32 = 2.0;
+/// Minimum camera distance from terrain achievable with zooming along.
+const MIN_CAMERA_DISTANCE: f32 = 20.;
+/// Maximum camera distance from terrain achievable with zooming alone.
 const MAX_CAMERA_DISTANCE: f32 = 100.;
+/// Minimum temporary distance from terrain. Forward/backward camera motion is
+/// smooth within this range. Step adjustment is applied outside of this range.
+const HARD_MIN_CAMERA_DISTANCE: f32 = 0.8 * MIN_CAMERA_DISTANCE;
+/// Maximum temporary distance from terrain. Forward/backward camera motion is
+/// smooth within this range. Step adjustment is applied outside of this range.
+const HARD_MAX_CAMERA_DISTANCE: f32 = 1.1 * MAX_CAMERA_DISTANCE;
 /// Camera moves along forward axis (zooming) at speed `distance *
 /// CAMERA_VERTICAL_SPEED` meters per second.
 const CAMERA_VERTICAL_SPEED: f32 = 2.0;
@@ -47,7 +53,8 @@ pub struct CameraPlugin;
 
 impl Plugin for CameraPlugin {
     fn build(&self, app: &mut App) {
-        app.add_event::<FocusInvalidatedEvent>()
+        app.add_event::<MoveFocusEvent>()
+            .add_event::<FocusInvalidatedEvent>()
             .add_event::<PivotEvent>()
             .add_enter_system(GameState::Playing, setup)
             .add_system(
@@ -71,10 +78,17 @@ impl Plugin for CameraPlugin {
                     .label("move_horizontaly_event"),
             )
             .add_system(
+                process_move_focus_events
+                    .run_in_state(GameState::Playing)
+                    .label("process_move_focus_events")
+                    .after("update_focus"),
+            )
+            .add_system(
                 zoom.run_in_state(GameState::Playing)
                     .label("zoom")
                     .after("update_focus")
-                    .after("zoom_event"),
+                    .after("zoom_event")
+                    .after("process_move_focus_events"),
             )
             .add_system(
                 pivot
@@ -89,11 +103,26 @@ impl Plugin for CameraPlugin {
                     .label("move_horizontaly")
                     .after("update_focus")
                     .after("move_horizontaly_event")
+                    .after("process_move_focus_events")
                     // Zooming changes camera focus point so do it
                     // after other types of camera movement.
                     .after("zoom")
                     .after("pivot"),
             );
+    }
+}
+
+pub struct MoveFocusEvent {
+    point: Vec2,
+}
+
+impl MoveFocusEvent {
+    pub fn new(point: Vec2) -> Self {
+        Self { point }
+    }
+
+    fn point(&self) -> Vec2 {
+        self.point
     }
 }
 
@@ -114,6 +143,10 @@ impl CameraFocus {
     fn update<V: Into<Vec3>>(&mut self, point: V, distance: f32) {
         self.point = point.into();
         self.distance = distance;
+    }
+
+    fn set_point(&mut self, point: Vec3) {
+        self.point = point;
     }
 
     fn update_distance(&mut self, forward_move: f32) {
@@ -185,19 +218,18 @@ impl DesiredPoW {
 }
 
 fn setup(mut commands: Commands) {
-    let initial_camera_distance = (MIN_CAMERA_DISTANCE * MAX_CAMERA_DISTANCE).sqrt();
     commands.insert_resource(HorizontalMovement::default());
     commands.insert_resource(DesiredPoW {
-        distance: initial_camera_distance,
+        distance: MAX_CAMERA_DISTANCE,
         off_nadir: 0.,
         azimuth: 0.,
     });
     commands.insert_resource(CameraFocus {
         point: Vec3::ZERO,
-        distance: initial_camera_distance,
+        distance: MAX_CAMERA_DISTANCE,
     });
     commands.spawn_bundle(PerspectiveCameraBundle {
-        transform: Transform::from_xyz(0.0, initial_camera_distance, 0.0)
+        transform: Transform::from_xyz(0.0, MAX_CAMERA_DISTANCE, 0.0)
             .looking_at(Vec3::ZERO, -Vec3::Z),
         ..Default::default()
     });
@@ -209,18 +241,46 @@ fn update_focus(
     terrain: Intersector<With<Terrain>>,
     camera_query: Query<&GlobalTransform, With<Camera>>,
 ) {
-    if event.iter().next().is_none() {
+    if event.iter().count() == 0 {
         return;
     }
 
     let camera_transform = camera_query.single();
     let ray = Ray::new(camera_transform.translation, camera_transform.forward());
-    let intersection = match terrain.ray_intersection(&ray) {
-        Some((_, intersection)) => intersection,
-        None => ray_plane_intersection(&ray, Vec3A::ZERO, Vec3A::Y)
-            .expect("Camera ray does not intersect base ground plane."),
+
+    let (point, distance) = match terrain.ray_intersection(&ray) {
+        Some((_, intersection)) => (intersection.position(), intersection.distance()),
+        None => {
+            let bacward_ray = Ray::new(camera_transform.translation, camera_transform.back());
+            match terrain.ray_intersection(&bacward_ray) {
+                Some((_, intersection)) => (intersection.position(), -intersection.distance()),
+                None => {
+                    let intersection = ray_plane_intersection(&ray, Vec3A::ZERO, Vec3A::Y)
+                        .expect("Camera ray does not intersect base ground plane.");
+                    (intersection.position(), intersection.distance())
+                }
+            }
+        }
     };
-    focus.update(intersection.position(), intersection.distance());
+
+    focus.update(point, distance);
+}
+
+fn process_move_focus_events(
+    mut events: EventReader<MoveFocusEvent>,
+    mut focus: ResMut<CameraFocus>,
+    mut camera_query: Query<&mut Transform, With<Camera>>,
+) {
+    let event = match events.iter().last() {
+        Some(event) => event,
+        None => return,
+    };
+
+    let focus_msl = event.point().to_msl();
+    focus.set_point(focus_msl);
+
+    let mut camera_transform = camera_query.single_mut();
+    camera_transform.translation = focus_msl + focus.distance() * camera_transform.back();
 }
 
 fn move_horizontaly(
@@ -237,7 +297,10 @@ fn move_horizontaly(
     };
 
     let mut transform = camera_query.single_mut();
-    let delta_scalar = time.delta().as_secs_f32() * focus.distance() * CAMERA_HORIZONTAL_SPEED;
+    let distance_factor = focus
+        .distance()
+        .clamp(MIN_CAMERA_DISTANCE, MAX_CAMERA_DISTANCE);
+    let delta_scalar = time.delta().as_secs_f32() * distance_factor * CAMERA_HORIZONTAL_SPEED;
     let delta_vec = match direction {
         HorizontalMovementDirection::Left => -transform.local_x() * delta_scalar,
         HorizontalMovementDirection::Right => transform.local_x() * delta_scalar,
@@ -259,14 +322,26 @@ fn zoom(
     mut focus: ResMut<CameraFocus>,
     mut camera_query: Query<&mut Transform, With<Camera>>,
 ) {
-    let error = focus.distance() - desired_pow.distance();
-    if error.abs() <= DISTANCE_TOLERATION {
-        return;
+    let mut delta_scalar = focus.distance() - HARD_MAX_CAMERA_DISTANCE;
+    if delta_scalar <= 0. {
+        // Camera is not further than HARD_MAX_CAMERA_DISTANCE => zoom out to
+        // HARD_MIN_CAMERA_DISTANCE.
+        delta_scalar = (focus.distance() - HARD_MIN_CAMERA_DISTANCE).min(0.);
+    }
+    if delta_scalar == 0. {
+        // Camera is within HARD_MIN_CAMERA_DISTANCE and
+        // HARD_MAX_CAMERA_DISTANCE => move smoothly to desired distance.
+
+        let error = focus.distance() - desired_pow.distance();
+        if error.abs() <= DISTANCE_TOLERATION {
+            return;
+        }
+
+        let max_delta = focus.distance() * time.delta().as_secs_f32() * CAMERA_VERTICAL_SPEED;
+        delta_scalar = error.clamp(-max_delta, max_delta);
     }
 
     let mut transform = camera_query.single_mut();
-    let max_delta = focus.distance() * time.delta().as_secs_f32() * CAMERA_VERTICAL_SPEED;
-    let delta_scalar = error.clamp(-max_delta, max_delta);
     let delta_vec = delta_scalar * transform.forward();
     transform.translation += delta_vec;
     focus.update_distance(delta_scalar);
