@@ -248,12 +248,23 @@ fn update_focus(
 
     let camera_transform = camera_query.single();
     let ray = Ray::new(camera_transform.translation, camera_transform.forward());
-    let intersection = match terrain.ray_intersection(&ray) {
-        Some((_, intersection)) => intersection,
-        None => ray_plane_intersection(&ray, Vec3A::ZERO, Vec3A::Y)
-            .expect("Camera ray does not intersect base ground plane."),
+
+    let (point, distance) = match terrain.ray_intersection(&ray) {
+        Some((_, intersection)) => (intersection.position(), intersection.distance()),
+        None => {
+            let bacward_ray = Ray::new(camera_transform.translation, camera_transform.back());
+            match terrain.ray_intersection(&bacward_ray) {
+                Some((_, intersection)) => (intersection.position(), -intersection.distance()),
+                None => {
+                    let intersection = ray_plane_intersection(&ray, Vec3A::ZERO, Vec3A::Y)
+                        .expect("Camera ray does not intersect base ground plane.");
+                    (intersection.position(), intersection.distance())
+                }
+            }
+        }
     };
-    focus.update(intersection.position(), intersection.distance());
+
+    focus.update(point, distance);
 }
 
 fn process_move_focus_events(
@@ -287,7 +298,10 @@ fn move_horizontaly(
     };
 
     let mut transform = camera_query.single_mut();
-    let delta_scalar = time.delta().as_secs_f32() * focus.distance() * CAMERA_HORIZONTAL_SPEED;
+    let distance_factor = focus
+        .distance()
+        .clamp(MIN_CAMERA_DISTANCE, MAX_CAMERA_DISTANCE);
+    let delta_scalar = time.delta().as_secs_f32() * distance_factor * CAMERA_HORIZONTAL_SPEED;
     let delta_vec = match direction {
         HorizontalMovementDirection::Left => -transform.local_x() * delta_scalar,
         HorizontalMovementDirection::Right => transform.local_x() * delta_scalar,
