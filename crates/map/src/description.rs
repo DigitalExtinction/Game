@@ -246,6 +246,10 @@ impl Placement {
         position
     }
 
+    pub fn position(&self) -> Vec2 {
+        self.position
+    }
+
     /// Produces world to object transform which can be used to position the
     /// object on the map.
     pub fn to_transform(self) -> Transform {

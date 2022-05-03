@@ -111,6 +111,10 @@ pub struct MoveFocusEvent {
 }
 
 impl MoveFocusEvent {
+    pub fn new(point: Vec2) -> Self {
+        Self { point }
+    }
+
     fn point(&self) -> Vec2 {
         self.point
     }

@@ -15,7 +15,7 @@ pub struct Playable;
 #[derive(Component)]
 pub struct Movable;
 
-#[derive(Copy, Clone, Debug, Component, Serialize, Deserialize)]
+#[derive(Copy, Clone, Debug, Component, Serialize, Deserialize, PartialEq)]
 pub enum InactiveObjectType {
     Tree,
 }
@@ -28,7 +28,7 @@ impl fmt::Display for InactiveObjectType {
     }
 }
 
-#[derive(Copy, Clone, Debug, Component, Serialize, Deserialize)]
+#[derive(Copy, Clone, Debug, Component, Serialize, Deserialize, PartialEq)]
 pub enum ActiveObjectType {
     Base,
     PowerHub,
