@@ -18,10 +18,16 @@ const MOVE_MARGIN_LOGICAL_PX: f32 = 40.;
 /// Camera moves horizontally at speed `distance * CAMERA_HORIZONTAL_SPEED`
 /// meters per second.
 const CAMERA_HORIZONTAL_SPEED: f32 = 1.0;
-/// Minimum camera distance to terrain.
+/// Minimum camera distance from terrain achievable with zooming along.
 const MIN_CAMERA_DISTANCE: f32 = 8.;
-/// Maximum camera distance from terrain.
+/// Maximum camera distance from terrain achievable with zooming alone.
 const MAX_CAMERA_DISTANCE: f32 = 100.;
+/// Minimum temporary distance from terrain. Forward/backward camera motion is
+/// smooth within this range. Step adjustment is applied outside of this range.
+const HARD_MIN_CAMERA_DISTANCE: f32 = 0.8 * MIN_CAMERA_DISTANCE;
+/// Maximum temporary distance from terrain. Forward/backward camera motion is
+/// smooth within this range. Step adjustment is applied outside of this range.
+const HARD_MAX_CAMERA_DISTANCE: f32 = 1.1 * MAX_CAMERA_DISTANCE;
 /// Camera moves along forward axis (zooming) at speed `distance *
 /// CAMERA_VERTICAL_SPEED` meters per second.
 const CAMERA_VERTICAL_SPEED: f32 = 2.0;
@@ -303,14 +309,26 @@ fn zoom(
     mut focus: ResMut<CameraFocus>,
     mut camera_query: Query<&mut Transform, With<Camera>>,
 ) {
-    let error = focus.distance() - desired_pow.distance();
-    if error.abs() <= DISTANCE_TOLERATION {
-        return;
+    let mut delta_scalar = focus.distance() - HARD_MAX_CAMERA_DISTANCE;
+    if delta_scalar <= 0. {
+        // Camera is not further than HARD_MAX_CAMERA_DISTANCE => zoom out to
+        // HARD_MIN_CAMERA_DISTANCE.
+        delta_scalar = (focus.distance() - HARD_MIN_CAMERA_DISTANCE).min(0.);
+    }
+    if delta_scalar == 0. {
+        // Camera is within HARD_MIN_CAMERA_DISTANCE and
+        // HARD_MAX_CAMERA_DISTANCE => move smoothly to desired distance.
+
+        let error = focus.distance() - desired_pow.distance();
+        if error.abs() <= DISTANCE_TOLERATION {
+            return;
+        }
+
+        let max_delta = focus.distance() * time.delta().as_secs_f32() * CAMERA_VERTICAL_SPEED;
+        delta_scalar = error.clamp(-max_delta, max_delta);
     }
 
     let mut transform = camera_query.single_mut();
-    let max_delta = focus.distance() * time.delta().as_secs_f32() * CAMERA_VERTICAL_SPEED;
-    let delta_scalar = error.clamp(-max_delta, max_delta);
     let delta_vec = delta_scalar * transform.forward();
     transform.translation += delta_vec;
     focus.update_distance(delta_scalar);
