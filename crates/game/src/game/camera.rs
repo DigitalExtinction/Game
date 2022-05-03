@@ -47,7 +47,8 @@ pub struct CameraPlugin;
 
 impl Plugin for CameraPlugin {
     fn build(&self, app: &mut App) {
-        app.add_event::<FocusInvalidatedEvent>()
+        app.add_event::<MoveFocusEvent>()
+            .add_event::<FocusInvalidatedEvent>()
             .add_event::<PivotEvent>()
             .add_enter_system(GameState::Playing, setup)
             .add_system(
@@ -71,10 +72,17 @@ impl Plugin for CameraPlugin {
                     .label("move_horizontaly_event"),
             )
             .add_system(
+                process_move_focus_events
+                    .run_in_state(GameState::Playing)
+                    .label("process_move_focus_events")
+                    .after("update_focus"),
+            )
+            .add_system(
                 zoom.run_in_state(GameState::Playing)
                     .label("zoom")
                     .after("update_focus")
-                    .after("zoom_event"),
+                    .after("zoom_event")
+                    .after("process_move_focus_events"),
             )
             .add_system(
                 pivot
@@ -89,11 +97,22 @@ impl Plugin for CameraPlugin {
                     .label("move_horizontaly")
                     .after("update_focus")
                     .after("move_horizontaly_event")
+                    .after("process_move_focus_events")
                     // Zooming changes camera focus point so do it
                     // after other types of camera movement.
                     .after("zoom")
                     .after("pivot"),
             );
+    }
+}
+
+pub struct MoveFocusEvent {
+    point: Vec2,
+}
+
+impl MoveFocusEvent {
+    fn point(&self) -> Vec2 {
+        self.point
     }
 }
 
@@ -114,6 +133,10 @@ impl CameraFocus {
     fn update<V: Into<Vec3>>(&mut self, point: V, distance: f32) {
         self.point = point.into();
         self.distance = distance;
+    }
+
+    fn set_point(&mut self, point: Vec3) {
+        self.point = point;
     }
 
     fn update_distance(&mut self, forward_move: f32) {
@@ -221,6 +244,23 @@ fn update_focus(
             .expect("Camera ray does not intersect base ground plane."),
     };
     focus.update(intersection.position(), intersection.distance());
+}
+
+fn process_move_focus_events(
+    mut events: EventReader<MoveFocusEvent>,
+    mut focus: ResMut<CameraFocus>,
+    mut camera_query: Query<&mut Transform, With<Camera>>,
+) {
+    let event = match events.iter().last() {
+        Some(event) => event,
+        None => return,
+    };
+
+    let focus_msl = event.point().to_msl();
+    focus.set_point(focus_msl);
+
+    let mut camera_transform = camera_query.single_mut();
+    camera_transform.translation = focus_msl + focus.distance() * camera_transform.back();
 }
 
 fn move_horizontaly(
