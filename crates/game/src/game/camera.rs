@@ -19,7 +19,7 @@ const MOVE_MARGIN_LOGICAL_PX: f32 = 40.;
 /// meters per second.
 const CAMERA_HORIZONTAL_SPEED: f32 = 2.0;
 /// Minimum camera distance from terrain achievable with zooming along.
-const MIN_CAMERA_DISTANCE: f32 = 8.;
+const MIN_CAMERA_DISTANCE: f32 = 20.;
 /// Maximum camera distance from terrain achievable with zooming alone.
 const MAX_CAMERA_DISTANCE: f32 = 100.;
 /// Minimum temporary distance from terrain. Forward/backward camera motion is
