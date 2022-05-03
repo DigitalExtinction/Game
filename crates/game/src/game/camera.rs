@@ -17,7 +17,7 @@ use crate::math::ray::{ray_plane_intersection, Ray};
 const MOVE_MARGIN_LOGICAL_PX: f32 = 40.;
 /// Camera moves horizontally at speed `distance * CAMERA_HORIZONTAL_SPEED`
 /// meters per second.
-const CAMERA_HORIZONTAL_SPEED: f32 = 1.0;
+const CAMERA_HORIZONTAL_SPEED: f32 = 2.0;
 /// Minimum camera distance from terrain achievable with zooming along.
 const MIN_CAMERA_DISTANCE: f32 = 8.;
 /// Maximum camera distance from terrain achievable with zooming alone.
