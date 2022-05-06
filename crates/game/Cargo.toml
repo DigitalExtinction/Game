@@ -20,6 +20,8 @@ serde_json = "1.0"
 glam = "^0.20.2"
 depacked = "0.2.1"
 futures-lite = "1.11"
+parry3d = "0.9.0"
+nalgebra = { version = "0.31.0", features = ["convert-glam020"] }
 
 [dev-dependencies]
 criterion = "0.3"

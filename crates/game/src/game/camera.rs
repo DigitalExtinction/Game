@@ -6,11 +6,14 @@ use bevy::{
 };
 use de_core::utils::ToMsl;
 use de_map::size::MapBounds;
-use glam::Vec3A;
 use iyes_loopless::prelude::*;
+use parry3d::{
+    na::{Unit, Vector3},
+    query::{Ray, RayCast},
+    shape::HalfSpace,
+};
 
-use super::{collisions::Intersector, terrain::Terrain, GameState};
-use crate::math::ray::{ray_plane_intersection, Ray};
+use super::{terrain::TerrainCollider, GameState};
 
 /// Horizontal camera movement is initiated if mouse cursor is within this
 /// distance to window edge.
@@ -238,7 +241,7 @@ fn setup(mut commands: Commands) {
 fn update_focus(
     mut event: EventReader<FocusInvalidatedEvent>,
     mut focus: ResMut<CameraFocus>,
-    terrain: Intersector<With<Terrain>>,
+    terrain: TerrainCollider,
     camera_query: Query<&GlobalTransform, With<Camera>>,
 ) {
     if event.iter().count() == 0 {
@@ -246,24 +249,19 @@ fn update_focus(
     }
 
     let camera_transform = camera_query.single();
-    let ray = Ray::new(camera_transform.translation, camera_transform.forward());
+    let ray = Ray::new(
+        camera_transform.translation.into(),
+        camera_transform.forward().into(),
+    );
 
-    let (point, distance) = match terrain.ray_intersection(&ray) {
-        Some((_, intersection)) => (intersection.position(), intersection.distance()),
-        None => {
-            let bacward_ray = Ray::new(camera_transform.translation, camera_transform.back());
-            match terrain.ray_intersection(&bacward_ray) {
-                Some((_, intersection)) => (intersection.position(), -intersection.distance()),
-                None => {
-                    let intersection = ray_plane_intersection(&ray, Vec3A::ZERO, Vec3A::Y)
-                        .expect("Camera ray does not intersect base ground plane.");
-                    (intersection.position(), intersection.distance())
-                }
-            }
-        }
-    };
-
-    focus.update(point, distance);
+    let intersection = terrain
+        .cast_ray_bidir(&ray, f32::INFINITY)
+        .or_else(|| {
+            let below_msl = HalfSpace::new(Unit::new_unchecked(Vector3::new(0., -1., 0.)));
+            below_msl.cast_local_ray_and_get_normal(&ray, f32::INFINITY, false)
+        })
+        .expect("Camera ray does not intersect MSL plane.");
+    focus.update(ray.point_at(intersection.toi), intersection.toi);
 }
 
 fn process_move_focus_events(

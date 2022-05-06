@@ -128,7 +128,7 @@ fn setup_terrain(
             material: materials.add(Color::rgb(0.3, 0.5, 0.3).into()),
             ..Default::default()
         })
-        .insert(Terrain);
+        .insert(Terrain::flat(bounds));
 }
 
 fn terrain_mesh(bounds: MapBounds) -> Mesh {
