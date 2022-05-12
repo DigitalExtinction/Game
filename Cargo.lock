@@ -1525,6 +1525,7 @@ dependencies = [
  "bevy",
  "criterion",
  "de_core",
+ "de_index",
  "de_map",
  "depacked",
  "futures-lite",

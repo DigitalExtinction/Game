@@ -3,6 +3,7 @@ use bevy::{
     prelude::{App, Plugin, PluginGroup, SystemLabel},
 };
 use de_core::{gconfig::GameConfig, player::Player, state::GameState};
+use de_index::IndexPlugin;
 use iyes_loopless::prelude::*;
 
 use self::{
@@ -12,7 +13,6 @@ use self::{
 };
 
 mod camera;
-mod collisions;
 mod command;
 mod maploader;
 mod movement;
@@ -34,7 +34,8 @@ impl PluginGroup for GamePluginGroup {
             .add(PointerPlugin)
             .add(CommandPlugin)
             .add(MovementPlugin)
-            .add(SpawnerPlugin);
+            .add(SpawnerPlugin)
+            .add(IndexPlugin);
     }
 }
 

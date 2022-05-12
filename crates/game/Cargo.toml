@@ -9,6 +9,7 @@ repository = "https://github.com/Indy2222/Digital-Extinction"
 # DE
 de_core = { path = "../core", version = "0.1.0-dev" }
 de_map = { path = "../map", version = "0.1.0-dev" }
+de_index = { path = "../index", version = "0.1.0-dev" }
 
 # Other
 bevy = "0.7"
@@ -25,10 +26,6 @@ nalgebra = { version = "0.31.0", features = ["convert-glam020"] }
 
 [dev-dependencies]
 criterion = "0.3"
-
-[[bench]]
-name = "ray_intersection"
-harness = false
 
 [[bench]]
 name = "tree"
