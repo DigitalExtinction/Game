@@ -4,7 +4,7 @@ use bevy::{
     input::mouse::{MouseMotion, MouseScrollUnit, MouseWheel},
     prelude::*,
 };
-use de_core::utils::ToMsl;
+use de_core::{state::GameState, utils::ToMsl};
 use de_map::size::MapBounds;
 use iyes_loopless::prelude::*;
 use parry3d::{
@@ -13,7 +13,7 @@ use parry3d::{
     shape::HalfSpace,
 };
 
-use super::{terrain::TerrainCollider, GameState};
+use super::terrain::TerrainCollider;
 
 /// Horizontal camera movement is initiated if mouse cursor is within this
 /// distance to window edge.

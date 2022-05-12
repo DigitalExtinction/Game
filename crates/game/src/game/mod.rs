@@ -2,7 +2,7 @@ use bevy::{
     app::PluginGroupBuilder,
     prelude::{App, Plugin, PluginGroup, SystemLabel},
 };
-use de_core::{gconfig::GameConfig, player::Player};
+use de_core::{gconfig::GameConfig, player::Player, state::GameState};
 use iyes_loopless::prelude::*;
 
 use self::{
@@ -51,10 +51,4 @@ impl Plugin for GamePlugin {
         app.add_loopless_state(GameState::Loading)
             .insert_resource(GameConfig::new("map.tar", Player::Player1));
     }
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-enum GameState {
-    Loading,
-    Playing,
 }

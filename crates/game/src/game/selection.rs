@@ -8,9 +8,10 @@ use bevy::{
         With,
     },
 };
+use de_core::state::GameState;
 use iyes_loopless::prelude::*;
 
-use super::{pointer::Pointer, GameState, Labels};
+use super::{pointer::Pointer, Labels};
 
 pub struct SelectionPlugin;
 

@@ -3,7 +3,7 @@ use bevy::{
     render::mesh::{Indices, PrimitiveTopology},
     tasks::{IoTaskPool, Task},
 };
-use de_core::{gconfig::GameConfig, log_full_error, objects::ActiveObjectType};
+use de_core::{gconfig::GameConfig, log_full_error, objects::ActiveObjectType, state::GameState};
 use de_map::{
     description::{Map, ObjectType},
     io::{load_map, MapLoadingError},
@@ -12,7 +12,7 @@ use de_map::{
 use futures_lite::future;
 use iyes_loopless::prelude::*;
 
-use super::{terrain::Terrain, GameState};
+use super::terrain::Terrain;
 use crate::{
     assets::asset_path,
     game::{camera::MoveFocusEvent, spawner::SpawnEvent},

@@ -6,12 +6,12 @@ use bevy::{
     },
     window::Windows,
 };
-use de_core::objects::Playable;
+use de_core::{objects::Playable, state::GameState};
 use glam::{Vec2, Vec3};
 use iyes_loopless::prelude::*;
 use parry3d::query::Ray;
 
-use super::{collisions::Intersector, terrain::TerrainCollider, GameState, Labels};
+use super::{collisions::Intersector, terrain::TerrainCollider, Labels};
 use crate::math::ray;
 
 pub struct PointerPlugin;
