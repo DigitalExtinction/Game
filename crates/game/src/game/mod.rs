@@ -20,7 +20,6 @@ mod pointer;
 mod selection;
 mod spawner;
 mod terrain;
-pub mod tree;
 
 pub struct GamePluginGroup;
 

@@ -1523,11 +1523,9 @@ version = "0.1.0-dev"
 dependencies = [
  "anyhow",
  "bevy",
- "criterion",
  "de_core",
  "de_index",
  "de_map",
- "depacked",
  "futures-lite",
  "glam",
  "iyes_loopless",
@@ -1576,15 +1574,6 @@ checksum = "73770f8e1fe7d64df17ca66ad28994a0a623ea497fa69486e14984e715c5d174"
 dependencies = [
  "adler32",
  "byteorder",
-]
-
-[[package]]
-name = "depacked"
-version = "0.2.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2125fa605ac36abab5f9b3bfe7046a5fde549607f651956ad08b7143b3c206d2"
-dependencies = [
- "skiplist",
 ]
 
 [[package]]
@@ -3320,15 +3309,6 @@ dependencies = [
  "num-traits",
  "paste",
  "wide",
-]
-
-[[package]]
-name = "skiplist"
-version = "0.4.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "fa37347a2b4609765d113afe55f16636ccd42dadc1ad0d29030908d1bac4c95b"
-dependencies = [
- "rand",
 ]
 
 [[package]]
