@@ -1538,6 +1538,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "de_index"
+version = "0.1.0-dev"
+dependencies = [
+ "ahash",
+ "bevy",
+ "de_core",
+ "glam",
+ "iyes_loopless",
+ "nalgebra",
+ "parry3d",
+]
+
+[[package]]
 name = "de_map"
 version = "0.1.0-dev"
 dependencies = [

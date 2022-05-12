@@ -63,7 +63,11 @@ impl<'w, 's> TerrainCollider<'w, 's> {
     fn cast_ray_negdir(&self, ray: &Ray, max_toi: f32) -> Option<RayIntersection> {
         self.cast_ray(&Ray::new(ray.origin, -ray.dir), max_toi)
             .map(|intersection| {
-                RayIntersection::new(-intersection.toi, -intersection.normal, intersection.feature)
+                RayIntersection::new(
+                    -intersection.toi,
+                    -intersection.normal,
+                    intersection.feature,
+                )
             })
     }
 }
