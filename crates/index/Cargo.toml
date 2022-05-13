@@ -16,3 +16,8 @@ iyes_loopless = "0.5.1"
 parry3d = "0.9.0"
 ahash = "0.7.6"
 nalgebra = { version = "0.31.0", features = ["convert-glam020"] }
+criterion = "0.3"
+
+[[bench]]
+name = "ray"
+harness = false
