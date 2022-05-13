@@ -6,12 +6,13 @@ use bevy::{
     },
     window::Windows,
 };
-use de_core::objects::Playable;
+use de_core::{objects::Playable, state::GameState};
+use de_index::SpatialQuery;
 use glam::{Vec2, Vec3};
 use iyes_loopless::prelude::*;
+use parry3d::query::Ray;
 
-use super::{collisions::Intersector, terrain::Terrain, GameState, Labels};
-use crate::math::ray::Ray;
+use super::{terrain::TerrainCollider, Labels};
 
 pub struct PointerPlugin;
 
@@ -85,7 +86,7 @@ impl<'w, 's> MouseInWorld<'w, 's> {
         let near_plane = world_to_screen.transform_point3(-Vec3::Z * camera.near).z;
         let ray_origin = screen_to_world.transform_point3(cursor_position.extend(near_plane));
         let ray_direction = ray_origin - camera_transform.translation;
-        Some(Ray::new(ray_origin, ray_direction))
+        Some(Ray::new(ray_origin.into(), ray_direction.into()))
     }
 }
 
@@ -93,8 +94,8 @@ fn mouse_move_handler(
     mut resource: ResMut<Pointer>,
     event: EventReader<MouseMotion>,
     mouse: MouseInWorld,
-    playable: Intersector<With<Playable>>,
-    terrain: Intersector<With<Terrain>>,
+    playable: SpatialQuery<(), With<Playable>>,
+    terrain: TerrainCollider,
 ) {
     if event.is_empty() {
         return;
@@ -104,13 +105,12 @@ fn mouse_move_handler(
 
     let entity = ray
         .as_ref()
-        .and_then(|ray| playable.ray_intersection(ray))
-        .map(|(entity, _)| entity);
+        .and_then(|ray| playable.cast_ray(ray, f32::INFINITY))
+        .map(|intersection| intersection.entity());
     resource.set_entity(entity);
 
     let terrain_point = ray
-        .as_ref()
-        .and_then(|ray| terrain.ray_intersection(ray))
-        .map(|(_, intersection)| intersection.position().into());
+        .and_then(|ray| terrain.cast_ray(&ray, f32::INFINITY))
+        .map(|intersection| ray.unwrap().point_at(intersection.toi).into());
     resource.set_terrain_point(terrain_point);
 }

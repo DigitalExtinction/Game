@@ -1,5 +1,5 @@
 [package]
-name = "de_game"
+name = "de_index"
 version = "0.1.0-dev"
 edition = "2021"
 authors = ["Martin Indra <martin.indra@mgn.cz>"]
@@ -8,17 +8,16 @@ repository = "https://github.com/Indy2222/Digital-Extinction"
 [dependencies]
 # DE
 de_core = { path = "../core", version = "0.1.0-dev" }
-de_map = { path = "../map", version = "0.1.0-dev" }
-de_index = { path = "../index", version = "0.1.0-dev" }
 
 # Other
-bevy = "0.7"
+bevy = "0.7.0"
+glam = "0.20.2"
 iyes_loopless = "0.5.1"
-anyhow = "^1.0"
-tar = "0.4"
-serde = "1.0"
-serde_json = "1.0"
-glam = "^0.20.2"
-futures-lite = "1.11"
 parry3d = "0.9.0"
+ahash = "0.7.6"
 nalgebra = { version = "0.31.0", features = ["convert-glam020"] }
+criterion = "0.3"
+
+[[bench]]
+name = "ray"
+harness = false
