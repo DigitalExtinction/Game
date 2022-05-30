@@ -3,6 +3,7 @@
 
 use ahash::{AHashMap, AHashSet};
 use bevy::prelude::Entity;
+use de_core::projection::ToFlat;
 use glam::{IVec2, Vec2};
 use parry3d::bounding_volume::AABB;
 
@@ -13,8 +14,6 @@ use super::TILE_SIZE;
 /// Only non-empty sets are kept (a hash map mapping 2D tile coordinates to
 /// Entity sets is used under the hood). Each set contains entities whose
 /// absolute AABB intersects with the tile.
-///
-/// 3D `x` and `z` coordinates are mapped to 2D `x` and `y` coordinates.
 pub struct TileGrid {
     tiles: AHashMap<IVec2, AHashSet<Entity>>,
 }
@@ -154,13 +153,14 @@ struct TileRange {
 }
 
 impl TileRange {
-    /// Creates minimum tile range covers a given AABB (in `x` and `z` axes).
+    /// Creates minimum tile range covers a given AABB.
     ///
     /// Tiles are assumed to be topologically closed. In other words, both
     /// touching and intersecting tiles are included in the range.
     fn from_aabb(aabb: &AABB) -> Self {
-        let min_flat = Vec2::new(aabb.mins.x, aabb.mins.z);
-        let max_flat = Vec2::new(aabb.maxs.x, aabb.maxs.z);
+        let aabb = aabb.to_flat();
+        let min_flat: Vec2 = aabb.mins.into();
+        let max_flat: Vec2 = aabb.maxs.into();
         let start = (min_flat / TILE_SIZE).floor().as_ivec2();
         let stop = (max_flat / TILE_SIZE).floor().as_ivec2();
         Self::new(start, stop)
@@ -236,24 +236,24 @@ mod tests {
 
         let entity_a = Entity::from_raw(1);
         let aabb_a = AABB::new(
-            Point::new(-TILE_SIZE * 0.5, -100.5, -TILE_SIZE * 3.5),
-            Point::new(-TILE_SIZE * 0.4, 3.5, -TILE_SIZE * 3.2),
+            Point::new(-TILE_SIZE * 0.5, -100.5, TILE_SIZE * 3.2),
+            Point::new(-TILE_SIZE * 0.4, 3.5, TILE_SIZE * 3.5),
         );
 
         let entity_b = Entity::from_raw(2);
         let aabb_b = AABB::new(
-            Point::new(-TILE_SIZE * 0.7, -100.5, -TILE_SIZE * 3.5),
-            Point::new(-TILE_SIZE * 0.6, 3.5, -TILE_SIZE * 3.2),
+            Point::new(-TILE_SIZE * 0.7, -100.5, TILE_SIZE * 3.2),
+            Point::new(-TILE_SIZE * 0.6, 3.5, TILE_SIZE * 3.5),
         );
 
         let entity_c = Entity::from_raw(3);
         let aabb_c_old = AABB::new(
-            Point::new(TILE_SIZE * 7., -100.5, TILE_SIZE * 8.),
-            Point::new(TILE_SIZE * 8.5, 3.5, TILE_SIZE * 9.9),
+            Point::new(TILE_SIZE * 7., -100.5, -TILE_SIZE * 9.9),
+            Point::new(TILE_SIZE * 8.5, 3.5, -TILE_SIZE * 8.),
         );
         let aabb_c_new = AABB::new(
-            Point::new(TILE_SIZE * 7.1, -100.5, TILE_SIZE * 9.3),
-            Point::new(TILE_SIZE * 8.5, 3.5, TILE_SIZE * 12.2),
+            Point::new(TILE_SIZE * 7.1, -100.5, -TILE_SIZE * 12.2),
+            Point::new(TILE_SIZE * 8.5, 3.5, -TILE_SIZE * 9.3),
         );
 
         assert!(grid.get_tile_entities(IVec2::new(-1, -4)).is_none());
@@ -320,8 +320,8 @@ mod tests {
     #[test]
     fn test_tile_range_from_aabb() {
         let aabb = AABB::new(
-            Point::new(-TILE_SIZE * 0.5, -100.5, TILE_SIZE * 3.5),
-            Point::new(TILE_SIZE * 1., 3.5, TILE_SIZE * 4.5),
+            Point::new(-TILE_SIZE * 0.5, -100.5, -TILE_SIZE * 4.5),
+            Point::new(TILE_SIZE * 1., 3.5, -TILE_SIZE * 3.5),
         );
         let tiles: Vec<IVec2> = TileRange::from_aabb(&aabb).collect();
         assert_eq!(

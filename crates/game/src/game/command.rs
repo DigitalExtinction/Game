@@ -5,8 +5,7 @@ use bevy::{
         Plugin, Query, Res, SystemSet, With,
     },
 };
-use de_core::objects::Movable;
-use glam::Vec2;
+use de_core::{objects::Movable, projection::ToFlat};
 
 use super::{movement::SendEntityEvent, pointer::Pointer, selection::Selected, Labels};
 
@@ -35,7 +34,7 @@ fn mouse_click_handler(
     }
 
     let target = match pointer.terrain_point() {
-        Some(point) => Vec2::new(point.x, point.z),
+        Some(point) => point.to_flat(),
         None => return,
     };
 

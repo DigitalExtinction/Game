@@ -128,6 +128,7 @@ mod test {
     use async_std::task;
     use de_core::{objects::ActiveObjectType, player::Player};
     use glam::Vec2;
+    use parry2d::{bounding_volume::AABB, math::Point};
     use tempfile::Builder;
 
     use super::*;
@@ -162,7 +163,9 @@ mod test {
         task::block_on(store_map(&map, tmp_dir_path.as_path())).unwrap();
         let loaded_map = task::block_on(load_map(tmp_dir_path.as_path())).unwrap();
 
-        assert_eq!(loaded_map.bounds().min(), Vec2::new(-500., -1000.));
-        assert_eq!(loaded_map.bounds().max(), Vec2::new(500., 1000.));
+        assert_eq!(
+            loaded_map.bounds().aabb(),
+            AABB::new(Point::new(-500., -1000.), Point::new(500., 1000.))
+        );
     }
 }

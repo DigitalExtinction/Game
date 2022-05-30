@@ -9,3 +9,6 @@ repository = "https://github.com/Indy2222/Digital-Extinction"
 serde = { version = "1.0", features = ["derive"] }
 bevy_ecs = "0.7.0"
 glam = "0.20.2"
+nalgebra = { version = "0.31.0", features = ["convert-glam020"] }
+parry2d = "0.9.0"
+parry3d = "0.9.0"
