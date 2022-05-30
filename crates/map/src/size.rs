@@ -1,5 +1,6 @@
 use bevy::reflect::TypeUuid;
 use glam::Vec2;
+use parry2d::bounding_volume::AABB;
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
@@ -20,22 +21,19 @@ impl MapBounds {
         bounds
     }
 
-    /// Minimum point of the map. The 2D vector X, Y coordinates correspond to
-    /// X, Z coordinates in 3D respectively.
-    pub fn min(&self) -> Vec2 {
-        -self.0
+    /// Minimum point of the map.
+    pub fn aabb(&self) -> AABB {
+        AABB::new((-self.0).into(), self.0.into())
     }
 
-    /// Maximum point of the map. The 2D vector X, Y coordinates correspond to
-    /// X, Z coordinates in 3D respectively.
-    pub fn max(&self) -> Vec2 {
-        self.0
+    pub fn size(&self) -> Vec2 {
+        2. * self.0
     }
 
     /// Return true if the point lies within map boundaries. Note that map
     /// boundaries are inclusive.
     pub fn contains(&self, point: Vec2) -> bool {
-        self.min().cmple(point).all() && self.max().cmpge(point).all()
+        self.0.cmpge(point.abs()).all()
     }
 
     pub(crate) fn validate(&self) -> Result<(), MapBoundsValidationError> {
@@ -54,13 +52,17 @@ pub struct MapBoundsValidationError {
 
 #[cfg(test)]
 mod test {
+    use parry2d::math::Point;
+
     use super::*;
 
     #[test]
-    fn test_min_max() {
+    fn test_bounds() {
         let bounds = MapBounds(Vec2::new(2.5, 3.5));
-        assert_eq!(bounds.min(), Vec2::new(-2.5, -3.5));
-        assert_eq!(bounds.max(), Vec2::new(2.5, 3.5));
+        assert_eq!(
+            bounds.aabb(),
+            AABB::new(Point::new(-2.5, -3.5), Point::new(2.5, 3.5))
+        );
     }
 
     #[test]

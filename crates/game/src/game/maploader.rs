@@ -3,7 +3,10 @@ use bevy::{
     render::mesh::{Indices, PrimitiveTopology},
     tasks::{IoTaskPool, Task},
 };
-use de_core::{gconfig::GameConfig, log_full_error, objects::ActiveObjectType, state::GameState};
+use de_core::{
+    gconfig::GameConfig, log_full_error, objects::ActiveObjectType, projection::ToMsl,
+    state::GameState,
+};
 use de_map::{
     description::{Map, ObjectType},
     io::{load_map, MapLoadingError},
@@ -132,11 +135,12 @@ fn setup_terrain(
 }
 
 fn terrain_mesh(bounds: MapBounds) -> Mesh {
+    let bounds = bounds.aabb().to_msl();
     let vertices = [
-        ([bounds.min().x, 0., bounds.min().y], [0., 1., 0.], [0., 0.]),
-        ([bounds.min().x, 0., bounds.max().y], [0., 1., 0.], [0., 1.]),
-        ([bounds.max().x, 0., bounds.max().y], [0., 1., 0.], [1., 1.]),
-        ([bounds.max().x, 0., bounds.min().y], [0., 1., 0.], [1., 0.]),
+        ([bounds.mins.x, 0., bounds.mins.z], [0., 1., 0.], [0., 0.]),
+        ([bounds.mins.x, 0., bounds.maxs.z], [0., 1., 0.], [0., 1.]),
+        ([bounds.maxs.x, 0., bounds.maxs.z], [0., 1., 0.], [1., 1.]),
+        ([bounds.maxs.x, 0., bounds.mins.z], [0., 1., 0.], [1., 0.]),
     ];
 
     let indices = Indices::U32(vec![0, 1, 2, 0, 2, 3]);

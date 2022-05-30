@@ -17,7 +17,7 @@ pub struct Terrain {
 
 impl Terrain {
     pub fn flat(bounds: MapBounds) -> Self {
-        let size = bounds.max() - bounds.min();
+        let size = bounds.size();
         let heightfield = HeightField::new(
             DMatrix::from_row_slice(2, 2, &[0., 0., 0., 0.]),
             Vector3::new(size.x, 1., size.y),

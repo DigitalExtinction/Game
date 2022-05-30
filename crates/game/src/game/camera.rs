@@ -4,7 +4,7 @@ use bevy::{
     input::mouse::{MouseMotion, MouseScrollUnit, MouseWheel},
     prelude::*,
 };
-use de_core::{state::GameState, utils::ToMsl};
+use de_core::{projection::ToMsl, state::GameState};
 use de_map::size::MapBounds;
 use iyes_loopless::prelude::*;
 use parry3d::{
@@ -306,10 +306,11 @@ fn move_horizontaly(
         HorizontalMovementDirection::Down => transform.local_y() * delta_scalar,
     };
 
-    let margin = Vec2::splat(MAP_FOCUS_MARGIN).to_msl();
-    let focus_msl = focus.point().to_msl();
-    let min_delta_vec = (map_bounds.min().to_msl() - focus_msl + margin).min(Vec3::ZERO);
-    let max_delta_vec = (map_bounds.max().to_msl() - focus_msl - margin).max(Vec3::ZERO);
+    let margin = Vec3::new(MAP_FOCUS_MARGIN, 0., MAP_FOCUS_MARGIN);
+    let focus_msl: Vec3 = focus.point().to_msl();
+    let map_bounds = map_bounds.aabb().to_msl();
+    let min_delta_vec = (Vec3::from(map_bounds.mins) - focus_msl + margin).min(Vec3::ZERO);
+    let max_delta_vec = (Vec3::from(map_bounds.maxs) - focus_msl - margin).max(Vec3::ZERO);
     transform.translation += delta_vec.clamp(min_delta_vec, max_delta_vec);
     event.send(FocusInvalidatedEvent);
 }

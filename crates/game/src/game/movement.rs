@@ -1,6 +1,7 @@
 use std::f32::consts::{FRAC_2_PI, PI};
 
 use bevy::prelude::*;
+use de_core::projection::ToMsl;
 use glam::Vec2;
 
 use super::Labels;
@@ -59,7 +60,7 @@ fn move_objects(
     let time_delta = time.delta().as_secs_f32();
 
     for (entity, target, mut transform) in objects.iter_mut() {
-        let target_3d = Vec3::new(target.position.x, 0., target.position.y);
+        let target_3d = target.position.to_msl();
         let object_to_target = target_3d - transform.translation;
 
         let forward = transform.forward();

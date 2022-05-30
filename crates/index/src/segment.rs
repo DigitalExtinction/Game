@@ -2,6 +2,7 @@
 
 use ahash::AHashSet;
 use bevy::prelude::Entity;
+use de_core::projection::ToFlat;
 use glam::{IVec2, Vec2};
 use parry3d::shape::Segment;
 
@@ -80,11 +81,11 @@ impl TileIterator {
     ///
     /// # Arguments
     ///
-    /// * `segment` - a 2D line segment is created from this 3D line segment's
-    ///   `x` and `z` coordinates.
+    /// * `segment` - a 2D line segment is created from orthographic projection
+    ///   of this 3D line segment onto the map surface.
     fn new(segment: Segment) -> Self {
-        let mut point = Vec2::new(segment.a.x, segment.a.z);
-        let stop = Vec2::new(segment.b.x, segment.b.z);
+        let mut point = segment.a.to_flat();
+        let stop = segment.b.to_flat();
 
         if point != stop {
             // First tile might be duplicated if direction is negative along
@@ -206,12 +207,12 @@ mod tests {
     fn test_tile_iterator() {
         // (-3, -4) -> (1, 2)
         let xy = Segment::new(
-            Point::new(-2. * TILE_SIZE, 0., -3.1 * TILE_SIZE),
-            Point::new(1.1 * TILE_SIZE, 0., 2.7 * TILE_SIZE),
+            Point::new(-2. * TILE_SIZE, 0., 3.1 * TILE_SIZE),
+            Point::new(1.1 * TILE_SIZE, 0., -2.7 * TILE_SIZE),
         );
         let xy_neg = Segment::new(
-            Point::new(1.1 * TILE_SIZE, 0., 2.7 * TILE_SIZE),
-            Point::new(-2. * TILE_SIZE, 0., -3.1 * TILE_SIZE),
+            Point::new(1.1 * TILE_SIZE, 0., -2.7 * TILE_SIZE),
+            Point::new(-2. * TILE_SIZE, 0., 3.1 * TILE_SIZE),
         );
 
         let tiles: Vec<IVec2> = TileIterator::new(xy).collect();
@@ -252,15 +253,15 @@ mod tests {
     #[test]
     fn test_tile_iterator_sort_empty() {
         let short = Segment::new(
-            Point::new(1.1 * TILE_SIZE, 0., 3.1 * TILE_SIZE),
-            Point::new(1.2 * TILE_SIZE, 0., 3.1 * TILE_SIZE),
+            Point::new(1.1 * TILE_SIZE, 0., -3.1 * TILE_SIZE),
+            Point::new(1.2 * TILE_SIZE, 0., -3.1 * TILE_SIZE),
         );
         let tiles_short: Vec<IVec2> = TileIterator::new(short).collect();
         assert_eq!(tiles_short, vec![IVec2::new(1, 3)]);
 
         let empty = Segment::new(
-            Point::new(0.1 * TILE_SIZE, 0., 3.1 * TILE_SIZE),
-            Point::new(0.1 * TILE_SIZE, 0., 3.1 * TILE_SIZE),
+            Point::new(0.1 * TILE_SIZE, 0., -3.1 * TILE_SIZE),
+            Point::new(0.1 * TILE_SIZE, 0., -3.1 * TILE_SIZE),
         );
         let tiles_empty: Vec<IVec2> = TileIterator::new(empty).collect();
         assert_eq!(tiles_empty, vec![IVec2::new(0, 3)]);

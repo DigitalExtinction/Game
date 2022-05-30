@@ -1,6 +1,9 @@
 Digital Extinction
 ==================
 
+Contributions to the project in any form are welcomed. Check out our
+[Contributor's Guide](/CONTRIBUTING.md).
+
 License
 =======
 

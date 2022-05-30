@@ -4,7 +4,7 @@ use bevy::prelude::Transform;
 use de_core::{
     objects::{ActiveObjectType, InactiveObjectType},
     player::Player,
-    utils::ToMsl,
+    projection::ToMsl,
 };
 use glam::{Quat, Vec2};
 use serde::{Deserialize, Serialize};
@@ -71,8 +71,7 @@ impl Map {
     /// # Arguments
     ///
     /// * `position` - (x, y) coordinates of the object relative to (0, 0) (as
-    ///   opposed to map bounds origin). (x, y) coordinates correspond to (x,
-    ///   z) coordinates in the 3D world.
+    ///   opposed to map bounds origin).
     ///
     /// * `heading` - (counter clockwise) rotation in radians of the object
     ///   around y axis (facing upwards).
