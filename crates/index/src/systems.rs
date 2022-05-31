@@ -8,9 +8,11 @@ use bevy::{
 };
 use de_core::{
     objects::{MovableSolid, StaticSolid},
+    projection::ToFlat,
     state::GameState,
 };
 use iyes_loopless::prelude::*;
+use parry2d::{math::Point, shape::ConvexPolygon};
 use parry3d::{
     bounding_volume::{BoundingVolume, AABB},
     math::Isometry,
@@ -18,7 +20,7 @@ use parry3d::{
 };
 
 use super::index::EntityIndex;
-use crate::shape::EntityShape;
+use crate::shape::{EntityShape, Ichnography};
 
 type SolidEntityQuery<'w, 's> = Query<
     'w,
@@ -30,7 +32,7 @@ type SolidEntityQuery<'w, 's> = Query<
         Option<&'static Children>,
     ),
     (
-        Without<Indexed>,
+        Without<Ichnography>,
         Or<(With<StaticSolid>, With<MovableSolid>)>,
     ),
 >;
@@ -46,8 +48,12 @@ type ChildQuery<'w, 's> = Query<
     With<Parent>,
 >;
 
-type MovedQuery<'w, 's> =
-    Query<'w, 's, (Entity, &'static GlobalTransform), (With<Indexed>, Changed<GlobalTransform>)>;
+type MovedQuery<'w, 's> = Query<
+    'w,
+    's,
+    (Entity, &'static GlobalTransform),
+    (With<Ichnography>, Changed<GlobalTransform>),
+>;
 
 /// Bevy plugin which adds systems necessary for spatial indexing of solid
 /// entities.
@@ -84,10 +90,6 @@ impl Plugin for IndexPlugin {
     }
 }
 
-/// Marker component used to recognized already indexed entities.
-#[derive(Component)]
-struct Indexed;
-
 fn setup(mut commands: Commands) {
     commands.insert_resource(EntityIndex::new());
 }
@@ -114,16 +116,28 @@ fn insert(
             Some(shape) => shape,
             None => continue,
         };
+
+        let aabb = shape.compute_aabb().to_flat();
+        let ichnography = Ichnography::new(
+            ConvexPolygon::from_convex_polyline(vec![
+                Point::new(aabb.mins.x, aabb.maxs.y),
+                Point::new(aabb.mins.x, aabb.mins.y),
+                Point::new(aabb.maxs.x, aabb.mins.y),
+                Point::new(aabb.maxs.x, aabb.maxs.y),
+            ])
+            .unwrap(),
+        );
+
         let position = Isometry::new(
             transform.translation.into(),
             transform.rotation.to_scaled_axis().into(),
         );
         index.insert(entity, shape, position);
-        commands.entity(entity).insert(Indexed);
+        commands.entity(entity).insert(ichnography);
     }
 }
 
-fn remove(mut index: ResMut<EntityIndex>, removed: RemovedComponents<Indexed>) {
+fn remove(mut index: ResMut<EntityIndex>, removed: RemovedComponents<Ichnography>) {
     for entity in removed.iter() {
         index.remove(entity);
     }

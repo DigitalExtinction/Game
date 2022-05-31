@@ -12,7 +12,7 @@ mod shape;
 mod systems;
 
 pub use self::index::{EntityIndex, RayEntityIntersection, SpatialQuery};
-pub use self::shape::EntityShape;
+pub use self::shape::{EntityShape, Ichnography};
 pub use self::systems::IndexPlugin;
 
 /// Size (in world-space) of a single square tile where entities are kept.

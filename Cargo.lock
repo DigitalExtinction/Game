@@ -1550,6 +1550,7 @@ dependencies = [
  "glam",
  "iyes_loopless",
  "nalgebra",
+ "parry2d",
  "parry3d",
 ]
 
