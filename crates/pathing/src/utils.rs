@@ -5,7 +5,7 @@ use parry2d::shape::Segment;
 
 /// Line segment whose hash and equivalence class don't change with
 /// orientation.
-#[derive(Clone, Copy, PartialEq, Eq, Hash, Debug)]
+#[derive(Clone, Copy, PartialEq, Eq, Hash, Debug, PartialOrd, Ord)]
 pub(crate) struct HashableSegment((FloatOrd, FloatOrd), (FloatOrd, FloatOrd));
 
 impl HashableSegment {

@@ -4,6 +4,7 @@ use bevy::{
 };
 use de_core::{gconfig::GameConfig, player::Player, state::GameState};
 use de_index::IndexPlugin;
+use de_pathing::PathingPlugin;
 use iyes_loopless::prelude::*;
 
 use self::{
@@ -34,7 +35,8 @@ impl PluginGroup for GamePluginGroup {
             .add(CommandPlugin)
             .add(MovementPlugin)
             .add(SpawnerPlugin)
-            .add(IndexPlugin);
+            .add(IndexPlugin)
+            .add(PathingPlugin);
     }
 }
 

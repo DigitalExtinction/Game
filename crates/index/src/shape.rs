@@ -38,7 +38,7 @@ impl EntityShape {
     }
 }
 
-#[derive(Component)]
+#[derive(Component, Clone)]
 pub struct Ichnography {
     bounds: ConvexPolygon,
 }

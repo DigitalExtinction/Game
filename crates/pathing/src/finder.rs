@@ -25,7 +25,6 @@ pub(crate) struct PathFinder {
 impl PathFinder {
     /// Creates a new path finder. It is assumed that there are no obstacles
     /// within `bounds`.
-    #[allow(dead_code)]
     pub(crate) fn new(bounds: &MapBounds) -> Self {
         let aabb = bounds.aabb();
         Self::from_triangles(vec![
@@ -50,7 +49,6 @@ impl PathFinder {
     ///   area where objects (their centroids so there needs to be padding) can
     ///   freely move, b) contain not triangle-to-triangle intersections, c)
     ///   cover any of the area where object cannot freely move.
-    #[allow(dead_code)]
     pub(crate) fn from_triangles(triangles: Vec<Triangle>) -> Self {
         let mut graph = VisibilityGraph::new();
 
@@ -98,7 +96,6 @@ impl PathFinder {
     /// Returns a shortest path between two points.
     ///
     /// Returns `None` if there is no path between the two points.
-    #[allow(dead_code)]
     pub(crate) fn find_path<P: Into<Point<f32>>>(&self, from: P, to: P) -> Option<Path> {
         let from: Point<f32> = from.into();
         let to: Point<f32> = to.into();

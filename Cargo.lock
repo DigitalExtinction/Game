@@ -1589,6 +1589,7 @@ dependencies = [
  "de_core",
  "de_index",
  "de_map",
+ "de_pathing",
  "futures-lite",
  "glam",
  "iyes_loopless",
@@ -1641,11 +1642,14 @@ dependencies = [
  "de_core",
  "de_index",
  "de_map",
+ "futures-lite",
  "glam",
+ "iyes_loopless",
  "nalgebra",
  "ntest",
  "parry2d",
  "rstar",
+ "spade",
  "tinyvec",
 ]
 

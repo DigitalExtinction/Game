@@ -2,10 +2,12 @@
 
 #[cfg(debug_assertions)]
 use approx::assert_abs_diff_eq;
+use bevy::prelude::Component;
 use glam::Vec2;
 
 /// A path on the map defined by a sequence of way points. Start and target
 /// position are included.
+#[derive(Component)]
 pub(crate) struct Path {
     length: f32,
     waypoints: Vec<Vec2>,
