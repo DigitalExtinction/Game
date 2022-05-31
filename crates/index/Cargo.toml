@@ -17,6 +17,8 @@ parry3d = "0.9.0"
 parry2d = { git = "https://github.com/Indy2222/parry", branch = "feature/dilation" }
 ahash = "0.7.6"
 nalgebra = { version = "0.31.0", features = ["convert-glam020"] }
+
+[dev-dependencies]
 criterion = "0.3"
 
 [[bench]]
