@@ -50,4 +50,4 @@ mod systems;
 mod triangulation;
 mod utils;
 
-pub use systems::{PathingPlugin, UpdateEntityPath};
+pub use systems::{create_finder, PathingPlugin, UpdateEntityPath};

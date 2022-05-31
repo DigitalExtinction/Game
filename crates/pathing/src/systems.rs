@@ -232,7 +232,11 @@ fn check_update_result(
 }
 
 /// Creates a new path finder by triangulating accessible area on the map.
-fn create_finder(bounds: MapBounds, entities: Vec<(GlobalTransform, Ichnography)>) -> PathFinder {
+// This function has to be public due to its benchmark.
+pub fn create_finder(
+    bounds: MapBounds,
+    entities: Vec<(GlobalTransform, Ichnography)>,
+) -> PathFinder {
     debug!(
         "Going to create a new path finder from {} entities",
         entities.len()

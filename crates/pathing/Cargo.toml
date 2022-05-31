@@ -26,3 +26,8 @@ futures-lite = "1.11.3"
 
 [dev-dependencies]
 ntest = "0.8.0"
+criterion = "0.3"
+
+[[bench]]
+name = "pathing"
+harness = false

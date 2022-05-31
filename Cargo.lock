@@ -1639,6 +1639,7 @@ dependencies = [
  "ahash",
  "approx",
  "bevy",
+ "criterion",
  "de_core",
  "de_index",
  "de_map",

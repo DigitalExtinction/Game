@@ -15,7 +15,7 @@ use crate::{
 };
 
 /// A struct used for path finding.
-pub(crate) struct PathFinder {
+pub struct PathFinder {
     /// Spatial index of triangles. It is used to find edges neighboring start
     /// and end pints of a path to be found.
     triangles: RTree<GraphTriangle>,
