@@ -1,0 +1,25 @@
+[package]
+name = "de_pathing"
+version = "0.1.0-dev"
+edition = "2021"
+authors = ["Martin Indra <martin.indra@mgn.cz>"]
+repository = "https://github.com/DigitalExtinction/Game"
+
+[dependencies]
+# DE
+de_core = { path = "../core", version = "0.1.0-dev" }
+de_index = { path = "../index", version = "0.1.0-dev" }
+de_map = { path = "../map", version = "0.1.0-dev" }
+
+# Other
+bevy = "0.7"
+glam = "^0.20.2"
+parry2d = { git = "https://github.com/Indy2222/parry", branch = "feature/dilation" }
+nalgebra = { version = "0.31.0", features = ["convert-glam020"] }
+ahash = "0.7.6"
+approx = "0.5.1"
+rstar = "0.9.3"
+tinyvec = { version = "1.6.0", features = ["rustc_1_40"] }
+
+[dev-dependencies]
+ntest = "0.8.0"

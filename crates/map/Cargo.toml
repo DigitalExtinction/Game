@@ -12,7 +12,7 @@ de_core = { path = "../core", version = "0.1.0-dev" }
 # other
 bevy = "0.7"
 glam = "0.20.2"
-parry2d = "0.9.0"
+parry2d = { git = "https://github.com/Indy2222/parry", branch = "feature/dilation" }
 serde = "1.0"
 serde_json = "1.0"
 tar = "0.4"
