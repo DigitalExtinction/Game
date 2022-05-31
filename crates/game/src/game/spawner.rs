@@ -1,7 +1,7 @@
 use bevy::{ecs::system::EntityCommands, prelude::*};
 use de_core::{
     gconfig::GameConfig,
-    objects::{ActiveObjectType, InactiveObjectType, Movable, Playable, SolidObject},
+    objects::{ActiveObjectType, InactiveObjectType, MovableSolid, Playable, StaticSolid},
 };
 use de_map::description::{ActiveObject, InactiveObject, Object, ObjectType};
 
@@ -36,9 +36,6 @@ fn spawn(
         let global_transform = GlobalTransform::from(transform);
         let mut entity_commands = commands.spawn_bundle((global_transform, transform));
 
-        // Currently all implemented objects are solid.
-        entity_commands.insert(SolidObject);
-
         match object.object_type() {
             ObjectType::Active(object) => {
                 spawn_active(&game_config, &server, &mut entity_commands, object)
@@ -61,13 +58,16 @@ fn spawn_active(
         commands.insert(Playable);
     }
 
+    if object.object_type() == ActiveObjectType::Attacker {
+        commands.insert(MovableSolid);
+    } else {
+        commands.insert(StaticSolid);
+    }
+
     let model_name = match object.object_type() {
         ActiveObjectType::Base => "base",
         ActiveObjectType::PowerHub => "powerhub",
-        ActiveObjectType::Attacker => {
-            commands.insert(Movable);
-            "attacker"
-        }
+        ActiveObjectType::Attacker => "attacker",
     };
     spawn_model(server, commands, model_name);
 }
@@ -75,6 +75,7 @@ fn spawn_active(
 fn spawn_inactive(server: &AssetServer, commands: &mut EntityCommands, object: &InactiveObject) {
     info!("Spawning inactive object {}", object.object_type());
 
+    commands.insert(StaticSolid);
     let model_name = match object.object_type() {
         InactiveObjectType::Tree => "tree01",
     };

@@ -6,7 +6,10 @@ use bevy::{
     prelude::*,
     transform::TransformSystem,
 };
-use de_core::{objects::SolidObject, state::GameState};
+use de_core::{
+    objects::{MovableSolid, StaticSolid},
+    state::GameState,
+};
 use iyes_loopless::prelude::*;
 use parry3d::{
     bounding_volume::{BoundingVolume, AABB},
@@ -26,7 +29,10 @@ type SolidEntityQuery<'w, 's> = Query<
         Option<&'static Handle<Mesh>>,
         Option<&'static Children>,
     ),
-    (Without<Indexed>, With<SolidObject>),
+    (
+        Without<Indexed>,
+        Or<(With<StaticSolid>, With<MovableSolid>)>,
+    ),
 >;
 
 type ChildQuery<'w, 's> = Query<
@@ -46,8 +52,8 @@ type MovedQuery<'w, 's> =
 /// Bevy plugin which adds systems necessary for spatial indexing of solid
 /// entities.
 ///
-/// Only entities with marker component [`de_core::objects::SolidObject`] are
-/// indexed.
+/// Only entities with marker component [`de_core::objects::StaticSolid`] or
+/// [`de_core::objects::MovableSolid`] are indexed.
 ///
 /// The systems are executed only in state [`crate::game::GameState::Playing`].
 /// The systems automatically insert newly spawned solid entities to the index,

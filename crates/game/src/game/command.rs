@@ -5,7 +5,7 @@ use bevy::{
         Plugin, Query, Res, SystemSet, With,
     },
 };
-use de_core::{objects::Movable, projection::ToFlat};
+use de_core::{objects::MovableSolid, projection::ToFlat};
 
 use super::{movement::SendEntityEvent, pointer::Pointer, selection::Selected, Labels};
 
@@ -26,7 +26,7 @@ impl Plugin for CommandPlugin {
 fn mouse_click_handler(
     mut click_events: EventReader<MouseButtonInput>,
     mut send_entity_events: EventWriter<SendEntityEvent>,
-    selected: Query<Entity, (With<Selected>, With<Movable>)>,
+    selected: Query<Entity, (With<Selected>, With<MovableSolid>)>,
     pointer: Res<Pointer>,
 ) {
     if !click_events.iter().any(|e| e.button == MouseButton::Right) {
