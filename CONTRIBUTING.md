@@ -23,6 +23,17 @@
    During the review process, the PR might be accepted right away, changes
    might be requested or it might be rejected.
 
+## Development Process
+
+* `main` branch is considered stable. In theory, it should be possible to
+  release a new version from the branch at any time.
+
+* The development process is incremental. There are no final or big versions.
+
+* Release train: after version
+  [0.1](https://github.com/DigitalExtinction/Game/milestone/2) is released, a
+  new version is released every 6 weeks.
+
 ## Getting Oriented
 
 ### Coordinate Systems
