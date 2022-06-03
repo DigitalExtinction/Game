@@ -1,5 +1,11 @@
 # Contributing to Digital Extinction
 
+## Suggesting Changes
+
+1. Start an informal
+   [discussions](https://github.com/DigitalExtinction/Game/discussions).
+1. Open a formal [issue](https://github.com/DigitalExtinction/Game/issues).
+
 ## Making Changes
 
 1. First, discuss any non-trivial or potentially controversial changes in our
