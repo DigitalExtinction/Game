@@ -16,6 +16,11 @@ mature game, come back in a few months.
 
 Feedback, bug reports and other [contributions](#contributing) are welcomed.
 
+# Where to Get Help?
+
+Open a question in [Q&A category of this repository's
+discussions](https://github.com/DigitalExtinction/Game/discussions/categories/q-a).
+
 # Contributing
 
 Contributions to the project in any form are welcomed. Check out our
