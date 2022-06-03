@@ -1,5 +1,22 @@
 # Contributing to Digital Extinction
 
+## Making Changes
+
+1. First, discuss any non-trivial or potentially controversial changes in our
+   [Discussions](https://github.com/DigitalExtinction/Game/discussions).
+
+   You can skip this step if you are basing you changes on an already concluded
+   discussion or an [issue](https://github.com/DigitalExtinction/Game/issues).
+
+1. Implement the changes. Do not forget to include appropriate unit tests and,
+   when possible, thoroughly test you changes manually.
+
+1. Open a pull request (PR).
+
+1. [@Indy2222](https://github.com/Indy2222) and the community review the PR.
+   During the review process, the PR might be accepted right away, changes
+   might be requested or it might be rejected.
+
 ## Getting Oriented
 
 ### Coordinate Systems
