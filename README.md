@@ -1,11 +1,9 @@
-Digital Extinction
-==================
+# Digital Extinction
 
 Contributions to the project in any form are welcomed. Check out our
 [Contributor's Guide](/CONTRIBUTING.md).
 
-License
-=======
+# License
 
 Digital Extinction is free and open source. All code in this repository is
 licensed under GNU GPLv3 ([LICENSE](LICENSE) or
