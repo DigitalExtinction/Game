@@ -16,6 +16,23 @@ looking for a mature game, come back in a few months.
 
 Feedback, bug reports and other [contributions](#contributing) are welcomed.
 
+# How to Play?
+
+[Currently](#status), the only possibility is to build the game from source.
+
+What you need:
+
+* installed and configured Git
+* [Git LFS](https://git-lfs.github.com/)
+* [Rust](https://www.rust-lang.org/tools/install)
+
+Clone, build & run recipe (will work in majority of the cases):
+
+* `git clone git@github.com:DigitalExtinction/Game.git DigitalExtinction`
+* `cd DigitalExtinction`
+* make sure that Git LFS files in [assets/](assets/) are pulled
+* `cargo run --release`
+
 # Where to Get Help?
 
 Open a question in [Q&A category of this repository's
