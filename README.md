@@ -11,8 +11,8 @@ The game is completely written in [Rust](https://www.rust-lang.org/) with
 
 # Status
 
-The game is still in early phases of its development. If you are looking for a
-mature game, come back in a few months.
+The game is still in [early phases](#roadmap) of its development. If you are
+looking for a mature game, come back in a few months.
 
 Feedback, bug reports and other [contributions](#contributing) are welcomed.
 
@@ -25,6 +25,37 @@ discussions](https://github.com/DigitalExtinction/Game/discussions/categories/q-
 
 Contributions to the project in any form are welcomed. Check out our
 [Contributor's Guide](/CONTRIBUTING.md).
+
+# Roadmap
+
+1. [MVP](https://github.com/DigitalExtinction/Game/milestone/1)
+1. Release (first) [version
+   0.1](https://github.com/DigitalExtinction/Game/milestone/2)
+1. Publicly announce the game:
+   [#60](https://github.com/DigitalExtinction/Game/issues/60)
+1. [Indefinitely improve the game](/CONTRIBUTING.md#development-process)
+
+## MVP
+
+This is an embarrassingly bare bones game. It is complete in the sense that you
+can start the game, play against someone and win or loose.
+
+At this stage, the game is too bare bones to be enjoyable. The UI/UX misses
+some very important features (like seeing what units are selected, ability to
+see health / energy of units, and so on).
+
+The goal of this milestone is to lay down the foundations, setup basic
+insfrastrucutre (GitHub Actions, issues labels, …) and achieve an important
+psychological milestone.
+
+## 0.1
+
+This is the first published version of the game. In theory, this should be the
+earliest possible version, minimizing development time and effort, which is
+threshold enjoyable for an actual player.
+
+As opposed to MVP, this version has all the basic UI to make the UX acceptable.
+The game mechanics is somewhat expanded so it is no longer thoroughly "dummy".
 
 # License
 
