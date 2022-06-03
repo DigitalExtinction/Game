@@ -9,6 +9,13 @@ Windows and potentially other platforms.
 The game is completely written in [Rust](https://www.rust-lang.org/) with
 [Bevy](https://bevyengine.org/) used as the engine.
 
+# Status
+
+The game is still in early phases of its development. If you are looking for a
+mature game, come back in a few months.
+
+Feedback, bug reports and other [contributions](#contributing) are welcomed.
+
 # Contributing
 
 Contributions to the project in any form are welcomed. Check out our
