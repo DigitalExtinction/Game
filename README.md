@@ -1,5 +1,16 @@
 # Digital Extinction
 
+Digital Extinction is a 3D real-time strategy (RTS) game. It is set in the near
+future where humans and AI fight over their existence.
+
+It is [open source & free software](#license). Forever! It runs on Linux,
+Windows and potentially other platforms.
+
+The game is completely written in [Rust](https://www.rust-lang.org/) with
+[Bevy](https://bevyengine.org/) used as the engine.
+
+# Contributing
+
 Contributions to the project in any form are welcomed. Check out our
 [Contributor's Guide](/CONTRIBUTING.md).
 
