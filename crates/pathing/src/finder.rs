@@ -96,7 +96,7 @@ impl PathFinder {
     /// Returns a shortest path between two points.
     ///
     /// Returns `None` if there is no path between the two points.
-    pub(crate) fn find_path<P: Into<Point<f32>>>(&self, from: P, to: P) -> Option<Path> {
+    pub fn find_path<P: Into<Point<f32>>>(&self, from: P, to: P) -> Option<Path> {
         let from: Point<f32> = from.into();
         let to: Point<f32> = to.into();
 

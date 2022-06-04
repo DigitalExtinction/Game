@@ -71,5 +71,30 @@ fn create_finder_benchmark(c: &mut Criterion) {
     }
 }
 
-criterion_group!(benches, create_finder_benchmark);
+fn find_path_benchmark(c: &mut Criterion) {
+    let mut group = c.benchmark_group("find_path");
+    let plot_config = PlotConfiguration::default().summary_scale(AxisScale::Logarithmic);
+    group.plot_config(plot_config);
+
+    let points = load_points(100_000);
+    let mut index = 0;
+
+    for num_entities in [100, 1000, 10_000, 100_000] {
+        let bounds = MapBounds::new(Vec2::splat(MAP_SIZE));
+        let finder = create_finder(bounds, load_entities(num_entities));
+
+        group.throughput(Throughput::Elements(1));
+        group.bench_function(BenchmarkId::from_parameter(num_entities), |b| {
+            b.iter(|| {
+                let start = points[index];
+                index = (index + 1) % points.len();
+                let target = points[index];
+                index = (index + 1) % points.len();
+                finder.find_path(start, target);
+            });
+        });
+    }
+}
+
+criterion_group!(benches, create_finder_benchmark, find_path_benchmark);
 criterion_main!(benches);
