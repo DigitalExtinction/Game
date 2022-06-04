@@ -4,7 +4,7 @@
 //! The core structure is a square tile grid which points to Bevy ECS entities.
 //! Newly spawned entities are automatically added, despawned entities removed
 //! and moved entities updated by systems added by
-//! [`self::PartitioningPlugin`].
+//! [`self::IndexPlugin`].
 mod grid;
 mod index;
 mod segment;

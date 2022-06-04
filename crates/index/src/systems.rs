@@ -61,10 +61,11 @@ type MovedQuery<'w, 's> = Query<
 /// Only entities with marker component [`de_core::objects::StaticSolid`] or
 /// [`de_core::objects::MovableSolid`] are indexed.
 ///
-/// The systems are executed only in state [`crate::game::GameState::Playing`].
-/// The systems automatically insert newly spawned solid entities to the index,
-/// update their position when [`bevy::prelude::GlobalTransform`] is changed
-/// and remove the entities from the index when they are de-spawned.
+/// The systems are executed only in state
+/// [`de_core::state::GameState::Playing`]. The systems automatically insert
+/// newly spawned solid entities to the index, update their position when
+/// [`bevy::prelude::GlobalTransform`] is changed and remove the entities from
+/// the index when they are de-spawned.
 ///
 /// Entity removal is done during stage
 /// [`bevy::prelude::CoreStage::PostUpdate`], thus entities removed during or
