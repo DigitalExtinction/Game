@@ -41,16 +41,21 @@ impl Path {
         Self { length, waypoints }
     }
 
-    /// Returns length of the path in meters.
+    /// Returns the original length of the path in meters.
     pub(crate) fn length(&self) -> f32 {
         self.length
     }
 
-    /// Returns complete sequence of the path way points. The last way point
+    /// Returns a sequence of the remaining path way points. The last way point
     /// corresponds to the start of the path and vice versa.
-    #[allow(dead_code)]
-    pub(crate) fn waypoints(&self) -> &[Vec2] {
+    pub fn waypoints(&self) -> &[Vec2] {
         self.waypoints.as_slice()
+    }
+
+    /// Advances the path by one. Returns true if the path is empty.
+    pub fn advance(&mut self) -> bool {
+        self.waypoints.pop();
+        self.waypoints.is_empty()
     }
 }
 

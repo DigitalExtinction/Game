@@ -6,8 +6,9 @@ use bevy::{
     },
 };
 use de_core::{objects::MovableSolid, projection::ToFlat};
+use de_pathing::UpdateEntityPath;
 
-use super::{movement::SendEntityEvent, pointer::Pointer, selection::Selected, Labels};
+use super::{pointer::Pointer, selection::Selected, Labels};
 
 pub struct CommandPlugin;
 
@@ -25,7 +26,7 @@ impl Plugin for CommandPlugin {
 
 fn mouse_click_handler(
     mut click_events: EventReader<MouseButtonInput>,
-    mut send_entity_events: EventWriter<SendEntityEvent>,
+    mut path_events: EventWriter<UpdateEntityPath>,
     selected: Query<Entity, (With<Selected>, With<MovableSolid>)>,
     pointer: Res<Pointer>,
 ) {
@@ -39,6 +40,6 @@ fn mouse_click_handler(
     };
 
     for entity in selected.iter() {
-        send_entity_events.send(SendEntityEvent::new(entity, target));
+        path_events.send(UpdateEntityPath::new(entity, target));
     }
 }

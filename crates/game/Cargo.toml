@@ -11,6 +11,7 @@ de_core = { path = "../core", version = "0.1.0-dev" }
 de_map = { path = "../map", version = "0.1.0-dev" }
 de_index = { path = "../index", version = "0.1.0-dev" }
 de_pathing = { path = "../pathing", version = "0.1.0-dev" }
+de_movement = { path = "../movement", version = "0.1.0-dev" }
 
 # Other
 bevy = "0.7"
