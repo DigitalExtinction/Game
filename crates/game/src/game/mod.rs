@@ -4,19 +4,18 @@ use bevy::{
 };
 use de_core::{gconfig::GameConfig, player::Player, state::GameState};
 use de_index::IndexPlugin;
+use de_movement::MovementPlugin;
 use de_pathing::PathingPlugin;
 use iyes_loopless::prelude::*;
 
 use self::{
     camera::CameraPlugin, command::CommandPlugin, maploader::MapLoaderPlugin,
-    movement::MovementPlugin, pointer::PointerPlugin, selection::SelectionPlugin,
-    spawner::SpawnerPlugin,
+    pointer::PointerPlugin, selection::SelectionPlugin, spawner::SpawnerPlugin,
 };
 
 mod camera;
 mod command;
 mod maploader;
-mod movement;
 mod pointer;
 mod selection;
 mod spawner;
@@ -33,10 +32,10 @@ impl PluginGroup for GamePluginGroup {
             .add(SelectionPlugin)
             .add(PointerPlugin)
             .add(CommandPlugin)
-            .add(MovementPlugin)
             .add(SpawnerPlugin)
             .add(IndexPlugin)
-            .add(PathingPlugin);
+            .add(PathingPlugin)
+            .add(MovementPlugin);
     }
 }
 

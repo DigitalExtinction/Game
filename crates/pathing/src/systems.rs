@@ -16,7 +16,9 @@ use de_map::size::MapBounds;
 use futures_lite::future;
 use iyes_loopless::prelude::*;
 
-use crate::{exclusion::ExclusionArea, finder::PathFinder, path::Path, triangulation::triangulate};
+use crate::{
+    exclusion::ExclusionArea, finder::PathFinder, path::PathResult, triangulation::triangulate,
+};
 
 pub struct PathingPlugin;
 
@@ -50,9 +52,17 @@ impl Plugin for PathingPlugin {
             )
             .add_system_to_stage(
                 CoreStage::PostUpdate,
-                update_paths
+                update_existing_paths
                     .run_in_state(GameState::Playing)
+                    .label("update_existing_paths")
                     .after(TransformSystem::TransformPropagate),
+            )
+            .add_system_to_stage(
+                CoreStage::PostUpdate,
+                update_requested_paths
+                    .run_in_state(GameState::Playing)
+                    .after(TransformSystem::TransformPropagate)
+                    .after("update_existing_paths"),
             )
             .add_system_to_stage(
                 CoreStage::PreUpdate,
@@ -141,7 +151,7 @@ impl Default for UpdateFinderState {
 }
 
 struct UpdatePathsState {
-    tasks: AHashMap<Entity, Task<Option<Path>>>,
+    tasks: AHashMap<Entity, Task<Option<PathResult>>>,
 }
 
 impl UpdatePathsState {
@@ -157,7 +167,7 @@ impl UpdatePathsState {
         self.tasks.insert(entity, task);
     }
 
-    fn check_results(&mut self) -> Vec<(Entity, Option<Path>)> {
+    fn check_results(&mut self) -> Vec<(Entity, Option<PathResult>)> {
         let mut results = Vec::new();
         self.tasks.retain(
             |&entity, task| match future::block_on(future::poll_once(task)) {
@@ -247,7 +257,30 @@ pub fn create_finder(
     ))
 }
 
-fn update_paths(
+fn update_existing_paths(
+    pool: Res<AsyncComputeTaskPool>,
+    finder: Res<Arc<PathFinder>>,
+    mut state: ResMut<UpdatePathsState>,
+    mut events: EventReader<PathFinderUpdated>,
+    entities: Query<(Entity, &GlobalTransform, &PathResult)>,
+) {
+    if events.iter().count() == 0 {
+        // consume the iterator
+        return;
+    }
+
+    for (entity, transform, path) in entities.iter() {
+        state.spawn_new(
+            pool.as_ref(),
+            finder.clone(),
+            entity,
+            transform.translation.to_flat(),
+            path.target(),
+        );
+    }
+}
+
+fn update_requested_paths(
     pool: Res<AsyncComputeTaskPool>,
     finder: Res<Arc<PathFinder>>,
     mut state: ResMut<UpdatePathsState>,
@@ -275,7 +308,7 @@ fn check_path_results(mut commands: Commands, mut state: ResMut<UpdatePathsState
                 entity_commands.insert(path);
             }
             None => {
-                entity_commands.remove::<Path>();
+                entity_commands.remove::<PathResult>();
             }
         }
     }

@@ -1589,6 +1589,7 @@ dependencies = [
  "de_core",
  "de_index",
  "de_map",
+ "de_movement",
  "de_pathing",
  "futures-lite",
  "glam",
@@ -1630,6 +1631,16 @@ dependencies = [
  "tar",
  "tempfile",
  "thiserror",
+]
+
+[[package]]
+name = "de_movement"
+version = "0.1.0-dev"
+dependencies = [
+ "bevy",
+ "de_core",
+ "de_pathing",
+ "iyes_loopless",
 ]
 
 [[package]]
