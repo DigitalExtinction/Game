@@ -145,7 +145,7 @@ impl EntityCollider {
 /// System parameter implementing various spatial queries.
 ///
 /// Only entities automatically indexed by systems from
-/// [`super::systems::PartitioningPlugin`] could be retrieved.
+/// [`super::systems::IndexPlugin`] could be retrieved.
 #[derive(SystemParam)]
 pub struct SpatialQuery<'w, 's, Q, F = ()>
 where
@@ -164,7 +164,7 @@ where
     <F as WorldQuery>::Fetch: FilterFetch,
 {
     /// Returns closest entity whose shape, as indexed by systems registered by
-    /// [`super::systems::PartitioningPlugin`], intersects a given ray.
+    /// [`super::systems::IndexPlugin`], intersects a given ray.
     pub fn cast_ray(
         &self,
         ray: &Ray,
