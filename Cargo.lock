@@ -1565,7 +1565,38 @@ name = "de"
 version = "0.1.0-dev"
 dependencies = [
  "bevy",
+ "de_camera",
+ "de_controller",
  "de_game",
+ "de_index",
+ "de_movement",
+ "de_pathing",
+]
+
+[[package]]
+name = "de_camera"
+version = "0.1.0-dev"
+dependencies = [
+ "bevy",
+ "de_core",
+ "de_map",
+ "de_terrain",
+ "iyes_loopless",
+ "parry3d",
+]
+
+[[package]]
+name = "de_controller"
+version = "0.1.0-dev"
+dependencies = [
+ "bevy",
+ "de_core",
+ "de_index",
+ "de_pathing",
+ "de_terrain",
+ "glam",
+ "iyes_loopless",
+ "parry3d",
 ]
 
 [[package]]
@@ -1585,16 +1616,13 @@ name = "de_game"
 version = "0.1.0-dev"
 dependencies = [
  "bevy",
+ "de_camera",
  "de_core",
- "de_index",
  "de_map",
- "de_movement",
- "de_pathing",
+ "de_terrain",
  "futures-lite",
  "glam",
  "iyes_loopless",
- "nalgebra",
- "parry3d",
 ]
 
 [[package]]
@@ -1658,6 +1686,16 @@ dependencies = [
  "rstar",
  "spade",
  "tinyvec",
+]
+
+[[package]]
+name = "de_terrain"
+version = "0.1.0-dev"
+dependencies = [
+ "bevy",
+ "de_map",
+ "glam",
+ "parry3d",
 ]
 
 [[package]]

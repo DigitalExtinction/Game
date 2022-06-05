@@ -50,5 +50,15 @@ mod systems;
 mod triangulation;
 mod utils;
 
+use bevy::{app::PluginGroupBuilder, prelude::PluginGroup};
 pub use path::{Path, PathResult};
-pub use systems::{create_finder, PathingPlugin, UpdateEntityPath};
+use systems::PathingPlugin;
+pub use systems::{create_finder, UpdateEntityPath};
+
+pub struct PathingPluginGroup;
+
+impl PluginGroup for PathingPluginGroup {
+    fn build(&mut self, group: &mut PluginGroupBuilder) {
+        group.add(PathingPlugin);
+    }
+}

@@ -8,13 +8,14 @@ use bevy::{
 };
 use de_core::{objects::Playable, state::GameState};
 use de_index::SpatialQuery;
+use de_terrain::TerrainCollider;
 use glam::{Vec2, Vec3};
 use iyes_loopless::prelude::*;
 use parry3d::query::Ray;
 
-use super::{terrain::TerrainCollider, Labels};
+use crate::Labels;
 
-pub struct PointerPlugin;
+pub(crate) struct PointerPlugin;
 
 impl Plugin for PointerPlugin {
     fn build(&self, app: &mut App) {
@@ -27,7 +28,7 @@ impl Plugin for PointerPlugin {
 }
 
 #[derive(Default)]
-pub struct Pointer {
+pub(crate) struct Pointer {
     entity: Option<Entity>,
     terrain: Option<Vec3>,
 }
@@ -35,14 +36,14 @@ pub struct Pointer {
 impl Pointer {
     /// Pointed to playable entity or None if mouse is not over any playable
     /// entity.
-    pub fn entity(&self) -> Option<Entity> {
+    pub(crate) fn entity(&self) -> Option<Entity> {
         self.entity
     }
 
     /// Pointed to 3D position on the surface of the terrain. This can be below
     /// (occluded) another entity. It is None if the mouse is not over terrain
     /// at all.
-    pub fn terrain_point(&self) -> Option<Vec3> {
+    pub(crate) fn terrain_point(&self) -> Option<Vec3> {
         self.terrain
     }
 

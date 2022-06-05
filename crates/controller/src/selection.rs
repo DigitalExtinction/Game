@@ -11,9 +11,9 @@ use bevy::{
 use de_core::state::GameState;
 use iyes_loopless::prelude::*;
 
-use super::{pointer::Pointer, Labels};
+use crate::{pointer::Pointer, Labels};
 
-pub struct SelectionPlugin;
+pub(crate) struct SelectionPlugin;
 
 impl Plugin for SelectionPlugin {
     fn build(&self, app: &mut App) {
@@ -27,7 +27,7 @@ impl Plugin for SelectionPlugin {
 }
 
 #[derive(Component)]
-pub struct Selected;
+pub(crate) struct Selected;
 
 #[derive(Clone, Copy, PartialEq)]
 enum SelectionMode {

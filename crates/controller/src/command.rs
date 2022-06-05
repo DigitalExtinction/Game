@@ -8,9 +8,9 @@ use bevy::{
 use de_core::{objects::MovableSolid, projection::ToFlat};
 use de_pathing::UpdateEntityPath;
 
-use super::{pointer::Pointer, selection::Selected, Labels};
+use crate::{pointer::Pointer, selection::Selected, Labels};
 
-pub struct CommandPlugin;
+pub(crate) struct CommandPlugin;
 
 impl Plugin for CommandPlugin {
     fn build(&self, app: &mut App) {
