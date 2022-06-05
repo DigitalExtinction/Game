@@ -5,9 +5,28 @@ use approx::assert_abs_diff_eq;
 use bevy::prelude::Component;
 use glam::Vec2;
 
+#[derive(Component)]
+pub struct PathResult {
+    path: Path,
+    target: Vec2,
+}
+
+impl PathResult {
+    pub(crate) fn new(path: Path, target: Vec2) -> Self {
+        Self { path, target }
+    }
+
+    pub fn path_mut(&mut self) -> &mut Path {
+        &mut self.path
+    }
+
+    pub fn target(&self) -> Vec2 {
+        self.target
+    }
+}
+
 /// A path on the map defined by a sequence of way points. Start and target
 /// position are included.
-#[derive(Component)]
 pub struct Path {
     length: f32,
     waypoints: Vec<Vec2>,

@@ -2,7 +2,7 @@ use std::f32::consts::{FRAC_2_PI, PI};
 
 use bevy::prelude::*;
 use de_core::{projection::ToMsl, state::GameState};
-use de_pathing::Path;
+use de_pathing::PathResult;
 use iyes_loopless::prelude::*;
 
 const TARGET_ACCURACY: f32 = 0.1;
@@ -19,19 +19,20 @@ impl Plugin for MovementPlugin {
 
 fn update(
     mut commands: Commands,
-    mut objects: Query<(Entity, &mut Path, &mut Transform)>,
+    mut objects: Query<(Entity, &mut PathResult, &mut Transform)>,
     time: Res<Time>,
 ) {
     let time_delta = time.delta().as_secs_f32();
 
-    for (entity, mut path, mut transform) in objects.iter_mut() {
+    for (entity, mut path_result, mut transform) in objects.iter_mut() {
+        let path = path_result.path_mut();
         let object_to_target = loop {
             let target_3d = path.waypoints().last().unwrap().to_msl();
             let object_to_target = target_3d - transform.translation;
 
             if object_to_target.length() < TARGET_ACCURACY {
                 if path.advance() {
-                    commands.entity(entity).remove::<Path>();
+                    commands.entity(entity).remove::<PathResult>();
                     break object_to_target;
                 }
             } else {
