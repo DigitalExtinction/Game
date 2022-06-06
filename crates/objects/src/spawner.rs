@@ -5,7 +5,7 @@ use de_core::{
 };
 use de_map::description::{ActiveObject, InactiveObject, Object, ObjectType};
 
-pub struct SpawnerPlugin;
+pub(crate) struct SpawnerPlugin;
 
 impl Plugin for SpawnerPlugin {
     fn build(&self, app: &mut App) {

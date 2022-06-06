@@ -13,11 +13,12 @@ use de_map::{
     io::{load_map, MapLoadingError},
     size::MapBounds,
 };
+use de_objects::SpawnEvent;
 use de_terrain::Terrain;
 use futures_lite::future;
 use iyes_loopless::prelude::*;
 
-use crate::{assets::asset_path, game::spawner::SpawnEvent};
+use crate::assets::asset_path;
 
 pub struct MapLoaderPlugin;
 

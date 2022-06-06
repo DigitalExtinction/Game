@@ -8,6 +8,7 @@ repository = "https://github.com/DigitalExtinction/Game"
 
 [dependencies]
 # DE
+de_objects = { path = "crates/objects", version = "0.1.0-dev" }
 de_index = { path = "crates/index", version = "0.1.0-dev" }
 de_pathing = { path = "crates/pathing", version = "0.1.0-dev" }
 de_movement = { path = "crates/movement", version = "0.1.0-dev" }

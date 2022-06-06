@@ -1570,6 +1570,7 @@ dependencies = [
  "de_game",
  "de_index",
  "de_movement",
+ "de_objects",
  "de_pathing",
 ]
 
@@ -1619,6 +1620,7 @@ dependencies = [
  "de_camera",
  "de_core",
  "de_map",
+ "de_objects",
  "de_terrain",
  "futures-lite",
  "glam",
@@ -1663,6 +1665,16 @@ dependencies = [
  "bevy",
  "de_core",
  "de_pathing",
+ "iyes_loopless",
+]
+
+[[package]]
+name = "de_objects"
+version = "0.1.0-dev"
+dependencies = [
+ "bevy",
+ "de_core",
+ "de_map",
  "iyes_loopless",
 ]
 

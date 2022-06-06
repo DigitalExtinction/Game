@@ -4,6 +4,7 @@ use de_controller::ControllerPluginGroup;
 use de_game::game::GamePluginGroup;
 use de_index::IndexPluginGroup;
 use de_movement::MovementPluginGroup;
+use de_objects::ObjectsPluginGroup;
 use de_pathing::PathingPluginGroup;
 
 fn main() {
@@ -16,6 +17,7 @@ fn main() {
         .insert_resource(Msaa { samples: 4 })
         .add_plugins(DefaultPlugins)
         .add_plugins(GamePluginGroup)
+        .add_plugins(ObjectsPluginGroup)
         .add_plugins(IndexPluginGroup)
         .add_plugins(PathingPluginGroup)
         .add_plugins(MovementPluginGroup)

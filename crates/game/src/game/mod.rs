@@ -5,19 +5,15 @@ use bevy::{
 use de_core::{gconfig::GameConfig, player::Player, state::GameState};
 use iyes_loopless::prelude::*;
 
-use self::{maploader::MapLoaderPlugin, spawner::SpawnerPlugin};
+use self::maploader::MapLoaderPlugin;
 
 mod maploader;
-mod spawner;
 
 pub struct GamePluginGroup;
 
 impl PluginGroup for GamePluginGroup {
     fn build(&mut self, group: &mut PluginGroupBuilder) {
-        group
-            .add(GamePlugin)
-            .add(MapLoaderPlugin)
-            .add(SpawnerPlugin);
+        group.add(GamePlugin).add(MapLoaderPlugin);
     }
 }
 

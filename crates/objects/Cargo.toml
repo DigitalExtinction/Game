@@ -1,5 +1,5 @@
 [package]
-name = "de_game"
+name = "de_objects"
 version = "0.1.0-dev"
 edition = "2021"
 authors = ["Martin Indra <martin.indra@mgn.cz>"]
@@ -9,12 +9,7 @@ repository = "https://github.com/DigitalExtinction/Game"
 # DE
 de_core = { path = "../core", version = "0.1.0-dev" }
 de_map = { path = "../map", version = "0.1.0-dev" }
-de_terrain = { path = "../terrain", version = "0.1.0-dev" }
-de_objects = { path = "../objects", version = "0.1.0-dev" }
-de_camera = { path = "../camera", version = "0.1.0-dev" }
 
 # Other
-bevy = "0.7"
+bevy = "0.7.0"
 iyes_loopless = "0.5.1"
-glam = "^0.20.2"
-futures-lite = "1.11"
