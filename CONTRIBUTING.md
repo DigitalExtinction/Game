@@ -36,6 +36,39 @@
 
 ## Getting Oriented
 
+The game is split into multiple [crates](/crates), each implementing part of
+the game logic. This repository contains a Cargo workspace which consists of
+all the sub-crates.
+
+The intention is:
+
+* each crate is small, simple and self contained,
+* the public API of each crate is small or empty,
+* most of the crates expose a Bevy PluginGroup – inter-crate interaction is
+  handled via Bevy's ECS & events,
+* the crate inter-dependencies form an orderly DAG.
+
+Topologically sorted crates:
+
+* [core](/crates/core) – various simple core utilities, structs, and so on.
+  These are used across many different crates.
+
+* [map](/crates/map) – map (de)serialization, validation and representation
+  functionalities.
+
+* [terrain](/crates/terrain) – functionality related to game terrain.
+
+* [index](/crates/index) – spatial index of all solid entities in the game.
+
+* [camera](/crates/camera)
+
+* [pathing](/crates/pathing) – global path finding and patch (re)scheduling.
+
+* [movement](/crates/movement) – entity movement, local dynamic obstacle
+  avoidance, kinematics and similar.
+
+* [controller](/crates/controller) – handling of user input.
+
 ### Coordinate Systems
 
 3D XYZ world coordinates are right handed. Mean sea level (MSL) plane lies on

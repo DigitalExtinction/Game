@@ -9,7 +9,7 @@ const TARGET_ACCURACY: f32 = 0.1;
 const MAX_ANGULAR_SPEED: f32 = PI;
 const MAX_SPEED: f32 = 10.;
 
-pub struct MovementPlugin;
+pub(crate) struct MovementPlugin;
 
 impl Plugin for MovementPlugin {
     fn build(&self, app: &mut App) {

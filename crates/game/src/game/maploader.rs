@@ -3,6 +3,7 @@ use bevy::{
     render::mesh::{Indices, PrimitiveTopology},
     tasks::{IoTaskPool, Task},
 };
+use de_camera::MoveFocusEvent;
 use de_core::{
     gconfig::GameConfig, log_full_error, objects::ActiveObjectType, projection::ToMsl,
     state::GameState,
@@ -12,14 +13,11 @@ use de_map::{
     io::{load_map, MapLoadingError},
     size::MapBounds,
 };
+use de_terrain::Terrain;
 use futures_lite::future;
 use iyes_loopless::prelude::*;
 
-use super::terrain::Terrain;
-use crate::{
-    assets::asset_path,
-    game::{camera::MoveFocusEvent, spawner::SpawnEvent},
-};
+use crate::{assets::asset_path, game::spawner::SpawnEvent};
 
 pub struct MapLoaderPlugin;
 

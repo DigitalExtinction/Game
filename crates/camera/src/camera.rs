@@ -6,14 +6,13 @@ use bevy::{
 };
 use de_core::{projection::ToMsl, state::GameState};
 use de_map::size::MapBounds;
+use de_terrain::TerrainCollider;
 use iyes_loopless::prelude::*;
 use parry3d::{
     na::{Unit, Vector3},
     query::{Ray, RayCast},
     shape::HalfSpace,
 };
-
-use super::terrain::TerrainCollider;
 
 /// Horizontal camera movement is initiated if mouse cursor is within this
 /// distance to window edge.
@@ -52,7 +51,7 @@ const ROTATION_SENSITIVITY: f32 = 0.008;
 /// Never move camera focus point closer than this to a map edge.
 const MAP_FOCUS_MARGIN: f32 = 1.0;
 
-pub struct CameraPlugin;
+pub(crate) struct CameraPlugin;
 
 impl Plugin for CameraPlugin {
     fn build(&self, app: &mut App) {

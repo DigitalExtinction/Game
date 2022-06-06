@@ -1,25 +1,14 @@
 use bevy::{
     app::PluginGroupBuilder,
-    prelude::{App, Plugin, PluginGroup, SystemLabel},
+    prelude::{App, Plugin, PluginGroup},
 };
 use de_core::{gconfig::GameConfig, player::Player, state::GameState};
-use de_index::IndexPlugin;
-use de_movement::MovementPlugin;
-use de_pathing::PathingPlugin;
 use iyes_loopless::prelude::*;
 
-use self::{
-    camera::CameraPlugin, command::CommandPlugin, maploader::MapLoaderPlugin,
-    pointer::PointerPlugin, selection::SelectionPlugin, spawner::SpawnerPlugin,
-};
+use self::{maploader::MapLoaderPlugin, spawner::SpawnerPlugin};
 
-mod camera;
-mod command;
 mod maploader;
-mod pointer;
-mod selection;
 mod spawner;
-mod terrain;
 
 pub struct GamePluginGroup;
 
@@ -28,21 +17,8 @@ impl PluginGroup for GamePluginGroup {
         group
             .add(GamePlugin)
             .add(MapLoaderPlugin)
-            .add(CameraPlugin)
-            .add(SelectionPlugin)
-            .add(PointerPlugin)
-            .add(CommandPlugin)
-            .add(SpawnerPlugin)
-            .add(IndexPlugin)
-            .add(PathingPlugin)
-            .add(MovementPlugin);
+            .add(SpawnerPlugin);
     }
-}
-
-#[derive(Copy, Clone, Hash, Debug, PartialEq, Eq, SystemLabel)]
-enum Labels {
-    PreInputUpdate,
-    InputUpdate,
 }
 
 struct GamePlugin;
