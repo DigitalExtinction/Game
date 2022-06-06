@@ -1,7 +1,7 @@
 use core::fmt;
 use std::cmp::Ordering;
 
-use bevy_ecs::prelude::*;
+use bevy::prelude::*;
 use serde::{Deserialize, Serialize};
 
 #[derive(Copy, Clone, Debug, Serialize, Deserialize, Component, PartialEq, Eq)]

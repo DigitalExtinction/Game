@@ -7,7 +7,8 @@ repository = "https://github.com/DigitalExtinction/Game"
 
 [dependencies]
 serde = { version = "1.0", features = ["derive"] }
-bevy_ecs = "0.7.0"
+bevy = "0.7.0"
+iyes_progress = { version = "0.3.0", features = [ "iyes_loopless" ] }
 glam = "0.20.2"
 nalgebra = { version = "0.31.0", features = ["convert-glam020"] }
 parry2d = { git = "https://github.com/Indy2222/parry", branch = "feature/dilation" }

@@ -5,26 +5,26 @@ use bevy::{
 };
 use de_camera::MoveFocusEvent;
 use de_core::{
-    gconfig::GameConfig, log_full_error, objects::ActiveObjectType, projection::ToMsl,
-    state::GameState,
+    assets::asset_path, gconfig::GameConfig, log_full_error, objects::ActiveObjectType,
+    projection::ToMsl, state::GameState,
 };
 use de_map::{
     description::{Map, ObjectType},
     io::{load_map, MapLoadingError},
     size::MapBounds,
 };
+use de_objects::SpawnEvent;
 use de_terrain::Terrain;
 use futures_lite::future;
 use iyes_loopless::prelude::*;
+use iyes_progress::prelude::*;
 
-use crate::{assets::asset_path, game::spawner::SpawnEvent};
-
-pub struct MapLoaderPlugin;
+pub(crate) struct MapLoaderPlugin;
 
 impl Plugin for MapLoaderPlugin {
     fn build(&self, app: &mut App) {
         app.add_enter_system(GameState::Loading, load_map_system)
-            .add_system(spawn_map.run_in_state(GameState::Loading));
+            .add_system(spawn_map.track_progress().run_in_state(GameState::Loading));
     }
 }
 
@@ -54,10 +54,10 @@ fn spawn_map(
     mut spawn_events: EventWriter<SpawnEvent>,
     mut move_focus_events: EventWriter<MoveFocusEvent>,
     game_config: Res<GameConfig>,
-) {
+) -> Progress {
     let loading_result = match future::block_on(future::poll_once(&mut task.0)) {
         Some(result) => result,
-        None => return,
+        None => return false.into(),
     };
 
     info!("Map loaded, spawning");
@@ -95,7 +95,7 @@ fn spawn_map(
     setup_terrain(&mut commands, &mut meshes, &mut materials, map.bounds());
     spawn_events.send_batch(map.objects().iter().cloned().map(SpawnEvent::new));
     commands.insert_resource(map.bounds());
-    commands.insert_resource(NextState(GameState::Playing));
+    true.into()
 }
 
 fn setup_light(commands: &mut Commands) {

@@ -1,6 +1,6 @@
 use std::fmt;
 
-use bevy_ecs::prelude::*;
+use bevy::prelude::*;
 use serde::{Deserialize, Serialize};
 
 /// Active object which can be played by the local player.
