@@ -5,8 +5,8 @@ use bevy::{
 };
 use de_camera::MoveFocusEvent;
 use de_core::{
-    gconfig::GameConfig, log_full_error, objects::ActiveObjectType, projection::ToMsl,
-    state::GameState,
+    assets::asset_path, gconfig::GameConfig, log_full_error, objects::ActiveObjectType,
+    projection::ToMsl, state::GameState,
 };
 use de_map::{
     description::{Map, ObjectType},
@@ -18,9 +18,7 @@ use de_terrain::Terrain;
 use futures_lite::future;
 use iyes_loopless::prelude::*;
 
-use crate::assets::asset_path;
-
-pub struct MapLoaderPlugin;
+pub(crate) struct MapLoaderPlugin;
 
 impl Plugin for MapLoaderPlugin {
     fn build(&self, app: &mut App) {

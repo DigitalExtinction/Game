@@ -64,6 +64,8 @@ Topologically sorted crates:
 
 * [camera](/crates/camera)
 
+* [loader](/crates/loader) – map loading logic.
+
 * [pathing](/crates/pathing) – global path finding and patch (re)scheduling.
 
 * [movement](/crates/movement) – entity movement, local dynamic obstacle

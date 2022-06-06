@@ -1567,11 +1567,13 @@ dependencies = [
  "bevy",
  "de_camera",
  "de_controller",
- "de_game",
+ "de_core",
  "de_index",
+ "de_loader",
  "de_movement",
  "de_objects",
  "de_pathing",
+ "iyes_loopless",
 ]
 
 [[package]]
@@ -1613,21 +1615,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "de_game"
-version = "0.1.0-dev"
-dependencies = [
- "bevy",
- "de_camera",
- "de_core",
- "de_map",
- "de_objects",
- "de_terrain",
- "futures-lite",
- "glam",
- "iyes_loopless",
-]
-
-[[package]]
 name = "de_index"
 version = "0.1.0-dev"
 dependencies = [
@@ -1640,6 +1627,20 @@ dependencies = [
  "nalgebra",
  "parry2d",
  "parry3d",
+]
+
+[[package]]
+name = "de_loader"
+version = "0.1.0-dev"
+dependencies = [
+ "bevy",
+ "de_camera",
+ "de_core",
+ "de_map",
+ "de_objects",
+ "de_terrain",
+ "futures-lite",
+ "iyes_loopless",
 ]
 
 [[package]]

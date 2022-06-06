@@ -1,3 +1,4 @@
+pub mod assets;
 mod errors;
 pub mod gconfig;
 pub mod objects;

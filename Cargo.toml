@@ -8,16 +8,18 @@ repository = "https://github.com/DigitalExtinction/Game"
 
 [dependencies]
 # DE
+de_core = { path = "crates/core", version = "0.1.0-dev" }
 de_objects = { path = "crates/objects", version = "0.1.0-dev" }
+de_loader = { path = "crates/loader", version = "0.1.0-dev" }
 de_index = { path = "crates/index", version = "0.1.0-dev" }
 de_pathing = { path = "crates/pathing", version = "0.1.0-dev" }
 de_movement = { path = "crates/movement", version = "0.1.0-dev" }
 de_controller = { path = "crates/controller", version = "0.1.0-dev" }
 de_camera = { path = "crates/camera", version = "0.1.0-dev" }
-de_game = { path = "crates/game", version = "0.1.0-dev" }
 
 # Other
 bevy = "0.7.0"
+iyes_loopless = "0.5.1"
 
 [workspace]
 members = ["crates/*"]
