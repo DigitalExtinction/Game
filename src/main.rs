@@ -1,7 +1,7 @@
 use bevy::{prelude::*, window::WindowMode};
 use de_camera::CameraPluginGroup;
 use de_controller::ControllerPluginGroup;
-use de_core::{gconfig::GameConfig, player::Player, state::GameState};
+use de_core::{gconfig::GameConfig, player::Player, state::GameState, CorePluginGroup};
 use de_index::IndexPluginGroup;
 use de_loader::LoaderPluginGroup;
 use de_movement::MovementPluginGroup;
@@ -19,6 +19,7 @@ fn main() {
         .insert_resource(Msaa { samples: 4 })
         .add_plugins(DefaultPlugins)
         .add_plugin(GamePlugin)
+        .add_plugins(CorePluginGroup)
         .add_plugins(ObjectsPluginGroup)
         .add_plugins(LoaderPluginGroup)
         .add_plugins(IndexPluginGroup)

@@ -17,13 +17,14 @@ use de_objects::SpawnEvent;
 use de_terrain::Terrain;
 use futures_lite::future;
 use iyes_loopless::prelude::*;
+use iyes_progress::prelude::*;
 
 pub(crate) struct MapLoaderPlugin;
 
 impl Plugin for MapLoaderPlugin {
     fn build(&self, app: &mut App) {
         app.add_enter_system(GameState::Loading, load_map_system)
-            .add_system(spawn_map.run_in_state(GameState::Loading));
+            .add_system(spawn_map.track_progress().run_in_state(GameState::Loading));
     }
 }
 
@@ -53,10 +54,10 @@ fn spawn_map(
     mut spawn_events: EventWriter<SpawnEvent>,
     mut move_focus_events: EventWriter<MoveFocusEvent>,
     game_config: Res<GameConfig>,
-) {
+) -> Progress {
     let loading_result = match future::block_on(future::poll_once(&mut task.0)) {
         Some(result) => result,
-        None => return,
+        None => return false.into(),
     };
 
     info!("Map loaded, spawning");
@@ -94,7 +95,7 @@ fn spawn_map(
     setup_terrain(&mut commands, &mut meshes, &mut materials, map.bounds());
     spawn_events.send_batch(map.objects().iter().cloned().map(SpawnEvent::new));
     commands.insert_resource(map.bounds());
-    commands.insert_resource(NextState(GameState::Playing));
+    true.into()
 }
 
 fn setup_light(commands: &mut Commands) {

@@ -1606,8 +1606,9 @@ dependencies = [
 name = "de_core"
 version = "0.1.0-dev"
 dependencies = [
- "bevy_ecs",
+ "bevy",
  "glam",
+ "iyes_progress",
  "nalgebra",
  "parry2d",
  "parry3d",
@@ -1641,6 +1642,7 @@ dependencies = [
  "de_terrain",
  "futures-lite",
  "iyes_loopless",
+ "iyes_progress",
 ]
 
 [[package]]
@@ -2260,6 +2262,17 @@ dependencies = [
  "bevy_core",
  "bevy_ecs",
  "bevy_utils",
+]
+
+[[package]]
+name = "iyes_progress"
+version = "0.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "46cae0743794e8b757a4c17be94b24d600edb0c3d409bc5a2e7993ccc98d8130"
+dependencies = [
+ "bevy_app",
+ "bevy_ecs",
+ "iyes_loopless",
 ]
 
 [[package]]
