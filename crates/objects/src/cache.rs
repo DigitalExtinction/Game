@@ -1,4 +1,9 @@
-use bevy::{asset::LoadState, prelude::*};
+use std::path::PathBuf;
+
+use bevy::{
+    asset::{AssetPath, LoadState},
+    prelude::*,
+};
 use de_core::{
     objects::{ActiveObjectType, InactiveObjectType, ObjectType},
     state::GameState,
@@ -58,8 +63,11 @@ impl CacheItem {
     }
 
     fn from_name(server: &AssetServer, name: &str) -> Self {
+        let mut path = PathBuf::new();
+        path.push("models");
+        path.push(format!("{}.glb", name));
         Self {
-            scene: server.load(&format!("{}.glb#Scene0", name)),
+            scene: server.load(AssetPath::new(path, Some("Scene0".to_owned()))),
         }
     }
 
