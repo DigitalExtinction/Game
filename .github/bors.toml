@@ -1,0 +1,4 @@
+status = [
+    "Build & Test",
+    "Test Formatting",
+]

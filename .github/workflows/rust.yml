@@ -1,7 +1,10 @@
 name: Rust
 
 on:
-  push
+  push:
+    branches: [main, staging, trying]
+  pull_request:
+    branches: [main]
 
 env:
   CARGO_TERM_COLOR: always
@@ -10,11 +13,7 @@ env:
 jobs:
   build:
     name: Build & Test
-    runs-on: ${{ matrix.os }}
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [ubuntu-latest]
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
 
