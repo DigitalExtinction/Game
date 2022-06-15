@@ -12,4 +12,4 @@ de_map = { path = "../map", version = "0.1.0-dev" }
 
 # Other
 bevy = "0.7.0"
-iyes_loopless = "0.5.1"
+iyes_loopless = "0.6.0"

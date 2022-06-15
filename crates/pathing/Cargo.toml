@@ -20,7 +20,7 @@ ahash = "0.7.6"
 approx = "0.5.1"
 rstar = "0.9.3"
 tinyvec = { version = "1.6.0", features = ["rustc_1_40"] }
-iyes_loopless = "0.5.1"
+iyes_loopless = "0.6.0"
 spade = "2.0.0"
 futures-lite = "1.11.3"
 

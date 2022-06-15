@@ -1573,7 +1573,7 @@ dependencies = [
  "de_movement",
  "de_objects",
  "de_pathing",
- "iyes_loopless",
+ "iyes_loopless 0.6.0",
 ]
 
 [[package]]
@@ -1584,7 +1584,7 @@ dependencies = [
  "de_core",
  "de_map",
  "de_terrain",
- "iyes_loopless",
+ "iyes_loopless 0.6.0",
  "parry3d",
 ]
 
@@ -1598,7 +1598,7 @@ dependencies = [
  "de_pathing",
  "de_terrain",
  "glam",
- "iyes_loopless",
+ "iyes_loopless 0.6.0",
  "parry3d",
 ]
 
@@ -1624,7 +1624,7 @@ dependencies = [
  "criterion",
  "de_core",
  "glam",
- "iyes_loopless",
+ "iyes_loopless 0.6.0",
  "nalgebra",
  "parry2d",
  "parry3d",
@@ -1641,7 +1641,7 @@ dependencies = [
  "de_objects",
  "de_terrain",
  "futures-lite",
- "iyes_loopless",
+ "iyes_loopless 0.6.0",
  "iyes_progress",
 ]
 
@@ -1668,7 +1668,7 @@ dependencies = [
  "bevy",
  "de_core",
  "de_pathing",
- "iyes_loopless",
+ "iyes_loopless 0.6.0",
 ]
 
 [[package]]
@@ -1678,7 +1678,7 @@ dependencies = [
  "bevy",
  "de_core",
  "de_map",
- "iyes_loopless",
+ "iyes_loopless 0.6.0",
 ]
 
 [[package]]
@@ -1694,7 +1694,7 @@ dependencies = [
  "de_map",
  "futures-lite",
  "glam",
- "iyes_loopless",
+ "iyes_loopless 0.6.0",
  "nalgebra",
  "ntest",
  "parry2d",
@@ -2259,6 +2259,17 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e37cbe1fdc9aeed2d5ec064d3306ba4318723c20c5b0e4662d03c49fedcd491b"
 dependencies = [
  "bevy_app",
+ "bevy_ecs",
+ "bevy_utils",
+]
+
+[[package]]
+name = "iyes_loopless"
+version = "0.6.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a61544cc991c6ac3a3645d11571f079bec12a6be565761818712ed13a659278b"
+dependencies = [
+ "bevy_app",
  "bevy_core",
  "bevy_ecs",
  "bevy_utils",
@@ -2272,7 +2283,7 @@ checksum = "46cae0743794e8b757a4c17be94b24d600edb0c3d409bc5a2e7993ccc98d8130"
 dependencies = [
  "bevy_app",
  "bevy_ecs",
- "iyes_loopless",
+ "iyes_loopless 0.5.1",
 ]
 
 [[package]]
