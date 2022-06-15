@@ -1,9 +1,12 @@
 //! This module implements Constrained Delaunay triangulation (CDT) based
 //! triangulation of the accessible areas on the game map.
 
+use std::iter::Peekable;
+
 use ahash::AHashMap;
 use bevy::core::FloatOrd;
 use de_map::size::MapBounds;
+use geo_types::PointsIter;
 use parry2d::{math::Point, shape::Triangle};
 use spade::{ConstrainedDelaunayTriangulation, Point2, Triangulation};
 
@@ -145,18 +148,14 @@ impl<'a> Iterator for MultipleAreaEdges<'a> {
 
 /// Iterator over all edges of a single exclusion area.
 struct SingleAreaEdges<'a> {
-    polygon: &'a ExclusionArea,
+    points: Peekable<PointsIter<'a, f32>>,
     polygon_id: usize,
-    index: usize,
 }
 
 impl<'a> SingleAreaEdges<'a> {
-    fn new(polygon: &'a ExclusionArea, polygon_id: usize) -> Self {
-        Self {
-            polygon,
-            polygon_id,
-            index: 0,
-        }
+    fn new(exclusion: &'a ExclusionArea, polygon_id: usize) -> Self {
+        let points = exclusion.convex_hull().exterior().points().peekable();
+        Self { points, polygon_id }
     }
 }
 
@@ -164,14 +163,14 @@ impl<'a> Iterator for SingleAreaEdges<'a> {
     type Item = ExclusionEdge;
 
     fn next(&mut self) -> Option<ExclusionEdge> {
-        let points = self.polygon.points();
-        if self.index >= points.len() {
-            return None;
-        }
-
-        let a = points[self.index];
-        self.index += 1;
-        let b = points[self.index.rem_euclid(points.len())];
+        let a = match self.points.next() {
+            Some(point) => Point::new(point.x(), point.y()),
+            None => return None,
+        };
+        let b = match self.points.peek() {
+            Some(point) => Point::new(point.x(), point.y()),
+            None => return None,
+        };
         Some(ExclusionEdge::new(self.polygon_id, a, b))
     }
 }

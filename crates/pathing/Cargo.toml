@@ -14,8 +14,11 @@ de_map = { path = "../map", version = "0.1.0-dev" }
 # Other
 bevy = "0.7"
 glam = "^0.20.2"
-parry2d = { git = "https://github.com/Indy2222/parry", branch = "feature/dilation" }
+parry2d = "0.9.0"
 nalgebra = { version = "0.31.0", features = ["convert-glam020"] }
+geo = "0.21.0"
+geo-types = "0.7.5"
+geo-offset = { git = "https://github.com/Indy2222/geo-offset", branch = "master"  }
 ahash = "0.7.6"
 approx = "0.5.1"
 rstar = "0.9.3"

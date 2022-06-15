@@ -1,5 +1,5 @@
 use bevy::prelude::Component;
-use parry2d::shape::ConvexPolygon;
+use geo::Polygon;
 use parry3d::{bounding_volume::AABB, math::Isometry, query::Ray, shape::Shape};
 
 pub struct EntityShape {
@@ -40,15 +40,15 @@ impl EntityShape {
 
 #[derive(Component, Clone)]
 pub struct Ichnography {
-    bounds: ConvexPolygon,
+    bounds: Polygon<f32>,
 }
 
 impl Ichnography {
-    pub fn new(bounds: ConvexPolygon) -> Self {
+    pub fn new(bounds: Polygon<f32>) -> Self {
         Self { bounds }
     }
 
-    pub fn bounds(&self) -> &ConvexPolygon {
+    pub fn bounds(&self) -> &Polygon<f32> {
         &self.bounds
     }
 }

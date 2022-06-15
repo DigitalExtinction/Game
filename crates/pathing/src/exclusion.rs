@@ -2,12 +2,16 @@ use ahash::AHashMap;
 use bevy::prelude::GlobalTransform;
 use de_core::projection::ToFlat;
 use de_index::Ichnography;
-use glam::{EulerRot, IVec2};
+use geo::{
+    algorithm::{bool_ops::BooleanOps, intersects::Intersects, map_coords::MapCoords},
+    prelude::BoundingRect,
+    ConvexHull, Coordinate, MultiPolygon, Polygon,
+};
+use geo_offset::Offset;
+use glam::{EulerRot, IVec2, Mat3, Vec3};
 use parry2d::{
     bounding_volume::{BoundingVolume, AABB},
-    math::{Isometry, Point},
-    query,
-    shape::ConvexPolygon,
+    math::Point,
 };
 
 /// Padding around static object ichnographies used to accommodate for moving
@@ -22,7 +26,8 @@ const EXCLUSION_OFFSET: f32 = 2.;
 /// trajectory smoothing.
 #[derive(Clone, Debug)]
 pub(crate) struct ExclusionArea {
-    polygon: ConvexPolygon,
+    multi_polygon: MultiPolygon<f32>,
+    convex_hull: Polygon<f32>,
     aabb: AABB,
 }
 
@@ -58,63 +63,72 @@ impl ExclusionArea {
     /// Creates a new exclusion area from a static object ichnography and its
     /// world-to-object transform.
     fn from_ichnography(transform: &GlobalTransform, ichnography: &Ichnography) -> Self {
-        let angle = transform.rotation.to_euler(EulerRot::YXZ).0;
-        let translation = transform.translation.to_flat();
-        let isometry = Isometry::new(translation.into(), angle);
-        let vertices: Vec<Point<f32>> = ichnography
-            .bounds()
-            .points()
-            .iter()
-            .map(|&p| isometry * p)
-            .collect();
+        let projection = Mat3::from_translation(transform.translation.to_flat())
+            * Mat3::from_angle(transform.rotation.to_euler(EulerRot::YXZ).0);
 
-        Self::new_offset(ConvexPolygon::from_convex_polyline(vertices).unwrap())
+        Self::new_offset(ichnography.bounds().map_coords(|coord| {
+            let projected = projection * Vec3::new(coord.x, coord.y, 1.);
+            Coordinate {
+                x: projected.x.into(),
+                y: projected.y.into(),
+            }
+        }))
     }
 
     /// Returns a new exclusion area created from a convex polygon with an
     /// offset.
-    fn new_offset(polygon: ConvexPolygon) -> Self {
-        Self::new(polygon.offseted(EXCLUSION_OFFSET))
+    fn new_offset(polygon: Polygon<f64>) -> Self {
+        Self::new(
+            polygon
+                .offset_with_arc_segments(EXCLUSION_OFFSET.into(), 2)
+                .unwrap()
+                .map_coords(|coords| Coordinate {
+                    x: coords.x as f32,
+                    y: coords.y as f32,
+                }),
+        )
     }
 
-    pub(crate) fn new(polygon: ConvexPolygon) -> Self {
-        let aabb = polygon.local_aabb();
-        Self { polygon, aabb }
+    pub(crate) fn new(multi_polygon: MultiPolygon<f32>) -> Self {
+        let convex_hull = multi_polygon.convex_hull();
+        let bounding_rect = convex_hull.bounding_rect().unwrap();
+        let aabb = AABB::new(
+            Point::new(bounding_rect.min().x, bounding_rect.min().y),
+            Point::new(bounding_rect.max().x, bounding_rect.max().y),
+        );
+        Self {
+            multi_polygon,
+            convex_hull,
+            aabb,
+        }
     }
 
     /// Returns a new exclusion area corresponding to the convex hull of 1 or
     /// more other exclusion areas.
     fn merged(primary: &ExclusionArea, exclusions: &[ExclusionArea]) -> Self {
-        let points: Vec<Point<f32>> = exclusions
-            .iter()
-            .flat_map(|e| e.points())
-            .chain(primary.points())
-            .cloned()
-            .collect();
-        Self::new(ConvexPolygon::from_convex_hull(&points).unwrap())
+        Self::new(
+            exclusions
+                .iter()
+                .fold(primary.multi_polygon.clone(), |acc, another| {
+                    acc.union(&another.multi_polygon)
+                }),
+        )
     }
 
-    /// Returns counter-clockwise points of the area's convex polygon.
-    pub(crate) fn points(&self) -> &[Point<f32>] {
-        self.polygon.points()
+    pub(crate) fn convex_hull(&self) -> &Polygon<f32> {
+        &self.convex_hull
     }
 
     fn aabb(&self) -> &AABB {
         &self.aabb
     }
 
-    fn intersects(&self, other: &ExclusionArea) -> bool {
+    /// Returns true if convex hulls of `self` and `other` intersect.
+    fn convex_intersects(&self, other: &ExclusionArea) -> bool {
         if !self.aabb.intersects(&other.aabb) {
             return false;
         }
-
-        query::intersection_test(
-            &Isometry::identity(),
-            &self.polygon,
-            &Isometry::identity(),
-            &other.polygon,
-        )
-        .unwrap()
+        self.convex_hull.intersects(&other.convex_hull)
     }
 }
 
@@ -151,7 +165,7 @@ impl Merger {
                 let key = IVec2::new(center_key.x + dx, center_key.y + dy);
                 if let Some(exclusions) = self.grid.get_mut(&key) {
                     for i in (0..exclusions.len()).rev() {
-                        if exclusions[i].intersects(exclusion) {
+                        if exclusions[i].convex_intersects(exclusion) {
                             intersecting.push(exclusions.swap_remove(i));
                         }
                     }

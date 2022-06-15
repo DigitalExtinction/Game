@@ -11,8 +11,8 @@ use de_core::{
     projection::ToFlat,
     state::GameState,
 };
+use geo::{LineString, Polygon};
 use iyes_loopless::prelude::*;
-use parry2d::{math::Point, shape::ConvexPolygon};
 use parry3d::{
     bounding_volume::{BoundingVolume, AABB},
     math::Isometry,
@@ -119,15 +119,16 @@ fn insert(
         };
 
         let aabb = shape.compute_aabb().to_flat();
-        let ichnography = Ichnography::new(
-            ConvexPolygon::from_convex_polyline(vec![
-                Point::new(aabb.mins.x, aabb.maxs.y),
-                Point::new(aabb.mins.x, aabb.mins.y),
-                Point::new(aabb.maxs.x, aabb.mins.y),
-                Point::new(aabb.maxs.x, aabb.maxs.y),
-            ])
-            .unwrap(),
-        );
+        let ichnography = Ichnography::new(Polygon::new(
+            LineString::from(vec![
+                (aabb.mins.x, aabb.maxs.y),
+                (aabb.mins.x, aabb.mins.y),
+                (aabb.maxs.x, aabb.mins.y),
+                (aabb.maxs.x, aabb.maxs.y),
+                (aabb.mins.x, aabb.maxs.y),
+            ]),
+            vec![],
+        ));
 
         let position = Isometry::new(
             transform.translation.into(),

@@ -101,6 +101,15 @@ checksum = "4361135be9122e0870de935d7c439aef945b9f9ddd4199a553b5270b49c82a27"
 
 [[package]]
 name = "approx"
+version = "0.4.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3f2a05fd1bd10b2527e20a2cd32d8873d115b8b39fe219ee25f42a8aca6ba278"
+dependencies = [
+ "num-traits",
+]
+
+[[package]]
+name = "approx"
 version = "0.5.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "cab112f0a86d568ea0e627cc1d6be74a1e9cd55214684db5561995f6dad897c6"
@@ -912,7 +921,7 @@ version = "0.7.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a7c0e3b94cc73907f8a9f82945ca006a39ed2ab401aca0974b47a007a468509f"
 dependencies = [
- "approx",
+ "approx 0.5.1",
  "bevy_app",
  "bevy_ecs",
  "bevy_input",
@@ -1135,6 +1144,15 @@ dependencies = [
  "bitflags",
  "textwrap",
  "unicode-width",
+]
+
+[[package]]
+name = "clipper-sys"
+version = "0.7.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "dc6bccb550d47c390af7a601bee66a74fd3a01163feb85442021096f5533d2e5"
+dependencies = [
+ "cc",
 ]
 
 [[package]]
@@ -1623,6 +1641,7 @@ dependencies = [
  "bevy",
  "criterion",
  "de_core",
+ "geo",
  "glam",
  "iyes_loopless",
  "nalgebra",
@@ -1686,13 +1705,16 @@ name = "de_pathing"
 version = "0.1.0-dev"
 dependencies = [
  "ahash",
- "approx",
+ "approx 0.5.1",
  "bevy",
  "criterion",
  "de_core",
  "de_index",
  "de_map",
  "futures-lite",
+ "geo",
+ "geo-offset",
+ "geo-types",
  "glam",
  "iyes_loopless",
  "nalgebra",
@@ -1819,6 +1841,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "279fb028e20b3c4c320317955b77c5e0c9701f05a1d309905d6fc702cdc5053e"
 
 [[package]]
+name = "float_next_after"
+version = "0.1.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4fc612c5837986b7104a87a0df74a5460931f1c5274be12f8d0f40aa2f30d632"
+dependencies = [
+ "num-traits",
+]
+
+[[package]]
 name = "fnv"
 version = "1.0.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1891,6 +1922,62 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c31b6d751ae2c7f11320402d34e41349dd1016f8d5d45e48c4312bc8625af50c"
 dependencies = [
  "byteorder",
+]
+
+[[package]]
+name = "geo"
+version = "0.21.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "20f1cd8cc66ae5c52a2b9328e3562adde921b203a10d6ea0ac24c349de4c42c4"
+dependencies = [
+ "float_next_after",
+ "geo-types",
+ "geographiclib-rs",
+ "log",
+ "num-traits",
+ "robust",
+ "rstar",
+]
+
+[[package]]
+name = "geo-clipper"
+version = "0.7.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7aaaa528780ab908be7d51317f9e06147c6b562b8133bc952f09508e101c085c"
+dependencies = [
+ "clipper-sys",
+ "geo-types",
+]
+
+[[package]]
+name = "geo-offset"
+version = "0.3.1-alpha.0"
+source = "git+https://github.com/Indy2222/geo-offset?branch=master#66aa6e3f05360866eca03570160f2d9f3c7a4482"
+dependencies = [
+ "geo",
+ "geo-clipper",
+ "itertools",
+ "num-traits",
+]
+
+[[package]]
+name = "geo-types"
+version = "0.7.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5696e8138fbc44f64edc88b423afbe5a8f635df003376b3a57087e61a8ae7b66"
+dependencies = [
+ "approx 0.4.0",
+ "num-traits",
+ "rstar",
+]
+
+[[package]]
+name = "geographiclib-rs"
+version = "0.2.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "fdbd3cdc1856ca7736763d2784671c2c9b0093f0ee47e2bed0059feed6afca89"
+dependencies = [
+ "lazy_static",
 ]
 
 [[package]]
@@ -2023,7 +2110,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "cc32c2334f00ca5ac3695c5009ae35da21da8c62d255b5b96d56e2597a637a38"
 dependencies = [
  "ab_glyph",
- "approx",
+ "approx 0.5.1",
  "xi-unicode",
 ]
 
@@ -2583,7 +2670,7 @@ version = "0.31.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "18a89248335f688e4bd994e6d030fd7e185eb41769b8c435395075425e100ac6"
 dependencies = [
- "approx",
+ "approx 0.5.1",
  "glam",
  "matrixmultiply",
  "nalgebra-macros",
@@ -3024,9 +3111,10 @@ dependencies = [
 [[package]]
 name = "parry2d"
 version = "0.9.0"
-source = "git+https://github.com/Indy2222/parry?branch=feature/dilation#537e09eb34391cd002463663e05954cb4af0e393"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2841cebc29aaf7c69058b242742853d9b106c5245ed946090a75d941d23a6f5e"
 dependencies = [
- "approx",
+ "approx 0.5.1",
  "arrayvec",
  "bitflags",
  "downcast-rs",
@@ -3047,7 +3135,7 @@ version = "0.9.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "89cd07f0e1e9e207662f430a4e758c357fdf89450a548ef1ce59113822fd5fa7"
 dependencies = [
- "approx",
+ "approx 0.5.1",
  "arrayvec",
  "bitflags",
  "downcast-rs",
@@ -3608,7 +3696,7 @@ version = "0.7.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "13a2609e876d4f77f6ab7ff5254fc39b4f1927ba8e6db3d18be7c32534d3725e"
 dependencies = [
- "approx",
+ "approx 0.5.1",
  "num-complex",
  "num-traits",
  "paste",
