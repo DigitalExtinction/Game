@@ -3,6 +3,7 @@ use std::f32::consts::{FRAC_PI_2, PI};
 use bevy::{
     input::mouse::{MouseMotion, MouseScrollUnit, MouseWheel},
     prelude::*,
+    render::camera::Camera3d,
 };
 use de_core::{projection::ToMsl, state::GameState};
 use de_map::size::MapBounds;
@@ -241,7 +242,7 @@ fn update_focus(
     mut event: EventReader<FocusInvalidatedEvent>,
     mut focus: ResMut<CameraFocus>,
     terrain: TerrainCollider,
-    camera_query: Query<&GlobalTransform, With<Camera>>,
+    camera_query: Query<&GlobalTransform, With<Camera3d>>,
 ) {
     if event.iter().count() == 0 {
         return;
@@ -266,7 +267,7 @@ fn update_focus(
 fn process_move_focus_events(
     mut events: EventReader<MoveFocusEvent>,
     mut focus: ResMut<CameraFocus>,
-    mut camera_query: Query<&mut Transform, With<Camera>>,
+    mut camera_query: Query<&mut Transform, With<Camera3d>>,
 ) {
     let event = match events.iter().last() {
         Some(event) => event,
@@ -285,7 +286,7 @@ fn move_horizontaly(
     focus: Res<CameraFocus>,
     map_bounds: Res<MapBounds>,
     time: Res<Time>,
-    mut camera_query: Query<&mut Transform, With<Camera>>,
+    mut camera_query: Query<&mut Transform, With<Camera3d>>,
     mut event: EventWriter<FocusInvalidatedEvent>,
 ) {
     let direction = match horizontal_movement.movement() {
@@ -318,7 +319,7 @@ fn zoom(
     desired_pow: Res<DesiredPoW>,
     time: Res<Time>,
     mut focus: ResMut<CameraFocus>,
-    mut camera_query: Query<&mut Transform, With<Camera>>,
+    mut camera_query: Query<&mut Transform, With<Camera3d>>,
 ) {
     let mut delta_scalar = focus.distance() - HARD_MAX_CAMERA_DISTANCE;
     if delta_scalar <= 0. {
@@ -349,7 +350,7 @@ fn pivot(
     mut event: EventReader<PivotEvent>,
     desired_pow: Res<DesiredPoW>,
     focus: Res<CameraFocus>,
-    mut camera_query: Query<&mut Transform, With<Camera>>,
+    mut camera_query: Query<&mut Transform, With<Camera3d>>,
 ) {
     if event.iter().next().is_none() {
         return;
