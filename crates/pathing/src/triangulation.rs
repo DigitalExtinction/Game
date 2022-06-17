@@ -210,8 +210,8 @@ mod tests {
     use std::hash::Hash;
 
     use ahash::AHashSet;
+    use geo::{LineString, Polygon};
     use glam::Vec2;
-    use parry2d::shape::ConvexPolygon;
 
     use super::*;
     use crate::utils::HashableSegment;
@@ -246,13 +246,11 @@ mod tests {
     #[test]
     fn test_triangulation() {
         let obstacles = vec![ExclusionArea::new(
-            ConvexPolygon::from_convex_polyline(vec![
-                Point::new(-0.1, 1.1),
-                Point::new(-0.1, 1.3),
-                Point::new(1.0, 1.3),
-                Point::new(1.0, 1.1),
-            ])
-            .unwrap(),
+            Polygon::new(
+                LineString::from(vec![(-0.1, 1.1), (-0.1, 1.3), (1.0, 1.3), (1.0, 1.1)]),
+                Vec::new(),
+            )
+            .into(),
         )];
 
         // <- 2.5 to left, <- 4.5 upwards

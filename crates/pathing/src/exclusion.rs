@@ -191,6 +191,7 @@ impl Merger {
 
 #[cfg(test)]
 mod tests {
+    use geo::LineString;
     use glam::Vec3;
 
     use super::*;
@@ -201,35 +202,20 @@ mod tests {
             translation: Vec3::new(0., 0., -1.),
             ..Default::default()
         };
-        let ichnography_a = Ichnography::new(
-            ConvexPolygon::from_convex_hull(&[
-                Point::new(0., 3.),
-                Point::new(0., -1.),
-                Point::new(2., -1.),
-                Point::new(2., 3.),
-            ])
-            .unwrap(),
-        );
+        let ichnography_a = Ichnography::new(Polygon::new(
+            LineString::from(vec![(0., 3.), (0., -1.), (2., -1.), (2., 3.)]),
+            Vec::new(),
+        ));
         let transform_b = GlobalTransform::default();
-        let ichnography_b = Ichnography::new(
-            ConvexPolygon::from_convex_hull(&[
-                Point::new(0.5, 6.),
-                Point::new(0.5, 5.),
-                Point::new(1.5, 5.),
-                Point::new(1.5, 6.),
-            ])
-            .unwrap(),
-        );
+        let ichnography_b = Ichnography::new(Polygon::new(
+            LineString::from(vec![(0.5, 6.), (0.5, 5.), (1.5, 5.), (1.5, 6.)]),
+            Vec::new(),
+        ));
         let transform_c = GlobalTransform::default();
-        let ichnography_c = Ichnography::new(
-            ConvexPolygon::from_convex_hull(&[
-                Point::new(20., 20.),
-                Point::new(20., 18.),
-                Point::new(25., 18.),
-                Point::new(25., 20.),
-            ])
-            .unwrap(),
-        );
+        let ichnography_c = Ichnography::new(Polygon::new(
+            LineString::from(vec![(20., 20.), (20., 18.), (25., 18.), (25., 20.)]),
+            Vec::new(),
+        ));
 
         let exclusions = ExclusionArea::build(&[
             (transform_a, ichnography_a),
@@ -238,80 +224,76 @@ mod tests {
         ]);
         assert_eq!(exclusions.len(), 2);
         assert_eq!(
-            exclusions[0].points(),
-            &[
-                Point::new(-2.0, 6.0),
-                Point::new(-2.0, -2.0),
-                Point::new(4.0, -2.0),
-                Point::new(4.0, 6.0),
-                Point::new(3.5, 8.0),
-                Point::new(-1.5, 8.0),
-            ]
+            exclusions[0].convex_hull,
+            Polygon::new(
+                LineString::from(vec![
+                    (-2.0, 6.0),
+                    (-2.0, -2.0),
+                    (4.0, -2.0),
+                    (4.0, 6.0),
+                    (3.5, 8.0),
+                    (-1.5, 8.0),
+                ]),
+                Vec::new()
+            )
         );
     }
 
     #[test]
     fn test_merged() {
         let a = ExclusionArea::new(
-            ConvexPolygon::from_convex_hull(&[
-                Point::new(-1., -1.),
-                Point::new(-1., 1.),
-                Point::new(1., 1.),
-                Point::new(1., -1.),
-            ])
-            .unwrap(),
+            Polygon::new(
+                LineString::from(vec![(-1., -1.), (-1., 1.), (1., 1.), (1., -1.)]),
+                Vec::new(),
+            )
+            .into(),
         );
         let b = ExclusionArea::new(
-            ConvexPolygon::from_convex_hull(&[
-                Point::new(-1.5, -1.5),
-                Point::new(-1.5, 0.5),
-                Point::new(0.5, 0.5),
-                Point::new(0.5, -1.5),
-            ])
-            .unwrap(),
+            Polygon::new(
+                LineString::from(vec![(-1.5, -1.5), (-1.5, 0.5), (0.5, 0.5), (0.5, -1.5)]),
+                Vec::new(),
+            )
+            .into(),
         );
         let area = ExclusionArea::merged(&a, &[b]);
         assert_eq!(
-            area.points(),
-            &[
-                Point::new(1., 1.),
-                Point::new(-1., 1.0),
-                Point::new(-1.5, 0.5),
-                Point::new(-1.5, -1.5),
-                Point::new(0.5, -1.5),
-                Point::new(1., -1.),
-            ]
+            area.convex_hull,
+            Polygon::new(
+                LineString::from(vec![
+                    (0.5, -1.5),
+                    (1., -1.),
+                    (1., 1.),
+                    (-1., 1.0),
+                    (-1.5, 0.5),
+                    (-1.5, -1.5),
+                ]),
+                Vec::new()
+            )
         );
     }
 
     #[test]
     fn test_merger() {
         let a = ExclusionArea::new(
-            ConvexPolygon::from_convex_hull(&[
-                Point::new(-1., -1.),
-                Point::new(-1., 1.),
-                Point::new(1., 1.),
-                Point::new(1., -1.),
-            ])
-            .unwrap(),
+            Polygon::new(
+                LineString::from(vec![(-1., -1.), (-1., 1.), (1., 1.), (1., -1.)]),
+                Vec::new(),
+            )
+            .into(),
         );
         let b = ExclusionArea::new(
-            ConvexPolygon::from_convex_hull(&[
-                Point::new(-10., -10.),
-                Point::new(-10., -9.),
-                Point::new(-9., -9.),
-                Point::new(-9., -10.),
-            ])
-            .unwrap(),
+            Polygon::new(
+                LineString::from(vec![(-10., -10.), (-10., -9.), (-9., -9.), (-9., -10.)]),
+                Vec::new(),
+            )
+            .into(),
         );
         let c = ExclusionArea::new(
-            ConvexPolygon::from_convex_hull(&[
-                Point::new(-1.5, -1.5),
-                Point::new(-1.5, 0.5),
-                Point::new(0.5, 0.5),
-                Point::new(0.5, -1.5),
-            ])
-            .unwrap(),
+            Polygon::new(
+                LineString::from(vec![(-1.5, -1.5), (-1.5, 0.5), (0.5, 0.5), (0.5, -1.5)]),
+                Vec::new(),
+            )
+            .into(),
         );
 
         let mut merger = Merger::new(4.);
