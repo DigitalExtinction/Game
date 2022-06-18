@@ -80,12 +80,11 @@ impl ExclusionArea {
     fn new_offset(polygon: Polygon<f64>) -> Self {
         Self::new(
             polygon
-                .offset_with_arc_segments(EXCLUSION_OFFSET.into(), 2)
-                .unwrap()
                 .map_coords(|coords| Coordinate {
                     x: coords.x as f32,
                     y: coords.y as f32,
-                }),
+                })
+                .into(),
         )
     }
 

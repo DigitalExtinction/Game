@@ -12,8 +12,8 @@ use criterion::{
 use de_index::Ichnography;
 use de_map::size::MapBounds;
 use de_pathing::create_finder;
+use geo::{LineString, Polygon};
 use glam::Vec2;
-use parry2d::{math::Point, shape::ConvexPolygon};
 
 const MAP_SIZE: f32 = 8000.;
 
@@ -38,15 +38,15 @@ fn load_entities(number: u32) -> Vec<(GlobalTransform, Ichnography)> {
     load_points(number)
         .iter()
         .map(|p| {
-            let ichnography = Ichnography::new(
-                ConvexPolygon::from_convex_hull(&[
-                    Point::new(p.x - 10., p.y + 10.),
-                    Point::new(p.x - 10., p.y - 10.),
-                    Point::new(p.x + 10., p.y - 10.),
-                    Point::new(p.x + 10., p.y + 10.),
-                ])
-                .unwrap(),
-            );
+            let ichnography = Ichnography::new(Polygon::new(
+                LineString::from_iter(vec![
+                    (p.x - 10., p.y + 10.),
+                    (p.x - 10., p.y - 10.),
+                    (p.x + 10., p.y - 10.),
+                    (p.x + 10., p.y + 10.),
+                ]),
+                Vec::new(),
+            ));
             (GlobalTransform::identity(), ichnography)
         })
         .collect()
