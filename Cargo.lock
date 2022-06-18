@@ -1607,6 +1607,7 @@ name = "de_core"
 version = "0.1.0-dev"
 dependencies = [
  "bevy",
+ "enum-map",
  "glam",
  "iyes_loopless",
  "iyes_progress",
@@ -1679,7 +1680,9 @@ dependencies = [
  "bevy",
  "de_core",
  "de_map",
+ "enum-map",
  "iyes_loopless",
+ "iyes_progress",
 ]
 
 [[package]]
@@ -1756,6 +1759,26 @@ checksum = "35949884794ad573cf46071e41c9b60efb0cb311e3ca01f7af807af1debc66ff"
 dependencies = [
  "nb 0.1.3",
  "void",
+]
+
+[[package]]
+name = "enum-map"
+version = "2.4.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6ddfe61e8040145222887d0d32a939c70c8cae681490d72fb868305e9b40ced8"
+dependencies = [
+ "enum-map-derive",
+]
+
+[[package]]
+name = "enum-map-derive"
+version = "0.9.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "00d1c54e25a57236a790ecf051c2befbb57740c9b86c4273eac378ba84d620d6"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn",
 ]
 
 [[package]]

@@ -9,7 +9,7 @@ use de_core::{
     projection::ToMsl, state::GameState,
 };
 use de_map::{
-    description::{Map, ObjectType},
+    description::{InnerObject, Map},
     io::{load_map, MapLoadingError},
     size::MapBounds,
 };
@@ -79,8 +79,8 @@ fn spawn_map(
     let initial_focus = map
         .objects()
         .iter()
-        .filter_map(|object| match object.object_type() {
-            ObjectType::Active(active_object) => {
+        .filter_map(|object| match object.inner() {
+            InnerObject::Active(active_object) => {
                 if game_config.is_local_player(active_object.player())
                     && active_object.object_type() == ActiveObjectType::Base
                 {
