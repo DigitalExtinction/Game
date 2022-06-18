@@ -4,6 +4,7 @@ use bevy::{
     prelude::{
         App, Camera, Entity, EventReader, GlobalTransform, Plugin, Query, Res, ResMut, With,
     },
+    render::camera::Camera3d,
     window::Windows,
 };
 use de_core::{objects::Playable, state::GameState};
@@ -59,7 +60,7 @@ impl Pointer {
 #[derive(SystemParam)]
 struct MouseInWorld<'w, 's> {
     windows: Res<'w, Windows>,
-    cameras: Query<'w, 's, (&'static GlobalTransform, &'static Camera)>,
+    cameras: Query<'w, 's, (&'static GlobalTransform, &'static Camera), With<Camera3d>>,
 }
 
 impl<'w, 's> MouseInWorld<'w, 's> {
