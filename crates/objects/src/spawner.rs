@@ -1,15 +1,20 @@
 use bevy::{ecs::system::EntityCommands, prelude::*};
 use de_core::{
+    events::ResendEventPlugin,
     gconfig::GameConfig,
     objects::{ActiveObjectType, InactiveObjectType, MovableSolid, Playable, StaticSolid},
+    state::GameState,
 };
 use de_map::description::{ActiveObject, InactiveObject, Object, ObjectType};
+use iyes_loopless::prelude::*;
 
 pub(crate) struct SpawnerPlugin;
 
 impl Plugin for SpawnerPlugin {
     fn build(&self, app: &mut App) {
-        app.add_event::<SpawnEvent>().add_system(spawn);
+        app.add_event::<SpawnEvent>()
+            .add_plugin(ResendEventPlugin::<SpawnEvent>::default())
+            .add_system(spawn.run_in_state(GameState::Playing));
     }
 }
 

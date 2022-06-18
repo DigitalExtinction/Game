@@ -1608,6 +1608,7 @@ version = "0.1.0-dev"
 dependencies = [
  "bevy",
  "glam",
+ "iyes_loopless",
  "iyes_progress",
  "nalgebra",
  "parry2d",

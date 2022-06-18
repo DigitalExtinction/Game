@@ -8,6 +8,7 @@ repository = "https://github.com/DigitalExtinction/Game"
 [dependencies]
 serde = { version = "1.0", features = ["derive"] }
 bevy = "0.7.0"
+iyes_loopless = "0.5.1"
 iyes_progress = { version = "0.3.0", features = [ "iyes_loopless" ] }
 glam = "0.20.2"
 nalgebra = { version = "0.31.0", features = ["convert-glam020"] }
