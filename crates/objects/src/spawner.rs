@@ -82,7 +82,7 @@ fn spawn_inactive(server: &AssetServer, commands: &mut EntityCommands, object: &
 
     commands.insert(StaticSolid);
     let model_name = match object.object_type() {
-        InactiveObjectType::Tree => "tree01",
+        InactiveObjectType::Tree => "tree",
     };
     spawn_model(server, commands, model_name);
 }
