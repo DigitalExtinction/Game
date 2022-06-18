@@ -8,7 +8,7 @@ use de_core::{
 use de_map::description::{ActiveObject, InnerObject, Object};
 use iyes_loopless::prelude::*;
 
-use crate::cache::Cache;
+use crate::cache::ObjectCache;
 
 pub(crate) struct SpawnerPlugin;
 
@@ -33,7 +33,7 @@ impl SpawnEvent {
 fn spawn(
     mut commands: Commands,
     game_config: Res<GameConfig>,
-    cache: Res<Cache>,
+    cache: Res<ObjectCache>,
     mut events: EventReader<SpawnEvent>,
 ) {
     for event in events.iter() {
@@ -55,7 +55,7 @@ fn spawn(
             }
         };
 
-        entity_commands.with_children(|parent| {
+        entity_commands.insert(object_type).with_children(|parent| {
             parent.spawn_scene(cache.get(object_type).scene());
         });
     }

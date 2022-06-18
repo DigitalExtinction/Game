@@ -1,7 +1,7 @@
 use ahash::AHashMap;
 use bevy::prelude::GlobalTransform;
-use de_core::projection::ToFlat;
-use de_index::Ichnography;
+use de_core::{objects::ObjectType, projection::ToFlat};
+use de_objects::{Ichnography, IchnographyCache};
 use glam::{EulerRot, IVec2};
 use parry2d::{
     bounding_volume::{BoundingVolume, AABB},
@@ -9,10 +9,6 @@ use parry2d::{
     query,
     shape::ConvexPolygon,
 };
-
-/// Padding around static object ichnographies used to accommodate for moving
-/// object trajectory smoothing and non-zero moving object sizes.
-const EXCLUSION_OFFSET: f32 = 2.;
 
 /// Non accessible area on the map.
 ///
@@ -31,18 +27,26 @@ impl ExclusionArea {
     /// object ichnographies and their world-to-object transforms.
     ///
     /// Each ichnography is offset by a padding.
-    pub(crate) fn build(ichnographies: &[(GlobalTransform, Ichnography)]) -> Vec<Self> {
-        if ichnographies.is_empty() {
+    pub(crate) fn build(
+        cache: impl IchnographyCache,
+        objects: &[(GlobalTransform, ObjectType)],
+    ) -> Vec<Self> {
+        if objects.is_empty() {
             return Vec::new();
         }
 
         let mut max_extent: f32 = 1.;
-        let mut exclusions: Vec<Self> = ichnographies
+        let exclusions: Vec<Self> = objects
             .iter()
-            .map(|(transform, ichnography)| Self::from_ichnography(transform, ichnography))
+            .map(|(transform, object_type)| {
+                Self::from_ichnography(transform, cache.get_ichnography(*object_type))
+            })
             .inspect(|exclusion| max_extent = max_extent.max(exclusion.aabb().extents().max()))
             .collect();
+        Self::merge(exclusions, max_extent)
+    }
 
+    fn merge(mut exclusions: Vec<Self>, max_extent: f32) -> Vec<Self> {
         let mut merger = Merger::new(5. * max_extent);
         for exclusion in exclusions.drain(..) {
             let to_merge = merger.remove_intersecting(&exclusion);
@@ -62,19 +66,13 @@ impl ExclusionArea {
         let translation = transform.translation.to_flat();
         let isometry = Isometry::new(translation.into(), angle);
         let vertices: Vec<Point<f32>> = ichnography
-            .bounds()
+            .offset_convex_hull()
             .points()
             .iter()
             .map(|&p| isometry * p)
             .collect();
 
-        Self::new_offset(ConvexPolygon::from_convex_polyline(vertices).unwrap())
-    }
-
-    /// Returns a new exclusion area created from a convex polygon with an
-    /// offset.
-    fn new_offset(polygon: ConvexPolygon) -> Self {
-        Self::new(polygon.offseted(EXCLUSION_OFFSET))
+        Self::new(ConvexPolygon::from_convex_polyline(vertices).unwrap())
     }
 
     pub(crate) fn new(polygon: ConvexPolygon) -> Self {
@@ -182,27 +180,27 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_from_inchographies() {
+    fn test_merge() {
         let transform_a = GlobalTransform {
             translation: Vec3::new(0., 0., -1.),
             ..Default::default()
         };
         let ichnography_a = Ichnography::new(
             ConvexPolygon::from_convex_hull(&[
-                Point::new(0., 3.),
-                Point::new(0., -1.),
-                Point::new(2., -1.),
-                Point::new(2., 3.),
+                Point::new(-2., 5.),
+                Point::new(-2., -3.),
+                Point::new(4., -3.),
+                Point::new(4., 5.),
             ])
             .unwrap(),
         );
         let transform_b = GlobalTransform::default();
         let ichnography_b = Ichnography::new(
             ConvexPolygon::from_convex_hull(&[
-                Point::new(0.5, 6.),
-                Point::new(0.5, 5.),
-                Point::new(1.5, 5.),
-                Point::new(1.5, 6.),
+                Point::new(-1.5, 8.),
+                Point::new(-1.5, 3.),
+                Point::new(3.5, 3.),
+                Point::new(3.5, 8.),
             ])
             .unwrap(),
         );
@@ -217,11 +215,14 @@ mod tests {
             .unwrap(),
         );
 
-        let exclusions = ExclusionArea::build(&[
-            (transform_a, ichnography_a),
-            (transform_b, ichnography_b),
-            (transform_c, ichnography_c),
-        ]);
+        let exclusions = ExclusionArea::merge(
+            vec![
+                ExclusionArea::from_ichnography(&transform_a, &ichnography_a),
+                ExclusionArea::from_ichnography(&transform_b, &ichnography_b),
+                ExclusionArea::from_ichnography(&transform_c, &ichnography_c),
+            ],
+            7.,
+        );
         assert_eq!(exclusions.len(), 2);
         assert_eq!(
             exclusions[0].points(),

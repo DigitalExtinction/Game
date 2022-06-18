@@ -14,8 +14,10 @@ mod systems;
 use bevy::{app::PluginGroupBuilder, prelude::PluginGroup};
 use systems::IndexPlugin;
 
-pub use self::index::{EntityIndex, RayEntityIntersection, SpatialQuery};
-pub use self::shape::{EntityShape, Ichnography};
+pub use self::{
+    index::{EntityIndex, RayEntityIntersection, SpatialQuery},
+    shape::EntityShape,
+};
 
 /// Size (in world-space) of a single square tile where entities are kept.
 const TILE_SIZE: f32 = 10.;

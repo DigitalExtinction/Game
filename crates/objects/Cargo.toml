@@ -14,4 +14,8 @@ de_map = { path = "../map", version = "0.1.0-dev" }
 bevy = "0.7.0"
 iyes_loopless = "0.5.1"
 iyes_progress = { version = "0.3.0", features = [ "iyes_loopless" ] }
+parry2d = { git = "https://github.com/Indy2222/parry", branch = "feature/dilation" }
 enum-map = "2.3.0"
+serde = "1.0"
+serde_json = "1.0"
+anyhow = "1.0"

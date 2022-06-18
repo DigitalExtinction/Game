@@ -1,9 +1,16 @@
+//! This crate implements functionality around map object handling, mostly
+//! object (de)spawning, object asset caching and pre-loading.
+
 use bevy::{app::PluginGroupBuilder, prelude::PluginGroup};
 use cache::CachePlugin;
+pub use cache::ObjectCache;
+pub use ichnography::{Ichnography, IchnographyCache};
 pub use spawner::SpawnEvent;
 use spawner::SpawnerPlugin;
 
 mod cache;
+mod ichnography;
+mod loader;
 mod spawner;
 
 pub struct ObjectsPluginGroup;
