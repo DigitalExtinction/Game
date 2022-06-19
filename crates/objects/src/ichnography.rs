@@ -35,7 +35,7 @@ impl From<&Footprint> for Ichnography {
     fn from(footprint: &Footprint) -> Self {
         let footprint = ConvexPolygon::from_convex_polyline(
             footprint
-                .vertices()
+                .convex_hull()
                 .iter()
                 .map(|&[x, y]| Point::new(x, y))
                 .collect(),

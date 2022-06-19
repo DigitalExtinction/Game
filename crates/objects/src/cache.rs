@@ -14,14 +14,14 @@ use iyes_progress::prelude::*;
 
 use crate::{
     ichnography::Ichnography,
-    loader::{Footprint, ObjectLoader},
+    loader::{ObjectInfo, ObjectLoader},
 };
 
 pub(crate) struct CachePlugin;
 
 impl Plugin for CachePlugin {
     fn build(&self, app: &mut App) {
-        app.add_asset::<Footprint>()
+        app.add_asset::<ObjectInfo>()
             .add_asset_loader(ObjectLoader)
             .add_enter_system(GameState::Loading, setup)
             .add_system(
@@ -94,11 +94,11 @@ impl CacheLoader {
         }
     }
 
-    fn into_cache(self, footprints: &Assets<Footprint>) -> InnerCache {
+    fn into_cache(self, objects: &Assets<ObjectInfo>) -> InnerCache {
         InnerCache {
             objects: self
                 .objects
-                .map(|_, loader| loader.into_cache_item(footprints)),
+                .map(|_, loader| loader.into_cache_item(objects)),
         }
     }
 
@@ -113,7 +113,7 @@ impl CacheLoader {
 
 pub(crate) struct ItemLoader {
     scene: Handle<Scene>,
-    footprint: Handle<Footprint>,
+    object_info: Handle<ObjectInfo>,
 }
 
 impl ItemLoader {
@@ -122,26 +122,26 @@ impl ItemLoader {
         model_path.push("models");
         model_path.push(format!("{}.glb", name));
 
-        let mut footprint_path = PathBuf::new();
-        footprint_path.push("objects");
-        footprint_path.push(format!("{}.obj.json", name));
+        let mut object_info_path = PathBuf::new();
+        object_info_path.push("objects");
+        object_info_path.push(format!("{}.obj.json", name));
 
         Self {
             scene: server.load(AssetPath::new(model_path, Some("Scene0".to_owned()))),
-            footprint: server.load(footprint_path),
+            object_info: server.load(object_info_path),
         }
     }
 
-    fn into_cache_item(self, footprints: &Assets<Footprint>) -> CacheItem {
-        let footprint = footprints.get(&self.footprint).unwrap();
+    fn into_cache_item(self, objects: &Assets<ObjectInfo>) -> CacheItem {
+        let object_info = objects.get(&self.object_info).unwrap();
         CacheItem {
             scene: self.scene,
-            ichnography: Ichnography::from(footprint),
+            ichnography: Ichnography::from(object_info.footprint()),
         }
     }
 
     fn advance(&self, server: &AssetServer) -> Progress {
-        Self::advance_single(server, &self.scene) + Self::advance_single(server, &self.footprint)
+        Self::advance_single(server, &self.scene) + Self::advance_single(server, &self.object_info)
     }
 
     fn advance_single<T: Asset>(server: &AssetServer, handle: &Handle<T>) -> Progress {
@@ -166,7 +166,7 @@ fn check_status(
     mut loader: Local<Option<Box<CacheLoader>>>,
     cache: Option<Res<ObjectCache>>,
     server: Res<AssetServer>,
-    footprints: Res<Assets<Footprint>>,
+    objects: Res<Assets<ObjectInfo>>,
 ) -> Progress {
     if cache.is_some() {
         debug_assert!(loader.is_none());
@@ -177,7 +177,7 @@ fn check_status(
         if progress.done >= progress.total {
             let mut ready_loader = None;
             std::mem::swap(&mut ready_loader, &mut loader);
-            let inner_cache = ready_loader.unwrap().into_cache(footprints.as_ref());
+            let inner_cache = ready_loader.unwrap().into_cache(objects.as_ref());
             commands.insert_resource(ObjectCache::new(inner_cache));
         }
     }
