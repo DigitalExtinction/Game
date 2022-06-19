@@ -5,15 +5,21 @@
 //! Newly spawned entities are automatically added, despawned entities removed
 //! and moved entities updated by systems added by
 //! [`self::IndexPlugin`].
+mod aabb;
+mod collider;
 mod grid;
 mod index;
+mod range;
 mod segment;
 mod systems;
 
 use bevy::{app::PluginGroupBuilder, prelude::PluginGroup};
 use systems::IndexPlugin;
 
-pub use self::index::{EntityIndex, RayEntityIntersection, SpatialQuery};
+pub use self::{
+    collider::LocalCollider,
+    index::{EntityIndex, RayEntityIntersection, SpatialQuery},
+};
 
 /// Size (in world-space) of a single square tile where entities are kept.
 const TILE_SIZE: f32 = 10.;

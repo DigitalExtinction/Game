@@ -11,15 +11,16 @@ use bevy::{
     },
     prelude::{Entity, Query, Res},
 };
-use de_objects::ObjectCollider;
 use parry3d::{
     bounding_volume::{BoundingVolume, AABB},
     math::{Isometry, Point},
-    query::{Ray, RayCast},
+    query::Ray,
     shape::Segment,
 };
 
 use super::{grid::TileGrid, segment::SegmentCandidates};
+use crate::aabb::AabbCandidates;
+use crate::LocalCollider;
 
 /// 2D rectangular grid based spatial index of entities.
 pub struct EntityIndex {
@@ -38,13 +39,7 @@ impl EntityIndex {
         }
     }
 
-    pub fn insert(
-        &mut self,
-        entity: Entity,
-        object_collider: ObjectCollider,
-        position: Isometry<f32>,
-    ) {
-        let collider = LocalCollider::new(object_collider, position);
+    pub fn insert(&mut self, entity: Entity, collider: LocalCollider) {
         self.grid.insert(entity, collider.world_aabb());
         self.world_bounds.merge(collider.world_aabb());
         self.colliders.insert(entity, collider);
@@ -89,6 +84,11 @@ impl EntityIndex {
         Some(SegmentCandidates::new(&self.grid, segment))
     }
 
+    /// Returns an iterator of potentially intersecting entities.
+    fn query_aabb<'a>(&'a self, aabb: &AABB) -> AabbCandidates<'a> {
+        AabbCandidates::new(&self.grid, aabb)
+    }
+
     fn get_collider(&self, entity: Entity) -> &LocalCollider {
         self.colliders
             .get(&entity)
@@ -99,51 +99,6 @@ impl EntityIndex {
 impl Default for EntityIndex {
     fn default() -> Self {
         Self::new()
-    }
-}
-
-/// Entity collider with cached entity-space and world-space AABBs for fast
-/// query pre-filtering.
-struct LocalCollider {
-    object_collider: ObjectCollider,
-    /// World-space position of the collider.
-    position: Isometry<f32>,
-    /// Collider-space AABB.
-    local_aabb: AABB,
-    /// World-space AABB. It is kept for fast geometric pre-filtering.
-    world_aabb: AABB,
-}
-
-impl LocalCollider {
-    /// Creates a new entity collider from entity shape and position.
-    fn new(object_collider: ObjectCollider, position: Isometry<f32>) -> Self {
-        let local_aabb = object_collider.compute_aabb();
-        let world_aabb = local_aabb.transform_by(&position);
-
-        Self {
-            object_collider,
-            position,
-            local_aabb,
-            world_aabb,
-        }
-    }
-
-    fn world_aabb(&self) -> &AABB {
-        &self.world_aabb
-    }
-
-    /// Updates position of cached world-space AABB of the collider.
-    fn update_position(&mut self, position: Isometry<f32>) {
-        self.world_aabb = self.local_aabb.transform_by(&position);
-        self.position = position;
-    }
-
-    fn cast_ray(&self, ray: &Ray, max_toi: f32) -> Option<f32> {
-        if self.world_aabb.intersects_local_ray(ray, max_toi) {
-            self.object_collider.cast_ray(&self.position, ray, max_toi)
-        } else {
-            None
-        }
     }
 }
 
@@ -202,6 +157,17 @@ where
         }
 
         None
+    }
+
+    /// Returns true if queried solid object on the map, as indexed by
+    /// [`super::systems::IndexPlugin`], intersects with the given collider.
+    pub fn collides(&self, collider: &LocalCollider) -> bool {
+        let candidate_sets = self.index.query_aabb(collider.world_aabb());
+        candidate_sets.flatten().any(|candidate| {
+            self.entities.get(candidate).map_or(false, |_| {
+                self.index.get_collider(candidate).intersects(collider)
+            })
+        })
     }
 }
 
@@ -262,6 +228,7 @@ impl<T> Eq for RayEntityIntersection<T> {}
 #[cfg(test)]
 mod tests {
     use ahash::AHashSet;
+    use de_objects::ObjectCollider;
     use parry3d::{
         bounding_volume::AABB,
         math::{Isometry, Point, Vector},
@@ -273,15 +240,21 @@ mod tests {
     #[test]
     fn test_entity_index() {
         let entity_a = Entity::from_raw(1);
-        let collider_a = ObjectCollider::new(Cuboid::new(Vector::new(1., 2., 3.)).into());
-        let position_a = Isometry::new(Vector::new(7., 0., 0.), Vector::new(0., 0., 0.));
+        let collider_a = LocalCollider::new(
+            ObjectCollider::new(Cuboid::new(Vector::new(1., 2., 3.)).into()),
+            Isometry::new(Vector::new(7., 0., 0.), Vector::new(0., 0., 0.)),
+        );
         let entity_b = Entity::from_raw(2);
-        let collider_b = ObjectCollider::new(Cuboid::new(Vector::new(2., 1., 2.)).into());
-        let position_b_1 = Isometry::new(Vector::new(7., 1000., 0.), Vector::new(0.1, 0., 0.));
+        let collider_b = LocalCollider::new(
+            ObjectCollider::new(Cuboid::new(Vector::new(2., 1., 2.)).into()),
+            Isometry::new(Vector::new(7., 1000., 0.), Vector::new(0.1, 0., 0.)),
+        );
         let position_b_2 = Isometry::new(Vector::new(7., 1000., -200.), Vector::new(0., 0., 0.));
         let entity_c = Entity::from_raw(3);
-        let collider_c = ObjectCollider::new(Cuboid::new(Vector::new(2., 1., 2.)).into());
-        let position_c = Isometry::new(Vector::new(7., 1000., 1000.), Vector::new(0.1, 0., 0.));
+        let collider_c = LocalCollider::new(
+            ObjectCollider::new(Cuboid::new(Vector::new(2., 1., 2.)).into()),
+            Isometry::new(Vector::new(7., 1000., 1000.), Vector::new(0.1, 0., 0.)),
+        );
 
         let ray_a = Ray::new(Point::new(0., 0.1, 0.), Vector::new(1., 0., 0.));
         let ray_b = Ray::new(Point::new(-10., 0.1, 0.), Vector::new(-1., 0., 0.));
@@ -289,9 +262,9 @@ mod tests {
         let mut index = EntityIndex::new();
         assert!(index.cast_ray(&ray_a, 120.).is_none());
 
-        index.insert(entity_a, collider_a, position_a);
-        index.insert(entity_b, collider_b, position_b_1);
-        index.insert(entity_c, collider_c, position_c);
+        index.insert(entity_a, collider_a);
+        index.insert(entity_b, collider_b);
+        index.insert(entity_c, collider_c);
 
         assert_eq!(
             index.get_collider(entity_a).world_aabb(),

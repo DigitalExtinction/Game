@@ -9,7 +9,7 @@ use criterion::{
     criterion_group, criterion_main, AxisScale, BenchmarkId, Criterion, PlotConfiguration,
     Throughput,
 };
-use de_index::{EntityIndex, SpatialQuery};
+use de_index::{EntityIndex, LocalCollider, SpatialQuery};
 use de_objects::ObjectCollider;
 use glam::Vec2;
 use parry3d::{
@@ -77,9 +77,11 @@ fn setup_world(num_entities: u32, max_distance: f32) -> World {
     let mut index = EntityIndex::new();
 
     for (i, point) in points.iter().enumerate() {
-        let collider = ObjectCollider::new(Cuboid::new(Vector::new(3., 3., 4.)).into());
-        let position = Isometry::new(Vector::new(point.x, 0., point.y), Vector::identity());
-        index.insert(Entity::from_raw(i as u32), collider, position);
+        let collider = LocalCollider::new(
+            ObjectCollider::new(Cuboid::new(Vector::new(3., 3., 4.)).into()),
+            Isometry::new(Vector::new(point.x, 0., point.y), Vector::identity()),
+        );
+        index.insert(Entity::from_raw(i as u32), collider);
     }
 
     let mut rays = Rays::new();
