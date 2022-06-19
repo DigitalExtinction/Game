@@ -8,11 +8,9 @@ use bevy::{
 };
 use de_core::{
     objects::{MovableSolid, StaticSolid},
-    projection::ToFlat,
     state::GameState,
 };
 use iyes_loopless::prelude::*;
-use parry2d::{math::Point, shape::ConvexPolygon};
 use parry3d::{
     bounding_volume::{BoundingVolume, AABB},
     math::Isometry,
@@ -20,7 +18,7 @@ use parry3d::{
 };
 
 use super::index::EntityIndex;
-use crate::shape::{EntityShape, Ichnography};
+use crate::shape::EntityShape;
 
 type SolidEntityQuery<'w, 's> = Query<
     'w,
@@ -32,7 +30,7 @@ type SolidEntityQuery<'w, 's> = Query<
         Option<&'static Children>,
     ),
     (
-        Without<Ichnography>,
+        Without<Indexed>,
         Or<(With<StaticSolid>, With<MovableSolid>)>,
     ),
 >;
@@ -48,12 +46,8 @@ type ChildQuery<'w, 's> = Query<
     With<Parent>,
 >;
 
-type MovedQuery<'w, 's> = Query<
-    'w,
-    's,
-    (Entity, &'static GlobalTransform),
-    (With<Ichnography>, Changed<GlobalTransform>),
->;
+type MovedQuery<'w, 's> =
+    Query<'w, 's, (Entity, &'static GlobalTransform), (With<Indexed>, Changed<GlobalTransform>)>;
 
 /// Bevy plugin which adds systems necessary for spatial indexing of solid
 /// entities.
@@ -91,6 +85,9 @@ impl Plugin for IndexPlugin {
     }
 }
 
+#[derive(Component)]
+struct Indexed;
+
 fn setup(mut commands: Commands) {
     commands.insert_resource(EntityIndex::new());
 }
@@ -113,32 +110,17 @@ fn insert(
     child_query: ChildQuery,
 ) {
     for (entity, transform, mesh_handle, children) in root_query.iter() {
-        let shape = match compute_entity_shape(&meshes, &child_query, mesh_handle, children) {
-            Some(shape) => shape,
-            None => continue,
-        };
-
-        let aabb = shape.compute_aabb().to_flat();
-        let ichnography = Ichnography::new(
-            ConvexPolygon::from_convex_polyline(vec![
-                Point::new(aabb.mins.x, aabb.maxs.y),
-                Point::new(aabb.mins.x, aabb.mins.y),
-                Point::new(aabb.maxs.x, aabb.mins.y),
-                Point::new(aabb.maxs.x, aabb.maxs.y),
-            ])
-            .unwrap(),
-        );
-
+        let shape = compute_entity_shape(&meshes, &child_query, mesh_handle, children);
         let position = Isometry::new(
             transform.translation.into(),
             transform.rotation.to_scaled_axis().into(),
         );
         index.insert(entity, shape, position);
-        commands.entity(entity).insert(ichnography);
+        commands.entity(entity).insert(Indexed);
     }
 }
 
-fn remove(mut index: ResMut<EntityIndex>, removed: RemovedComponents<Ichnography>) {
+fn remove(mut index: ResMut<EntityIndex>, removed: RemovedComponents<Indexed>) {
     for entity in removed.iter() {
         index.remove(entity);
     }
@@ -159,32 +141,23 @@ fn compute_entity_shape(
     query: &ChildQuery,
     mesh_handle: Option<&Handle<Mesh>>,
     children: Option<&Children>,
-) -> Option<EntityShape> {
+) -> EntityShape {
     let identity = Transform::identity();
 
-    let mut aabb = match mesh_handle {
-        Some(mesh_handle) => match try_aabb_from_mesh(&identity, mesh_handle, meshes) {
-            Ok(aabb) => aabb,
-            Err(_) => return None,
-        },
-        None => None,
-    };
+    let mut aabb = mesh_handle.and_then(|mesh| aabb_from_mesh(&identity, mesh, meshes));
 
     if let Some(children) = children {
         for &child in children.iter() {
-            aabb = match aabb_recursive(child, &identity, aabb, meshes, query) {
-                Ok(aabb) => aabb,
-                Err(_) => return None,
-            };
+            aabb = aabb_recursive(child, &identity, aabb, meshes, query);
         }
     }
 
     let aabb = aabb.expect("Solid entity with an empty AABB.");
     let translation = aabb.center();
-    Some(EntityShape::new(
+    EntityShape::new(
         Cuboid::new(aabb.half_extents()),
         Isometry::translation(translation.x, translation.y, translation.z),
-    ))
+    )
 }
 
 fn aabb_recursive(
@@ -193,7 +166,7 @@ fn aabb_recursive(
     mut aabb: Option<AABB>,
     meshes: &Assets<Mesh>,
     query: &ChildQuery,
-) -> Result<Option<AABB>, ()> {
+) -> Option<AABB> {
     let (transform, mesh, children) = query
         .get(entity)
         .expect("Child entity could not be retrieved.");
@@ -205,7 +178,7 @@ fn aabb_recursive(
     );
 
     if let Some(mesh) = mesh {
-        let child_aabb = try_aabb_from_mesh(&transform, mesh, meshes)?;
+        let child_aabb = aabb_from_mesh(&transform, mesh, meshes);
         aabb = match (aabb, child_aabb) {
             (Some(a), Some(b)) => Some(a.merged(&b)),
             (Some(a), None) => Some(a),
@@ -216,28 +189,26 @@ fn aabb_recursive(
 
     if let Some(children) = children {
         for &child in children.iter() {
-            aabb = aabb_recursive(child, &transform, aabb, meshes, query)?;
+            aabb = aabb_recursive(child, &transform, aabb, meshes, query);
         }
     }
 
-    Ok(aabb)
+    aabb
 }
 
-fn try_aabb_from_mesh(
+fn aabb_from_mesh(
     transform: &Transform,
     mesh_handle: &Handle<Mesh>,
     meshes: &Assets<Mesh>,
-) -> Result<Option<AABB>, ()> {
-    match meshes.get(mesh_handle) {
-        Some(mesh) => Ok(mesh.compute_aabb().map(|aabb| {
-            let position = Isometry::new(
-                transform.translation.into(),
-                transform.rotation.to_scaled_axis().into(),
-            );
-            AABB::new(aabb.min().into(), aabb.max().into())
-                .scaled(&transform.scale.into())
-                .transform_by(&position)
-        })),
-        None => Err(()),
-    }
+) -> Option<AABB> {
+    let mesh = meshes.get(mesh_handle).unwrap();
+    mesh.compute_aabb().map(|aabb| {
+        let position = Isometry::new(
+            transform.translation.into(),
+            transform.rotation.to_scaled_axis().into(),
+        );
+        AABB::new(aabb.min().into(), aabb.max().into())
+            .scaled(&transform.scale.into())
+            .transform_by(&position)
+    })
 }

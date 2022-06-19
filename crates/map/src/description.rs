@@ -122,15 +122,12 @@ pub enum MapValidationError {
 #[derive(Clone, Serialize, Deserialize)]
 pub struct Object {
     placement: Placement,
-    object_type: ObjectType,
+    inner: InnerObject,
 }
 
 impl Object {
-    pub fn new(placement: Placement, object_type: ObjectType) -> Self {
-        Self {
-            placement,
-            object_type,
-        }
+    pub fn new(placement: Placement, inner: InnerObject) -> Self {
+        Self { placement, inner }
     }
 
     /// Object placement on the map.
@@ -138,8 +135,8 @@ impl Object {
         self.placement
     }
 
-    pub fn object_type(&self) -> &ObjectType {
-        &self.object_type
+    pub fn inner(&self) -> &InnerObject {
+        &self.inner
     }
 
     fn validate(
@@ -151,13 +148,13 @@ impl Object {
             return Err(ObjectValidationError::PlacementError { source: error });
         }
 
-        match &self.object_type {
-            ObjectType::Active(object) => {
+        match &self.inner {
+            InnerObject::Active(object) => {
                 if let Err(error) = object.validate(max_player) {
                     return Err(ObjectValidationError::ActiveObjectError { source: error });
                 }
             }
-            ObjectType::Inactive(_) => (),
+            InnerObject::Inactive(_) => (),
         }
 
         Ok(())
@@ -173,7 +170,7 @@ pub enum ObjectValidationError {
 }
 
 #[derive(Clone, Serialize, Deserialize)]
-pub enum ObjectType {
+pub enum InnerObject {
     Active(ActiveObject),
     Inactive(InactiveObject),
 }
@@ -290,7 +287,7 @@ mod test {
         let mut map = Map::empty(MapBounds::new(Vec2::new(1000., 1000.)), Player::Player3);
         let object_a = Object::new(
             map.new_placement(Vec2::new(20., 25.), 0.),
-            ObjectType::Active(ActiveObject::new(
+            InnerObject::Active(ActiveObject::new(
                 ActiveObjectType::Attacker,
                 Player::Player1,
             )),
@@ -313,7 +310,7 @@ mod test {
                         position: Vec2::new(1., 1.),
                         heading: 0.,
                     },
-                    object_type: ObjectType::Active(ActiveObject::new(
+                    inner: InnerObject::Active(ActiveObject::new(
                         ActiveObjectType::Attacker,
                         Player::Player2,
                     )),
@@ -323,7 +320,7 @@ mod test {
                         position: Vec2::new(100., 0.),
                         heading: 0.,
                     },
-                    object_type: ObjectType::Active(ActiveObject::new(
+                    inner: InnerObject::Active(ActiveObject::new(
                         ActiveObjectType::Attacker,
                         Player::Player1,
                     )),

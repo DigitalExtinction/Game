@@ -5,7 +5,7 @@ use bevy::{
     prelude::*,
     render::camera::Camera3d,
 };
-use de_core::{projection::ToMsl, state::GameState};
+use de_core::{events::ResendEventPlugin, projection::ToMsl, state::GameState};
 use de_map::size::MapBounds;
 use de_terrain::TerrainCollider;
 use iyes_loopless::prelude::*;
@@ -57,6 +57,7 @@ pub(crate) struct CameraPlugin;
 impl Plugin for CameraPlugin {
     fn build(&self, app: &mut App) {
         app.add_event::<MoveFocusEvent>()
+            .add_plugin(ResendEventPlugin::<MoveFocusEvent>::default())
             .add_event::<FocusInvalidatedEvent>()
             .add_event::<PivotEvent>()
             .add_enter_system(GameState::Playing, setup)

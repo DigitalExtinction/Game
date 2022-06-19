@@ -9,13 +9,40 @@ use criterion::{
     criterion_group, criterion_main, AxisScale, BenchmarkId, Criterion, PlotConfiguration,
     Throughput,
 };
-use de_index::Ichnography;
+use de_core::objects::{ActiveObjectType, ObjectType};
 use de_map::size::MapBounds;
+use de_objects::{Ichnography, IchnographyCache};
 use de_pathing::create_finder;
-use glam::Vec2;
+use glam::{Vec2, Vec3};
 use parry2d::{math::Point, shape::ConvexPolygon};
 
 const MAP_SIZE: f32 = 8000.;
+
+struct IchnographyCacheMock {
+    fixed: Ichnography,
+}
+
+impl Default for IchnographyCacheMock {
+    fn default() -> Self {
+        Self {
+            fixed: Ichnography::new(
+                ConvexPolygon::from_convex_hull(&[
+                    Point::new(-10., 10.),
+                    Point::new(-10., -10.),
+                    Point::new(10., -10.),
+                    Point::new(10., 10.),
+                ])
+                .unwrap(),
+            ),
+        }
+    }
+}
+
+impl IchnographyCache for &IchnographyCacheMock {
+    fn get_ichnography(&self, _object_type: ObjectType) -> &Ichnography {
+        &self.fixed
+    }
+}
 
 fn load_points(number: u32) -> Vec<Vec2> {
     let mut points_path: PathBuf = env!("CARGO_MANIFEST_DIR").into();
@@ -34,20 +61,17 @@ fn load_points(number: u32) -> Vec<Vec2> {
     points
 }
 
-fn load_entities(number: u32) -> Vec<(GlobalTransform, Ichnography)> {
+fn load_entities(number: u32) -> Vec<(GlobalTransform, ObjectType)> {
     load_points(number)
         .iter()
         .map(|p| {
-            let ichnography = Ichnography::new(
-                ConvexPolygon::from_convex_hull(&[
-                    Point::new(p.x - 10., p.y + 10.),
-                    Point::new(p.x - 10., p.y - 10.),
-                    Point::new(p.x + 10., p.y - 10.),
-                    Point::new(p.x + 10., p.y + 10.),
-                ])
-                .unwrap(),
-            );
-            (GlobalTransform::identity(), ichnography)
+            (
+                GlobalTransform {
+                    translation: Vec3::new(p.x, 0., -p.y),
+                    ..Default::default()
+                },
+                ObjectType::Active(ActiveObjectType::Base),
+            )
         })
         .collect()
 }
@@ -57,6 +81,8 @@ fn create_finder_benchmark(c: &mut Criterion) {
     let plot_config = PlotConfiguration::default().summary_scale(AxisScale::Logarithmic);
     group.plot_config(plot_config);
 
+    let cache = IchnographyCacheMock::default();
+
     for num_entities in [100, 1000, 10_000, 100_000] {
         let entities = load_entities(num_entities);
 
@@ -65,7 +91,7 @@ fn create_finder_benchmark(c: &mut Criterion) {
         group.throughput(Throughput::Elements(1));
         group.bench_function(BenchmarkId::from_parameter(num_entities), |b| {
             b.iter(|| {
-                create_finder(bounds, entities.clone());
+                create_finder(&cache, bounds, entities.clone());
             });
         });
     }
@@ -76,12 +102,14 @@ fn find_path_benchmark(c: &mut Criterion) {
     let plot_config = PlotConfiguration::default().summary_scale(AxisScale::Logarithmic);
     group.plot_config(plot_config);
 
+    let cache = IchnographyCacheMock::default();
+
     let points = load_points(100_000);
     let mut index = 0;
 
     for num_entities in [100, 1000, 10_000, 100_000] {
         let bounds = MapBounds::new(Vec2::splat(MAP_SIZE));
-        let finder = create_finder(bounds, load_entities(num_entities));
+        let finder = create_finder(&cache, bounds, load_entities(num_entities));
 
         group.throughput(Throughput::Elements(1));
         group.bench_function(BenchmarkId::from_parameter(num_entities), |b| {

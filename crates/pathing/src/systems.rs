@@ -7,12 +7,12 @@ use bevy::{
     transform::TransformSystem,
 };
 use de_core::{
-    objects::{MovableSolid, StaticSolid},
+    objects::{MovableSolid, ObjectType, StaticSolid},
     projection::ToFlat,
     state::GameState,
 };
-use de_index::Ichnography;
 use de_map::size::MapBounds;
+use de_objects::{IchnographyCache, ObjectCache};
 use futures_lite::future;
 use iyes_loopless::prelude::*;
 
@@ -117,15 +117,20 @@ impl UpdateFinderState {
         self.invalid && self.task.is_none()
     }
 
-    fn spawn_update<'a, T>(&mut self, pool: &AsyncComputeTaskPool, bounds: MapBounds, entities: T)
-    where
-        T: Iterator<Item = (&'a GlobalTransform, &'a Ichnography)>,
+    fn spawn_update<'a, T>(
+        &mut self,
+        pool: &AsyncComputeTaskPool,
+        cache: ObjectCache,
+        bounds: MapBounds,
+        entities: T,
+    ) where
+        T: Iterator<Item = (&'a GlobalTransform, &'a ObjectType)>,
     {
         debug_assert!(self.task.is_none());
-        let entities: Vec<(GlobalTransform, Ichnography)> = entities
-            .map(|(transform, ichnography)| (*transform, ichnography.clone()))
+        let entities: Vec<(GlobalTransform, ObjectType)> = entities
+            .map(|(transform, object_type)| (*transform, *object_type))
             .collect();
-        self.task = Some(pool.spawn(async move { create_finder(bounds, entities) }));
+        self.task = Some(pool.spawn(async move { create_finder(cache, bounds, entities) }));
         self.invalid = false;
     }
 
@@ -191,15 +196,8 @@ impl Default for UpdatePathsState {
     }
 }
 
-type ChangedQuery<'world, 'state> = Query<
-    'world,
-    'state,
-    Entity,
-    (
-        With<StaticSolid>,
-        Or<(Changed<Ichnography>, Changed<GlobalTransform>)>,
-    ),
->;
+type ChangedQuery<'world, 'state> =
+    Query<'world, 'state, Entity, (With<StaticSolid>, Changed<GlobalTransform>)>;
 
 fn setup(mut commands: Commands, bounds: Res<MapBounds>) {
     commands.insert_resource(Arc::new(PathFinder::new(bounds.as_ref())));
@@ -221,11 +219,12 @@ fn update(
     mut state: ResMut<UpdateFinderState>,
     pool: Res<AsyncComputeTaskPool>,
     bounds: Res<MapBounds>,
-    entities: Query<(&GlobalTransform, &Ichnography), With<StaticSolid>>,
+    cache: Res<ObjectCache>,
+    entities: Query<(&GlobalTransform, &ObjectType), With<StaticSolid>>,
 ) {
     if state.should_update() {
         info!("Spawning path finder update task");
-        state.spawn_update(pool.as_ref(), *bounds, entities.iter());
+        state.spawn_update(pool.as_ref(), cache.clone(), *bounds, entities.iter());
     }
 }
 
@@ -244,8 +243,9 @@ fn check_update_result(
 /// Creates a new path finder by triangulating accessible area on the map.
 // This function has to be public due to its benchmark.
 pub fn create_finder(
+    cache: impl IchnographyCache,
     bounds: MapBounds,
-    entities: Vec<(GlobalTransform, Ichnography)>,
+    entities: Vec<(GlobalTransform, ObjectType)>,
 ) -> PathFinder {
     debug!(
         "Going to create a new path finder from {} entities",
@@ -253,7 +253,7 @@ pub fn create_finder(
     );
     PathFinder::from_triangles(triangulate(
         &bounds,
-        &ExclusionArea::build(entities.as_slice()),
+        &ExclusionArea::build(cache, entities.as_slice()),
     ))
 }
 

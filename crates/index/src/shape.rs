@@ -1,5 +1,3 @@
-use bevy::prelude::Component;
-use parry2d::shape::ConvexPolygon;
 use parry3d::{bounding_volume::AABB, math::Isometry, query::Ray, shape::Shape};
 
 pub struct EntityShape {
@@ -35,20 +33,5 @@ impl EntityShape {
     ) -> Option<f32> {
         let position = entity_position * self.local_position;
         self.shape.cast_ray(&position, ray, max_toi, true)
-    }
-}
-
-#[derive(Component, Clone)]
-pub struct Ichnography {
-    bounds: ConvexPolygon,
-}
-
-impl Ichnography {
-    pub fn new(bounds: ConvexPolygon) -> Self {
-        Self { bounds }
-    }
-
-    pub fn bounds(&self) -> &ConvexPolygon {
-        &self.bounds
     }
 }

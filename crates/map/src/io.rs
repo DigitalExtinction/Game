@@ -133,7 +133,7 @@ mod test {
 
     use super::*;
     use crate::{
-        description::{ActiveObject, Map, Object, ObjectType},
+        description::{ActiveObject, InnerObject, Map, Object},
         size::MapBounds,
     };
 
@@ -152,7 +152,7 @@ mod test {
         for (base_position, player) in bases {
             map.insert_object(Object::new(
                 map.new_placement(base_position, 0.),
-                ObjectType::Active(ActiveObject::new(ActiveObjectType::Base, player)),
+                InnerObject::Active(ActiveObject::new(ActiveObjectType::Base, player)),
             ));
         }
 

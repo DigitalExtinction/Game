@@ -1,6 +1,10 @@
+#![allow(clippy::modulo_one)] // Caused by derive(Enum) on an enum with only a
+                              // single variant.
+
 use std::fmt;
 
 use bevy::prelude::*;
+use enum_map::Enum;
 use serde::{Deserialize, Serialize};
 
 /// Active object which can be played by the local player.
@@ -15,7 +19,13 @@ pub struct StaticSolid;
 #[derive(Component)]
 pub struct MovableSolid;
 
-#[derive(Copy, Clone, Debug, Component, Serialize, Deserialize, PartialEq)]
+#[derive(Enum, Component, Copy, Clone)]
+pub enum ObjectType {
+    Active(ActiveObjectType),
+    Inactive(InactiveObjectType),
+}
+
+#[derive(Copy, Clone, Debug, Component, Serialize, Deserialize, PartialEq, Enum)]
 pub enum InactiveObjectType {
     Tree,
 }
@@ -28,7 +38,7 @@ impl fmt::Display for InactiveObjectType {
     }
 }
 
-#[derive(Copy, Clone, Debug, Component, Serialize, Deserialize, PartialEq)]
+#[derive(Copy, Clone, Debug, Component, Serialize, Deserialize, PartialEq, Enum)]
 pub enum ActiveObjectType {
     Base,
     PowerHub,

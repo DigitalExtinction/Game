@@ -9,7 +9,7 @@ use de_core::{
     projection::ToMsl, state::GameState,
 };
 use de_map::{
-    description::{Map, ObjectType},
+    description::{InnerObject, Map},
     io::{load_map, MapLoadingError},
     size::MapBounds,
 };
@@ -48,13 +48,18 @@ fn load_map_system(
 
 fn spawn_map(
     mut commands: Commands,
-    mut task: ResMut<MapLoadingTask>,
+    task: Option<ResMut<MapLoadingTask>>,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
     mut spawn_events: EventWriter<SpawnEvent>,
     mut move_focus_events: EventWriter<MoveFocusEvent>,
     game_config: Res<GameConfig>,
 ) -> Progress {
+    let mut task = match task {
+        Some(task) => task,
+        None => return true.into(),
+    };
+
     let loading_result = match future::block_on(future::poll_once(&mut task.0)) {
         Some(result) => result,
         None => return false.into(),
@@ -74,8 +79,8 @@ fn spawn_map(
     let initial_focus = map
         .objects()
         .iter()
-        .filter_map(|object| match object.object_type() {
-            ObjectType::Active(active_object) => {
+        .filter_map(|object| match object.inner() {
+            InnerObject::Active(active_object) => {
                 if game_config.is_local_player(active_object.player())
                     && active_object.object_type() == ActiveObjectType::Base
                 {
