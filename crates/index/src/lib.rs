@@ -8,16 +8,12 @@
 mod grid;
 mod index;
 mod segment;
-mod shape;
 mod systems;
 
 use bevy::{app::PluginGroupBuilder, prelude::PluginGroup};
 use systems::IndexPlugin;
 
-pub use self::{
-    index::{EntityIndex, RayEntityIntersection, SpatialQuery},
-    shape::EntityShape,
-};
+pub use self::index::{EntityIndex, RayEntityIntersection, SpatialQuery};
 
 /// Size (in world-space) of a single square tile where entities are kept.
 const TILE_SIZE: f32 = 10.;
