@@ -5,15 +5,19 @@ use bevy::{
 };
 use de_camera::MoveFocusEvent;
 use de_core::{
-    assets::asset_path, gconfig::GameConfig, log_full_error, objects::ActiveObjectType,
-    projection::ToMsl, state::GameState,
+    assets::asset_path,
+    gconfig::GameConfig,
+    log_full_error,
+    objects::{ActiveObjectType, ObjectType},
+    projection::ToMsl,
+    state::GameState,
 };
 use de_map::{
     description::{InnerObject, Map},
     io::{load_map, MapLoadingError},
     size::MapBounds,
 };
-use de_objects::SpawnEvent;
+use de_objects::SpawnBundle;
 use de_terrain::Terrain;
 use futures_lite::future;
 use iyes_loopless::prelude::*;
@@ -51,7 +55,6 @@ fn spawn_map(
     task: Option<ResMut<MapLoadingTask>>,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
-    mut spawn_events: EventWriter<SpawnEvent>,
     mut move_focus_events: EventWriter<MoveFocusEvent>,
     game_config: Res<GameConfig>,
 ) -> Progress {
@@ -98,7 +101,22 @@ fn spawn_map(
 
     setup_light(&mut commands);
     setup_terrain(&mut commands, &mut meshes, &mut materials, map.bounds());
-    spawn_events.send_batch(map.objects().iter().cloned().map(SpawnEvent::new));
+
+    for object in map.objects() {
+        let mut entity_commands = commands.spawn();
+        let object_type = match object.inner() {
+            InnerObject::Active(object) => {
+                entity_commands.insert(object.player());
+                ObjectType::Active(object.object_type())
+            }
+            InnerObject::Inactive(object) => ObjectType::Inactive(object.object_type()),
+        };
+        entity_commands.insert_bundle(SpawnBundle::new(
+            object_type,
+            object.placement().to_transform(),
+        ));
+    }
+
     commands.insert_resource(map.bounds());
     true.into()
 }
