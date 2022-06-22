@@ -1,10 +1,5 @@
 use bevy::{
-    ecs::system::SystemParam,
-    input::mouse::MouseMotion,
-    prelude::{
-        App, Camera, Entity, EventReader, GlobalTransform, Plugin, Query, Res, ResMut, With,
-    },
-    render::camera::Camera3d,
+    ecs::system::SystemParam, input::mouse::MouseMotion, prelude::*, render::camera::Camera3d,
     window::Windows,
 };
 use de_core::{objects::Playable, state::GameState};
@@ -20,7 +15,8 @@ pub(crate) struct PointerPlugin;
 
 impl Plugin for PointerPlugin {
     fn build(&self, app: &mut App) {
-        app.init_resource::<Pointer>().add_system(
+        app.init_resource::<Pointer>().add_system_to_stage(
+            CoreStage::PreUpdate,
             mouse_move_handler
                 .run_in_state(GameState::Playing)
                 .label(Labels::PreInputUpdate),

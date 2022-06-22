@@ -9,7 +9,8 @@ pub(crate) struct CommandPlugin;
 
 impl Plugin for CommandPlugin {
     fn build(&self, app: &mut App) {
-        app.add_system_set(
+        app.add_system_set_to_stage(
+            CoreStage::PreUpdate,
             SystemSet::new().with_system(
                 right_click_handler
                     .run_if(on_click(MouseButton::Right))
