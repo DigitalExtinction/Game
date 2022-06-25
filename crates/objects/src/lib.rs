@@ -4,11 +4,13 @@
 use bevy::{app::PluginGroupBuilder, prelude::PluginGroup};
 use cache::CachePlugin;
 pub use cache::ObjectCache;
+pub use collider::{ColliderCache, ObjectCollider};
 pub use ichnography::{Ichnography, IchnographyCache};
 pub use spawner::SpawnEvent;
 use spawner::SpawnerPlugin;
 
 mod cache;
+mod collider;
 mod ichnography;
 mod loader;
 mod spawner;
