@@ -232,7 +232,7 @@ mod tests {
     use parry3d::{
         bounding_volume::AABB,
         math::{Isometry, Point, Vector},
-        shape::Cuboid,
+        shape::{Cuboid, TriMesh, TriMeshFlags},
     };
 
     use super::*;
@@ -240,19 +240,25 @@ mod tests {
     #[test]
     fn test_entity_index() {
         let entity_a = Entity::from_raw(1);
+        let mut trimesh_a: TriMesh = Cuboid::new(Vector::new(1., 2., 3.)).into();
+        trimesh_a.set_flags(TriMeshFlags::ORIENTED).unwrap();
         let collider_a = LocalCollider::new(
-            ObjectCollider::new(Cuboid::new(Vector::new(1., 2., 3.)).into()),
+            ObjectCollider::new(trimesh_a),
             Isometry::new(Vector::new(7., 0., 0.), Vector::new(0., 0., 0.)),
         );
         let entity_b = Entity::from_raw(2);
+        let mut trimesh_b: TriMesh = Cuboid::new(Vector::new(2., 1., 2.)).into();
+        trimesh_b.set_flags(TriMeshFlags::ORIENTED).unwrap();
         let collider_b = LocalCollider::new(
-            ObjectCollider::new(Cuboid::new(Vector::new(2., 1., 2.)).into()),
+            ObjectCollider::new(trimesh_b),
             Isometry::new(Vector::new(7., 1000., 0.), Vector::new(0.1, 0., 0.)),
         );
         let position_b_2 = Isometry::new(Vector::new(7., 1000., -200.), Vector::new(0., 0., 0.));
         let entity_c = Entity::from_raw(3);
+        let mut trimesh_c: TriMesh = Cuboid::new(Vector::new(2., 1., 2.)).into();
+        trimesh_c.set_flags(TriMeshFlags::ORIENTED).unwrap();
         let collider_c = LocalCollider::new(
-            ObjectCollider::new(Cuboid::new(Vector::new(2., 1., 2.)).into()),
+            ObjectCollider::new(trimesh_c),
             Isometry::new(Vector::new(7., 1000., 1000.), Vector::new(0.1, 0., 0.)),
         );
 
@@ -293,7 +299,9 @@ mod tests {
 
     #[test]
     fn test_entity_collider() {
-        let object_collider = ObjectCollider::new(Cuboid::new(Vector::new(1., 2., 3.)).into());
+        let mut trimesh: TriMesh = Cuboid::new(Vector::new(1., 2., 3.)).into();
+        trimesh.set_flags(TriMeshFlags::ORIENTED).unwrap();
+        let object_collider = ObjectCollider::new(trimesh);
         let position_a = Isometry::new(Vector::new(7., 0., 0.), Vector::new(0., 0., 0.));
         let position_b = Isometry::new(Vector::new(9., 0., 0.), Vector::new(0., 0., 0.));
         let ray = Ray::new(Point::new(0., 0., 0.), Vector::new(1., 0., 0.));
