@@ -5,9 +5,8 @@ use de_core::{
     player::Player,
     state::GameState,
 };
+use de_objects::ObjectCache;
 use iyes_loopless::prelude::*;
-
-use crate::cache::ObjectCache;
 
 pub(crate) struct SpawnerPlugin;
 

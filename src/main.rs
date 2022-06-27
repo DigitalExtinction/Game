@@ -7,6 +7,7 @@ use de_loader::LoaderPluginGroup;
 use de_movement::MovementPluginGroup;
 use de_objects::ObjectsPluginGroup;
 use de_pathing::PathingPluginGroup;
+use de_spawner::SpawnerPluginGroup;
 use iyes_loopless::prelude::*;
 
 fn main() {
@@ -24,6 +25,7 @@ fn main() {
         .add_plugins(LoaderPluginGroup)
         .add_plugins(IndexPluginGroup)
         .add_plugins(PathingPluginGroup)
+        .add_plugins(SpawnerPluginGroup)
         .add_plugins(MovementPluginGroup)
         .add_plugins(ControllerPluginGroup)
         .add_plugins(CameraPluginGroup)

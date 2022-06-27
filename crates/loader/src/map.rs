@@ -17,7 +17,7 @@ use de_map::{
     io::{load_map, MapLoadingError},
     size::MapBounds,
 };
-use de_objects::SpawnBundle;
+use de_spawner::SpawnBundle;
 use de_terrain::Terrain;
 use futures_lite::future;
 use iyes_loopless::prelude::*;

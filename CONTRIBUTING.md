@@ -58,9 +58,11 @@ Topologically sorted crates:
 
 * [terrain](/crates/terrain) – functionality related to game terrain.
 
-* [objects](/crates/objects) – spawning & caching of object on the game map.
+* [objects](/crates/objects) – caching of object on the game map.
 
 * [index](/crates/index) – spatial index of all solid entities in the game.
+
+* [spawner](/crates/spawner) – object spawning, drafting and construction.
 
 * [camera](/crates/camera)
 

@@ -2,7 +2,7 @@ use de_core::objects::ObjectType;
 use parry3d::{
     bounding_volume::AABB,
     math::{Isometry, Point},
-    query::{intersection_test, Ray, RayCast},
+    query::{intersection_test, PointQuery, Ray, RayCast},
     shape::{Shape, TriMesh, TriMeshFlags},
 };
 
@@ -25,6 +25,7 @@ pub struct ObjectCollider {
 
 impl ObjectCollider {
     pub fn new(shape: TriMesh) -> Self {
+        debug_assert!(shape.pseudo_normals().is_some());
         Self { shape }
     }
 
@@ -42,7 +43,27 @@ impl ObjectCollider {
         rhs: &Self,
         rhs_position: &Isometry<f32>,
     ) -> bool {
+        // This must be here since intersection_test() tests only for collider
+        // surface to collider surface intersection. We need to return true
+        // even if one is fully contained in the other.
+        if self.contains_first_vertex(position, rhs, rhs_position) {
+            return true;
+        }
+        if rhs.contains_first_vertex(rhs_position, self, position) {
+            return true;
+        }
         intersection_test(position, &self.shape, rhs_position, &rhs.shape).unwrap()
+    }
+
+    /// Returns true if `self` contains first vertex of `rhs`.
+    fn contains_first_vertex(
+        &self,
+        position: &Isometry<f32>,
+        rhs: &Self,
+        rhs_position: &Isometry<f32>,
+    ) -> bool {
+        let any_rhs_point = rhs_position.transform_point(&rhs.shape.vertices()[0]);
+        self.shape.contains_point(position, &any_rhs_point)
     }
 }
 
@@ -57,7 +78,56 @@ impl From<&TriMeshShape> for ObjectCollider {
         Self::new(TriMesh::with_flags(
             vertices,
             indices,
-            TriMeshFlags::MERGE_DUPLICATE_VERTICES,
+            TriMeshFlags::MERGE_DUPLICATE_VERTICES | TriMeshFlags::ORIENTED,
+        ))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use parry3d::{
+        math::{Isometry, Vector},
+        shape::{Cuboid, TriMesh, TriMeshFlags},
+    };
+
+    use crate::ObjectCollider;
+
+    #[test]
+    fn test_intersects() {
+        assert!(collider(1.).intersects(
+            &Isometry::translation(10., 0., 0.),
+            &collider(10.),
+            &Isometry::translation(10., 0., 0.),
+        ));
+        assert!(collider(10.).intersects(
+            &Isometry::translation(10., 0., 0.),
+            &collider(1.),
+            &Isometry::translation(10., 0., 0.),
+        ));
+        assert!(collider(1.).intersects(
+            &Isometry::translation(10., 0., 0.),
+            &collider(1.),
+            &Isometry::translation(10., 0., 0.),
+        ));
+        assert!(collider(1.).intersects(
+            &Isometry::translation(9.5, 0., 0.),
+            &collider(1.),
+            &Isometry::translation(10., 0., 0.),
+        ));
+        assert!(!collider(1.).intersects(
+            &Isometry::translation(-10., 0., 0.),
+            &collider(1.),
+            &Isometry::translation(10., 0., 0.),
+        ));
+    }
+
+    fn collider(size: f32) -> ObjectCollider {
+        let cube = Cuboid::new(Vector::new(size, size, size));
+        let (vertices, indices) = cube.to_trimesh();
+        ObjectCollider::new(TriMesh::with_flags(
+            vertices,
+            indices,
+            TriMeshFlags::ORIENTED,
         ))
     }
 }
