@@ -42,7 +42,7 @@ type MovedQuery<'w, 's> =
 /// [`bevy::prelude::CoreStage::PostUpdate`], thus entities removed during or
 /// after this stage might be missed and kept in the index even after their
 /// de-spawning.
-pub struct IndexPlugin;
+pub(crate) struct IndexPlugin;
 
 impl Plugin for IndexPlugin {
     fn build(&self, app: &mut App) {

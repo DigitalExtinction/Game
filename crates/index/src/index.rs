@@ -18,9 +18,8 @@ use parry3d::{
     shape::Segment,
 };
 
-use super::{grid::TileGrid, segment::SegmentCandidates};
+use super::{collider::LocalCollider, grid::TileGrid, segment::SegmentCandidates};
 use crate::aabb::AabbCandidates;
-use crate::LocalCollider;
 
 /// 2D rectangular grid based spatial index of entities.
 pub struct EntityIndex {
@@ -31,6 +30,7 @@ pub struct EntityIndex {
 
 impl EntityIndex {
     /// Creates a new empty index.
+    // Needs to be public because it is used in a benchmark.
     pub fn new() -> Self {
         Self {
             grid: TileGrid::new(),
@@ -39,13 +39,14 @@ impl EntityIndex {
         }
     }
 
+    // Needs to be public because it is used in a benchmark.
     pub fn insert(&mut self, entity: Entity, collider: LocalCollider) {
         self.grid.insert(entity, collider.world_aabb());
         self.world_bounds.merge(collider.world_aabb());
         self.colliders.insert(entity, collider);
     }
 
-    pub fn remove(&mut self, entity: Entity) {
+    pub(crate) fn remove(&mut self, entity: Entity) {
         let collider = self
             .colliders
             .remove(&entity)
@@ -53,7 +54,7 @@ impl EntityIndex {
         self.grid.remove(entity, collider.world_aabb());
     }
 
-    pub fn update(&mut self, entity: Entity, position: Isometry<f32>) {
+    pub(crate) fn update(&mut self, entity: Entity, position: Isometry<f32>) {
         let collider = self
             .colliders
             .get_mut(&entity)
