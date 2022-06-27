@@ -2,10 +2,12 @@
 
 use bevy::{app::PluginGroupBuilder, prelude::*};
 use command::CommandPlugin;
+use draft::DraftPlugin;
 use pointer::PointerPlugin;
 use selection::SelectionPlugin;
 
 mod command;
+mod draft;
 mod pointer;
 mod selection;
 
@@ -16,7 +18,8 @@ impl PluginGroup for ControllerPluginGroup {
         group
             .add(PointerPlugin)
             .add(CommandPlugin)
-            .add(SelectionPlugin);
+            .add(SelectionPlugin)
+            .add(DraftPlugin);
     }
 }
 
