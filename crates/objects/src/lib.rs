@@ -6,7 +6,7 @@ use cache::CachePlugin;
 pub use cache::ObjectCache;
 pub use collider::{ColliderCache, ObjectCollider};
 pub use ichnography::{Ichnography, IchnographyCache};
-pub use spawner::SpawnEvent;
+pub use spawner::SpawnBundle;
 use spawner::SpawnerPlugin;
 
 mod cache;

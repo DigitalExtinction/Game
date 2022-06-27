@@ -11,6 +11,7 @@ use iyes_loopless::prelude::*;
 use parry3d::math::Isometry;
 
 use super::index::EntityIndex;
+use crate::collider::LocalCollider;
 
 type SolidEntityQuery<'w, 's> = Query<
     'w,
@@ -89,8 +90,8 @@ fn insert(
             transform.translation.into(),
             transform.rotation.to_scaled_axis().into(),
         );
-        let collider = cache.get_collider(*object_type).clone();
-        index.insert(entity, collider, position);
+        let collider = LocalCollider::new(cache.get_collider(*object_type).clone(), position);
+        index.insert(entity, collider);
         commands.entity(entity).insert(Indexed);
     }
 }

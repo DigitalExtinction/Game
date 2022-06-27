@@ -25,6 +25,15 @@ pub enum ObjectType {
     Inactive(InactiveObjectType),
 }
 
+impl fmt::Display for ObjectType {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            Self::Active(active) => write!(f, "Active -> {}", active),
+            Self::Inactive(inactive) => write!(f, "Inactive -> {}", inactive),
+        }
+    }
+}
+
 #[derive(Copy, Clone, Debug, Component, Serialize, Deserialize, PartialEq, Enum)]
 pub enum InactiveObjectType {
     Tree,

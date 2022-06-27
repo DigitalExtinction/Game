@@ -2,7 +2,7 @@ use de_core::objects::ObjectType;
 use parry3d::{
     bounding_volume::AABB,
     math::{Isometry, Point},
-    query::{Ray, RayCast},
+    query::{intersection_test, Ray, RayCast},
     shape::{Shape, TriMesh, TriMeshFlags},
 };
 
@@ -34,6 +34,15 @@ impl ObjectCollider {
 
     pub fn cast_ray(&self, position: &Isometry<f32>, ray: &Ray, max_toi: f32) -> Option<f32> {
         self.shape.cast_ray(position, ray, max_toi, true)
+    }
+
+    pub fn intersects(
+        &self,
+        position: &Isometry<f32>,
+        rhs: &Self,
+        rhs_position: &Isometry<f32>,
+    ) -> bool {
+        intersection_test(position, &self.shape, rhs_position, &rhs.shape).unwrap()
     }
 }
 

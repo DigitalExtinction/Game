@@ -1,11 +1,10 @@
-use bevy::{ecs::system::EntityCommands, prelude::*};
+use bevy::prelude::*;
 use de_core::{
-    events::ResendEventPlugin,
     gconfig::GameConfig,
     objects::{ActiveObjectType, MovableSolid, ObjectType, Playable, StaticSolid},
+    player::Player,
     state::GameState,
 };
-use de_map::description::{ActiveObject, InnerObject, Object};
 use iyes_loopless::prelude::*;
 
 use crate::cache::ObjectCache;
@@ -14,64 +13,62 @@ pub(crate) struct SpawnerPlugin;
 
 impl Plugin for SpawnerPlugin {
     fn build(&self, app: &mut App) {
-        app.add_event::<SpawnEvent>()
-            .add_plugin(ResendEventPlugin::<SpawnEvent>::default())
-            .add_system(spawn.run_in_state(GameState::Playing));
+        app.add_system(spawn.run_in_state(GameState::Playing));
     }
 }
 
-pub struct SpawnEvent {
-    object: Object,
+#[derive(Bundle)]
+pub struct SpawnBundle {
+    object_type: ObjectType,
+    transform: Transform,
+    global_transform: GlobalTransform,
+    spawn: Spawn,
 }
 
-impl SpawnEvent {
-    pub fn new(object: Object) -> Self {
-        Self { object }
+impl SpawnBundle {
+    pub fn new(object_type: ObjectType, transform: Transform) -> Self {
+        Self {
+            object_type,
+            transform,
+            global_transform: transform.into(),
+            spawn: Spawn,
+        }
     }
 }
+
+#[derive(Component)]
+struct Spawn;
 
 fn spawn(
     mut commands: Commands,
     game_config: Res<GameConfig>,
     cache: Res<ObjectCache>,
-    mut events: EventReader<SpawnEvent>,
+    to_spawn: Query<(Entity, &ObjectType, Option<&Player>), With<Spawn>>,
 ) {
-    for event in events.iter() {
-        let object = &event.object;
+    for (entity, &object_type, player) in to_spawn.iter() {
+        info!("Spawning object {}", object_type);
 
-        let transform = object.placement().to_transform();
-        let global_transform = GlobalTransform::from(transform);
-        let mut entity_commands = commands.spawn_bundle((global_transform, transform));
-
-        let object_type = match object.inner() {
-            InnerObject::Active(object) => {
-                spawn_active(game_config.as_ref(), &mut entity_commands, object);
-                ObjectType::Active(object.object_type())
-            }
-            InnerObject::Inactive(object) => {
-                info!("Spawning inactive object {}", object.object_type());
-                entity_commands.insert(StaticSolid);
-                ObjectType::Inactive(object.object_type())
-            }
-        };
-
-        entity_commands.insert(object_type).with_children(|parent| {
+        let mut entity_commands = commands.entity(entity);
+        entity_commands.remove::<Spawn>().with_children(|parent| {
             parent.spawn_scene(cache.get(object_type).scene());
         });
-    }
-}
 
-fn spawn_active(game_config: &GameConfig, commands: &mut EntityCommands, object: &ActiveObject) {
-    info!("Spawning active object {}", object.object_type());
+        match object_type {
+            ObjectType::Active(active_type) => {
+                let player = *player.expect("Active object without an associated was spawned.");
+                if player == game_config.player() {
+                    entity_commands.insert(Playable);
+                }
 
-    commands.insert(object.player());
-    if object.player() == game_config.player() {
-        commands.insert(Playable);
-    }
-
-    if object.object_type() == ActiveObjectType::Attacker {
-        commands.insert(MovableSolid);
-    } else {
-        commands.insert(StaticSolid);
+                if active_type == ActiveObjectType::Attacker {
+                    entity_commands.insert(MovableSolid);
+                } else {
+                    entity_commands.insert(StaticSolid);
+                }
+            }
+            ObjectType::Inactive(_) => {
+                entity_commands.insert(StaticSolid);
+            }
+        }
     }
 }
