@@ -1,4 +1,7 @@
-use bevy::{input::mouse::MouseButtonInput, prelude::*};
+use bevy::{
+    input::{mouse::MouseButtonInput, ElementState},
+    prelude::*,
+};
 use de_core::{objects::MovableSolid, projection::ToFlat};
 use de_pathing::UpdateEntityPath;
 use iyes_loopless::prelude::*;
@@ -13,7 +16,7 @@ impl Plugin for CommandPlugin {
             CoreStage::PreUpdate,
             SystemSet::new().with_system(
                 right_click_handler
-                    .run_if(on_click(MouseButton::Right))
+                    .run_if(on_pressed(MouseButton::Right))
                     .label(Labels::InputUpdate)
                     .after(Labels::PreInputUpdate),
             ),
@@ -21,11 +24,15 @@ impl Plugin for CommandPlugin {
     }
 }
 
-fn on_click(button: MouseButton) -> impl Fn(EventReader<MouseButtonInput>) -> bool {
+fn on_pressed(button: MouseButton) -> impl Fn(EventReader<MouseButtonInput>) -> bool {
     move |mut events: EventReader<MouseButtonInput>| {
         // It is desirable to exhaust the iterator, thus .filter().count() is
         // used instead of .any()
-        events.iter().filter(|e| e.button == button).count() > 0
+        events
+            .iter()
+            .filter(|e| e.button == button && e.state == ElementState::Pressed)
+            .count()
+            > 0
     }
 }
 
