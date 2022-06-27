@@ -22,7 +22,9 @@ impl Plugin for DraftPlugin {
         app.add_system_set(
             SystemSet::new()
                 .with_system(new_draft.run_in_state(GameState::Playing))
-                .with_system(update_draft.run_in_state(GameState::Playing)),
+                .with_system(update_draft.run_in_state(GameState::Playing))
+                // TODO rename
+                .with_system(x.run_in_state(GameState::Playing)),
         );
     }
 }
@@ -98,6 +100,42 @@ fn update_draft(
             // Access the component mutably only when really needed for optimal
             // Bevy change detection.
             draft.allowed = allowed
+        }
+    }
+}
+
+// TODO system ordering (after) -> to avoid a frame delay
+fn x(
+    drafts: Query<(&Draft, &Children), Changed<Draft>>,
+    child_query: Query<&Children, With<Parent>>,
+    material_query: Query<&Handle<StandardMaterial>, With<Parent>>,
+    mut y: ResMut<Assets<StandardMaterial>>,
+) {
+    for (draft, children) in drafts.iter() {
+        let mut stack: Vec<Entity> = Vec::with_capacity(children.len());
+        stack.extend(children.iter());
+
+        while let Some(entity) = stack.pop() {
+            if let Ok(next_gen) = child_query.get(entity) {
+                stack.extend(next_gen.iter());
+            }
+
+            if let Ok(handle) = material_query.get(entity) {
+                // TODO: don't change it for all
+                let mut material = y.get_mut(handle).unwrap();
+
+                material.alpha_mode = AlphaMode::Blend;
+                material.base_color = if draft.allowed() {
+                    Color::WHITE
+                } else {
+                    Color::Rgba {
+                        red: 1.,
+                        green: 0.,
+                        blue: 0.,
+                        alpha: 0.5,
+                    }
+                };
+            }
         }
     }
 }
