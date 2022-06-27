@@ -59,19 +59,19 @@ pub struct InnerCache {
 }
 
 impl InnerCache {
-    pub(crate) fn get(&self, object_type: ObjectType) -> &CacheItem {
+    pub fn get(&self, object_type: ObjectType) -> &CacheItem {
         &self.objects[object_type]
     }
 }
 
-pub(crate) struct CacheItem {
+pub struct CacheItem {
     scene: Handle<Scene>,
     ichnography: Ichnography,
     collider: ObjectCollider,
 }
 
 impl CacheItem {
-    pub(crate) fn scene(&self) -> Handle<Scene> {
+    pub fn scene(&self) -> Handle<Scene> {
         self.scene.clone()
     }
 

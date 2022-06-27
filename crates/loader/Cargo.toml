@@ -10,7 +10,7 @@ repository = "https://github.com/DigitalExtinction/Game"
 de_core = { path = "../core", version = "0.1.0-dev" }
 de_map = { path = "../map", version = "0.1.0-dev" }
 de_terrain = { path = "../terrain", version = "0.1.0-dev" }
-de_objects = { path = "../objects", version = "0.1.0-dev" }
+de_spawner = { path = "../spawner", version = "0.1.0-dev" }
 de_camera = { path = "../camera", version = "0.1.0-dev" }
 
 # Other

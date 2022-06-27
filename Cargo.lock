@@ -1608,6 +1608,7 @@ dependencies = [
  "de_movement",
  "de_objects",
  "de_pathing",
+ "de_spawner",
  "iyes_loopless",
 ]
 
@@ -1676,7 +1677,7 @@ dependencies = [
  "de_camera",
  "de_core",
  "de_map",
- "de_objects",
+ "de_spawner",
  "de_terrain",
  "futures-lite",
  "iyes_loopless",
@@ -1747,6 +1748,16 @@ dependencies = [
  "rstar",
  "spade",
  "tinyvec",
+]
+
+[[package]]
+name = "de_spawner"
+version = "0.1.0-dev"
+dependencies = [
+ "bevy",
+ "de_core",
+ "de_objects",
+ "iyes_loopless",
 ]
 
 [[package]]
