@@ -6,7 +6,11 @@ use de_core::{objects::MovableSolid, projection::ToFlat};
 use de_pathing::UpdateEntityPath;
 use iyes_loopless::prelude::*;
 
-use crate::{pointer::Pointer, selection::Selected, Labels};
+use crate::{
+    pointer::Pointer,
+    selection::{SelectEvent, Selected, SelectionMode},
+    Labels,
+};
 
 pub(crate) struct CommandPlugin;
 
@@ -14,12 +18,19 @@ impl Plugin for CommandPlugin {
     fn build(&self, app: &mut App) {
         app.add_system_set_to_stage(
             CoreStage::PreUpdate,
-            SystemSet::new().with_system(
-                right_click_handler
-                    .run_if(on_pressed(MouseButton::Right))
-                    .label(Labels::InputUpdate)
-                    .after(Labels::PreInputUpdate),
-            ),
+            SystemSet::new()
+                .with_system(
+                    right_click_handler
+                        .run_if(on_pressed(MouseButton::Right))
+                        .label(Labels::InputUpdate)
+                        .after(Labels::PreInputUpdate),
+                )
+                .with_system(
+                    left_click_handler
+                        .run_if(on_pressed(MouseButton::Left))
+                        .label(Labels::InputUpdate)
+                        .after(Labels::PreInputUpdate),
+                ),
         );
     }
 }
@@ -49,4 +60,21 @@ fn right_click_handler(
     for entity in selected.iter() {
         path_events.send(UpdateEntityPath::new(entity, target));
     }
+}
+
+fn left_click_handler(
+    mut events: EventWriter<SelectEvent>,
+    keys: Res<Input<KeyCode>>,
+    pointer: Res<Pointer>,
+) {
+    let selection_mode = if keys.pressed(KeyCode::LControl) {
+        SelectionMode::Add
+    } else {
+        SelectionMode::Replace
+    };
+    let event = match pointer.entity() {
+        Some(entity) => SelectEvent::single(entity, selection_mode),
+        None => SelectEvent::none(selection_mode),
+    };
+    events.send(event);
 }

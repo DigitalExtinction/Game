@@ -2,27 +2,52 @@ use std::collections::HashSet;
 
 use bevy::{
     ecs::system::SystemParam,
-    input::{mouse::MouseButtonInput, ElementState, Input},
-    prelude::{
-        App, Commands, Component, Entity, EventReader, KeyCode, MouseButton, Plugin, Query, Res,
-        With,
-    },
+    prelude::{App, Commands, Component, CoreStage, Entity, EventReader, Plugin, Query, With},
 };
 use de_core::state::GameState;
 use iyes_loopless::prelude::*;
 
-use crate::{pointer::Pointer, Labels};
+use crate::Labels;
 
 pub(crate) struct SelectionPlugin;
 
 impl Plugin for SelectionPlugin {
     fn build(&self, app: &mut App) {
-        app.add_system(
-            mouse_click_handler
+        app.add_event::<SelectEvent>().add_system_to_stage(
+            CoreStage::PreUpdate,
+            update_selection
                 .run_in_state(GameState::Playing)
-                .label(Labels::InputUpdate)
-                .after(Labels::PreInputUpdate),
+                .after(Labels::InputUpdate),
         );
+    }
+}
+
+pub(crate) struct SelectEvent {
+    entities: Vec<Entity>,
+    mode: SelectionMode,
+}
+
+impl SelectEvent {
+    pub(crate) fn none(mode: SelectionMode) -> Self {
+        Self {
+            entities: Vec::new(),
+            mode,
+        }
+    }
+
+    pub(crate) fn single(entity: Entity, mode: SelectionMode) -> Self {
+        Self {
+            entities: vec![entity],
+            mode,
+        }
+    }
+
+    fn entities(&self) -> &[Entity] {
+        self.entities.as_slice()
+    }
+
+    fn mode(&self) -> SelectionMode {
+        self.mode
     }
 }
 
@@ -30,7 +55,7 @@ impl Plugin for SelectionPlugin {
 pub(crate) struct Selected;
 
 #[derive(Clone, Copy, PartialEq)]
-enum SelectionMode {
+pub(crate) enum SelectionMode {
     Replace,
     Add,
 }
@@ -42,14 +67,6 @@ struct Selector<'w, 's> {
 }
 
 impl<'w, 's> Selector<'w, 's> {
-    fn select_single(&mut self, entity: Option<Entity>, mode: SelectionMode) {
-        let entities = match entity {
-            Some(entity) => vec![entity],
-            None => Vec::new(),
-        };
-        self.select(&entities, mode);
-    }
-
     fn select(&mut self, entities: &[Entity], mode: SelectionMode) {
         let selected: HashSet<Entity> = self.selected.iter().collect();
         let desired: HashSet<Entity> = entities.iter().cloned().collect();
@@ -65,24 +82,8 @@ impl<'w, 's> Selector<'w, 's> {
     }
 }
 
-fn mouse_click_handler(
-    mut event: EventReader<MouseButtonInput>,
-    keys: Res<Input<KeyCode>>,
-    pointer: Res<Pointer>,
-    mut selector: Selector,
-) {
-    if !event
-        .iter()
-        .any(|e| e.button == MouseButton::Left && e.state == ElementState::Pressed)
-    {
-        return;
+fn update_selection(mut events: EventReader<SelectEvent>, mut selector: Selector) {
+    for event in events.iter() {
+        selector.select(event.entities(), event.mode());
     }
-
-    let mode = if keys.pressed(KeyCode::LControl) {
-        SelectionMode::Add
-    } else {
-        SelectionMode::Replace
-    };
-
-    selector.select_single(pointer.entity(), mode);
 }
