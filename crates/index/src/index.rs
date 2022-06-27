@@ -19,7 +19,7 @@ use parry3d::{
 };
 
 use super::{collider::LocalCollider, grid::TileGrid, segment::SegmentCandidates};
-use crate::aabb::AabbCandidates;
+use crate::{aabb::AabbCandidates, collider::ColliderWithCache};
 
 /// 2D rectangular grid based spatial index of entities.
 pub struct EntityIndex {
@@ -162,7 +162,7 @@ where
 
     /// Returns true if queried solid object on the map, as indexed by
     /// [`super::systems::IndexPlugin`], intersects with the given collider.
-    pub fn collides(&self, collider: &LocalCollider) -> bool {
+    pub fn collides(&self, collider: &impl ColliderWithCache) -> bool {
         let candidate_sets = self.index.query_aabb(collider.world_aabb());
         candidate_sets.flatten().any(|candidate| {
             self.entities.get(candidate).map_or(false, |_| {
