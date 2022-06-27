@@ -17,7 +17,7 @@ use bevy::{app::PluginGroupBuilder, prelude::PluginGroup};
 use systems::IndexPlugin;
 
 pub use self::{
-    collider::LocalCollider,
+    collider::{ColliderWithCache, LocalCollider, QueryCollider},
     index::{EntityIndex, RayEntityIntersection, SpatialQuery},
 };
 
