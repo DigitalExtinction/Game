@@ -18,14 +18,14 @@ use super::{grid::TileGrid, TILE_SIZE};
 /// The tiles (and thus the yielded sets) are iterated by increasing distance
 /// between point `a` of the given line segment and the intersection of the
 /// tile with the line segment.
-pub struct SegmentCandidates<'a> {
+pub(crate) struct SegmentCandidates<'a> {
     grid: &'a TileGrid,
     tiles: TileIterator,
     encountered: Option<&'a AHashSet<Entity>>,
 }
 
 impl<'a> SegmentCandidates<'a> {
-    pub fn new(grid: &'a TileGrid, segment: Segment) -> Self {
+    pub(crate) fn new(grid: &'a TileGrid, segment: Segment) -> Self {
         Self {
             grid,
             tiles: TileIterator::new(segment),
