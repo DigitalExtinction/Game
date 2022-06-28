@@ -8,7 +8,7 @@ use de_core::{
     assets::asset_path,
     gconfig::GameConfig,
     log_full_error,
-    objects::{ActiveObjectType, ObjectType},
+    objects::{ActiveObjectType, BuildingType, ObjectType},
     projection::ToMsl,
     state::GameState,
 };
@@ -85,7 +85,7 @@ fn spawn_map(
         .filter_map(|object| match object.inner() {
             InnerObject::Active(active_object) => {
                 if game_config.is_local_player(active_object.player())
-                    && active_object.object_type() == ActiveObjectType::Base
+                    && active_object.object_type() == ActiveObjectType::Building(BuildingType::Base)
                 {
                     Some(object.placement().position())
                 } else {

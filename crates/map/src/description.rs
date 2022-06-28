@@ -280,6 +280,8 @@ pub enum PlacementValidationError {
 mod test {
     use std::error::Error;
 
+    use de_core::objects::UnitType;
+
     use super::*;
 
     #[test]
@@ -288,7 +290,7 @@ mod test {
         let object_a = Object::new(
             map.new_placement(Vec2::new(20., 25.), 0.),
             InnerObject::Active(ActiveObject::new(
-                ActiveObjectType::Attacker,
+                ActiveObjectType::Unit(UnitType::Attacker),
                 Player::Player1,
             )),
         );
@@ -311,7 +313,7 @@ mod test {
                         heading: 0.,
                     },
                     inner: InnerObject::Active(ActiveObject::new(
-                        ActiveObjectType::Attacker,
+                        ActiveObjectType::Unit(UnitType::Attacker),
                         Player::Player2,
                     )),
                 },
@@ -321,7 +323,7 @@ mod test {
                         heading: 0.,
                     },
                     inner: InnerObject::Active(ActiveObject::new(
-                        ActiveObjectType::Attacker,
+                        ActiveObjectType::Unit(UnitType::Attacker),
                         Player::Player1,
                     )),
                 },

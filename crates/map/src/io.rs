@@ -126,7 +126,10 @@ mod test {
     use std::path::PathBuf;
 
     use async_std::task;
-    use de_core::{objects::ActiveObjectType, player::Player};
+    use de_core::{
+        objects::{ActiveObjectType, BuildingType},
+        player::Player,
+    };
     use glam::Vec2;
     use parry2d::{bounding_volume::AABB, math::Point};
     use tempfile::Builder;
@@ -152,7 +155,10 @@ mod test {
         for (base_position, player) in bases {
             map.insert_object(Object::new(
                 map.new_placement(base_position, 0.),
-                InnerObject::Active(ActiveObject::new(ActiveObjectType::Base, player)),
+                InnerObject::Active(ActiveObject::new(
+                    ActiveObjectType::Building(BuildingType::Base),
+                    player,
+                )),
             ));
         }
 

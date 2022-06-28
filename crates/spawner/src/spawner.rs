@@ -59,10 +59,13 @@ fn spawn(
                     entity_commands.insert(Playable);
                 }
 
-                if active_type == ActiveObjectType::Attacker {
-                    entity_commands.insert(MovableSolid);
-                } else {
-                    entity_commands.insert(StaticSolid);
+                match active_type {
+                    ActiveObjectType::Building(_) => {
+                        entity_commands.insert(StaticSolid);
+                    }
+                    ActiveObjectType::Unit(_) => {
+                        entity_commands.insert(MovableSolid);
+                    }
                 }
             }
             ObjectType::Inactive(_) => {
