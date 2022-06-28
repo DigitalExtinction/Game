@@ -71,15 +71,8 @@ impl<'w, 's> MouseInWorld<'w, 's> {
         };
 
         let (camera_transform, camera) = self.cameras.single();
-        let camera_transform_mat = camera_transform.compute_matrix();
-        let camera_projection = camera.projection_matrix;
-
-        let screen_to_world = camera_transform_mat * camera_projection.inverse();
-        let world_to_screen = camera_projection * camera_transform_mat;
-
-        // Depth of camera near plane in screen coordinates.
-        let near_plane = world_to_screen.transform_point3(-Vec3::Z * camera.near).z;
-        let ray_origin = screen_to_world.transform_point3(cursor_position.extend(near_plane));
+        let ndc_to_world = camera_transform.compute_matrix() * camera.projection_matrix.inverse();
+        let ray_origin = ndc_to_world.project_point3(cursor_position.extend(1.));
         let ray_direction = ray_origin - camera_transform.translation;
         Some(Ray::new(ray_origin.into(), ray_direction.into()))
     }
