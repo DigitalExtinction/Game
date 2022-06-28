@@ -1,7 +1,4 @@
-use bevy::{
-    ecs::system::SystemParam, input::mouse::MouseMotion, prelude::*, render::camera::Camera3d,
-    window::Windows,
-};
+use bevy::{ecs::system::SystemParam, prelude::*, render::camera::Camera3d, window::Windows};
 use de_core::{objects::Playable, state::GameState};
 use de_index::SpatialQuery;
 use de_terrain::TerrainCollider;
@@ -90,15 +87,10 @@ impl<'w, 's> MouseInWorld<'w, 's> {
 
 fn mouse_move_handler(
     mut resource: ResMut<Pointer>,
-    event: EventReader<MouseMotion>,
     mouse: MouseInWorld,
     playable: SpatialQuery<(), With<Playable>>,
     terrain: TerrainCollider,
 ) {
-    if event.is_empty() {
-        return;
-    }
-
     let ray = mouse.mouse_ray();
 
     let entity = ray
