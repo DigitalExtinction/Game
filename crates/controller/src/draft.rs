@@ -77,31 +77,14 @@ fn spawn(
 fn new_drafts(
     mut commands: Commands,
     mut events: EventReader<NewDraftEvent>,
-    drafts: Query<(Entity, Option<&Children>), With<Draft>>,
+    drafts: Query<Entity, With<Draft>>,
 ) {
     let event = match events.iter().last() {
         Some(event) => event,
         None => return,
     };
 
-    // Unfortunately, there is an issue with scene spawning
-    // https://github.com/bevyengine/bevy/issues/3195
-    //
-    // Since all scenes are already loaded once the game starts, the parent
-    // entity is accessed (internally by Bevy) only during the first
-    // CoreStage::PreUpdate stage execution after the scene being spawned. This
-    // this issue manifests only if the user very quickly spawns new drafts.
-    //
-    // The following if -> return hot-fixes the problem by ignoring the user
-    // action.
-    if drafts
-        .iter()
-        .any(|(_, children)| children.map(|c| c.is_empty()).unwrap_or(true))
-    {
-        return;
-    }
-
-    for (entity, _) in drafts.iter() {
+    for entity in drafts.iter() {
         commands.entity(entity).despawn_recursive();
     }
 
