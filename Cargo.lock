@@ -1632,7 +1632,9 @@ dependencies = [
  "de_core",
  "de_index",
  "de_pathing",
+ "de_spawner",
  "de_terrain",
+ "enum-map",
  "glam",
  "iyes_loopless",
  "parry3d",
@@ -1756,8 +1758,12 @@ version = "0.1.0-dev"
 dependencies = [
  "bevy",
  "de_core",
+ "de_index",
+ "de_map",
  "de_objects",
  "iyes_loopless",
+ "parry2d",
+ "parry3d",
 ]
 
 [[package]]

@@ -9,7 +9,7 @@ use criterion::{
     criterion_group, criterion_main, AxisScale, BenchmarkId, Criterion, PlotConfiguration,
     Throughput,
 };
-use de_core::objects::{ActiveObjectType, ObjectType};
+use de_core::objects::{ActiveObjectType, BuildingType, ObjectType};
 use de_map::size::MapBounds;
 use de_objects::{Ichnography, IchnographyCache};
 use de_pathing::create_finder;
@@ -70,7 +70,7 @@ fn load_entities(number: u32) -> Vec<(GlobalTransform, ObjectType)> {
                     translation: Vec3::new(p.x, 0., -p.y),
                     ..Default::default()
                 },
-                ObjectType::Active(ActiveObjectType::Base),
+                ObjectType::Active(ActiveObjectType::Building(BuildingType::Base)),
             )
         })
         .collect()

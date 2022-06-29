@@ -5,7 +5,7 @@ use bevy::{
     prelude::*,
 };
 use de_core::{
-    objects::{ActiveObjectType, InactiveObjectType, ObjectType},
+    objects::{ActiveObjectType, BuildingType, InactiveObjectType, ObjectType, UnitType},
     state::GameState,
 };
 use enum_map::{enum_map, EnumMap};
@@ -92,10 +92,14 @@ impl CacheLoader {
     fn load(server: &AssetServer) -> Self {
         Self {
             objects: enum_map! {
-                ObjectType::Active(ActiveObjectType::Base) => ItemLoader::from_name(server, "base"),
-                ObjectType::Active(ActiveObjectType::PowerHub) => ItemLoader::from_name(server, "powerhub"),
-                ObjectType::Active(ActiveObjectType::Attacker) => ItemLoader::from_name(server, "attacker"),
-                ObjectType::Inactive(InactiveObjectType::Tree) => ItemLoader::from_name(server, "tree"),
+                ObjectType::Active(ActiveObjectType::Building(BuildingType::Base))
+                    => ItemLoader::from_name(server, "base"),
+                ObjectType::Active(ActiveObjectType::Building(BuildingType::PowerHub))
+                    => ItemLoader::from_name(server, "powerhub"),
+                ObjectType::Active(ActiveObjectType::Unit(UnitType::Attacker))
+                    => ItemLoader::from_name(server, "attacker"),
+                ObjectType::Inactive(InactiveObjectType::Tree)
+                    => ItemLoader::from_name(server, "tree"),
             },
         }
     }

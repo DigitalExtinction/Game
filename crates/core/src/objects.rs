@@ -49,16 +49,42 @@ impl fmt::Display for InactiveObjectType {
 
 #[derive(Copy, Clone, Debug, Component, Serialize, Deserialize, PartialEq, Enum)]
 pub enum ActiveObjectType {
-    Base,
-    PowerHub,
-    Attacker,
+    Building(BuildingType),
+    Unit(UnitType),
 }
 
 impl fmt::Display for ActiveObjectType {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
+            Self::Building(building) => write!(f, "Building -> {}", building),
+            Self::Unit(unit) => write!(f, "Unit -> {}", unit),
+        }
+    }
+}
+
+#[derive(Copy, Clone, Debug, Component, Serialize, Deserialize, PartialEq, Enum)]
+pub enum BuildingType {
+    Base,
+    PowerHub,
+}
+
+impl fmt::Display for BuildingType {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
             Self::Base => write!(f, "Base"),
             Self::PowerHub => write!(f, "Power Hub"),
+        }
+    }
+}
+
+#[derive(Copy, Clone, Debug, Component, Serialize, Deserialize, PartialEq, Enum)]
+pub enum UnitType {
+    Attacker,
+}
+
+impl fmt::Display for UnitType {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
             Self::Attacker => write!(f, "Attacker"),
         }
     }
