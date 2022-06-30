@@ -41,7 +41,7 @@ pub async fn load_map<P: AsRef<Path>>(path: P) -> Result<Map, MapLoadingError> {
         let path = loading_io_error!(entry.path());
         if path.to_str().map_or(false, |p| p == MAP_JSON_ENTRY) {
             let entry_size = loading_io_error!(entry.header().entry_size());
-            let mut buf: Vec<u8> = Vec::with_capacity(entry_size as usize);
+            let mut buf: Vec<u8> = Vec::with_capacity(entry_size.try_into().unwrap());
             loading_io_error!(entry.read_to_end(&mut buf).await);
             map = match serde_json::from_slice(buf.as_slice()) {
                 Ok(map_inner) => Some(map_inner),
@@ -99,7 +99,7 @@ pub async fn store_map<P: AsRef<Path>>(map: &Map, path: P) -> Result<(), MapStor
     let mut map_header = Header::new_gnu();
     map_header.set_entry_type(EntryType::Regular);
     map_header.set_mode(0x400);
-    map_header.set_size(map_data.len() as u64);
+    map_header.set_size(map_data.len().try_into().unwrap());
     storing_io_error!(
         archive
             .append_data(
