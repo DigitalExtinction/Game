@@ -34,6 +34,14 @@
   [0.1](https://github.com/DigitalExtinction/Game/milestone/2) is released, a
   new version is released every 6 weeks.
 
+## Coding Style
+
+* We are limiting the amount of unsafe code to the very minimum. The same
+  principle applies to complex architecture or code patterns.
+
+  A lot of the ergonomy and performance gains unlocked by unsafe or complex
+  code are already delivered by Bevy and its API.
+
 ## Getting Oriented
 
 The game is split into multiple [crates](/crates), each implementing part of

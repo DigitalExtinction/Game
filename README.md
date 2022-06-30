@@ -35,8 +35,48 @@ Clone, build & run recipe (will work in majority of the cases):
 
 # Where to Get Help?
 
-Open a question in [Q&A category of this repository's
-discussions](https://github.com/DigitalExtinction/Game/discussions/categories/q-a).
+* Open a question in [Q&A category of this repository's
+  discussions](https://github.com/DigitalExtinction/Game/discussions/categories/q-a).
+
+* Ask a question on our [Discord server](https://discord.gg/vHMFuCWGSX).
+
+# Goals
+
+Many of the goals are intentionally vague and aspirational. They serve as a
+general direction for the future development. All changes and decisions shall
+go hand in hand with the spirit of the following goals.
+
+* Develop a forever free (as in free speech) and open source RTS game. A game
+  without the restrains of commercial development – no marketing motivated
+  features, no dopamine traps, no in-game purchases…
+
+* Design an original game, not yet another clone of an existing (and often a
+  very old) game. The game is a combination of tried and true concepts and
+  mechanics from RTS genre with new and innovative ideas.
+
+* Create a true **strategy** game, where dexterity or APS do not play primary
+  role.
+
+* Focus on exponential in-game technological and economical progress. Players
+  who consistently outperform their competitors for extended times prevail.
+  Short term boosts and performance fluctuations do have proportionately small
+  impact on the game results.
+
+* Produce a modern game, unchained from obsoleted constraints and utilizing
+  current technology. Truly utilize the power of modern multi-core CPUs and
+  other capable hardware with the help of the advances in software development,
+  like fearless concurrency of Rust programming language, or ECS based Bevy
+  engine.
+
+  Seize this technological opportunity to create an RTS of grand scale, with
+  hundreds of buildings and thousands of fully simulated units on the game map.
+
+* Develop the game indefinitely and incrementally. To regularly ship a new
+  version (rolling release) and to forever improve the game based on new
+  experience and new ideas.
+
+* Show that non-trivial games could be created in Rust and by extension Bevy
+  engine.
 
 # Contributing
 
