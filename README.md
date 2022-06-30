@@ -35,8 +35,10 @@ Clone, build & run recipe (will work in majority of the cases):
 
 # Where to Get Help?
 
-Open a question in [Q&A category of this repository's
-discussions](https://github.com/DigitalExtinction/Game/discussions/categories/q-a).
+* Open a question in [Q&A category of this repository's
+  discussions](https://github.com/DigitalExtinction/Game/discussions/categories/q-a).
+
+* Ask a question on our [Discord server](https://discord.gg/vHMFuCWGSX).
 
 # Goals
 
