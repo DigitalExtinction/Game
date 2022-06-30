@@ -49,7 +49,7 @@ impl VisibilityGraph {
     ///
     /// * `segment` - line segment of the triangle edge.
     pub(crate) fn new_node(&mut self, segment: Segment) -> u32 {
-        let id = self.nodes.len() as u32;
+        let id = self.nodes.len().try_into().unwrap();
         self.nodes.push(Node::new(EdgeGeometry::new(segment)));
         id
     }
@@ -65,19 +65,22 @@ impl VisibilityGraph {
         neighbour_a_id: u32,
         neighbour_b_id: u32,
     ) {
-        let node = self.nodes.get_mut(edge_id as usize).unwrap();
+        let index: usize = edge_id.try_into().unwrap();
+        let node = self.nodes.get_mut(index).unwrap();
         node.add_neighbour(neighbour_a_id);
         node.add_neighbour(neighbour_b_id);
     }
 
     /// Returns a geometry of a graph node (triangle edge).
     pub(crate) fn geometry(&self, edge_id: u32) -> &EdgeGeometry {
-        self.nodes[edge_id as usize].geometry()
+        let index: usize = edge_id.try_into().unwrap();
+        self.nodes[index].geometry()
     }
 
     /// Returns all neighbors of a graph node (triangle edge).
     pub(crate) fn neighbours(&self, edge_id: u32) -> &[u32] {
-        self.nodes[edge_id as usize].neighbours()
+        let index: usize = edge_id.try_into().unwrap();
+        self.nodes[index].neighbours()
     }
 }
 

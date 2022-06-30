@@ -64,7 +64,7 @@ impl<'w, 's> MouseInWorld<'w, 's> {
         // middle of the screen.
         let cursor_position = match window.cursor_position() {
             Some(position) => {
-                let screen_size = Vec2::new(window.width() as f32, window.height() as f32);
+                let screen_size = Vec2::new(window.width(), window.height());
                 (position / screen_size) * 2.0 - Vec2::ONE
             }
             None => return None,
