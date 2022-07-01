@@ -112,18 +112,12 @@ impl TileGrid {
     }
 
     fn insert_to_tile(&mut self, entity: Entity, tile_coords: IVec2) {
-        match self.tiles.get_mut(&tile_coords) {
-            Some(tile) => {
-                let inserted = tile.insert(entity);
-                debug_assert!(inserted);
-            }
-            None => {
-                let mut tile = AHashSet::new();
-                tile.insert(entity);
-                let old = self.tiles.insert(tile_coords, tile);
-                debug_assert!(old.is_none());
-            }
-        }
+        let inserted = self
+            .tiles
+            .entry(tile_coords)
+            .or_insert_with(AHashSet::new)
+            .insert(entity);
+        debug_assert!(inserted);
     }
 
     fn remove_from_tile(&mut self, entity: Entity, tile_coords: IVec2) {
