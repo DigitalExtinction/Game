@@ -12,10 +12,16 @@ use de_core::{
 };
 use de_index::{ColliderWithCache, QueryCollider, SpatialQuery};
 use de_map::size::MapBounds;
-use de_objects::{ColliderCache, ObjectCache};
+use de_objects::{ColliderCache, ObjectCache, EXCLUSION_OFFSET};
 use iyes_loopless::prelude::*;
-use parry2d::bounding_volume::BoundingVolume;
+use parry2d::{
+    bounding_volume::{BoundingVolume, AABB},
+    math::Vector,
+};
 use parry3d::math::Isometry;
+
+const MAP_PADDING: f32 = 2. * EXCLUSION_OFFSET + 0.1;
+const MAP_OFFSET: Vector<f32> = Vector::new(MAP_PADDING, MAP_PADDING);
 
 pub(crate) struct DraftPlugin;
 
@@ -95,7 +101,11 @@ fn update_draft(
         );
 
         let flat_aabb = collider.world_aabb().to_flat();
-        let allowed = bounds.aabb().contains(&flat_aabb) && !solids.collides(&collider);
+        let shrinked_map = {
+            let aabb = bounds.aabb();
+            AABB::new(aabb.mins + MAP_OFFSET, aabb.maxs - MAP_OFFSET)
+        };
+        let allowed = shrinked_map.contains(&flat_aabb) && !solids.collides(&collider);
         if allowed != draft.allowed {
             // Access the component mutably only when really needed for optimal
             // Bevy change detection.
