@@ -1,3 +1,5 @@
+#![allow(clippy::forget_non_drop)] // Needed because of #[derive(Bundle)]
+
 use bevy::prelude::*;
 use de_core::{
     gconfig::GameConfig,

@@ -1,3 +1,5 @@
+#![allow(clippy::forget_non_drop)] // Needed because of #[derive(Bundle)]
+
 //! This module implements a Bevy plugin for drafting new objects on the map.
 //! An entity marked with a component [`Draft`] is automatically handled and
 //! visualized by the plugin.
