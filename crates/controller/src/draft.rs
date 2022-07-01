@@ -14,11 +14,13 @@ impl Plugin for DraftPlugin {
     fn build(&self, app: &mut App) {
         app.add_event::<SpawnDraftsEvent>()
             .add_event::<NewDraftEvent>()
+            .add_event::<DiscardDraftsEvent>()
             .add_system_set_to_stage(
                 CoreStage::PreUpdate,
                 SystemSet::new()
                     .with_system(spawn.after(Labels::InputUpdate))
                     .with_system(new_drafts.after(Labels::InputUpdate))
+                    .with_system(discard_drafts.after(Labels::InputUpdate))
                     .with_system(
                         move_drafts
                             .label(Labels::InputUpdate)
@@ -34,6 +36,8 @@ pub(crate) struct NewDraftEvent {
     point: Vec3,
     building_type: BuildingType,
 }
+
+pub(crate) struct DiscardDraftsEvent;
 
 impl NewDraftEvent {
     pub(crate) fn new(point: Vec3, building_type: BuildingType) -> Self {
@@ -95,6 +99,19 @@ fn new_drafts(
             ..Default::default()
         },
     ));
+}
+
+fn discard_drafts(
+    mut commands: Commands,
+    mut events: EventReader<DiscardDraftsEvent>,
+    drafts: Query<Entity, With<Draft>>,
+) {
+    if events.iter().count() == 0 {
+        return;
+    }
+    for entity in drafts.iter() {
+        commands.entity(entity).despawn_recursive();
+    }
 }
 
 fn move_drafts(pointer: Res<Pointer>, mut drafts: Query<&mut Transform, With<Draft>>) {
