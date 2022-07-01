@@ -198,7 +198,7 @@ impl ExclusionEdge {
     }
 
     fn a_point2(&self) -> Point2<f32> {
-        Point2::new(self.a.x, self.b.y)
+        Point2::new(self.a.x, self.a.y)
     }
 
     fn b_point2(&self) -> Point2<f32> {
