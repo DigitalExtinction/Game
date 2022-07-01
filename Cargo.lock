@@ -3554,8 +3554,7 @@ dependencies = [
 [[package]]
 name = "rstar"
 version = "0.9.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b40f1bfe5acdab44bc63e6699c28b74f75ec43afb59f3eda01e145aff86a25fa"
+source = "git+https://github.com/georust/rstar?branch=master#d3ffb2b8bb6e61fa53020a64080e864cd11993c8"
 dependencies = [
  "heapless",
  "num-traits",

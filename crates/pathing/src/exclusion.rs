@@ -1,14 +1,13 @@
-use ahash::AHashMap;
 use bevy::prelude::GlobalTransform;
 use de_core::{objects::ObjectType, projection::ToFlat};
 use de_objects::{Ichnography, IchnographyCache};
-use glam::{EulerRot, IVec2};
+use glam::EulerRot;
 use parry2d::{
-    bounding_volume::{BoundingVolume, AABB},
     math::{Isometry, Point},
     query,
     shape::ConvexPolygon,
 };
+use rstar::{Envelope, RTree, RTreeObject, SelectionFunction, AABB as RstarAABB};
 
 /// Non accessible area on the map.
 ///
@@ -19,7 +18,7 @@ use parry2d::{
 #[derive(Clone, Debug)]
 pub(crate) struct ExclusionArea {
     polygon: ConvexPolygon,
-    aabb: AABB,
+    aabb: RstarAABB<[f32; 2]>,
 }
 
 impl ExclusionArea {
@@ -35,28 +34,31 @@ impl ExclusionArea {
             return Vec::new();
         }
 
-        let mut max_extent: f32 = 1.;
         let exclusions: Vec<Self> = objects
             .iter()
             .map(|(transform, object_type)| {
                 Self::from_ichnography(transform, cache.get_ichnography(*object_type))
             })
-            .inspect(|exclusion| max_extent = max_extent.max(exclusion.aabb().extents().max()))
             .collect();
-        Self::merge(exclusions, max_extent)
+        Self::merge(exclusions)
     }
 
-    fn merge(mut exclusions: Vec<Self>, max_extent: f32) -> Vec<Self> {
-        let mut merger = Merger::new(5. * max_extent);
-        for exclusion in exclusions.drain(..) {
-            let to_merge = merger.remove_intersecting(&exclusion);
-            if to_merge.is_empty() {
-                merger.insert(exclusion);
-            } else {
-                merger.insert(Self::merged(&exclusion, &to_merge));
+    fn merge(mut exclusions: Vec<Self>) -> Vec<Self> {
+        let mut rtree: RTree<ExclusionArea> = RTree::new();
+
+        for mut exclusion in exclusions.drain(..) {
+            loop {
+                let intersecting: Vec<ExclusionArea> =
+                    rtree.drain_with_selection_function(&exclusion).collect();
+                if intersecting.is_empty() {
+                    rtree.insert(exclusion);
+                    break;
+                }
+                exclusion = Self::merged(&exclusion, intersecting.as_slice());
             }
         }
-        merger.into_vec()
+
+        rtree.drain().collect()
     }
 
     /// Creates a new exclusion area from a static object ichnography and its
@@ -77,7 +79,10 @@ impl ExclusionArea {
 
     pub(crate) fn new(polygon: ConvexPolygon) -> Self {
         let aabb = polygon.local_aabb();
-        Self { polygon, aabb }
+        Self {
+            polygon,
+            aabb: RstarAABB::from_corners([aabb.mins.x, aabb.mins.y], [aabb.maxs.x, aabb.maxs.y]),
+        }
     }
 
     /// Returns a new exclusion area corresponding to the convex hull of 1 or
@@ -96,16 +101,22 @@ impl ExclusionArea {
     pub(crate) fn points(&self) -> &[Point<f32>] {
         self.polygon.points()
     }
+}
 
-    fn aabb(&self) -> &AABB {
-        &self.aabb
+impl RTreeObject for ExclusionArea {
+    type Envelope = RstarAABB<[f32; 2]>;
+
+    fn envelope(&self) -> Self::Envelope {
+        self.aabb
+    }
+}
+
+impl SelectionFunction<ExclusionArea> for &ExclusionArea {
+    fn should_unpack_parent(&self, envelope: &RstarAABB<[f32; 2]>) -> bool {
+        self.aabb.intersects(envelope)
     }
 
-    fn intersects(&self, other: &ExclusionArea) -> bool {
-        if !self.aabb.intersects(&other.aabb) {
-            return false;
-        }
-
+    fn should_unpack_leaf(&self, other: &ExclusionArea) -> bool {
         query::intersection_test(
             &Isometry::identity(),
             &self.polygon,
@@ -113,61 +124,6 @@ impl ExclusionArea {
             &other.polygon,
         )
         .unwrap()
-    }
-}
-
-/// A struct which holds exclusion areas in a rectangular grid of a given size.
-struct Merger {
-    tile_size: f32,
-    grid: AHashMap<IVec2, Vec<ExclusionArea>>,
-}
-
-impl Merger {
-    fn new(tile_size: f32) -> Self {
-        Self {
-            tile_size,
-            grid: AHashMap::new(),
-        }
-    }
-
-    fn insert(&mut self, exclusion: ExclusionArea) {
-        let key = self.key(&exclusion);
-        self.grid
-            .entry(key)
-            .or_insert_with(Vec::new)
-            .push(exclusion);
-    }
-
-    fn remove_intersecting(&mut self, exclusion: &ExclusionArea) -> Vec<ExclusionArea> {
-        let center_key = self.key(exclusion);
-        let mut intersecting = Vec::new();
-
-        for dx in -1..=1 {
-            for dy in -1..=1 {
-                let key = IVec2::new(center_key.x + dx, center_key.y + dy);
-                if let Some(exclusions) = self.grid.get_mut(&key) {
-                    for i in (0..exclusions.len()).rev() {
-                        if exclusions[i].intersects(exclusion) {
-                            intersecting.push(exclusions.swap_remove(i));
-                        }
-                    }
-                }
-            }
-        }
-
-        intersecting
-    }
-
-    fn into_vec(mut self) -> Vec<ExclusionArea> {
-        self.grid.values_mut().flat_map(|v| v.drain(..)).collect()
-    }
-
-    fn key(&self, exclusion: &ExclusionArea) -> IVec2 {
-        let center = exclusion.aabb().center();
-        IVec2::new(
-            (center.x / self.tile_size) as i32,
-            (center.x / self.tile_size) as i32,
-        )
     }
 }
 
@@ -213,14 +169,11 @@ mod tests {
             .unwrap(),
         );
 
-        let exclusions = ExclusionArea::merge(
-            vec![
-                ExclusionArea::from_ichnography(&transform_a, &ichnography_a),
-                ExclusionArea::from_ichnography(&transform_b, &ichnography_b),
-                ExclusionArea::from_ichnography(&transform_c, &ichnography_c),
-            ],
-            7.,
-        );
+        let exclusions = ExclusionArea::merge(vec![
+            ExclusionArea::from_ichnography(&transform_a, &ichnography_a),
+            ExclusionArea::from_ichnography(&transform_b, &ichnography_b),
+            ExclusionArea::from_ichnography(&transform_c, &ichnography_c),
+        ]);
         assert_eq!(exclusions.len(), 2);
         assert_eq!(
             exclusions[0].points(),
@@ -267,47 +220,5 @@ mod tests {
                 Point::new(1., -1.),
             ]
         );
-    }
-
-    #[test]
-    fn test_merger() {
-        let a = ExclusionArea::new(
-            ConvexPolygon::from_convex_hull(&[
-                Point::new(-1., -1.),
-                Point::new(-1., 1.),
-                Point::new(1., 1.),
-                Point::new(1., -1.),
-            ])
-            .unwrap(),
-        );
-        let b = ExclusionArea::new(
-            ConvexPolygon::from_convex_hull(&[
-                Point::new(-10., -10.),
-                Point::new(-10., -9.),
-                Point::new(-9., -9.),
-                Point::new(-9., -10.),
-            ])
-            .unwrap(),
-        );
-        let c = ExclusionArea::new(
-            ConvexPolygon::from_convex_hull(&[
-                Point::new(-1.5, -1.5),
-                Point::new(-1.5, 0.5),
-                Point::new(0.5, 0.5),
-                Point::new(0.5, -1.5),
-            ])
-            .unwrap(),
-        );
-
-        let mut merger = Merger::new(4.);
-        merger.insert(a.clone());
-        merger.insert(b.clone());
-        assert_eq!(merger.into_vec().len(), 2);
-
-        let mut merger = Merger::new(4.);
-        merger.insert(a);
-        merger.insert(b);
-        assert_eq!(merger.remove_intersecting(&c).len(), 1);
-        assert_eq!(merger.into_vec().len(), 1);
     }
 }
