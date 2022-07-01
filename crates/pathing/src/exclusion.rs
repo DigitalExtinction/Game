@@ -132,12 +132,10 @@ impl Merger {
 
     fn insert(&mut self, exclusion: ExclusionArea) {
         let key = self.key(&exclusion);
-        match self.grid.get_mut(&key) {
-            Some(exclusions) => exclusions.push(exclusion),
-            None => {
-                self.grid.insert(key, vec![exclusion]);
-            }
-        }
+        self.grid
+            .entry(key)
+            .or_insert_with(Vec::new)
+            .push(exclusion);
     }
 
     fn remove_intersecting(&mut self, exclusion: &ExclusionArea) -> Vec<ExclusionArea> {
