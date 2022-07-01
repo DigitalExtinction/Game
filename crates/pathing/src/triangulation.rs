@@ -4,13 +4,19 @@
 use ahash::AHashMap;
 use bevy::core::FloatOrd;
 use de_map::size::MapBounds;
-use parry2d::{math::Point, shape::Triangle};
+use de_objects::EXCLUSION_OFFSET;
+use parry2d::{
+    math::{Point, Vector},
+    shape::Triangle,
+};
 use spade::{handles::FixedVertexHandle, ConstrainedDelaunayTriangulation, Point2, Triangulation};
 
 use crate::exclusion::ExclusionArea;
 
-/// Returns a triangulation of rectangular area given by `bounds` with
-/// exclusion zones.
+const MAP_OFFSET: Vector<f32> = Vector::new(EXCLUSION_OFFSET, EXCLUSION_OFFSET);
+
+/// Returns a triangulation of rectangular area given by `bounds` shrinked by
+/// some distance with exclusion zones.
 ///
 /// The returned triangles:
 ///
@@ -20,7 +26,8 @@ use crate::exclusion::ExclusionArea;
 ///
 /// # Arguments:
 ///
-/// * `bounds` - area to be triangulated.
+/// * `bounds` - area to be triangulated. This area is first shrinked by
+///   [`de_objects::EXCLUSION_OFFSET`].
 ///
 /// * `exclusions` - areas not to be included in the triangulation. Individual
 ///   exclusion areas must not intersect each other, must not touch map
@@ -31,19 +38,14 @@ use crate::exclusion::ExclusionArea;
 /// May panic if any of the aforementioned assumptions does not hold.
 pub(crate) fn triangulate(bounds: &MapBounds, exclusions: &[ExclusionArea]) -> Vec<Triangle> {
     let mut triangulation = ConstrainedDelaunayTriangulation::<Point2<_>>::new();
-    let aabb = bounds.aabb();
-    triangulation
-        .insert(Point2::new(aabb.mins.x, aabb.mins.y))
-        .unwrap();
-    triangulation
-        .insert(Point2::new(aabb.mins.x, aabb.maxs.y))
-        .unwrap();
-    triangulation
-        .insert(Point2::new(aabb.maxs.x, aabb.maxs.y))
-        .unwrap();
-    triangulation
-        .insert(Point2::new(aabb.maxs.x, aabb.mins.y))
-        .unwrap();
+    let (mins, maxs) = {
+        let aabb = bounds.aabb();
+        (aabb.mins + MAP_OFFSET, aabb.maxs - MAP_OFFSET)
+    };
+    triangulation.insert(Point2::new(mins.x, mins.y)).unwrap();
+    triangulation.insert(Point2::new(mins.x, maxs.y)).unwrap();
+    triangulation.insert(Point2::new(maxs.x, maxs.y)).unwrap();
+    triangulation.insert(Point2::new(maxs.x, mins.y)).unwrap();
 
     let mut polygon_vertices = VertexPolygons::new();
     for edge in MultipleAreaEdges::new(exclusions) {
@@ -251,7 +253,13 @@ mod tests {
     fn test_triangulation_empty() {
         let obstacles = Vec::new();
         // <- 2.5 to left, <- 4.5 upwards
-        let triangles = triangulate(&MapBounds::new(Vec2::new(19., 13.)), &obstacles);
+        let triangles = triangulate(
+            &MapBounds::new(Vec2::new(
+                19. + 2. * EXCLUSION_OFFSET,
+                13. + 2. * EXCLUSION_OFFSET,
+            )),
+            &obstacles,
+        );
         assert_eq!(triangles.len(), 2);
 
         let a = triangles[0];
@@ -287,11 +295,16 @@ mod tests {
         )];
 
         // <- 2.5 to left, <- 4.5 upwards
-        let triangles: AHashSet<HashableTriangle> =
-            triangulate(&MapBounds::new(Vec2::new(19., 13.)), &obstacles)
-                .iter()
-                .map(HashableTriangle::new)
-                .collect();
+        let triangles: AHashSet<HashableTriangle> = triangulate(
+            &MapBounds::new(Vec2::new(
+                19. + 2. * EXCLUSION_OFFSET,
+                13. + 2. * EXCLUSION_OFFSET,
+            )),
+            &obstacles,
+        )
+        .iter()
+        .map(HashableTriangle::new)
+        .collect();
         let expected: AHashSet<HashableTriangle> = vec![
             Triangle::new(
                 Point::new(-0.1, 1.1),
