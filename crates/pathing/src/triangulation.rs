@@ -5,7 +5,7 @@ use ahash::AHashMap;
 use bevy::core::FloatOrd;
 use de_map::size::MapBounds;
 use parry2d::{math::Point, shape::Triangle};
-use spade::{ConstrainedDelaunayTriangulation, Point2, Triangulation};
+use spade::{handles::FixedVertexHandle, ConstrainedDelaunayTriangulation, Point2, Triangulation};
 
 use crate::exclusion::ExclusionArea;
 
@@ -45,12 +45,17 @@ pub(crate) fn triangulate(bounds: &MapBounds, exclusions: &[ExclusionArea]) -> V
         .insert(Point2::new(aabb.maxs.x, aabb.mins.y))
         .unwrap();
 
-    let mut polygon_ids = VertexPolygons::new();
+    let mut polygon_vertices = VertexPolygons::new();
     for edge in MultipleAreaEdges::new(exclusions) {
-        polygon_ids.add(edge.a(), edge.polygon_id());
-        triangulation
-            .add_constraint_edge(edge.a_point2(), edge.b_point2())
-            .unwrap();
+        let vertex = triangulation.insert(edge.a_point2()).unwrap();
+        polygon_vertices.insert(edge.a(), Vertex::new(edge.polygon_id(), vertex));
+    }
+
+    for edge in MultipleAreaEdges::new(exclusions) {
+        triangulation.add_constraint(
+            polygon_vertices.get(edge.a()).vertex(),
+            polygon_vertices.get(edge.b()).vertex(),
+        );
     }
 
     triangulation
@@ -61,7 +66,7 @@ pub(crate) fn triangulate(bounds: &MapBounds, exclusions: &[ExclusionArea]) -> V
                 Point::new(v.x, v.y)
             });
             let triangle = Triangle::new(vertices[0], vertices[1], vertices[2]);
-            if polygon_ids.is_excluded(&triangle) {
+            if polygon_vertices.is_excluded(&triangle) {
                 None
             } else {
                 Some(triangle)
@@ -72,7 +77,7 @@ pub(crate) fn triangulate(bounds: &MapBounds, exclusions: &[ExclusionArea]) -> V
 
 /// This struct holds a mapping from vertices to polygon IDs.
 struct VertexPolygons {
-    mapping: AHashMap<(FloatOrd, FloatOrd), usize>,
+    mapping: AHashMap<(FloatOrd, FloatOrd), Vertex>,
 }
 
 impl VertexPolygons {
@@ -86,9 +91,13 @@ impl VertexPolygons {
         (FloatOrd(point.x), FloatOrd(point.y))
     }
 
-    fn add(&mut self, point: Point<f32>, polygon_id: usize) {
-        let old = self.mapping.insert(Self::point_to_key(point), polygon_id);
+    fn insert(&mut self, point: Point<f32>, vertex: Vertex) {
+        let old = self.mapping.insert(Self::point_to_key(point), vertex);
         debug_assert!(old.is_none());
+    }
+
+    fn get(&self, point: Point<f32>) -> &Vertex {
+        self.mapping.get(&Self::point_to_key(point)).unwrap()
     }
 
     /// Returns true if the triangle is contained in an exclusion area.
@@ -101,10 +110,31 @@ impl VertexPolygons {
         // exclusion area iff all its vertices are part of the same exclusion
         // area polygon.
 
-        let vertices = triangle
-            .vertices()
-            .map(|p| self.mapping.get(&Self::point_to_key(p)));
+        let vertices = triangle.vertices().map(|p| {
+            self.mapping
+                .get(&Self::point_to_key(p))
+                .map(|v| v.polygon_id())
+        });
         vertices[0].is_some() && vertices[0] == vertices[1] && vertices[1] == vertices[2]
+    }
+}
+
+struct Vertex {
+    polygon_id: usize,
+    vertex: FixedVertexHandle,
+}
+
+impl Vertex {
+    fn new(polygon_id: usize, vertex: FixedVertexHandle) -> Self {
+        Self { polygon_id, vertex }
+    }
+
+    fn polygon_id(&self) -> usize {
+        self.polygon_id
+    }
+
+    fn vertex(&self) -> FixedVertexHandle {
+        self.vertex
     }
 }
 
@@ -197,12 +227,12 @@ impl ExclusionEdge {
         self.a
     }
 
-    fn a_point2(&self) -> Point2<f32> {
-        Point2::new(self.a.x, self.b.y)
+    fn b(&self) -> Point<f32> {
+        self.b
     }
 
-    fn b_point2(&self) -> Point2<f32> {
-        Point2::new(self.b.x, self.b.y)
+    fn a_point2(&self) -> Point2<f32> {
+        Point2::new(self.a.x, self.a.y)
     }
 }
 
