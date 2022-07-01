@@ -2,6 +2,7 @@
 macro_rules! log_full_error {
     ($err:ident) => {
         use std::error::Error;
+        use std::fmt::Write;
 
         use bevy::prelude::error;
 
@@ -9,7 +10,7 @@ macro_rules! log_full_error {
         let mut error: &dyn Error = &$err;
         while let Some(source) = error.source() {
             error = source;
-            error_message.push_str(&format!(": {}", error));
+            write!(&mut error_message, ": {}", error).unwrap();
         }
         error!("{}", error_message);
     };
