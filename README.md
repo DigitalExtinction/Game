@@ -83,6 +83,9 @@ go hand in hand with the spirit of the following goals.
 Contributions to the project in any form are welcomed. Check out our
 [Contributor's Guide](/CONTRIBUTING.md).
 
+MSRV: the Minimum Supported Rust Version (MSRV) is “the latest stable release”
+of Rust.
+
 # Roadmap
 
 1. [MVP](https://github.com/DigitalExtinction/Game/milestone/1)
