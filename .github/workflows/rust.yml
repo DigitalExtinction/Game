@@ -84,6 +84,32 @@ jobs:
       - run: cargo fmt --version
       - run: cargo fmt --all -- --check
 
+  udeps:
+    name: Check Unused Dependencies
+    if: contains( github.event.pull_request.labels.*.name, 'S-Ready-For-Final-Review' )
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/cache@v3
+        with:
+          path: |
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            target/
+          key: udeps-${{ runner.os }}-${{ hashFiles('**/Cargo.lock') }}
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: nightly
+          override: true
+      - name: Install cargo-udeps
+        run: cargo install --force cargo-udeps
+      - name: Install alsa and udev
+        run: sudo apt-get update; sudo apt-get install --no-install-recommends libasound2-dev libudev-dev
+      - name: Run cargo-udeps
+        run: cargo udeps
+
   build_release:
     name: Release Build
     runs-on: ${{ matrix.os }}
