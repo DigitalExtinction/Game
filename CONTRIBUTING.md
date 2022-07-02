@@ -83,6 +83,13 @@ Topologically sorted crates:
 
 * [controller](/crates/controller) – handling of user input.
 
+TODO ordering
+
+* [behaviour](/crates/behaviour) – unit behaviour.
+
+* [attacking](/crates/attacking) – attacking, projectile simulation and
+  similar.
+
 ### Coordinate Systems
 
 3D XYZ world coordinates are right handed. Mean sea level (MSL) plane lies on

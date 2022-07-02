@@ -12,6 +12,7 @@ const OBJECT_EXTENSION: [&str; 1] = ["obj.json"];
 pub(crate) struct ObjectInfo {
     footprint: Footprint,
     shape: TriMeshShape,
+    laser: Option<LaserCannonInfo>,
 }
 
 impl ObjectInfo {
@@ -48,6 +49,32 @@ impl TriMeshShape {
 
     pub(crate) fn indices(&self) -> &[[u32; 3]] {
         self.indices.as_slice()
+    }
+}
+
+#[derive(Serialize, Deserialize)]
+pub(crate) struct LaserCannonInfo {
+    muzzle: [f32; 3],
+    range: f32,
+    damage: f32,
+    recharge_interval: f32,
+}
+
+impl LaserCannonInfo {
+    pub(crate) fn muzzle(&self) -> &[f32; 3] {
+        &self.muzzle
+    }
+
+    pub(crate) fn range(&self) -> f32 {
+        self.range
+    }
+
+    pub(crate) fn damage(&self) -> f32 {
+        self.damage
+    }
+
+    pub(crate) fn recharge_interval(&self) -> f32 {
+        self.recharge_interval
     }
 }
 

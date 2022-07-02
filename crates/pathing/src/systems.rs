@@ -2,6 +2,7 @@ use std::sync::Arc;
 
 use ahash::AHashMap;
 use bevy::{
+    ecs::system::SystemParam,
     prelude::*,
     tasks::{AsyncComputeTaskPool, Task},
     transform::TransformSystem,
@@ -17,7 +18,8 @@ use futures_lite::future;
 use iyes_loopless::prelude::*;
 
 use crate::{
-    exclusion::ExclusionArea, finder::PathFinder, path::PathResult, triangulation::triangulate,
+    exclusion::ExclusionArea, finder::PathFinder, path::PathResult, query::PathTarget,
+    triangulation::triangulate,
 };
 
 pub struct PathingPlugin;
@@ -75,7 +77,7 @@ impl Plugin for PathingPlugin {
 /// replacement / insertion of this path to the entity.
 pub struct UpdateEntityPath {
     entity: Entity,
-    target: Vec2,
+    target: PathTarget,
 }
 
 impl UpdateEntityPath {
@@ -83,8 +85,8 @@ impl UpdateEntityPath {
     ///
     /// * `entity` - entity whose path should be updated / inserted.
     ///
-    /// * `target` - desired target position.
-    pub fn new(entity: Entity, target: Vec2) -> Self {
+    /// * `target` - desired path target.
+    pub fn new(entity: Entity, target: PathTarget) -> Self {
         Self { entity, target }
     }
 
@@ -92,8 +94,31 @@ impl UpdateEntityPath {
         self.entity
     }
 
-    fn target(&self) -> Vec2 {
+    fn target(&self) -> PathTarget {
         self.target
+    }
+}
+
+#[derive(SystemParam)]
+pub struct EntityPathSchedule<'w, 's> {
+    state: Res<'w, UpdatePathsState>,
+    entities: Query<'w, 's, &'static PathResult>,
+}
+
+impl<'w, 's> EntityPathSchedule<'w, 's> {
+    /// Returns current desired path target. Id est the path target which was
+    /// requested when current entity path was searched.
+    ///
+    /// Note current entity path might end at a different endpoint due to the
+    /// target unreachability and other reasons.
+    pub fn current_path_target(&self, entity: Entity) -> Option<PathTarget> {
+        self.entities.get(entity).ok().map(|path| path.target())
+    }
+
+    /// Returns desired path target of current path finding task for an entity.
+    /// Returns None in the case there is no scheduled path update.
+    pub fn scheduled_path_target(&self, entity: Entity) -> Option<PathTarget> {
+        self.state.get_task(entity).map(|task| task.target())
     }
 }
 
@@ -155,8 +180,8 @@ impl Default for UpdateFinderState {
     }
 }
 
-struct UpdatePathsState {
-    tasks: AHashMap<Entity, Task<Option<PathResult>>>,
+pub struct UpdatePathsState {
+    tasks: AHashMap<Entity, UpdatePathTask>,
 }
 
 impl UpdatePathsState {
@@ -166,23 +191,25 @@ impl UpdatePathsState {
         finder: Arc<PathFinder>,
         entity: Entity,
         source: Vec2,
-        target: Vec2,
+        target: PathTarget,
     ) {
         let task = pool.spawn(async move { finder.find_path(source, target) });
-        self.tasks.insert(entity, task);
+        self.tasks.insert(entity, UpdatePathTask::new(task, target));
+    }
+
+    fn get_task(&self, entity: Entity) -> Option<&UpdatePathTask> {
+        self.tasks.get(&entity)
     }
 
     fn check_results(&mut self) -> Vec<(Entity, Option<PathResult>)> {
         let mut results = Vec::new();
-        self.tasks.retain(
-            |&entity, task| match future::block_on(future::poll_once(task)) {
-                Some(path) => {
-                    results.push((entity, path));
-                    false
-                }
-                None => true,
-            },
-        );
+        self.tasks.retain(|&entity, task| match task.check() {
+            UpdatePathState::Resolved(path) => {
+                results.push((entity, path));
+                false
+            }
+            UpdatePathState::Processing => true,
+        });
 
         results
     }
@@ -194,6 +221,33 @@ impl Default for UpdatePathsState {
             tasks: AHashMap::new(),
         }
     }
+}
+
+struct UpdatePathTask {
+    task: Task<Option<PathResult>>,
+    target: PathTarget,
+}
+
+impl UpdatePathTask {
+    fn new(task: Task<Option<PathResult>>, target: PathTarget) -> Self {
+        Self { task, target }
+    }
+
+    fn target(&self) -> PathTarget {
+        self.target
+    }
+
+    fn check(&mut self) -> UpdatePathState {
+        match future::block_on(future::poll_once(&mut self.task)) {
+            Some(path) => UpdatePathState::Resolved(path),
+            None => UpdatePathState::Processing,
+        }
+    }
+}
+
+enum UpdatePathState {
+    Resolved(Option<PathResult>),
+    Processing,
 }
 
 type ChangedQuery<'world, 'state> =

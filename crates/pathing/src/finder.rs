@@ -19,6 +19,7 @@ use crate::{
     graph::VisibilityGraph,
     path::{Path, PathResult},
     utils::HashableSegment,
+    PathTarget,
 };
 
 /// A struct used for path finding.
@@ -134,9 +135,13 @@ impl PathFinder {
     /// Returns a shortest path between two points.
     ///
     /// Returns `None` if there is no path between the two points.
-    pub fn find_path<P: Into<Point<f32>>>(&self, from: P, to: P) -> Option<PathResult> {
+    pub fn find_path<P: Into<Point<f32>>>(
+        &self,
+        from: P,
+        target: PathTarget,
+    ) -> Option<PathResult> {
         let from: Point<f32> = from.into();
-        let to: Point<f32> = to.into();
+        let to: Point<f32> = target.location().into();
 
         info!("Finding path from {:?} to {:?}", from, to);
 
@@ -169,12 +174,16 @@ impl PathFinder {
             debug!("Trivial path from {:?} to {:?} found", from, to);
             let from: Vec2 = from.into();
             let to: Vec2 = to.into();
-            return Some(PathResult::new(Path::straight(from, to), to));
+
+            return match Path::straight(from, to).trimmed(target.distance()) {
+                Some(path) => Some(PathResult::new(path, target)),
+                None => None,
+            };
         }
 
         let source = PointContext::new(from, source_edges);
-        let target = PointContext::new(to, target_edges);
-        match find_path(&self.graph, source, target) {
+        let target_context = PointContext::new(to, target_edges);
+        match find_path(&self.graph, source, target_context) {
             Some(path) => {
                 debug!(
                     "Path of length {} from {:?} to {:?} found",
@@ -182,7 +191,11 @@ impl PathFinder {
                     from,
                     to
                 );
-                Some(PathResult::new(path, to.into()))
+
+                match path.trimmed(target.distance()) {
+                    Some(path) => Some(PathResult::new(path, target)),
+                    None => None,
+                }
             }
             None => {
                 debug!("No path from {:?} to {:?} found", from, to);

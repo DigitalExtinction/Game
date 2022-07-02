@@ -2,11 +2,14 @@ use bevy::{
     input::{keyboard::KeyboardInput, mouse::MouseButtonInput, ElementState},
     prelude::*,
 };
+use de_behaviour::AttackTarget;
 use de_core::{
+    gconfig::GameConfig,
     objects::{BuildingType, MovableSolid},
+    player::Player,
     projection::ToFlat,
 };
-use de_pathing::UpdateEntityPath;
+use de_pathing::{PathTarget, UpdateEntityPath};
 use de_spawner::Draft;
 use enum_map::enum_map;
 use iyes_loopless::prelude::*;
@@ -59,17 +62,41 @@ fn on_pressed(button: MouseButton) -> impl Fn(EventReader<MouseButtonInput>) -> 
 }
 
 fn right_click_handler(
+    mut commands: Commands,
+    config: Res<GameConfig>,
     mut path_events: EventWriter<UpdateEntityPath>,
-    selected: Query<Entity, (With<Selected>, With<MovableSolid>)>,
+    selected: Query<(Entity, Option<&AttackTarget>), (With<Selected>, With<MovableSolid>)>,
+    targets: Query<&Player>,
     pointer: Res<Pointer>,
 ) {
-    let target = match pointer.terrain_point() {
-        Some(point) => point.to_flat(),
-        None => return,
-    };
+    match pointer.entity().filter(|&entity| {
+        targets
+            .get(entity)
+            .map(|&player| config.is_local_player(player))
+            .unwrap_or(false)
+    }) {
+        Some(enemy) => {
+            info!("Commanding selected entities to attack {:?}", enemy);
+            for (entity, _) in selected.iter() {
+                // TODO what if the the entity does not have attack capability?
+                // TODO what if the entity gets destroyed in the meantime?
+                commands.entity(entity).insert(AttackTarget::new(enemy));
+            }
+        }
+        None => {
+            let target = match pointer.terrain_point() {
+                Some(point) => point.to_flat(),
+                None => return,
+            };
 
-    for entity in selected.iter() {
-        path_events.send(UpdateEntityPath::new(entity, target));
+            for (entity, attack) in selected.iter() {
+                if attack.is_some() {
+                    // TODO what if the entity gets destroyed in the meantime?
+                    commands.entity(entity).remove::<AttackTarget>();
+                }
+                path_events.send(UpdateEntityPath::new(entity, PathTarget::exact(target)));
+            }
+        }
     }
 }
 

@@ -5,14 +5,16 @@ use approx::assert_abs_diff_eq;
 use bevy::prelude::Component;
 use glam::Vec2;
 
+use crate::query::PathTarget;
+
 #[derive(Component)]
 pub struct PathResult {
     path: Path,
-    target: Vec2,
+    target: PathTarget,
 }
 
 impl PathResult {
-    pub(crate) fn new(path: Path, target: Vec2) -> Self {
+    pub(crate) fn new(path: Path, target: PathTarget) -> Self {
         Self { path, target }
     }
 
@@ -20,7 +22,7 @@ impl PathResult {
         &mut self.path
     }
 
-    pub fn target(&self) -> Vec2 {
+    pub fn target(&self) -> PathTarget {
         self.target
     }
 }
@@ -75,6 +77,17 @@ impl Path {
     pub fn advance(&mut self) -> bool {
         self.waypoints.pop();
         self.waypoints.is_empty()
+    }
+
+    /// Returns a path shortened by `amount` from the end. Returns None
+    /// `amount` is longer than the path.
+    pub(crate) fn trimmed(self, amount: f32) -> Option<Self> {
+        if amount == 0. {
+            Some(self)
+        } else {
+            // TODO: really trim
+            Some(self)
+        }
     }
 }
 

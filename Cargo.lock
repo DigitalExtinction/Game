@@ -1600,6 +1600,8 @@ name = "de"
 version = "0.1.0-dev"
 dependencies = [
  "bevy",
+ "de_attacking",
+ "de_behaviour",
  "de_camera",
  "de_controller",
  "de_core",
@@ -1610,6 +1612,35 @@ dependencies = [
  "de_pathing",
  "de_spawner",
  "iyes_loopless",
+]
+
+[[package]]
+name = "de_attacking"
+version = "0.1.0-dev"
+dependencies = [
+ "bevy",
+ "de_behaviour",
+ "de_core",
+ "de_index",
+ "de_objects",
+ "de_spawner",
+ "de_terrain",
+ "glam",
+ "iyes_loopless",
+ "parry3d",
+]
+
+[[package]]
+name = "de_behaviour"
+version = "0.1.0-dev"
+dependencies = [
+ "bevy",
+ "de_core",
+ "de_objects",
+ "de_pathing",
+ "glam",
+ "iyes_loopless",
+ "parry3d",
 ]
 
 [[package]]
@@ -1629,6 +1660,7 @@ name = "de_controller"
 version = "0.1.0-dev"
 dependencies = [
  "bevy",
+ "de_behaviour",
  "de_core",
  "de_index",
  "de_pathing",
@@ -1720,6 +1752,7 @@ dependencies = [
  "bevy",
  "de_core",
  "enum-map",
+ "glam",
  "iyes_loopless",
  "iyes_progress",
  "parry2d",
