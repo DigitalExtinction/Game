@@ -4,10 +4,11 @@ use de_objects::{Ichnography, IchnographyCache};
 use glam::EulerRot;
 use parry2d::{
     math::{Isometry, Point},
-    query,
+    na, query,
+    query::PointQuery,
     shape::ConvexPolygon,
 };
-use rstar::{Envelope, RTree, RTreeObject, SelectionFunction, AABB as RstarAABB};
+use rstar::{Envelope, PointDistance, RTree, RTreeObject, SelectionFunction, AABB as RstarAABB};
 
 /// Non accessible area on the map.
 ///
@@ -108,6 +109,23 @@ impl RTreeObject for ExclusionArea {
 
     fn envelope(&self) -> Self::Envelope {
         self.aabb
+    }
+}
+
+impl PointDistance for ExclusionArea {
+    fn distance_2(&self, point: &[f32; 2]) -> f32 {
+        let point = Point::from_slice(point);
+        let proj = self.polygon.project_local_point(&point, true);
+        if proj.is_inside {
+            0.
+        } else {
+            na::distance_squared(&point, &proj.point)
+        }
+    }
+
+    fn contains_point(&self, point: &[f32; 2]) -> bool {
+        let point = Point::from_slice(point);
+        self.polygon.contains_local_point(&point)
     }
 }
 

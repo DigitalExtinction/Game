@@ -4,12 +4,18 @@ use ahash::AHashMap;
 use bevy::prelude::{debug, info};
 use de_map::size::MapBounds;
 use glam::Vec2;
-use parry2d::{math::Point, na, query::PointQuery, shape::Triangle};
+use parry2d::{
+    math::Point,
+    na,
+    query::PointQuery,
+    shape::{Segment, Triangle},
+};
 use rstar::{PointDistance, RTree, RTreeObject, AABB};
-use tinyvec::ArrayVec;
+use tinyvec::{ArrayVec, TinyVec};
 
 use crate::{
     dijkstra::{find_path, PointContext},
+    exclusion::ExclusionArea,
     graph::VisibilityGraph,
     path::{Path, PathResult},
     utils::HashableSegment,
@@ -20,6 +26,9 @@ pub struct PathFinder {
     /// Spatial index of triangles. It is used to find edges neighboring start
     /// and end pints of a path to be found.
     triangles: RTree<GraphTriangle>,
+    /// All mutually exclusive exclusion areas which are not covered by
+    /// `triangles`. It is used to find way out of unreachable area.
+    exclusions: RTree<GraphExclusion>,
     graph: VisibilityGraph,
 }
 
@@ -28,18 +37,21 @@ impl PathFinder {
     /// within `bounds`.
     pub(crate) fn new(bounds: &MapBounds) -> Self {
         let aabb = bounds.aabb();
-        Self::from_triangles(vec![
-            Triangle::new(
-                Point::new(aabb.mins.x, aabb.maxs.y),
-                Point::new(aabb.mins.x, aabb.mins.y),
-                Point::new(aabb.maxs.x, aabb.mins.y),
-            ),
-            Triangle::new(
-                Point::new(aabb.mins.x, aabb.maxs.y),
-                Point::new(aabb.maxs.x, aabb.mins.y),
-                Point::new(aabb.maxs.x, aabb.maxs.y),
-            ),
-        ])
+        Self::from_triangles(
+            vec![
+                Triangle::new(
+                    Point::new(aabb.mins.x, aabb.maxs.y),
+                    Point::new(aabb.mins.x, aabb.mins.y),
+                    Point::new(aabb.maxs.x, aabb.mins.y),
+                ),
+                Triangle::new(
+                    Point::new(aabb.mins.x, aabb.maxs.y),
+                    Point::new(aabb.maxs.x, aabb.mins.y),
+                    Point::new(aabb.maxs.x, aabb.maxs.y),
+                ),
+            ],
+            Vec::new(),
+        )
     }
 
     /// Creates a new path finder based on a triangulated accessible area.
@@ -50,7 +62,14 @@ impl PathFinder {
     ///   area where objects (their centroids so there needs to be padding) can
     ///   freely move, b) contain not triangle-to-triangle intersections, c)
     ///   cover any of the area where object cannot freely move.
-    pub(crate) fn from_triangles(triangles: Vec<Triangle>) -> Self {
+    ///
+    /// * `exclusions` - mutually exclusive areas which fully cover area not
+    ///   covered by `triangles`. There is no intersection between the
+    ///   `exclusions` and `triangles`.
+    pub(crate) fn from_triangles(
+        triangles: Vec<Triangle>,
+        mut exclusions: Vec<ExclusionArea>,
+    ) -> Self {
         let mut graph = VisibilityGraph::new();
 
         let mut indexed_triangles = Vec::with_capacity(triangles.len());
@@ -82,6 +101,23 @@ impl PathFinder {
             }
         }
 
+        let exclusions: Vec<GraphExclusion> = exclusions
+            .drain(..)
+            .map(|exclusion| {
+                let points = exclusion.points();
+                debug_assert_ne!(points[0], points[points.len() - 1]);
+                let edges = TinyVec::from_iter(
+                    (0..points.len())
+                        .map(|index| (points[index], points[(index + 1) % points.len()]))
+                        .filter_map(|(a, b)| {
+                            let hashable_segment = HashableSegment::new(Segment::new(a, b));
+                            segment_to_edge_id.get(&hashable_segment).cloned()
+                        }),
+                );
+                GraphExclusion::new(exclusion, edges)
+            })
+            .collect();
+
         debug!(
             "Creating path finder consisting of {} triangles and {} nodes",
             indexed_triangles.len(),
@@ -90,6 +126,7 @@ impl PathFinder {
 
         Self {
             triangles: RTree::bulk_load(indexed_triangles),
+            exclusions: RTree::bulk_load(exclusions),
             graph,
         }
     }
@@ -103,11 +140,20 @@ impl PathFinder {
 
         info!("Finding path from {:?} to {:?}", from, to);
 
-        let source_edges = self.locate_edges(from);
+        let source_edges = {
+            let edges = self.locate_triangle_edges(from);
+            if edges.is_empty() {
+                self.locate_exclusion_edges(from)
+            } else {
+                edges
+            }
+        };
         if source_edges.is_empty() {
             return None;
         }
-        let target_edges = self.locate_edges(to);
+        let source_edges = source_edges;
+
+        let target_edges = self.locate_triangle_edges(to);
         if target_edges.is_empty() {
             return None;
         }
@@ -145,10 +191,18 @@ impl PathFinder {
         }
     }
 
-    fn locate_edges(&self, point: Point<f32>) -> Vec<u32> {
+    fn locate_triangle_edges(&self, point: Point<f32>) -> Vec<u32> {
         self.triangles
             .locate_all_at_point(&[point.x, point.y])
             .flat_map(|t| t.neighbours(point))
+            .collect()
+    }
+
+    fn locate_exclusion_edges(&self, point: Point<f32>) -> Vec<u32> {
+        self.exclusions
+            .locate_all_at_point(&[point.x, point.y])
+            .flat_map(|t| t.neighbours())
+            .cloned()
             .collect()
     }
 }
@@ -207,6 +261,39 @@ impl PointDistance for GraphTriangle {
     }
 }
 
+struct GraphExclusion {
+    area: ExclusionArea,
+    edges: TinyVec<[u32; 6]>,
+}
+
+impl GraphExclusion {
+    fn new(area: ExclusionArea, edges: TinyVec<[u32; 6]>) -> Self {
+        Self { area, edges }
+    }
+
+    fn neighbours(&self) -> &[u32] {
+        self.edges.as_slice()
+    }
+}
+
+impl RTreeObject for GraphExclusion {
+    type Envelope = <ExclusionArea as RTreeObject>::Envelope;
+
+    fn envelope(&self) -> Self::Envelope {
+        self.area.envelope()
+    }
+}
+
+impl PointDistance for GraphExclusion {
+    fn distance_2(&self, point: &[f32; 2]) -> f32 {
+        self.area.distance_2(point)
+    }
+
+    fn contains_point(&self, point: &[f32; 2]) -> bool {
+        self.area.contains_point(point)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use glam::Vec2;
@@ -258,7 +345,7 @@ mod tests {
                 Point::new(500., 1000.),
             ),
         ];
-        let finder = PathFinder::from_triangles(triangles);
+        let finder = PathFinder::from_triangles(triangles, vec![]);
 
         let mut first_path = finder
             .find_path(Vec2::new(-460., -950.), Vec2::new(450., 950.))
@@ -309,7 +396,7 @@ mod tests {
             ),
         ];
 
-        let finder = PathFinder::from_triangles(triangles);
+        let finder = PathFinder::from_triangles(triangles, vec![]);
         assert!(finder
             .find_path(Point::new(-0.5, 0.), Point::new(2., 22.))
             .is_none())

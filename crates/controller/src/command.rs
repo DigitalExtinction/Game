@@ -12,7 +12,7 @@ use enum_map::enum_map;
 use iyes_loopless::prelude::*;
 
 use crate::{
-    draft::{NewDraftEvent, SpawnDraftsEvent},
+    draft::{DiscardDraftsEvent, NewDraftEvent, SpawnDraftsEvent},
     pointer::Pointer,
     selection::{SelectEvent, Selected, SelectionMode},
     Labels,
@@ -99,7 +99,8 @@ fn left_click_handler(
 fn key_press_handler(
     mut key_events: EventReader<KeyboardInput>,
     pointer: Res<Pointer>,
-    mut events: EventWriter<NewDraftEvent>,
+    mut new_draft_events: EventWriter<NewDraftEvent>,
+    mut discard_drafts_events: EventWriter<DiscardDraftsEvent>,
 ) {
     let key = match key_events
         .iter()
@@ -112,6 +113,12 @@ fn key_press_handler(
         },
         None => return,
     };
+
+    if key == KeyCode::Escape {
+        discard_drafts_events.send(DiscardDraftsEvent);
+        return;
+    }
+
     let point = match pointer.terrain_point() {
         Some(point) => point,
         None => return,
@@ -129,6 +136,6 @@ fn key_press_handler(
             None
         }
     }) {
-        events.send(NewDraftEvent::new(point, building_type));
+        new_draft_events.send(NewDraftEvent::new(point, building_type));
     }
 }

@@ -5,7 +5,7 @@ use bevy::{app::PluginGroupBuilder, prelude::PluginGroup};
 use cache::CachePlugin;
 pub use cache::ObjectCache;
 pub use collider::{ColliderCache, ObjectCollider};
-pub use ichnography::{Ichnography, IchnographyCache};
+pub use ichnography::{Ichnography, IchnographyCache, EXCLUSION_OFFSET};
 
 mod cache;
 mod collider;

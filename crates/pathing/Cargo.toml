@@ -23,7 +23,7 @@ approx = "0.5.1"
 # https://github.com/georust/rstar/commit/923e73fc4dbee43ed43f2248eae6c4143e5282cc
 # is released.
 rstar = { git = "https://github.com/georust/rstar", branch = "master" }
-tinyvec = { version = "1.6.0", features = ["rustc_1_40"] }
+tinyvec = { version = "1.6.0", features = ["rustc_1_40", "alloc"] }
 iyes_loopless = "0.5.1"
 spade = "2.0.0"
 futures-lite = "1.11.3"

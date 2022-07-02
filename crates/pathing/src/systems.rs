@@ -251,10 +251,9 @@ pub fn create_finder(
         "Going to create a new path finder from {} entities",
         entities.len()
     );
-    PathFinder::from_triangles(triangulate(
-        &bounds,
-        &ExclusionArea::build(cache, entities.as_slice()),
-    ))
+    let exclusions = ExclusionArea::build(cache, entities.as_slice());
+    let triangles = triangulate(&bounds, exclusions.as_slice());
+    PathFinder::from_triangles(triangles, exclusions)
 }
 
 fn update_existing_paths(
