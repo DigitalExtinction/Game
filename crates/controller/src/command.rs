@@ -2,6 +2,7 @@ use bevy::{
     input::{keyboard::KeyboardInput, mouse::MouseButtonInput, ElementState},
     prelude::*,
 };
+use de_behaviour::ChaseTarget;
 use de_core::{
     objects::{BuildingType, MovableSolid},
     projection::ToFlat,
@@ -58,9 +59,13 @@ fn on_pressed(button: MouseButton) -> impl Fn(EventReader<MouseButtonInput>) -> 
     }
 }
 
+type SelectedQuery<'w, 's> =
+    Query<'w, 's, (Entity, Option<&'static ChaseTarget>), (With<Selected>, With<MovableSolid>)>;
+
 fn right_click_handler(
+    mut commands: Commands,
     mut path_events: EventWriter<UpdateEntityPath>,
-    selected: Query<Entity, (With<Selected>, With<MovableSolid>)>,
+    selected: SelectedQuery,
     pointer: Res<Pointer>,
 ) {
     let target = match pointer.terrain_point() {
@@ -68,7 +73,11 @@ fn right_click_handler(
         None => return,
     };
 
-    for entity in selected.iter() {
+    for (entity, chase) in selected.iter() {
+        if chase.is_some() {
+            commands.entity(entity).remove::<ChaseTarget>();
+        }
+
         path_events.send(UpdateEntityPath::new(
             entity,
             PathTarget::new(target, PathQueryProps::exact(), false),
