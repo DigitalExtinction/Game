@@ -43,6 +43,12 @@ pub(crate) fn find_path(
         let geometry = graph.geometry(step.edge_id());
         let segment = geometry.segment();
 
+        if target.has_neighbour(step.edge_id())
+            && step.side() != which_side(segment.a, segment.b, target.point())
+        {
+            return Some(step.funnel().closed(target.point()));
+        }
+
         for &next_edge_id in graph.neighbours(step.edge_id()) {
             if explored.contains(&next_edge_id) {
                 continue;
@@ -59,14 +65,6 @@ pub(crate) fn find_path(
                 next_geom.segment(),
                 next_edge_id,
             ));
-        }
-
-        if target.has_neighbour(step.edge_id()) {
-            if step.side() == which_side(segment.a, segment.b, target.point()) {
-                continue;
-            }
-
-            return Some(step.funnel().closed(target.point()));
         }
     }
     None
