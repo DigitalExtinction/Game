@@ -4,7 +4,7 @@ use bevy::{
 };
 use de_behaviour::ChaseTarget;
 use de_core::{
-    objects::{BuildingType, MovableSolid},
+    objects::{BuildingType, MovableSolid, Playable},
     projection::ToFlat,
 };
 use de_pathing::{PathQueryProps, PathTarget, UpdateEntityPath};
@@ -90,6 +90,7 @@ fn left_click_handler(
     mut draft_events: EventWriter<SpawnDraftsEvent>,
     keys: Res<Input<KeyCode>>,
     pointer: Res<Pointer>,
+    playable: Query<(), With<Playable>>,
     drafts: Query<(), With<Draft>>,
 ) {
     if drafts.is_empty() {
@@ -98,7 +99,8 @@ fn left_click_handler(
         } else {
             SelectionMode::Replace
         };
-        let event = match pointer.entity() {
+
+        let event = match pointer.entity().filter(|&e| playable.contains(e)) {
             Some(entity) => SelectEvent::single(entity, selection_mode),
             None => SelectEvent::none(selection_mode),
         };

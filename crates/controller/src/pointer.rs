@@ -1,5 +1,5 @@
 use bevy::{ecs::system::SystemParam, prelude::*, render::camera::Camera3d, window::Windows};
-use de_core::{objects::Playable, state::GameState};
+use de_core::state::GameState;
 use de_index::SpatialQuery;
 use de_terrain::TerrainCollider;
 use glam::{Vec2, Vec3};
@@ -28,8 +28,7 @@ pub(crate) struct Pointer {
 }
 
 impl Pointer {
-    /// Pointed to playable entity or None if mouse is not over any playable
-    /// entity.
+    /// Pointed to entity or None if mouse is not over any entity.
     pub(crate) fn entity(&self) -> Option<Entity> {
         self.entity
     }
@@ -81,14 +80,14 @@ impl<'w, 's> MouseInWorld<'w, 's> {
 fn mouse_move_handler(
     mut resource: ResMut<Pointer>,
     mouse: MouseInWorld,
-    playable: SpatialQuery<(), With<Playable>>,
+    entities: SpatialQuery<()>,
     terrain: TerrainCollider,
 ) {
     let ray = mouse.mouse_ray();
 
     let entity = ray
         .as_ref()
-        .and_then(|ray| playable.cast_ray(ray, f32::INFINITY))
+        .and_then(|ray| entities.cast_ray(ray, f32::INFINITY))
         .map(|intersection| intersection.entity());
     resource.set_entity(entity);
 
