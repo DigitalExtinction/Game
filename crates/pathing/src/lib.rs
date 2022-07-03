@@ -55,7 +55,7 @@ use bevy::{app::PluginGroupBuilder, prelude::PluginGroup};
 pub use path::{Path, PathResult};
 pub use query::{PathQueryProps, PathTarget};
 use systems::PathingPlugin;
-pub use systems::{create_finder, UpdateEntityPath};
+pub use systems::{create_finder, EntityPathSchedule, UpdateEntityPath};
 
 pub struct PathingPluginGroup;
 
