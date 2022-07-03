@@ -46,12 +46,14 @@ mod funnel;
 mod geometry;
 mod graph;
 mod path;
+mod query;
 mod systems;
 mod triangulation;
 mod utils;
 
 use bevy::{app::PluginGroupBuilder, prelude::PluginGroup};
 pub use path::{Path, PathResult};
+pub use query::{PathQueryProps, PathTarget};
 use systems::PathingPlugin;
 pub use systems::{create_finder, UpdateEntityPath};
 

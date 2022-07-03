@@ -12,7 +12,7 @@ use criterion::{
 use de_core::objects::{ActiveObjectType, BuildingType, ObjectType};
 use de_map::size::MapBounds;
 use de_objects::{Ichnography, IchnographyCache};
-use de_pathing::create_finder;
+use de_pathing::{create_finder, PathQueryProps, PathTarget};
 use glam::{Vec2, Vec3};
 use parry2d::{math::Point, shape::ConvexPolygon};
 
@@ -118,7 +118,7 @@ fn find_path_benchmark(c: &mut Criterion) {
                 index = (index + 1) % points.len();
                 let target = points[index];
                 index = (index + 1) % points.len();
-                finder.find_path(start, target);
+                finder.find_path(start, PathTarget::new(target, PathQueryProps::new(0., 10.)));
             });
         });
     }

@@ -18,6 +18,7 @@ use iyes_loopless::prelude::*;
 
 use crate::{
     exclusion::ExclusionArea, finder::PathFinder, path::PathResult, triangulation::triangulate,
+    PathQueryProps, PathTarget,
 };
 
 pub struct PathingPlugin;
@@ -75,7 +76,7 @@ impl Plugin for PathingPlugin {
 /// replacement / insertion of this path to the entity.
 pub struct UpdateEntityPath {
     entity: Entity,
-    target: Vec2,
+    target: PathTarget,
 }
 
 impl UpdateEntityPath {
@@ -83,8 +84,8 @@ impl UpdateEntityPath {
     ///
     /// * `entity` - entity whose path should be updated / inserted.
     ///
-    /// * `target` - desired target position.
-    pub fn new(entity: Entity, target: Vec2) -> Self {
+    /// * `target` - desired path target & path searching query configuration.
+    pub fn new(entity: Entity, target: PathTarget) -> Self {
         Self { entity, target }
     }
 
@@ -92,7 +93,7 @@ impl UpdateEntityPath {
         self.entity
     }
 
-    fn target(&self) -> Vec2 {
+    fn target(&self) -> PathTarget {
         self.target
     }
 }
@@ -166,7 +167,7 @@ impl UpdatePathsState {
         finder: Arc<PathFinder>,
         entity: Entity,
         source: Vec2,
-        target: Vec2,
+        target: PathTarget,
     ) {
         let task = pool.spawn(async move { finder.find_path(source, target) });
         self.tasks.insert(entity, task);
@@ -269,12 +270,17 @@ fn update_existing_paths(
     }
 
     for (entity, transform, path) in entities.iter() {
+        let new_target = PathTarget::new(
+            path.target().location(),
+            PathQueryProps::new(path.target().properties().distance(), f32::INFINITY),
+        );
+
         state.spawn_new(
             pool.as_ref(),
             finder.clone(),
             entity,
             transform.translation.to_flat(),
-            path.target(),
+            new_target,
         );
     }
 }

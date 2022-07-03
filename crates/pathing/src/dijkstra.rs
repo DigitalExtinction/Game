@@ -4,13 +4,14 @@ use std::{cmp::Ordering, collections::BinaryHeap};
 
 use ahash::AHashSet;
 use bevy::core::FloatOrd;
-use parry2d::{math::Point, query::PointQuery, shape::Segment};
+use parry2d::{math::Point, na, query::PointQuery, shape::Segment};
 
 use crate::{
     funnel::Funnel,
     geometry::{orient, which_side, Side},
     graph::VisibilityGraph,
     path::Path,
+    PathQueryProps,
 };
 
 /// Finds and returns a reasonable path between two points.
@@ -21,6 +22,7 @@ pub(crate) fn find_path(
     graph: &VisibilityGraph,
     source: PointContext,
     target: PointContext,
+    properties: PathQueryProps,
 ) -> Option<Path> {
     let mut open_set = OpenSet::new();
     let mut explored = AHashSet::new();
@@ -35,6 +37,7 @@ pub(crate) fn find_path(
         ));
     }
 
+    let mut sufficient: Option<Incomplete> = None;
     while let Some(step) = open_set.pop() {
         if !explored.insert(step.edge_id()) {
             continue;
@@ -43,10 +46,33 @@ pub(crate) fn find_path(
         let geometry = graph.geometry(step.edge_id());
         let segment = geometry.segment();
 
+        let projection = segment.project_local_point(&target.point(), true);
+        let projection_dist = na::distance(&target.point(), &projection.point);
+
+        if properties.max_distance() > 0. && projection_dist < properties.max_distance() {
+            let funnel = step.funnel().clone();
+            let incomplete = Incomplete::new(funnel, projection.point, projection_dist);
+
+            if projection_dist < properties.distance() {
+                return incomplete.closed(properties.distance());
+            }
+
+            if sufficient
+                .as_ref()
+                .map(|s| s.distance() > incomplete.distance())
+                .unwrap_or(true)
+            {
+                sufficient = Some(incomplete);
+            }
+        }
+
         if target.has_neighbour(step.edge_id())
             && step.side() != which_side(segment.a, segment.b, target.point())
         {
-            return Some(step.funnel().closed(target.point()));
+            return step
+                .funnel()
+                .closed(target.point())
+                .truncated(properties.distance());
         }
 
         for &next_edge_id in graph.neighbours(step.edge_id()) {
@@ -67,7 +93,8 @@ pub(crate) fn find_path(
             ));
         }
     }
-    None
+
+    sufficient.and_then(|s| s.closed(properties.distance()))
 }
 
 pub(crate) struct PointContext {
@@ -185,6 +212,37 @@ impl PartialOrd for Step {
 impl Ord for Step {
     fn cmp(&self, other: &Self) -> Ordering {
         (other.score, other.edge_id).cmp(&(self.score, self.edge_id))
+    }
+}
+
+struct Incomplete {
+    funnel: Funnel,
+    closest: Point<f32>,
+    distance: f32,
+}
+
+impl Incomplete {
+    fn new(funnel: Funnel, closest: Point<f32>, distance: f32) -> Self {
+        debug_assert!(distance >= 0.);
+        Self {
+            funnel,
+            closest,
+            distance,
+        }
+    }
+
+    fn distance(&self) -> f32 {
+        self.distance
+    }
+
+    fn closed(self, truncation: f32) -> Option<Path> {
+        let path = self.funnel.closed(self.closest);
+        let truncation = truncation - self.distance;
+        if truncation <= 0. {
+            Some(path)
+        } else {
+            path.truncated(truncation)
+        }
     }
 }
 

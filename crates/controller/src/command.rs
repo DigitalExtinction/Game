@@ -6,7 +6,7 @@ use de_core::{
     objects::{BuildingType, MovableSolid},
     projection::ToFlat,
 };
-use de_pathing::UpdateEntityPath;
+use de_pathing::{PathQueryProps, PathTarget, UpdateEntityPath};
 use de_spawner::Draft;
 use enum_map::enum_map;
 use iyes_loopless::prelude::*;
@@ -69,7 +69,10 @@ fn right_click_handler(
     };
 
     for entity in selected.iter() {
-        path_events.send(UpdateEntityPath::new(entity, target));
+        path_events.send(UpdateEntityPath::new(
+            entity,
+            PathTarget::new(target, PathQueryProps::exact()),
+        ));
     }
 }
 
