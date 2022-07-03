@@ -58,6 +58,8 @@ jobs:
             ~/.cargo/git/db/
             target/
           key: tests-${{ runner.os }}-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            tests-${{ runner.os }}-
 
       - name: Install Linux Dependencies
         if: ${{ matrix.os == 'ubuntu-latest' }}
@@ -99,6 +101,8 @@ jobs:
             ~/.cargo/git/db/
             target/
           key: udeps-${{ runner.os }}-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            udeps-${{ runner.os }}-
       - uses: actions-rs/toolchain@v1
         with:
           toolchain: nightly
