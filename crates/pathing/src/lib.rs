@@ -34,9 +34,9 @@
 //!   found. See [`crate::finder`].
 //!
 //! * Visibility graph is traversed with a modified Dijkstra's algorithm. See
-//!   [`crate::dijkstra`]. Funnel algorithm is embedded into the A* algorithm
-//!   so path funneling can be gradually applied during the graph traversal.
-//!   See [`crate::funnel`].
+//!   [`crate::dijkstra`]. Funnel algorithm is embedded into the algorithm so
+//!   path funneling can be gradually applied during the graph traversal. See
+//!   [`crate::funnel`].
 
 mod chain;
 mod dijkstra;
