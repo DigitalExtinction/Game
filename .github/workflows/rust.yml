@@ -33,10 +33,9 @@ jobs:
         run: git lfs ls-files -l | cut -d' ' -f1 | sort > .lfs-assets-id
       - name: Restore LFS cache
         uses: actions/cache@v3
-        id: lfs-cache
         with:
           path: .git/lfs
-          key: ${{ runner.os }}-lfs-${{ hashFiles('.lfs-assets-id') }}-v1
+          key: lfs-${{ runner.os }}-${{ hashFiles('.lfs-assets-id') }}-v1
       - name: Git LFS Pull
         run: git lfs pull
 
