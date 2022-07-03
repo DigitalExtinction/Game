@@ -34,9 +34,9 @@
 //!   found. See [`crate::finder`].
 //!
 //! * Visibility graph is traversed with a modified Dijkstra's algorithm. See
-//!   [`crate::dijkstra`]. Funnel algorithm is embedded into the A* algorithm
-//!   so path funneling can be gradually applied during the graph traversal.
-//!   See [`crate::funnel`].
+//!   [`crate::dijkstra`]. Funnel algorithm is embedded into the algorithm so
+//!   path funneling can be gradually applied during the graph traversal. See
+//!   [`crate::funnel`].
 
 mod chain;
 mod dijkstra;
@@ -46,12 +46,14 @@ mod funnel;
 mod geometry;
 mod graph;
 mod path;
+mod query;
 mod systems;
 mod triangulation;
 mod utils;
 
 use bevy::{app::PluginGroupBuilder, prelude::PluginGroup};
 pub use path::{Path, PathResult};
+pub use query::{PathQueryProps, PathTarget};
 use systems::PathingPlugin;
 pub use systems::{create_finder, UpdateEntityPath};
 

@@ -3,7 +3,6 @@
 use ahash::AHashMap;
 use bevy::prelude::{debug, info};
 use de_map::size::MapBounds;
-use glam::Vec2;
 use parry2d::{
     math::Point,
     na,
@@ -19,6 +18,7 @@ use crate::{
     graph::VisibilityGraph,
     path::{Path, PathResult},
     utils::HashableSegment,
+    PathTarget,
 };
 
 /// A struct used for path finding.
@@ -134,9 +134,13 @@ impl PathFinder {
     /// Returns a shortest path between two points.
     ///
     /// Returns `None` if there is no path between the two points.
-    pub fn find_path<P: Into<Point<f32>>>(&self, from: P, to: P) -> Option<PathResult> {
+    pub fn find_path<P: Into<Point<f32>>>(
+        &self,
+        from: P,
+        target: PathTarget,
+    ) -> Option<PathResult> {
         let from: Point<f32> = from.into();
-        let to: Point<f32> = to.into();
+        let to: Point<f32> = target.location().into();
 
         info!("Finding path from {:?} to {:?}", from, to);
 
@@ -154,7 +158,7 @@ impl PathFinder {
         let source_edges = source_edges;
 
         let target_edges = self.locate_triangle_edges(to);
-        if target_edges.is_empty() {
+        if target_edges.is_empty() && target.properties().max_distance() == 0. {
             return None;
         }
 
@@ -166,15 +170,20 @@ impl PathFinder {
             >= 2
         {
             // Trivial case, both points are in the same triangle.
-            debug!("Trivial path from {:?} to {:?} found", from, to);
-            let from: Vec2 = from.into();
-            let to: Vec2 = to.into();
-            return Some(PathResult::new(Path::straight(from, to), to));
+            match Path::straight(from.into(), target.location())
+                .truncated(target.properties().distance())
+            {
+                Some(path) => {
+                    debug!("Trivial path from {:?} to {:?} found", from, to);
+                    return Some(PathResult::new(path, target));
+                }
+                None => return None,
+            }
         }
 
         let source = PointContext::new(from, source_edges);
-        let target = PointContext::new(to, target_edges);
-        match find_path(&self.graph, source, target) {
+        let target_context = PointContext::new(to, target_edges);
+        match find_path(&self.graph, source, target_context, target.properties()) {
             Some(path) => {
                 debug!(
                     "Path of length {} from {:?} to {:?} found",
@@ -182,7 +191,7 @@ impl PathFinder {
                     from,
                     to
                 );
-                Some(PathResult::new(path, to.into()))
+                Some(PathResult::new(path, target))
             }
             None => {
                 debug!("No path from {:?} to {:?} found", from, to);
@@ -300,6 +309,7 @@ mod tests {
     use ntest::timeout;
 
     use super::*;
+    use crate::PathQueryProps;
 
     #[test]
     fn test_finder() {
@@ -348,7 +358,10 @@ mod tests {
         let finder = PathFinder::from_triangles(triangles, vec![]);
 
         let mut first_path = finder
-            .find_path(Vec2::new(-460., -950.), Vec2::new(450., 950.))
+            .find_path(
+                Vec2::new(-460., -950.),
+                PathTarget::new(Vec2::new(450., 950.), PathQueryProps::exact()),
+            )
             .unwrap();
         assert_eq!(
             first_path.path_mut().waypoints(),
@@ -360,12 +373,61 @@ mod tests {
         );
 
         let mut second_path = finder
-            .find_path(Vec2::new(0.2, -950.), Vec2::new(0., 950.))
+            .find_path(
+                Vec2::new(0.2, -950.),
+                PathTarget::new(Vec2::new(0., 950.), PathQueryProps::exact()),
+            )
             .unwrap();
         assert_eq!(
             second_path.path_mut().waypoints(),
             &[
                 Vec2::new(0., 950.),
+                Vec2::new(18.6, 18.6),
+                Vec2::new(18.6, -18.6),
+                Vec2::new(0.2, -950.),
+            ]
+        );
+
+        let mut third_path = finder
+            .find_path(
+                Vec2::new(0.2, -950.),
+                PathTarget::new(Vec2::new(0., 950.), PathQueryProps::new(30., f32::INFINITY)),
+            )
+            .unwrap();
+        assert_eq!(
+            third_path.path_mut().waypoints(),
+            &[
+                Vec2::new(0.59897804, 920.006),
+                Vec2::new(18.6, 18.6),
+                Vec2::new(18.6, -18.6),
+                Vec2::new(0.2, -950.),
+            ]
+        );
+
+        let mut forth_path = finder
+            .find_path(
+                Vec2::new(0.2, -950.),
+                PathTarget::new(
+                    Vec2::new(0., 950.),
+                    PathQueryProps::new(999., f32::INFINITY),
+                ),
+            )
+            .unwrap();
+        assert_eq!(
+            forth_path.path_mut().waypoints(),
+            &[Vec2::new(18.003086, -48.81555), Vec2::new(0.2, -950.),]
+        );
+
+        let mut fifth_path = finder
+            .find_path(
+                Vec2::new(0.2, -950.),
+                PathTarget::new(Vec2::new(1., 8.), PathQueryProps::new(0., f32::INFINITY)),
+            )
+            .unwrap();
+        assert_eq!(
+            fifth_path.path_mut().waypoints(),
+            &[
+                Vec2::new(1.0000019, 18.6),
                 Vec2::new(18.6, 18.6),
                 Vec2::new(18.6, -18.6),
                 Vec2::new(0.2, -950.),
@@ -398,7 +460,10 @@ mod tests {
 
         let finder = PathFinder::from_triangles(triangles, vec![]);
         assert!(finder
-            .find_path(Point::new(-0.5, 0.), Point::new(2., 22.))
+            .find_path(
+                Point::new(-0.5, 0.),
+                PathTarget::new(Vec2::new(2., 22.), PathQueryProps::exact())
+            )
             .is_none())
     }
 }

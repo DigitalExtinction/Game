@@ -5,14 +5,16 @@ use approx::assert_abs_diff_eq;
 use bevy::prelude::Component;
 use glam::Vec2;
 
+use crate::PathTarget;
+
 #[derive(Component)]
 pub struct PathResult {
     path: Path,
-    target: Vec2,
+    target: PathTarget,
 }
 
 impl PathResult {
-    pub(crate) fn new(path: Path, target: Vec2) -> Self {
+    pub(crate) fn new(path: Path, target: PathTarget) -> Self {
         Self { path, target }
     }
 
@@ -20,7 +22,7 @@ impl PathResult {
         &mut self.path
     }
 
-    pub fn target(&self) -> Vec2 {
+    pub fn target(&self) -> PathTarget {
         self.target
     }
 }
@@ -76,6 +78,48 @@ impl Path {
         self.waypoints.pop();
         self.waypoints.is_empty()
     }
+
+    /// Returns a path shortened by `amount` from the end. Returns None
+    /// `amount` is longer than the path.
+    pub(crate) fn truncated(mut self, mut amount: f32) -> Option<Self> {
+        if amount == 0. {
+            return Some(self);
+        } else if amount >= self.length {
+            return None;
+        }
+
+        for i in 1..self.waypoints.len() {
+            debug_assert!(self.length > 0.);
+            debug_assert!(amount > 0.);
+
+            let last = self.waypoints[i - 1];
+            let preceeding = self.waypoints[i];
+
+            let diff = last - preceeding;
+            let diff_len = diff.length();
+
+            if diff_len < amount {
+                self.length -= diff_len;
+                amount -= diff_len;
+            } else if diff_len > amount {
+                self.length -= amount;
+                let mut waypoints = Vec::with_capacity(self.waypoints.len() - i + 1);
+                let fraction = (diff_len - amount) / diff_len;
+                waypoints.push(preceeding + fraction * diff);
+                waypoints.extend_from_slice(&self.waypoints[i..]);
+                return Some(Self::new(self.length, waypoints));
+            } else if diff_len == amount {
+                self.length -= amount;
+                let mut waypoints = Vec::with_capacity(self.waypoints.len() - i);
+                waypoints.extend_from_slice(&self.waypoints[i..]);
+                return Some(Self::new(self.length, waypoints));
+            }
+        }
+
+        // This might happen due to rounding errors. Otherwise, this code
+        // should be unreachable.
+        None
+    }
 }
 
 #[cfg(test)]
@@ -94,5 +138,43 @@ mod tests {
         let path = Path::straight(Vec2::new(10., 11.), Vec2::new(22., 11.));
         assert_eq!(path.length(), 12.);
         assert_eq!(path.waypoints().len(), 2);
+    }
+
+    #[test]
+    fn test_truncated() {
+        let path = Path::new(
+            8.,
+            vec![Vec2::new(1., 2.), Vec2::new(3., 2.), Vec2::new(3., 8.)],
+        )
+        .truncated(2.)
+        .unwrap();
+        assert_eq!(path.length(), 6.);
+        assert_eq!(path.waypoints(), vec![Vec2::new(3., 2.), Vec2::new(3., 8.)]);
+
+        let path = Path::new(
+            8.,
+            vec![Vec2::new(1., 2.), Vec2::new(3., 2.), Vec2::new(3., 8.)],
+        )
+        .truncated(1.)
+        .unwrap();
+        assert_eq!(path.length(), 7.);
+        assert_eq!(
+            path.waypoints(),
+            vec![Vec2::new(2., 2.), Vec2::new(3., 2.), Vec2::new(3., 8.)]
+        );
+
+        assert!(Path::new(
+            8.,
+            vec![Vec2::new(1., 2.), Vec2::new(3., 2.), Vec2::new(3., 8.)],
+        )
+        .truncated(8.)
+        .is_none());
+
+        assert!(Path::new(
+            8.,
+            vec![Vec2::new(1., 2.), Vec2::new(3., 2.), Vec2::new(3., 8.)],
+        )
+        .truncated(10.)
+        .is_none());
     }
 }
