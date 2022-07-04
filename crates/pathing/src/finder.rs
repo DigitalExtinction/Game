@@ -16,7 +16,7 @@ use crate::{
     dijkstra::{find_path, PointContext},
     exclusion::ExclusionArea,
     graph::VisibilityGraph,
-    path::{Path, PathResult},
+    path::Path,
     utils::HashableSegment,
     PathTarget,
 };
@@ -134,11 +134,7 @@ impl PathFinder {
     /// Returns a shortest path between two points.
     ///
     /// Returns `None` if there is no path between the two points.
-    pub fn find_path<P: Into<Point<f32>>>(
-        &self,
-        from: P,
-        target: PathTarget,
-    ) -> Option<PathResult> {
+    pub fn find_path<P: Into<Point<f32>>>(&self, from: P, target: PathTarget) -> Option<Path> {
         let from: Point<f32> = from.into();
         let to: Point<f32> = target.location().into();
 
@@ -169,16 +165,13 @@ impl PathFinder {
             .count()
             >= 2
         {
+            debug!(
+                "Trivial path from {:?} to {:?} found, trimming...",
+                from, to
+            );
             // Trivial case, both points are in the same triangle.
-            match Path::straight(from.into(), target.location())
-                .truncated(target.properties().distance())
-            {
-                Some(path) => {
-                    debug!("Trivial path from {:?} to {:?} found", from, to);
-                    return Some(PathResult::new(path, target));
-                }
-                None => return None,
-            }
+            return Path::straight(from.into(), target.location())
+                .truncated(target.properties().distance());
         }
 
         let source = PointContext::new(from, source_edges);
@@ -191,7 +184,7 @@ impl PathFinder {
                     from,
                     to
                 );
-                Some(PathResult::new(path, target))
+                Some(path)
             }
             None => {
                 debug!("No path from {:?} to {:?} found", from, to);
@@ -357,14 +350,14 @@ mod tests {
         ];
         let finder = PathFinder::from_triangles(triangles, vec![]);
 
-        let mut first_path = finder
+        let first_path = finder
             .find_path(
                 Vec2::new(-460., -950.),
-                PathTarget::new(Vec2::new(450., 950.), PathQueryProps::exact()),
+                PathTarget::new(Vec2::new(450., 950.), PathQueryProps::exact(), false),
             )
             .unwrap();
         assert_eq!(
-            first_path.path_mut().waypoints(),
+            first_path.waypoints(),
             &[
                 Vec2::new(450., 950.),
                 Vec2::new(-18.6, 18.6),
@@ -372,14 +365,14 @@ mod tests {
             ]
         );
 
-        let mut second_path = finder
+        let second_path = finder
             .find_path(
                 Vec2::new(0.2, -950.),
-                PathTarget::new(Vec2::new(0., 950.), PathQueryProps::exact()),
+                PathTarget::new(Vec2::new(0., 950.), PathQueryProps::exact(), false),
             )
             .unwrap();
         assert_eq!(
-            second_path.path_mut().waypoints(),
+            second_path.waypoints(),
             &[
                 Vec2::new(0., 950.),
                 Vec2::new(18.6, 18.6),
@@ -388,14 +381,18 @@ mod tests {
             ]
         );
 
-        let mut third_path = finder
+        let third_path = finder
             .find_path(
                 Vec2::new(0.2, -950.),
-                PathTarget::new(Vec2::new(0., 950.), PathQueryProps::new(30., f32::INFINITY)),
+                PathTarget::new(
+                    Vec2::new(0., 950.),
+                    PathQueryProps::new(30., f32::INFINITY),
+                    false,
+                ),
             )
             .unwrap();
         assert_eq!(
-            third_path.path_mut().waypoints(),
+            third_path.waypoints(),
             &[
                 Vec2::new(0.59897804, 920.006),
                 Vec2::new(18.6, 18.6),
@@ -404,28 +401,33 @@ mod tests {
             ]
         );
 
-        let mut forth_path = finder
+        let forth_path = finder
             .find_path(
                 Vec2::new(0.2, -950.),
                 PathTarget::new(
                     Vec2::new(0., 950.),
                     PathQueryProps::new(999., f32::INFINITY),
+                    false,
                 ),
             )
             .unwrap();
         assert_eq!(
-            forth_path.path_mut().waypoints(),
+            forth_path.waypoints(),
             &[Vec2::new(18.003086, -48.81555), Vec2::new(0.2, -950.),]
         );
 
-        let mut fifth_path = finder
+        let fifth_path = finder
             .find_path(
                 Vec2::new(0.2, -950.),
-                PathTarget::new(Vec2::new(1., 8.), PathQueryProps::new(0., f32::INFINITY)),
+                PathTarget::new(
+                    Vec2::new(1., 8.),
+                    PathQueryProps::new(0., f32::INFINITY),
+                    false,
+                ),
             )
             .unwrap();
         assert_eq!(
-            fifth_path.path_mut().waypoints(),
+            fifth_path.waypoints(),
             &[
                 Vec2::new(1.0000019, 18.6),
                 Vec2::new(18.6, 18.6),
@@ -462,7 +464,7 @@ mod tests {
         assert!(finder
             .find_path(
                 Point::new(-0.5, 0.),
-                PathTarget::new(Vec2::new(2., 22.), PathQueryProps::exact())
+                PathTarget::new(Vec2::new(2., 22.), PathQueryProps::exact(), false)
             )
             .is_none())
     }

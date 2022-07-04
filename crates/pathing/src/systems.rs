@@ -2,7 +2,6 @@ use std::sync::Arc;
 
 use ahash::AHashMap;
 use bevy::{
-    ecs::system::SystemParam,
     prelude::*,
     tasks::{AsyncComputeTaskPool, Task},
     transform::TransformSystem,
@@ -18,9 +17,12 @@ use futures_lite::future;
 use iyes_loopless::prelude::*;
 
 use crate::{
-    exclusion::ExclusionArea, finder::PathFinder, path::PathResult, triangulation::triangulate,
-    PathQueryProps, PathTarget,
+    exclusion::ExclusionArea, finder::PathFinder, triangulation::triangulate, Path, PathQueryProps,
+    PathTarget,
 };
+
+const TARGET_TOLERANCE: f32 = 2.;
+static PRE_POST_UPDATE: &str = "PrePostUpdate";
 
 pub struct PathingPlugin;
 
@@ -69,7 +71,13 @@ impl Plugin for PathingPlugin {
             .add_system_to_stage(
                 CoreStage::PreUpdate,
                 check_path_results.run_in_state(GameState::Playing),
-            );
+            )
+            .add_stage_before(
+                CoreStage::PostUpdate,
+                PRE_POST_UPDATE,
+                SystemStage::parallel(),
+            )
+            .add_system_to_stage(PRE_POST_UPDATE, remove_path_targets);
     }
 }
 
@@ -96,29 +104,6 @@ impl UpdateEntityPath {
 
     fn target(&self) -> PathTarget {
         self.target
-    }
-}
-
-#[derive(SystemParam)]
-pub struct EntityPathSchedule<'w, 's> {
-    state: Res<'w, UpdatePathsState>,
-    entities: Query<'w, 's, &'static PathResult>,
-}
-
-impl<'w, 's> EntityPathSchedule<'w, 's> {
-    /// Returns current desired path target. Id est the path target which was
-    /// requested when current entity path was searched.
-    ///
-    /// Note that current entity path might end at a different endpoint due to
-    /// the target unreachability and other reasons.
-    pub fn current_path_target(&self, entity: Entity) -> Option<PathTarget> {
-        self.entities.get(entity).ok().map(|path| path.target())
-    }
-
-    /// Returns desired path target of current path finding task for an entity.
-    /// Returns None in the case there is no scheduled path update.
-    pub fn scheduled_path_target(&self, entity: Entity) -> Option<PathTarget> {
-        self.state.get_task(entity).map(|task| task.target())
     }
 }
 
@@ -180,7 +165,7 @@ impl Default for UpdateFinderState {
     }
 }
 
-pub struct UpdatePathsState {
+struct UpdatePathsState {
     tasks: AHashMap<Entity, UpdatePathTask>,
 }
 
@@ -194,14 +179,10 @@ impl UpdatePathsState {
         target: PathTarget,
     ) {
         let task = pool.spawn(async move { finder.find_path(source, target) });
-        self.tasks.insert(entity, UpdatePathTask::new(task, target));
+        self.tasks.insert(entity, UpdatePathTask::new(task));
     }
 
-    fn get_task(&self, entity: Entity) -> Option<&UpdatePathTask> {
-        self.tasks.get(&entity)
-    }
-
-    fn check_results(&mut self) -> Vec<(Entity, Option<PathResult>)> {
+    fn check_results(&mut self) -> Vec<(Entity, Option<Path>)> {
         let mut results = Vec::new();
         self.tasks.retain(|&entity, task| match task.check() {
             UpdatePathState::Resolved(path) => {
@@ -223,22 +204,15 @@ impl Default for UpdatePathsState {
     }
 }
 
-struct UpdatePathTask {
-    task: Task<Option<PathResult>>,
-    target: PathTarget,
-}
+struct UpdatePathTask(Task<Option<Path>>);
 
 impl UpdatePathTask {
-    fn new(task: Task<Option<PathResult>>, target: PathTarget) -> Self {
-        Self { task, target }
-    }
-
-    fn target(&self) -> PathTarget {
-        self.target
+    fn new(task: Task<Option<Path>>) -> Self {
+        Self(task)
     }
 
     fn check(&mut self) -> UpdatePathState {
-        match future::block_on(future::poll_once(&mut self.task)) {
+        match future::block_on(future::poll_once(&mut self.0)) {
             Some(path) => UpdatePathState::Resolved(path),
             None => UpdatePathState::Processing,
         }
@@ -246,7 +220,7 @@ impl UpdatePathTask {
 }
 
 enum UpdatePathState {
-    Resolved(Option<PathResult>),
+    Resolved(Option<Path>),
     Processing,
 }
 
@@ -315,30 +289,34 @@ fn update_existing_paths(
     finder: Res<Arc<PathFinder>>,
     mut state: ResMut<UpdatePathsState>,
     mut events: EventReader<PathFinderUpdated>,
-    entities: Query<(Entity, &GlobalTransform, &PathResult)>,
+    entities: Query<(Entity, &GlobalTransform, &PathTarget, Option<&Path>)>,
 ) {
     if events.iter().count() == 0 {
         // consume the iterator
         return;
     }
 
-    for (entity, transform, path) in entities.iter() {
+    for (entity, transform, target, path) in entities.iter() {
+        let position = transform.translation.to_flat();
+        if path.is_none()
+            && position.distance(target.location())
+                <= (target.properties().distance() + TARGET_TOLERANCE)
+        {
+            continue;
+        }
+
         let new_target = PathTarget::new(
-            path.target().location(),
-            PathQueryProps::new(path.target().properties().distance(), f32::INFINITY),
+            target.location(),
+            PathQueryProps::new(target.properties().distance(), f32::INFINITY),
+            target.permanent(),
         );
 
-        state.spawn_new(
-            pool.as_ref(),
-            finder.clone(),
-            entity,
-            transform.translation.to_flat(),
-            new_target,
-        );
+        state.spawn_new(pool.as_ref(), finder.clone(), entity, position, new_target);
     }
 }
 
 fn update_requested_paths(
+    mut commands: Commands,
     pool: Res<AsyncComputeTaskPool>,
     finder: Res<Arc<PathFinder>>,
     mut state: ResMut<UpdatePathsState>,
@@ -347,6 +325,7 @@ fn update_requested_paths(
 ) {
     for event in events.iter() {
         if let Ok(transform) = entities.get(event.entity()) {
+            commands.entity(event.entity()).insert(event.target());
             state.spawn_new(
                 pool.as_ref(),
                 finder.clone(),
@@ -366,8 +345,19 @@ fn check_path_results(mut commands: Commands, mut state: ResMut<UpdatePathsState
                 entity_commands.insert(path);
             }
             None => {
-                entity_commands.remove::<PathResult>();
+                entity_commands.remove::<Path>();
             }
+        }
+    }
+}
+
+fn remove_path_targets(
+    mut commands: Commands,
+    entities: Query<(Entity, &PathTarget), Without<Path>>,
+) {
+    for (entity, target) in entities.iter() {
+        if !target.permanent() {
+            commands.entity(entity).remove::<PathTarget>();
         }
     }
 }
