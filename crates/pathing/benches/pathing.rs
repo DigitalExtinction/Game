@@ -118,7 +118,10 @@ fn find_path_benchmark(c: &mut Criterion) {
                 index = (index + 1) % points.len();
                 let target = points[index];
                 index = (index + 1) % points.len();
-                finder.find_path(start, PathTarget::new(target, PathQueryProps::new(0., 10.)));
+                finder.find_path(
+                    start,
+                    PathTarget::new(target, PathQueryProps::new(0., 10.), false),
+                );
             });
         });
     }

@@ -71,7 +71,7 @@ fn right_click_handler(
     for entity in selected.iter() {
         path_events.send(UpdateEntityPath::new(
             entity,
-            PathTarget::new(target, PathQueryProps::exact()),
+            PathTarget::new(target, PathQueryProps::exact(), false),
         ));
     }
 }

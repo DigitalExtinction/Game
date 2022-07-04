@@ -1,9 +1,11 @@
+use bevy::prelude::Component;
 use glam::Vec2;
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Component)]
 pub struct PathTarget {
     location: Vec2,
     properties: PathQueryProps,
+    permanent: bool,
 }
 
 impl PathTarget {
@@ -14,10 +16,14 @@ impl PathTarget {
     /// * `location` - desired target location of the path.
     ///
     /// * `properties` - configuration of the path search.
-    pub fn new(location: Vec2, properties: PathQueryProps) -> Self {
+    ///
+    /// * `permanent` - whether the entity should try to reach the target
+    ///   indefinitely.
+    pub fn new(location: Vec2, properties: PathQueryProps, permanent: bool) -> Self {
         Self {
             location,
             properties,
+            permanent,
         }
     }
 
@@ -27,6 +33,10 @@ impl PathTarget {
 
     pub fn properties(&self) -> PathQueryProps {
         self.properties
+    }
+
+    pub fn permanent(&self) -> bool {
+        self.permanent
     }
 }
 
