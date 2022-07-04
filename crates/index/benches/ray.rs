@@ -109,7 +109,7 @@ fn setup_world(num_entities: u32, max_distance: f32) -> World {
 
 fn cast_ray(mut rays: ResMut<Rays>, max_distance: Res<MaxDistance>, index: SpatialQuery<()>) {
     for ray in rays.as_mut() {
-        index.cast_ray(&ray, max_distance.0);
+        index.cast_ray(&ray, max_distance.0, None);
     }
 }
 
