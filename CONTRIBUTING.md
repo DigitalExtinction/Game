@@ -81,6 +81,8 @@ Topologically sorted crates:
 * [movement](/crates/movement) – entity movement, local dynamic obstacle
   avoidance, kinematics and similar.
 
+* [behaviour](/crates/behaviour) – unit level behaviour and AI.
+
 * [controller](/crates/controller) – handling of user input.
 
 ### Coordinate Systems
