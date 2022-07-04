@@ -5,7 +5,7 @@ use de_spawner::SpawnerLabels;
 use iyes_loopless::prelude::*;
 use parry3d::query::Ray;
 
-use crate::{sightline::LineOfSight, AttackingLabels};
+use crate::{beam::SpawnBeamEvent, sightline::LineOfSight, AttackingLabels};
 
 pub(crate) struct LaserPlugin;
 
@@ -15,7 +15,8 @@ impl Plugin for LaserPlugin {
             CoreStage::Update,
             fire.run_in_state(GameState::Playing)
                 .label(AttackingLabels::Fire)
-                .before(SpawnerLabels::Destroyer),
+                .before(SpawnerLabels::Destroyer)
+                .before(AttackingLabels::Beam),
         );
     }
 }
@@ -74,6 +75,7 @@ impl LaserFireEvent {
 
 fn fire(
     mut fires: EventReader<LaserFireEvent>,
+    mut beams: EventWriter<SpawnBeamEvent>,
     sightline: LineOfSight,
     mut susceptible: Query<&mut Health>,
 ) {
@@ -86,6 +88,10 @@ fn fire(
         }
 
         let observation = sightline.sight(fire.ray(), fire.max_toi(), fire.attacker());
+        beams.send(SpawnBeamEvent::new(Ray::new(
+            fire.ray().origin,
+            observation.toi() * fire.ray().dir,
+        )));
         if let Some(entity) = observation.entity() {
             susceptible.get_mut(entity).unwrap().hit(fire.damage());
         }

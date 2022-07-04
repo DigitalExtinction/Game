@@ -1,5 +1,6 @@
 pub use attack::AttackEvent;
 use attack::AttackPlugin;
+use beam::BeamPlugin;
 use bevy::{
     app::PluginGroupBuilder,
     prelude::{PluginGroup, SystemLabel},
@@ -7,6 +8,7 @@ use bevy::{
 use laser::LaserPlugin;
 
 mod attack;
+mod beam;
 mod laser;
 mod sightline;
 
@@ -14,7 +16,7 @@ pub struct AttackingPluginGroup;
 
 impl PluginGroup for AttackingPluginGroup {
     fn build(&mut self, group: &mut PluginGroupBuilder) {
-        group.add(LaserPlugin).add(AttackPlugin);
+        group.add(LaserPlugin).add(AttackPlugin).add(BeamPlugin);
     }
 }
 
@@ -24,4 +26,5 @@ pub enum AttackingLabels {
     Update,
     Aim,
     Fire,
+    Beam,
 }
