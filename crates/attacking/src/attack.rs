@@ -10,31 +10,80 @@ use parry3d::query::Ray;
 use crate::laser::LaserFireEvent;
 use crate::{sightline::LineOfSight, AttackingLabels};
 
+/// Multiple of cannon range. The attacking entities will try to stay as close
+/// or further from attacked targets.
+const MIN_CHASE_DISTNACE: f32 = 0.4;
+/// Multiple of cannon range. The attacking entities will try to stay as close
+/// or closer from attacked targets.
+const MAX_CHASE_DISTNACE: f32 = 0.9;
+
 pub(crate) struct AttackPlugin;
 
 impl Plugin for AttackPlugin {
     fn build(&self, app: &mut App) {
-        app.add_system_set_to_stage(
-            CoreStage::Update,
-            SystemSet::new()
-                .with_system(
-                    update
-                        .run_in_state(GameState::Playing)
-                        .label(AttackingLabels::Update),
-                )
-                .with_system(
-                    aim_and_fire
-                        .run_in_state(GameState::Playing)
-                        .label(AttackingLabels::Aim)
-                        .after(AttackingLabels::Update)
-                        .before(AttackingLabels::Fire),
-                ),
-        );
+        app.add_event::<AttackEvent>()
+            .add_system_to_stage(
+                CoreStage::PreUpdate,
+                attack
+                    .run_in_state(GameState::Playing)
+                    .label(AttackingLabels::Attack),
+            )
+            .add_system_set_to_stage(
+                CoreStage::Update,
+                SystemSet::new()
+                    .with_system(
+                        update
+                            .run_in_state(GameState::Playing)
+                            .label(AttackingLabels::Update),
+                    )
+                    .with_system(
+                        aim_and_fire
+                            .run_in_state(GameState::Playing)
+                            .label(AttackingLabels::Aim)
+                            .after(AttackingLabels::Update)
+                            .before(AttackingLabels::Fire),
+                    ),
+            );
+    }
+}
+
+pub struct AttackEvent {
+    attacker: Entity,
+    enemy: Entity,
+}
+
+impl AttackEvent {
+    pub fn new(attacker: Entity, enemy: Entity) -> Self {
+        Self { attacker, enemy }
+    }
+
+    fn attacker(&self) -> Entity {
+        self.attacker
+    }
+
+    fn enemy(&self) -> Entity {
+        self.enemy
     }
 }
 
 #[derive(Component)]
 struct Attacking;
+
+fn attack(
+    mut commands: Commands,
+    mut events: EventReader<AttackEvent>,
+    cannons: Query<&LaserCannon>,
+) {
+    for event in events.iter() {
+        if let Ok(cannon) = cannons.get(event.attacker()) {
+            commands.entity(event.attacker()).insert(ChaseTarget::new(
+                event.enemy(),
+                MIN_CHASE_DISTNACE * cannon.range(),
+                MAX_CHASE_DISTNACE * cannon.range(),
+            ));
+        }
+    }
+}
 
 fn update(time: Res<Time>, mut cannons: Query<&mut LaserCannon, With<Attacking>>) {
     for mut cannon in cannons.iter_mut() {

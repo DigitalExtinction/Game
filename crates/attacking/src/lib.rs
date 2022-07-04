@@ -1,3 +1,4 @@
+pub use attack::AttackEvent;
 use attack::AttackPlugin;
 use bevy::{
     app::PluginGroupBuilder,
@@ -18,7 +19,8 @@ impl PluginGroup for AttackingPluginGroup {
 }
 
 #[derive(Copy, Clone, Hash, Debug, PartialEq, Eq, SystemLabel)]
-enum AttackingLabels {
+pub enum AttackingLabels {
+    Attack,
     Update,
     Aim,
     Fire,

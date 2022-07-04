@@ -2,9 +2,12 @@ use bevy::{
     input::{keyboard::KeyboardInput, mouse::MouseButtonInput, ElementState},
     prelude::*,
 };
+use de_attacking::{AttackEvent, AttackingLabels};
 use de_behaviour::ChaseTarget;
 use de_core::{
+    gconfig::GameConfig,
     objects::{BuildingType, MovableSolid, Playable},
+    player::Player,
     projection::ToFlat,
 };
 use de_pathing::{PathQueryProps, PathTarget, UpdateEntityPath};
@@ -30,7 +33,8 @@ impl Plugin for CommandPlugin {
                     right_click_handler
                         .run_if(on_pressed(MouseButton::Right))
                         .label(Labels::InputUpdate)
-                        .after(Labels::PreInputUpdate),
+                        .after(Labels::PreInputUpdate)
+                        .before(AttackingLabels::Attack),
                 )
                 .with_system(
                     left_click_handler
@@ -64,24 +68,41 @@ type SelectedQuery<'w, 's> =
 
 fn right_click_handler(
     mut commands: Commands,
+    config: Res<GameConfig>,
     mut path_events: EventWriter<UpdateEntityPath>,
+    mut attack_events: EventWriter<AttackEvent>,
     selected: SelectedQuery,
+    targets: Query<&Player>,
     pointer: Res<Pointer>,
 ) {
-    let target = match pointer.terrain_point() {
-        Some(point) => point.to_flat(),
-        None => return,
-    };
-
-    for (entity, chase) in selected.iter() {
-        if chase.is_some() {
-            commands.entity(entity).remove::<ChaseTarget>();
+    match pointer.entity().filter(|&entity| {
+        targets
+            .get(entity)
+            .map(|&player| !config.is_local_player(player))
+            .unwrap_or(false)
+    }) {
+        Some(enemy) => {
+            for (attacker, _) in selected.iter() {
+                attack_events.send(AttackEvent::new(attacker, enemy));
+            }
         }
+        None => {
+            let target = match pointer.terrain_point() {
+                Some(point) => point.to_flat(),
+                None => return,
+            };
 
-        path_events.send(UpdateEntityPath::new(
-            entity,
-            PathTarget::new(target, PathQueryProps::exact(), false),
-        ));
+            for (entity, chase) in selected.iter() {
+                if chase.is_some() {
+                    commands.entity(entity).remove::<ChaseTarget>();
+                }
+
+                path_events.send(UpdateEntityPath::new(
+                    entity,
+                    PathTarget::new(target, PathQueryProps::exact(), false),
+                ));
+            }
+        }
     }
 }
 
