@@ -32,5 +32,15 @@
       [7, 6, 5],
       [4, 7, 5]
     ]
+  },
+  "cannon": {
+    "muzzle": [
+      0.0,
+      1.0,
+      0.0
+    ],
+    "range": 50.0,
+    "damage": 3.0,
+    "recharge_interval": 2.5
   }
 }

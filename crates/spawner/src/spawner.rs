@@ -50,9 +50,10 @@ fn spawn(
     for (entity, &object_type, player) in to_spawn.iter() {
         info!("Spawning object {}", object_type);
 
+        let cache_item = cache.get(object_type);
         let mut entity_commands = commands.entity(entity);
         entity_commands.remove::<Spawn>().with_children(|parent| {
-            parent.spawn_scene(cache.get(object_type).scene());
+            parent.spawn_scene(cache_item.scene());
         });
 
         match object_type {
@@ -72,6 +73,9 @@ fn spawn(
                 }
 
                 entity_commands.insert(healths.health(active_type).clone());
+                if let Some(cannon) = cache_item.cannon() {
+                    entity_commands.insert(cannon.clone());
+                }
             }
             ObjectType::Inactive(_) => {
                 entity_commands.insert(StaticSolid);
