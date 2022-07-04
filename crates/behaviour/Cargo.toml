@@ -1,5 +1,5 @@
 [package]
-name = "de_controller"
+name = "de_behaviour"
 version = "0.1.0-dev"
 edition = "2021"
 authors = ["Martin Indra <martin.indra@mgn.cz>"]
@@ -8,15 +8,11 @@ repository = "https://github.com/DigitalExtinction/Game"
 [dependencies]
 # DE
 de_core = { path = "../core", version = "0.1.0-dev" }
-de_index = { path = "../index", version = "0.1.0-dev" }
-de_terrain = { path = "../terrain", version = "0.1.0-dev" }
+de_objects = { path = "../objects", version = "0.1.0-dev" }
 de_pathing = { path = "../pathing", version = "0.1.0-dev" }
-de_spawner = { path = "../spawner", version = "0.1.0-dev" }
-de_behaviour = { path = "../behaviour", version = "0.1.0-dev" }
 
 # Other
 bevy = "0.7.0"
 iyes_loopless = "0.5.1"
-glam = "^0.20.2"
+glam = "0.20.2"
 parry3d = "0.9.0"
-enum-map = "2.3.0"

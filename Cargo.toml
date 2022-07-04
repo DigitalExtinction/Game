@@ -17,6 +17,7 @@ de_spawner = { path = "crates/spawner", version = "0.1.0-dev" }
 de_movement = { path = "crates/movement", version = "0.1.0-dev" }
 de_controller = { path = "crates/controller", version = "0.1.0-dev" }
 de_camera = { path = "crates/camera", version = "0.1.0-dev" }
+de_behaviour = { path = "crates/behaviour", version = "0.1.0-dev" }
 
 # Other
 bevy = "0.7.0"

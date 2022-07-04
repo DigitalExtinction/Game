@@ -1,4 +1,5 @@
 use bevy::{prelude::*, window::WindowMode};
+use de_behaviour::BehaviourPluginGroup;
 use de_camera::CameraPluginGroup;
 use de_controller::ControllerPluginGroup;
 use de_core::{gconfig::GameConfig, player::Player, state::GameState, CorePluginGroup};
@@ -29,6 +30,7 @@ fn main() {
         .add_plugins(MovementPluginGroup)
         .add_plugins(ControllerPluginGroup)
         .add_plugins(CameraPluginGroup)
+        .add_plugins(BehaviourPluginGroup)
         .run();
 }
 
