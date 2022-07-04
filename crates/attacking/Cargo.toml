@@ -12,6 +12,7 @@ de_objects = { path = "../objects", version = "0.1.0-dev" }
 de_terrain = { path = "../terrain", version = "0.1.0-dev" }
 de_index = { path = "../index", version = "0.1.0-dev" }
 de_spawner = { path = "../spawner", version = "0.1.0-dev" }
+de_behaviour = { path = "../behaviour", version = "0.1.0-dev" }
 
 # Other
 bevy = "0.7.0"

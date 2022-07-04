@@ -1619,6 +1619,7 @@ name = "de_attacking"
 version = "0.1.0-dev"
 dependencies = [
  "bevy",
+ "de_behaviour",
  "de_core",
  "de_index",
  "de_objects",

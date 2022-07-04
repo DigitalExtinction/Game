@@ -54,7 +54,7 @@ impl ChaseTarget {
         }
     }
 
-    fn entity(&self) -> Entity {
+    pub fn entity(&self) -> Entity {
         self.entity
     }
 
