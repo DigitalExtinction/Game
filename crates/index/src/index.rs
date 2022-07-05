@@ -126,10 +126,22 @@ where
 {
     /// Returns closest entity whose shape, as indexed by systems registered by
     /// [`super::systems::IndexPlugin`], intersects a given ray.
+    ///
+    /// # Arguments
+    ///
+    /// * `ray` - this method returns closest entity which is intersected by
+    ///   this ray up to a distance.
+    ///
+    /// * `max_toi` - maximum entity distance given as a multiple of ray
+    ///   direction.
+    ///
+    /// * `ignore` - if not None, this entity is not included in the possible
+    ///   intersections.
     pub fn cast_ray(
         &self,
         ray: &Ray,
         max_toi: f32,
+        ignore: Option<Entity>,
     ) -> Option<RayEntityIntersection<<<Q as WorldQuery>::ReadOnlyFetch as Fetch<'_, '_>>::Item>>
     {
         let candidate_sets = match self.index.cast_ray(ray, max_toi) {
@@ -140,7 +152,9 @@ where
         for candidates in candidate_sets {
             if let Some(intersection) = candidates
                 .iter()
-                .filter_map(|&candidate| match self.entities.get(candidate) {
+                .cloned()
+                .filter(|&candidate| ignore.map_or(true, |ignore| candidate != ignore))
+                .filter_map(|candidate| match self.entities.get(candidate) {
                     Ok(item) => self
                         .index
                         .get_collider(candidate)

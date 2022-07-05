@@ -87,7 +87,7 @@ fn mouse_move_handler(
 
     let entity = ray
         .as_ref()
-        .and_then(|ray| entities.cast_ray(ray, f32::INFINITY))
+        .and_then(|ray| entities.cast_ray(ray, f32::INFINITY, None))
         .map(|intersection| intersection.entity());
     resource.set_entity(entity);
 

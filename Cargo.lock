@@ -1735,6 +1735,7 @@ dependencies = [
  "bevy",
  "de_core",
  "enum-map",
+ "glam",
  "iyes_loopless",
  "iyes_progress",
  "parry2d",

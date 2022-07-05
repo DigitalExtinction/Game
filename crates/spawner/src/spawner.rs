@@ -7,7 +7,7 @@ use de_core::{
     player::Player,
     state::GameState,
 };
-use de_objects::ObjectCache;
+use de_objects::{InitialHealths, ObjectCache};
 use iyes_loopless::prelude::*;
 
 pub(crate) struct SpawnerPlugin;
@@ -44,14 +44,16 @@ fn spawn(
     mut commands: Commands,
     game_config: Res<GameConfig>,
     cache: Res<ObjectCache>,
+    healths: Res<InitialHealths>,
     to_spawn: Query<(Entity, &ObjectType, Option<&Player>), With<Spawn>>,
 ) {
     for (entity, &object_type, player) in to_spawn.iter() {
         info!("Spawning object {}", object_type);
 
+        let cache_item = cache.get(object_type);
         let mut entity_commands = commands.entity(entity);
         entity_commands.remove::<Spawn>().with_children(|parent| {
-            parent.spawn_scene(cache.get(object_type).scene());
+            parent.spawn_scene(cache_item.scene());
         });
 
         match object_type {
@@ -68,6 +70,11 @@ fn spawn(
                     ActiveObjectType::Unit(_) => {
                         entity_commands.insert(MovableSolid);
                     }
+                }
+
+                entity_commands.insert(healths.health(active_type).clone());
+                if let Some(cannon) = cache_item.cannon() {
+                    entity_commands.insert(cannon.clone());
                 }
             }
             ObjectType::Inactive(_) => {

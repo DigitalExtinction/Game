@@ -15,7 +15,7 @@ use iyes_progress::prelude::*;
 use crate::{
     ichnography::Ichnography,
     loader::{ObjectInfo, ObjectLoader},
-    ObjectCollider,
+    LaserCannon, ObjectCollider,
 };
 
 pub(crate) struct CachePlugin;
@@ -68,11 +68,16 @@ pub struct CacheItem {
     scene: Handle<Scene>,
     ichnography: Ichnography,
     collider: ObjectCollider,
+    cannon: Option<LaserCannon>,
 }
 
 impl CacheItem {
     pub fn scene(&self) -> Handle<Scene> {
         self.scene.clone()
+    }
+
+    pub fn cannon(&self) -> Option<&LaserCannon> {
+        self.cannon.as_ref()
     }
 
     pub(crate) fn ichnography(&self) -> &Ichnography {
@@ -148,6 +153,7 @@ impl ItemLoader {
             scene: self.scene,
             ichnography: Ichnography::from(object_info.footprint()),
             collider: ObjectCollider::from(object_info.shape()),
+            cannon: object_info.cannon().map(LaserCannon::from),
         }
     }
 
