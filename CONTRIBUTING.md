@@ -83,6 +83,9 @@ Topologically sorted crates:
 
 * [behaviour](/crates/behaviour) – unit level behaviour and AI.
 
+* [attacking](/crates/attacking) – attacking, projectile & laser simulation and
+  similar.
+
 * [controller](/crates/controller) – handling of user input.
 
 ### Coordinate Systems

@@ -1,4 +1,5 @@
 use bevy::{prelude::*, window::WindowMode};
+use de_attacking::AttackingPluginGroup;
 use de_behaviour::BehaviourPluginGroup;
 use de_camera::CameraPluginGroup;
 use de_controller::ControllerPluginGroup;
@@ -31,6 +32,7 @@ fn main() {
         .add_plugins(ControllerPluginGroup)
         .add_plugins(CameraPluginGroup)
         .add_plugins(BehaviourPluginGroup)
+        .add_plugins(AttackingPluginGroup)
         .run();
 }
 
