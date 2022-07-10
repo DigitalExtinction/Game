@@ -1818,6 +1818,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "de_uom"
+version = "0.1.0-dev"
+dependencies = [
+ "approx",
+ "thiserror",
+]
+
+[[package]]
 name = "deflate"
 version = "0.8.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
