@@ -1651,6 +1651,7 @@ dependencies = [
  "de_core",
  "de_map",
  "de_terrain",
+ "de_uom",
  "iyes_loopless",
  "parry3d",
 ]
