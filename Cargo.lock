@@ -1651,6 +1651,7 @@ dependencies = [
  "de_core",
  "de_map",
  "de_terrain",
+ "de_uom",
  "iyes_loopless",
  "parry3d",
 ]
@@ -1815,6 +1816,14 @@ dependencies = [
  "clap 3.2.6",
  "gltf",
  "parry3d",
+]
+
+[[package]]
+name = "de_uom"
+version = "0.1.0-dev"
+dependencies = [
+ "approx",
+ "thiserror",
 ]
 
 [[package]]
