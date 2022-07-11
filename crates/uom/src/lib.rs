@@ -3,6 +3,8 @@
 pub use quantity::Quantity;
 pub use units::*;
 
+mod f32;
 mod quantity;
 mod radians;
 mod units;
+mod vec;

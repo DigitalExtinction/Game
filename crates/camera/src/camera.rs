@@ -9,6 +9,7 @@ use de_core::{events::ResendEventPlugin, projection::ToMsl, state::GameState};
 use de_map::size::MapBounds;
 use de_terrain::TerrainCollider;
 use de_uom::{InverseLogicalPixel, InverseSecond, LogicalPixel, Metre, Quantity, Radian, Second};
+use glam::Vec2;
 use iyes_loopless::prelude::*;
 use parry3d::{
     na::{Unit, Vector3},
@@ -18,24 +19,24 @@ use parry3d::{
 
 /// Horizontal camera movement is initiated if mouse cursor is within this
 /// distance to window edge.
-const MOVE_MARGIN: LogicalPixel = Quantity::new_unchecked(40.);
+const MOVE_MARGIN: LogicalPixel<f32> = Quantity::new_unchecked(40.);
 /// Camera moves horizontally at speed `distance * CAMERA_HORIZONTAL_SPEED`.
-const CAMERA_HORIZONTAL_SPEED: InverseSecond = Quantity::new_unchecked(2.0);
+const CAMERA_HORIZONTAL_SPEED: InverseSecond<Vec2> = Quantity::new_unchecked(2.0, 2.0);
 /// Minimum camera distance from terrain achievable with zooming along.
-const MIN_CAMERA_DISTANCE: Metre = Quantity::new_unchecked(20.);
+const MIN_CAMERA_DISTANCE: Metre<f32> = Quantity::new_unchecked(20.);
 /// Maximum camera distance from terrain achievable with zooming alone.
-const MAX_CAMERA_DISTANCE: Metre = Quantity::new_unchecked(100.);
+const MAX_CAMERA_DISTANCE: Metre<f32> = Quantity::new_unchecked(100.);
 /// Minimum temporary distance from terrain. Forward/backward camera motion is
 /// smooth within this range. Step adjustment is applied outside of this range.
-const HARD_MIN_CAMERA_DISTANCE: Metre = Quantity::new_unchecked(16.);
+const HARD_MIN_CAMERA_DISTANCE: Metre<f32> = Quantity::new_unchecked(16.);
 /// Maximum temporary distance from terrain. Forward/backward camera motion is
 /// smooth within this range. Step adjustment is applied outside of this range.
-const HARD_MAX_CAMERA_DISTANCE: Metre = Quantity::new_unchecked(110.);
+const HARD_MAX_CAMERA_DISTANCE: Metre<f32> = Quantity::new_unchecked(110.);
 /// Camera moves along forward axis (zooming) at speed `distance *
 /// CAMERA_VERTICAL_SPEED`.
-const CAMERA_VERTICAL_SPEED: InverseSecond = Quantity::new_unchecked(2.0);
+const CAMERA_VERTICAL_SPEED: InverseSecond<f32> = Quantity::new_unchecked(2.0);
 /// Do not zoom camera if it is within this distance of the desired distance.
-const DISTANCE_TOLERATION: Metre = Quantity::new_unchecked(0.001);
+const DISTANCE_TOLERATION: Metre<f32> = Quantity::new_unchecked(0.001);
 /// Scale factor (i.e `distance * factor`) applied after single mouse wheel
 /// click.
 const WHEEL_ZOOM_FACTOR: f32 = 1.1;
@@ -43,14 +44,14 @@ const WHEEL_ZOOM_FACTOR: f32 = 1.1;
 /// on touch pad.
 const TOUCH_PAD_ZOOM_FACTOR: f32 = 1.01;
 /// Minimum camera tilt in radians.
-const MIN_OFF_NADIR: Radian = Quantity::new_unchecked(0.001);
+const MIN_OFF_NADIR: Radian<f32> = Quantity::new_unchecked(0.001);
 /// Maximum camera tilt in radians.
-const MAX_OFF_NADIR: Radian = Quantity::new_unchecked(0.7 * FRAC_PI_2);
+const MAX_OFF_NADIR: Radian<f32> = Quantity::new_unchecked(0.7 * FRAC_PI_2);
 /// Mouse drag by `d` logical pixels will lead to rotation by `d *
 /// ROTATION_SENSITIVITY` radians.
-const ROTATION_SENSITIVITY: InverseLogicalPixel = Quantity::new_unchecked(0.008);
+const ROTATION_SENSITIVITY: InverseLogicalPixel<Vec2> = Quantity::new_unchecked(0.008, 0.008);
 /// Never move camera focus point closer than this to a map edge.
-const MAP_FOCUS_MARGIN: Metre = Quantity::new_unchecked(1.);
+const MAP_FOCUS_MARGIN: Metre<f32> = Quantity::new_unchecked(1.);
 
 pub(crate) struct CameraPlugin;
 
@@ -132,7 +133,7 @@ impl MoveFocusEvent {
 
 struct CameraFocus {
     point: Vec3,
-    distance: Metre,
+    distance: Metre<f32>,
 }
 
 impl CameraFocus {
@@ -140,11 +141,11 @@ impl CameraFocus {
         self.point
     }
 
-    fn distance(&self) -> Metre {
+    fn distance(&self) -> Metre<f32> {
         self.distance
     }
 
-    fn update<V: Into<Vec3>>(&mut self, point: V, distance: Metre) {
+    fn update<V: Into<Vec3>>(&mut self, point: V, distance: Metre<f32>) {
         self.point = point.into();
         self.distance = distance;
     }
@@ -153,7 +154,7 @@ impl CameraFocus {
         self.point = point;
     }
 
-    fn update_distance(&mut self, forward_move: Metre) {
+    fn update_distance(&mut self, forward_move: Metre<f32>) {
         self.distance -= forward_move;
     }
 }
@@ -190,21 +191,21 @@ impl HorizontalMovement {
 }
 
 struct DesiredPoW {
-    distance: Metre,
-    off_nadir: Radian,
-    azimuth: Radian,
+    distance: Metre<f32>,
+    off_nadir: Radian<f32>,
+    azimuth: Radian<f32>,
 }
 
 impl DesiredPoW {
-    fn distance(&self) -> Metre {
+    fn distance(&self) -> Metre<f32> {
         self.distance
     }
 
-    fn off_nadir(&self) -> Radian {
+    fn off_nadir(&self) -> Radian<f32> {
         self.off_nadir
     }
 
-    fn azimuth(&self) -> Radian {
+    fn azimuth(&self) -> Radian<f32> {
         self.azimuth
     }
 
@@ -212,11 +213,11 @@ impl DesiredPoW {
         self.distance = (self.distance * factor).clamp(MIN_CAMERA_DISTANCE, MAX_CAMERA_DISTANCE);
     }
 
-    fn tilt_clamped(&mut self, delta: Radian) {
+    fn tilt_clamped(&mut self, delta: Radian<f32>) {
         self.off_nadir = (self.off_nadir + delta).clamp(MIN_OFF_NADIR, MAX_OFF_NADIR);
     }
 
-    fn rotate(&mut self, delta: Radian) {
+    fn rotate(&mut self, delta: Radian<f32>) {
         self.azimuth = (self.azimuth + delta).normalized();
     }
 }
@@ -225,8 +226,8 @@ fn setup(mut commands: Commands) {
     commands.insert_resource(HorizontalMovement::default());
     commands.insert_resource(DesiredPoW {
         distance: MAX_CAMERA_DISTANCE,
-        off_nadir: Radian::ZERO,
-        azimuth: Radian::ZERO,
+        off_nadir: Radian::<f32>::ZERO,
+        azimuth: Radian::<f32>::ZERO,
     });
     commands.insert_resource(CameraFocus {
         point: Vec3::ZERO,
@@ -304,20 +305,22 @@ fn move_horizontaly(
         .distance()
         .clamp(MIN_CAMERA_DISTANCE, MAX_CAMERA_DISTANCE);
     let time_delta = Second::try_from(time.delta().as_secs_f32()).unwrap();
-    let delta_scalar: f32 = (time_delta * CAMERA_HORIZONTAL_SPEED * distance_factor).into();
+    let directions = distance_factor * (time_delta * CAMERA_HORIZONTAL_SPEED);
     let delta_vec = match direction {
-        HorizontalMovementDirection::Left => -transform.local_x() * delta_scalar,
-        HorizontalMovementDirection::Right => transform.local_x() * delta_scalar,
-        HorizontalMovementDirection::Up => -transform.local_y() * delta_scalar,
-        HorizontalMovementDirection::Down => transform.local_y() * delta_scalar,
+        HorizontalMovementDirection::Left => -transform.local_x() * directions.x(),
+        HorizontalMovementDirection::Right => transform.local_x() * directions.x(),
+        HorizontalMovementDirection::Up => -transform.local_y() * directions.y(),
+        HorizontalMovementDirection::Down => transform.local_y() * directions.y(),
     };
 
-    let margin = Vec3::new(MAP_FOCUS_MARGIN.into(), 0., MAP_FOCUS_MARGIN.into());
-    let focus_msl: Vec3 = focus.point().to_msl();
+    let margin = MAP_FOCUS_MARGIN * Vec3::new(1., 0., 1.);
+    let focus_msl: Metre<Vec3> = focus.point().to_msl().try_into().unwrap();
     let map_bounds = map_bounds.aabb().to_msl();
-    let min_delta_vec = (Vec3::from(map_bounds.mins) - focus_msl + margin).min(Vec3::ZERO);
-    let max_delta_vec = (Vec3::from(map_bounds.maxs) - focus_msl - margin).max(Vec3::ZERO);
-    transform.translation += delta_vec.clamp(min_delta_vec, max_delta_vec);
+    let map_min: Metre<Vec3> = Vec3::from(map_bounds.mins).try_into().unwrap();
+    let map_max: Metre<Vec3> = Vec3::from(map_bounds.maxs).try_into().unwrap();
+    let min_delta_vec = (map_min - focus_msl + margin).min(Metre::<Vec3>::ZERO);
+    let max_delta_vec = (map_max - focus_msl - margin).max(Metre::<Vec3>::ZERO);
+    transform.translation += Vec3::from(delta_vec.clamp(min_delta_vec, max_delta_vec));
     event.send(FocusInvalidatedEvent);
 }
 
@@ -328,12 +331,12 @@ fn zoom(
     mut camera_query: Query<&mut Transform, With<Camera3d>>,
 ) {
     let mut delta_scalar = focus.distance() - HARD_MAX_CAMERA_DISTANCE;
-    if delta_scalar <= Metre::ZERO {
+    if delta_scalar <= Metre::<f32>::ZERO {
         // Camera is not further than HARD_MAX_CAMERA_DISTANCE => zoom out to
         // HARD_MIN_CAMERA_DISTANCE.
-        delta_scalar = (focus.distance() - HARD_MIN_CAMERA_DISTANCE).min(Metre::ZERO);
+        delta_scalar = (focus.distance() - HARD_MIN_CAMERA_DISTANCE).min(Metre::<f32>::ZERO);
     }
-    if delta_scalar == Metre::ZERO {
+    if delta_scalar == Metre::<f32>::ZERO {
         // Camera is within HARD_MIN_CAMERA_DISTANCE and
         // HARD_MAX_CAMERA_DISTANCE => move smoothly to desired distance.
 
@@ -429,9 +432,9 @@ fn pivot_event(
         return;
     }
 
-    let delta_x = LogicalPixel::try_from(delta.x).unwrap();
-    let delta_y = LogicalPixel::try_from(delta.y).unwrap();
-    desired_pow.rotate(Radian::ONE * (ROTATION_SENSITIVITY * delta_x));
-    desired_pow.tilt_clamped(-Radian::ONE * (ROTATION_SENSITIVITY * delta_y));
+    let delta = LogicalPixel::try_from(delta).unwrap();
+    let rotation = Radian::<Vec2>::ONE * (ROTATION_SENSITIVITY * delta);
+    desired_pow.rotate(rotation.x());
+    desired_pow.tilt_clamped(-rotation.y());
     pivot_event.send(PivotEvent);
 }

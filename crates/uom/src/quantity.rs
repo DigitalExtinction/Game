@@ -1,5 +1,5 @@
 use std::{
-    cmp::{Ord, Ordering},
+    cmp::Ordering,
     ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Neg, Sub, SubAssign},
 };
 
@@ -13,45 +13,31 @@ pub enum QuantityValueError {
     NaN,
 }
 
+pub trait QuantityValue: Copy {
+    fn validate(self) -> Result<(), QuantityValueError>;
+}
+
 /// A quantity with associated units.
 ///
 /// The units are either base SI units and several extensions (for example m,
 /// s, px) or derived units (for example rad, m/s⁻²). Only unit powers up to
 /// +/-7 are supported: id est m² or m⁻² are supported but m⁸ is not.
 #[derive(Debug)]
-pub struct Quantity<const U: Unit>(pub(crate) f32);
+pub struct Quantity<V: QuantityValue, const U: Unit>(pub(crate) V);
 
-impl<const U: Unit> Quantity<U> {
-    pub const ZERO: Self = Quantity(0.);
-    pub const ONE: Self = Quantity(1.);
-
-    /// Creates a new quantity without checking the value.
-    ///
-    /// It is expected that the value is not a NaN. If NaN is given, the type
-    /// might behave strangely or panic during some of the operations.
-    pub const fn new_unchecked(value: f32) -> Self {
-        Self(value)
-    }
-
+impl<V: QuantityValue, const U: Unit> Quantity<V, U> {
     /// Crates a new quantity.
     ///
     /// # Panics
     ///
     /// Panics if `value` is NaN.
-    pub(crate) fn new(value: f32) -> Self {
+    pub(crate) fn new(value: V) -> Self {
         panic_on_invalid(value);
         Self(value)
     }
-
-    /// Returns a new quantity with absolute value of `self`.
-    pub fn abs(&self) -> Self {
-        #[cfg(debug_assertions)]
-        panic_on_invalid(self.0);
-        Self::new(self.0.abs())
-    }
 }
 
-impl<const U: Unit> Clone for Quantity<U> {
+impl<V: QuantityValue, const U: Unit> Clone for Quantity<V, U> {
     fn clone(&self) -> Self {
         #[cfg(debug_assertions)]
         panic_on_invalid(self.0);
@@ -59,9 +45,9 @@ impl<const U: Unit> Clone for Quantity<U> {
     }
 }
 
-impl<const U: Unit> Copy for Quantity<U> {}
+impl<V: QuantityValue, const U: Unit> Copy for Quantity<V, U> {}
 
-impl<const U: Unit> PartialEq for Quantity<U> {
+impl<V: QuantityValue + PartialEq, const U: Unit> PartialEq for Quantity<V, U> {
     fn eq(&self, other: &Self) -> bool {
         #[cfg(debug_assertions)]
         panic_on_invalid(self.0);
@@ -71,29 +57,7 @@ impl<const U: Unit> PartialEq for Quantity<U> {
     }
 }
 
-impl<const U: Unit> From<Quantity<U>> for f32 {
-    fn from(quantity: Quantity<U>) -> f32 {
-        #[cfg(debug_assertions)]
-        panic_on_invalid(quantity.0);
-        quantity.0
-    }
-}
-
-impl<const U: Unit> TryFrom<f32> for Quantity<U> {
-    type Error = QuantityValueError;
-
-    fn try_from(value: f32) -> Result<Self, Self::Error> {
-        if value.is_nan() {
-            Err(QuantityValueError::NaN)
-        } else {
-            Ok(Self(value))
-        }
-    }
-}
-
-impl<const U: Unit> Eq for Quantity<U> {}
-
-impl<const U: Unit> PartialOrd for Quantity<U> {
+impl<V: QuantityValue + PartialOrd, const U: Unit> PartialOrd for Quantity<V, U> {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
         #[cfg(debug_assertions)]
         panic_on_invalid(self.0);
@@ -103,17 +67,7 @@ impl<const U: Unit> PartialOrd for Quantity<U> {
     }
 }
 
-impl<const U: Unit> Ord for Quantity<U> {
-    fn cmp(&self, other: &Self) -> Ordering {
-        #[cfg(debug_assertions)]
-        panic_on_invalid(self.0);
-        #[cfg(debug_assertions)]
-        panic_on_invalid(other.0);
-        self.0.partial_cmp(&other.0).unwrap()
-    }
-}
-
-impl<const U: Unit> Neg for Quantity<U> {
+impl<V: QuantityValue + Neg<Output = V>, const U: Unit> Neg for Quantity<V, U> {
     type Output = Self;
 
     fn neg(self) -> Self {
@@ -123,7 +77,7 @@ impl<const U: Unit> Neg for Quantity<U> {
     }
 }
 
-impl<const U: Unit> Add for Quantity<U> {
+impl<V: QuantityValue + Add<Output = V>, const U: Unit> Add for Quantity<V, U> {
     type Output = Self;
 
     fn add(self, other: Self) -> Self {
@@ -135,7 +89,7 @@ impl<const U: Unit> Add for Quantity<U> {
     }
 }
 
-impl<const U: Unit> Sub for Quantity<U> {
+impl<V: QuantityValue + Sub<Output = V>, const U: Unit> Sub for Quantity<V, U> {
     type Output = Self;
 
     fn sub(self, other: Self) -> Self {
@@ -147,7 +101,7 @@ impl<const U: Unit> Sub for Quantity<U> {
     }
 }
 
-impl<const U: Unit> AddAssign for Quantity<U> {
+impl<V: QuantityValue + AddAssign, const U: Unit> AddAssign for Quantity<V, U> {
     fn add_assign(&mut self, other: Self) {
         #[cfg(debug_assertions)]
         panic_on_invalid(self.0);
@@ -157,7 +111,7 @@ impl<const U: Unit> AddAssign for Quantity<U> {
     }
 }
 
-impl<const U: Unit> SubAssign for Quantity<U> {
+impl<V: QuantityValue + SubAssign, const U: Unit> SubAssign for Quantity<V, U> {
     fn sub_assign(&mut self, other: Self) {
         #[cfg(debug_assertions)]
         panic_on_invalid(self.0);
@@ -167,30 +121,35 @@ impl<const U: Unit> SubAssign for Quantity<U> {
     }
 }
 
-impl<const U: Unit> Mul<f32> for Quantity<U> {
-    type Output = Self;
+impl<R: QuantityValue, O: QuantityValue, V: QuantityValue + Mul<R, Output = O>, const U: Unit>
+    Mul<R> for Quantity<V, U>
+{
+    type Output = Quantity<O, U>;
 
-    fn mul(self, rhs: f32) -> Self {
-        Self::new(self.0 * rhs)
+    fn mul(self, rhs: R) -> Self::Output {
+        Self::Output::new(self.0 * rhs)
     }
 }
 
-impl<const U: Unit> Mul<Quantity<U>> for f32 {
-    type Output = Quantity<U>;
+impl<V: QuantityValue, const U: Unit> Mul<Quantity<V, U>> for f32
+where
+    f32: QuantityValue + Mul<V, Output = V>,
+{
+    type Output = Quantity<V, U>;
 
-    fn mul(self, rhs: Quantity<U>) -> Quantity<U> {
-        Quantity::<U>::new(self * rhs.0)
+    fn mul(self, rhs: Quantity<V, U>) -> Quantity<V, U> {
+        Quantity::<V, U>::new(self * rhs.0)
     }
 }
 
-impl<const U: Unit> MulAssign<f32> for Quantity<U> {
+impl<V: QuantityValue + MulAssign<f32>, const U: Unit> MulAssign<f32> for Quantity<V, U> {
     fn mul_assign(&mut self, rhs: f32) {
         self.0 *= rhs;
         panic_on_invalid(self.0);
     }
 }
 
-impl<const U: Unit> Div<f32> for Quantity<U> {
+impl<V: QuantityValue + Div<f32, Output = V>, const U: Unit> Div<f32> for Quantity<V, U> {
     type Output = Self;
 
     fn div(self, rhs: f32) -> Self {
@@ -198,7 +157,7 @@ impl<const U: Unit> Div<f32> for Quantity<U> {
     }
 }
 
-impl<const U: Unit> DivAssign<f32> for Quantity<U> {
+impl<V: QuantityValue + DivAssign<f32>, const U: Unit> DivAssign<f32> for Quantity<V, U> {
     fn div_assign(&mut self, rhs: f32) {
         self.0 /= rhs;
         panic_on_invalid(self.0);
@@ -206,9 +165,9 @@ impl<const U: Unit> DivAssign<f32> for Quantity<U> {
 }
 
 #[inline]
-fn panic_on_invalid(value: f32) {
-    if value.is_nan() {
-        panic!("Quantity cannot hold a NaN value");
+pub(crate) fn panic_on_invalid(value: impl QuantityValue) {
+    if let Err(error) = value.validate() {
+        panic!("{:?}", error);
     }
 }
 

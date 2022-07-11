@@ -1652,6 +1652,7 @@ dependencies = [
  "de_map",
  "de_terrain",
  "de_uom",
+ "glam",
  "iyes_loopless",
  "parry3d",
 ]
@@ -1823,6 +1824,7 @@ name = "de_uom"
 version = "0.1.0-dev"
 dependencies = [
  "approx",
+ "glam",
  "thiserror",
 ]
 

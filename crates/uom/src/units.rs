@@ -1,6 +1,6 @@
 use std::ops::Mul;
 
-use crate::quantity::{Quantity, Unit};
+use crate::quantity::{Quantity, QuantityValue, Unit};
 
 const DIMENSIONLESS: Unit = 0;
 const SECOND: Unit = 1;
@@ -13,35 +13,45 @@ const CANDELA: Unit = 1 << 18;
 const PIXEL: Unit = 1 << 21;
 
 // Base Units
-pub type Second = Quantity<SECOND>;
-pub type Metre = Quantity<METRE>;
-pub type Kilogram = Quantity<KILOGRAM>;
-pub type Ampere = Quantity<AMPERE>;
-pub type Kelvin = Quantity<KELVIN>;
-pub type Mole = Quantity<MOLE>;
-pub type Candela = Quantity<CANDELA>;
-pub type Pixel = Quantity<PIXEL>;
+pub type Second<V> = Quantity<V, SECOND>;
+pub type Metre<V> = Quantity<V, METRE>;
+pub type Kilogram<V> = Quantity<V, KILOGRAM>;
+pub type Ampere<V> = Quantity<V, AMPERE>;
+pub type Kelvin<V> = Quantity<V, KELVIN>;
+pub type Mole<V> = Quantity<V, MOLE>;
+pub type Candela<V> = Quantity<V, CANDELA>;
+pub type Pixel<V> = Quantity<V, PIXEL>;
 
 // Derived units
-pub type InverseSecond = Quantity<{ -SECOND }>;
-pub type LogicalPixel = Quantity<PIXEL>;
-pub type InverseLogicalPixel = Quantity<{ -PIXEL }>;
-pub type Radian = Quantity<DIMENSIONLESS>;
+pub type InverseSecond<V> = Quantity<V, { -SECOND }>;
+pub type LogicalPixel<V> = Quantity<V, PIXEL>;
+pub type InverseLogicalPixel<V> = Quantity<V, { -PIXEL }>;
+pub type Radian<V> = Quantity<V, DIMENSIONLESS>;
 
 macro_rules! impl_mul_inverse {
     ($units:expr) => {
-        impl Mul<Quantity<{ -$units }>> for Quantity<$units> {
-            type Output = f32;
+        impl<V1, V2, O> Mul<Quantity<V2, { -$units }>> for Quantity<V1, $units>
+        where
+            V1: QuantityValue + Mul<V2, Output = O>,
+            V2: QuantityValue,
+            O: QuantityValue,
+        {
+            type Output = O;
 
-            fn mul(self, rhs: Quantity<{ -$units }>) -> Self::Output {
+            fn mul(self, rhs: Quantity<V2, { -$units }>) -> Self::Output {
                 self.0 * rhs.0
             }
         }
 
-        impl Mul<Quantity<$units>> for Quantity<{ -$units }> {
-            type Output = f32;
+        impl<V1, V2, O> Mul<Quantity<V2, $units>> for Quantity<V1, { -$units }>
+        where
+            V1: QuantityValue + Mul<V2, Output = O>,
+            V2: QuantityValue,
+            O: QuantityValue,
+        {
+            type Output = O;
 
-            fn mul(self, rhs: Quantity<$units>) -> Self::Output {
+            fn mul(self, rhs: Quantity<V2, $units>) -> Self::Output {
                 self.0 * rhs.0
             }
         }

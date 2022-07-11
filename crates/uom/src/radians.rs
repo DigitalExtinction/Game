@@ -2,7 +2,7 @@ use std::f32::consts::{FRAC_PI_2, TAU};
 
 use crate::units::Radian;
 
-impl Radian {
+impl Radian<f32> {
     /// The angle equal to π/2.
     pub const FRAC_PI_2: Self = Self(FRAC_PI_2);
 
