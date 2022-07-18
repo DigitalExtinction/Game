@@ -47,7 +47,7 @@ general direction for the future development. All changes and decisions shall
 go hand in hand with the spirit of the following goals.
 
 * Develop a forever free (as in free speech) and open source RTS game. A game
-  without the restrains of commercial development – no marketing motivated
+  without the restraints of commercial development – no marketing motivated
   features, no dopamine traps, no in-game purchases…
 
 * Design an original game, not yet another clone of an existing (and often a
