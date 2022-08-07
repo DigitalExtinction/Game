@@ -34,11 +34,7 @@ impl Plugin for MapLoaderPlugin {
 
 struct MapLoadingTask(Task<Result<Map, MapLoadingError>>);
 
-fn load_map_system(
-    mut commands: Commands,
-    thread_pool: Res<IoTaskPool>,
-    game_config: Res<GameConfig>,
-) {
+fn load_map_system(mut commands: Commands, game_config: Res<GameConfig>) {
     let map_path = if game_config.map_path().is_relative() {
         asset_path(game_config.map_path())
     } else {
@@ -46,7 +42,7 @@ fn load_map_system(
     };
 
     info!("Loading map from {}", map_path.display());
-    let task = thread_pool.spawn(async { load_map(map_path).await });
+    let task = IoTaskPool::get().spawn(async { load_map(map_path).await });
     commands.insert_resource(MapLoadingTask(task));
 }
 

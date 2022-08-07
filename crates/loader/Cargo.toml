@@ -14,7 +14,7 @@ de_spawner = { path = "../spawner", version = "0.1.0-dev" }
 de_camera = { path = "../camera", version = "0.1.0-dev" }
 
 # Other
-bevy = "0.7.0"
-iyes_loopless = "0.5.1"
-iyes_progress = { version = "0.3.0", features = [ "iyes_loopless" ] }
+bevy = "0.8"
+iyes_loopless = "0.7"
+iyes_progress = { version = "0.4", features = [ "iyes_loopless" ] }
 futures-lite = "1.11"

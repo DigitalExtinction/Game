@@ -13,6 +13,6 @@ de_map = { path = "../map", version = "0.1.0-dev" }
 de_terrain = { path = "../terrain", version = "0.1.0-dev" }
 
 # Other
-bevy = "0.7.0"
-iyes_loopless = "0.5.1"
+bevy = "0.8"
+iyes_loopless = "0.7"
 parry3d = "0.9.0"

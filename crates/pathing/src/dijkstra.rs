@@ -3,7 +3,7 @@
 use std::{cmp::Ordering, collections::BinaryHeap};
 
 use ahash::AHashSet;
-use bevy::core::FloatOrd;
+use bevy::utils::FloatOrd;
 use parry2d::{math::Point, na, query::PointQuery, shape::Segment};
 
 use crate::{

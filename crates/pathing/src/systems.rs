@@ -127,19 +127,15 @@ impl UpdateFinderState {
         self.invalid && self.task.is_none()
     }
 
-    fn spawn_update<'a, T>(
-        &mut self,
-        pool: &AsyncComputeTaskPool,
-        cache: ObjectCache,
-        bounds: MapBounds,
-        entities: T,
-    ) where
+    fn spawn_update<'a, T>(&mut self, cache: ObjectCache, bounds: MapBounds, entities: T)
+    where
         T: Iterator<Item = (&'a GlobalTransform, &'a ObjectType)>,
     {
         debug_assert!(self.task.is_none());
         let entities: Vec<(GlobalTransform, ObjectType)> = entities
             .map(|(transform, object_type)| (*transform, *object_type))
             .collect();
+        let pool = AsyncComputeTaskPool::get();
         self.task = Some(pool.spawn(async move { create_finder(cache, bounds, entities) }));
         self.invalid = false;
     }
@@ -172,12 +168,12 @@ struct UpdatePathsState {
 impl UpdatePathsState {
     fn spawn_new(
         &mut self,
-        pool: &AsyncComputeTaskPool,
         finder: Arc<PathFinder>,
         entity: Entity,
         source: Vec2,
         target: PathTarget,
     ) {
+        let pool = AsyncComputeTaskPool::get();
         let task = pool.spawn(async move { finder.find_path(source, target) });
         self.tasks.insert(entity, UpdatePathTask::new(task));
     }
@@ -245,14 +241,13 @@ fn check_updated(mut state: ResMut<UpdateFinderState>, changed: ChangedQuery) {
 
 fn update(
     mut state: ResMut<UpdateFinderState>,
-    pool: Res<AsyncComputeTaskPool>,
     bounds: Res<MapBounds>,
     cache: Res<ObjectCache>,
     entities: Query<(&GlobalTransform, &ObjectType), With<StaticSolid>>,
 ) {
     if state.should_update() {
         info!("Spawning path finder update task");
-        state.spawn_update(pool.as_ref(), cache.clone(), *bounds, entities.iter());
+        state.spawn_update(cache.clone(), *bounds, entities.iter());
     }
 }
 
@@ -285,7 +280,6 @@ pub fn create_finder(
 }
 
 fn update_existing_paths(
-    pool: Res<AsyncComputeTaskPool>,
     finder: Res<Arc<PathFinder>>,
     mut state: ResMut<UpdatePathsState>,
     mut events: EventReader<PathFinderUpdated>,
@@ -297,7 +291,7 @@ fn update_existing_paths(
     }
 
     for (entity, transform, target, path) in entities.iter() {
-        let position = transform.translation.to_flat();
+        let position = transform.translation().to_flat();
         if path.is_none()
             && position.distance(target.location())
                 <= (target.properties().distance() + TARGET_TOLERANCE)
@@ -311,13 +305,12 @@ fn update_existing_paths(
             target.permanent(),
         );
 
-        state.spawn_new(pool.as_ref(), finder.clone(), entity, position, new_target);
+        state.spawn_new(finder.clone(), entity, position, new_target);
     }
 }
 
 fn update_requested_paths(
     mut commands: Commands,
-    pool: Res<AsyncComputeTaskPool>,
     finder: Res<Arc<PathFinder>>,
     mut state: ResMut<UpdatePathsState>,
     mut events: EventReader<UpdateEntityPath>,
@@ -327,10 +320,9 @@ fn update_requested_paths(
         if let Ok(transform) = entities.get(event.entity()) {
             commands.entity(event.entity()).insert(event.target());
             state.spawn_new(
-                pool.as_ref(),
                 finder.clone(),
                 event.entity(),
-                transform.translation.to_flat(),
+                transform.translation().to_flat(),
                 event.target(),
             );
         }

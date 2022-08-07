@@ -23,6 +23,8 @@ pub struct SpawnBundle {
     object_type: ObjectType,
     transform: Transform,
     global_transform: GlobalTransform,
+    visibility: Visibility,
+    computed_visibility: ComputedVisibility,
     spawn: Spawn,
 }
 
@@ -32,6 +34,8 @@ impl SpawnBundle {
             object_type,
             transform,
             global_transform: transform.into(),
+            visibility: Visibility::visible(),
+            computed_visibility: ComputedVisibility::not_visible(),
             spawn: Spawn,
         }
     }
@@ -52,9 +56,7 @@ fn spawn(
 
         let cache_item = cache.get(object_type);
         let mut entity_commands = commands.entity(entity);
-        entity_commands.remove::<Spawn>().with_children(|parent| {
-            parent.spawn_scene(cache_item.scene());
-        });
+        entity_commands.remove::<Spawn>().insert(cache_item.scene());
 
         match object_type {
             ObjectType::Active(active_type) => {

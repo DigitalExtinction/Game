@@ -86,10 +86,7 @@ fn insert(
     query: SolidEntityQuery,
 ) {
     for (entity, object_type, transform) in query.iter() {
-        let position = Isometry::new(
-            transform.translation.into(),
-            transform.rotation.to_scaled_axis().into(),
-        );
+        let position = Isometry::try_from(transform.compute_matrix()).unwrap();
         let collider = LocalCollider::new(cache.get_collider(*object_type).clone(), position);
         index.insert(entity, collider);
         commands.entity(entity).insert(Indexed);
@@ -104,10 +101,7 @@ fn remove(mut index: ResMut<EntityIndex>, removed: RemovedComponents<Indexed>) {
 
 fn update(mut index: ResMut<EntityIndex>, moved: MovedQuery) {
     for (entity, transform) in moved.iter() {
-        let position = Isometry::new(
-            transform.translation.into(),
-            transform.rotation.to_scaled_axis().into(),
-        );
+        let position = Isometry::try_from(transform.compute_matrix()).unwrap();
         index.update(entity, position);
     }
 }

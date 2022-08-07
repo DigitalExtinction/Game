@@ -1,6 +1,6 @@
 use std::hash::Hash;
 
-use bevy::core::FloatOrd;
+use bevy::utils::FloatOrd;
 use parry2d::shape::Segment;
 
 /// Line segment whose hash and equivalence class don't change with

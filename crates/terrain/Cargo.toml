@@ -10,6 +10,6 @@ repository = "https://github.com/DigitalExtinction/Game"
 de_map = { path = "../map", version = "0.1.0-dev" }
 
 # Other
-bevy = "0.7.0"
-glam = "^0.20.2"
+bevy = "0.8"
+glam = "0.21"
 parry3d = "0.9.0"

@@ -42,10 +42,7 @@ impl<'w, 's> TerrainCollider<'w, 's> {
         self.terrains
             .iter()
             .filter_map(|(terrain, transform)| {
-                let isometry = Isometry::new(
-                    transform.translation.into(),
-                    transform.rotation.to_scaled_axis().into(),
-                );
+                let isometry = Isometry::try_from(transform.compute_matrix()).unwrap();
                 terrain.cast_ray(&isometry, ray, max_toi)
             })
             .min_by(|a, b| {
@@ -86,17 +83,11 @@ mod test {
         world
             .spawn()
             .insert(Terrain::flat(MapBounds::new(Vec2::new(100., 200.))))
-            .insert(GlobalTransform {
-                translation: 10000. * Vec3::ONE,
-                ..Default::default()
-            });
+            .insert(GlobalTransform::from_translation(10000. * Vec3::ONE));
         world
             .spawn()
             .insert(Terrain::flat(MapBounds::new(Vec2::new(100., 200.))))
-            .insert(GlobalTransform {
-                translation: Vec3::new(-17., 3.2, -22.),
-                ..Default::default()
-            });
+            .insert(GlobalTransform::from_xyz(-17., 3.2, -22.));
 
         fn help_system(mut commands: Commands, terrain: TerrainCollider) {
             let ray = Ray::new(Vec3::new(0., 10., 0.).into(), Vec3::new(2., -1., 1.).into());

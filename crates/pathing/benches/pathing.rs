@@ -13,7 +13,7 @@ use de_core::objects::{ActiveObjectType, BuildingType, ObjectType};
 use de_map::size::MapBounds;
 use de_objects::{Ichnography, IchnographyCache};
 use de_pathing::{create_finder, PathQueryProps, PathTarget};
-use glam::{Vec2, Vec3};
+use glam::Vec2;
 use parry2d::{math::Point, shape::ConvexPolygon};
 
 const MAP_SIZE: f32 = 8000.;
@@ -66,10 +66,7 @@ fn load_entities(number: u32) -> Vec<(GlobalTransform, ObjectType)> {
         .iter()
         .map(|p| {
             (
-                GlobalTransform {
-                    translation: Vec3::new(p.x, 0., -p.y),
-                    ..Default::default()
-                },
+                GlobalTransform::from_xyz(p.x, 0., -p.y),
                 ObjectType::Active(ActiveObjectType::Building(BuildingType::Base)),
             )
         })

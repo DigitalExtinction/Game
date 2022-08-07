@@ -11,5 +11,5 @@ de_core = { path = "../core", version = "0.1.0-dev" }
 de_pathing = { path = "../pathing", version = "0.1.0-dev" }
 
 # Other
-bevy = "0.7.0"
-iyes_loopless = "0.5.1"
+bevy = "0.8"
+iyes_loopless = "0.7"
