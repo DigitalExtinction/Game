@@ -38,7 +38,11 @@ Clone, build & run recipe (will work in majority of the cases):
 * Open a question in [Q&A category of this repository's
   discussions](https://github.com/DigitalExtinction/Game/discussions/categories/q-a).
 
-* Ask a question on our [Discord server](https://discord.gg/vHMFuCWGSX).
+# Community
+
+* [Discord server](https://discord.gg/vHMFuCWGSX)
+
+* [Subreddit /r/DigitalExtinction/](https://www.reddit.com/r/DigitalExtinction/)
 
 # Goals
 
