@@ -3,7 +3,6 @@ use std::f32::consts::FRAC_PI_2;
 use bevy::{
     input::mouse::{MouseMotion, MouseScrollUnit, MouseWheel},
     prelude::*,
-    render::camera::Camera3d,
 };
 use de_core::{events::ResendEventPlugin, projection::ToMsl, state::GameState};
 use de_map::size::MapBounds;
@@ -232,7 +231,7 @@ fn setup(mut commands: Commands) {
         point: Vec3::ZERO,
         distance: MAX_CAMERA_DISTANCE,
     });
-    commands.spawn_bundle(PerspectiveCameraBundle {
+    commands.spawn_bundle(Camera3dBundle {
         transform: Transform::from_xyz(0.0, MAX_CAMERA_DISTANCE.into(), 0.0)
             .looking_at(Vec3::ZERO, -Vec3::Z),
         ..Default::default()
@@ -251,7 +250,7 @@ fn update_focus(
 
     let camera_transform = camera_query.single();
     let ray = Ray::new(
-        camera_transform.translation.into(),
+        camera_transform.translation().into(),
         camera_transform.forward().into(),
     );
 

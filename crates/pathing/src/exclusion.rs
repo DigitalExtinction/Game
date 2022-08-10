@@ -65,9 +65,9 @@ impl ExclusionArea {
     /// Creates a new exclusion area from a static object ichnography and its
     /// world-to-object transform.
     fn from_ichnography(transform: &GlobalTransform, ichnography: &Ichnography) -> Self {
-        let angle = transform.rotation.to_euler(EulerRot::YXZ).0;
-        let translation = transform.translation.to_flat();
-        let isometry = Isometry::new(translation.into(), angle);
+        let (_scale, rotation, translation) = transform.to_scale_rotation_translation();
+        let angle = rotation.to_euler(EulerRot::YXZ).0;
+        let isometry = Isometry::new(translation.to_flat().into(), angle);
         let vertices: Vec<Point<f32>> = ichnography
             .offset_convex_hull()
             .points()
@@ -147,16 +147,11 @@ impl SelectionFunction<ExclusionArea> for &ExclusionArea {
 
 #[cfg(test)]
 mod tests {
-    use glam::Vec3;
-
     use super::*;
 
     #[test]
     fn test_merge() {
-        let transform_a = GlobalTransform {
-            translation: Vec3::new(0., 0., -1.),
-            ..Default::default()
-        };
+        let transform_a = GlobalTransform::from_xyz(0., 0., -1.);
         let ichnography_a = Ichnography::new(
             ConvexPolygon::from_convex_hull(&[
                 Point::new(-2., 5.),

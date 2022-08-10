@@ -118,12 +118,12 @@ fn aim_and_fire(
                     .compute_aabb()
                     .center()
                     .into();
-                transform.translation + centroid
+                transform.translation() + centroid
             }
             Err(_) => continue,
         };
 
-        let muzzle = attacker_transform.translation + cannon.muzzle();
+        let muzzle = attacker_transform.translation() + cannon.muzzle();
         let to_target = (target_position - muzzle)
             .try_normalize()
             .expect("Attacker and target to close together");

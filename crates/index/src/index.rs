@@ -6,7 +6,7 @@ use std::cmp::Ordering;
 use ahash::AHashMap;
 use bevy::{
     ecs::{
-        query::{Fetch, FilterFetch, WorldQuery},
+        query::{Fetch, WorldQuery, WorldQueryGats},
         system::SystemParam,
     },
     prelude::{Entity, Query, Res},
@@ -112,7 +112,6 @@ pub struct SpatialQuery<'w, 's, Q, F = ()>
 where
     Q: WorldQuery + Sync + Send + 'static,
     F: WorldQuery + Sync + Send + 'static,
-    <F as WorldQuery>::Fetch: FilterFetch,
 {
     index: Res<'w, EntityIndex>,
     entities: Query<'w, 's, Q, F>,
@@ -122,7 +121,6 @@ impl<'w, 's, Q, F> SpatialQuery<'w, 's, Q, F>
 where
     Q: WorldQuery + Sync + Send + 'static,
     F: WorldQuery + Sync + Send + 'static,
-    <F as WorldQuery>::Fetch: FilterFetch,
 {
     /// Returns closest entity whose shape, as indexed by systems registered by
     /// [`super::systems::IndexPlugin`], intersects a given ray.
@@ -142,8 +140,11 @@ where
         ray: &Ray,
         max_toi: f32,
         ignore: Option<Entity>,
-    ) -> Option<RayEntityIntersection<<<Q as WorldQuery>::ReadOnlyFetch as Fetch<'_, '_>>::Item>>
-    {
+    ) -> Option<
+        RayEntityIntersection<
+            <<<Q as WorldQuery>::ReadOnly as WorldQueryGats<'_>>::Fetch as Fetch<'_>>::Item,
+        >,
+    > {
         let candidate_sets = match self.index.cast_ray(ray, max_toi) {
             Some(candidates) => candidates,
             None => return None,

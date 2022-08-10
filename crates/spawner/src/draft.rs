@@ -80,7 +80,10 @@ fn new_draft(mut commands: Commands, drafts: NonReadyDrafts, cache: Res<ObjectCa
             .entity(entity)
             .insert(Ready)
             .with_children(|parent| {
-                parent.spawn_scene(cache.get(*object_type).scene());
+                parent.spawn_bundle(SceneBundle {
+                    scene: cache.get(*object_type).scene(),
+                    ..Default::default()
+                });
             });
     }
 }

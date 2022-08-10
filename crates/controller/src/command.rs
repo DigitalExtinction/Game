@@ -1,5 +1,5 @@
 use bevy::{
-    input::{keyboard::KeyboardInput, mouse::MouseButtonInput, ElementState},
+    input::{keyboard::KeyboardInput, mouse::MouseButtonInput, ButtonState},
     prelude::*,
 };
 use de_attacking::{AttackEvent, AttackingLabels};
@@ -57,7 +57,7 @@ fn on_pressed(button: MouseButton) -> impl Fn(EventReader<MouseButtonInput>) -> 
         // used instead of .any()
         events
             .iter()
-            .filter(|e| e.button == button && e.state == ElementState::Pressed)
+            .filter(|e| e.button == button && e.state == ButtonState::Pressed)
             .count()
             > 0
     }
@@ -139,7 +139,7 @@ fn key_press_handler(
 ) {
     let key = match key_events
         .iter()
-        .filter(|e| e.state == ElementState::Pressed)
+        .filter(|e| e.state == ButtonState::Pressed)
         .last()
     {
         Some(event) => match event.key_code {

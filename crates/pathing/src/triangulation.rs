@@ -2,7 +2,7 @@
 //! triangulation of the accessible areas on the game map.
 
 use ahash::AHashMap;
-use bevy::core::FloatOrd;
+use bevy::utils::FloatOrd;
 use de_map::size::MapBounds;
 use de_objects::EXCLUSION_OFFSET;
 use parry2d::{
