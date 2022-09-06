@@ -1,5 +1,5 @@
 use bevy::prelude::*;
-use de_core::{projection::ToFlat, state::GameState};
+use de_core::{projection::ToFlat, stages::GameStage, state::GameState};
 use de_pathing::{PathQueryProps, PathTarget, UpdateEntityPath};
 use iyes_loopless::prelude::*;
 
@@ -8,7 +8,7 @@ pub(crate) struct ChasePlugin;
 impl Plugin for ChasePlugin {
     fn build(&self, app: &mut App) {
         app.add_system_set_to_stage(
-            CoreStage::Update,
+            GameStage::Update,
             SystemSet::new().with_system(chase.run_in_state(GameState::Playing)),
         );
     }

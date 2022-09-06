@@ -2,6 +2,7 @@ use bevy::prelude::*;
 use de_core::{
     gconfig::GameConfig,
     objects::{BuildingType, ObjectType},
+    stages::GameStage,
 };
 use de_spawner::{Draft, DraftBundle, SpawnBundle};
 
@@ -16,7 +17,7 @@ impl Plugin for DraftPlugin {
             .add_event::<NewDraftEvent>()
             .add_event::<DiscardDraftsEvent>()
             .add_system_set_to_stage(
-                CoreStage::PreUpdate,
+                GameStage::Input,
                 SystemSet::new()
                     .with_system(spawn.after(Labels::InputUpdate))
                     .with_system(new_drafts.after(Labels::InputUpdate))

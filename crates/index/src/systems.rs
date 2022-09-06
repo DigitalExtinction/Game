@@ -1,9 +1,10 @@
 //! Module with systems and a Bevy plugin for automatic entity indexing of
 //! solid entities.
 
-use bevy::{prelude::*, transform::TransformSystem};
+use bevy::prelude::*;
 use de_core::{
     objects::{MovableSolid, ObjectType, StaticSolid},
+    stages::GameStage,
     state::GameState,
 };
 use de_objects::{ColliderCache, ObjectCache};
@@ -16,7 +17,7 @@ use crate::collider::LocalCollider;
 type SolidEntityQuery<'w, 's> = Query<
     'w,
     's,
-    (Entity, &'static ObjectType, &'static GlobalTransform),
+    (Entity, &'static ObjectType, &'static Transform),
     (
         Without<Indexed>,
         Or<(With<StaticSolid>, With<MovableSolid>)>,
@@ -24,7 +25,7 @@ type SolidEntityQuery<'w, 's> = Query<
 >;
 
 type MovedQuery<'w, 's> =
-    Query<'w, 's, (Entity, &'static GlobalTransform), (With<Indexed>, Changed<GlobalTransform>)>;
+    Query<'w, 's, (Entity, &'static Transform), (With<Indexed>, Changed<Transform>)>;
 
 /// Bevy plugin which adds systems necessary for spatial indexing of solid
 /// entities.
@@ -35,31 +36,38 @@ type MovedQuery<'w, 's> =
 /// The systems are executed only in state
 /// [`de_core::state::GameState::Playing`]. The systems automatically insert
 /// newly spawned solid entities to the index, update their position when
-/// [`bevy::prelude::GlobalTransform`] is changed and remove the entities from
-/// the index when they are de-spawned.
-///
-/// Entity removal is done during stage
-/// [`bevy::prelude::CoreStage::PostUpdate`], thus entities removed during or
-/// after this stage might be missed and kept in the index even after their
-/// de-spawning.
+/// [`bevy::prelude::Transform`] is changed and remove the entities from the
+/// index when they are de-spawned.
 pub(crate) struct IndexPlugin;
 
 impl Plugin for IndexPlugin {
     fn build(&self, app: &mut App) {
         app.add_enter_system(GameState::Loading, setup)
             .add_exit_system(GameState::Playing, destruct)
-            .add_system(insert.run_in_state(GameState::Playing))
             .add_system_to_stage(
-                CoreStage::PostUpdate,
-                remove.run_in_state(GameState::Playing),
+                GameStage::PostUpdate,
+                insert
+                    .run_in_state(GameState::Playing)
+                    .label(IndexLabel::Index),
             )
             .add_system_to_stage(
-                CoreStage::PostUpdate,
+                GameStage::PostUpdate,
+                remove
+                    .run_in_state(GameState::Playing)
+                    .label(IndexLabel::Index),
+            )
+            .add_system_to_stage(
+                GameStage::PostMovement,
                 update
                     .run_in_state(GameState::Playing)
-                    .after(TransformSystem::TransformPropagate),
+                    .label(IndexLabel::Index),
             );
     }
+}
+
+#[derive(SystemLabel)]
+pub enum IndexLabel {
+    Index,
 }
 
 #[derive(Component)]
@@ -86,7 +94,10 @@ fn insert(
     query: SolidEntityQuery,
 ) {
     for (entity, object_type, transform) in query.iter() {
-        let position = Isometry::try_from(transform.compute_matrix()).unwrap();
+        let position = Isometry::new(
+            transform.translation.into(),
+            transform.rotation.to_scaled_axis().into(),
+        );
         let collider = LocalCollider::new(cache.get_collider(*object_type).clone(), position);
         index.insert(entity, collider);
         commands.entity(entity).insert(Indexed);
@@ -101,7 +112,10 @@ fn remove(mut index: ResMut<EntityIndex>, removed: RemovedComponents<Indexed>) {
 
 fn update(mut index: ResMut<EntityIndex>, moved: MovedQuery) {
     for (entity, transform) in moved.iter() {
-        let position = Isometry::try_from(transform.compute_matrix()).unwrap();
+        let position = Isometry::new(
+            transform.translation.into(),
+            transform.rotation.to_scaled_axis().into(),
+        );
         index.update(entity, position);
     }
 }

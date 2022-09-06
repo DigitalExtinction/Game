@@ -1,5 +1,5 @@
 use bevy::prelude::*;
-use de_core::state::GameState;
+use de_core::{stages::GameStage, state::GameState};
 use de_objects::Health;
 use de_spawner::SpawnerLabels;
 use iyes_loopless::prelude::*;
@@ -12,7 +12,7 @@ pub(crate) struct LaserPlugin;
 impl Plugin for LaserPlugin {
     fn build(&self, app: &mut App) {
         app.add_event::<LaserFireEvent>().add_system_to_stage(
-            CoreStage::Update,
+            GameStage::Update,
             fire.run_in_state(GameState::Playing)
                 .label(AttackingLabels::Fire)
                 .before(SpawnerLabels::Destroyer),

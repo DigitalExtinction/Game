@@ -1,5 +1,5 @@
 use bevy::{ecs::system::SystemParam, prelude::*, window::Windows};
-use de_core::state::GameState;
+use de_core::{stages::GameStage, state::GameState};
 use de_index::SpatialQuery;
 use de_terrain::TerrainCollider;
 use glam::{Vec2, Vec3};
@@ -13,7 +13,7 @@ pub(crate) struct PointerPlugin;
 impl Plugin for PointerPlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<Pointer>().add_system_to_stage(
-            CoreStage::PreUpdate,
+            GameStage::Input,
             mouse_move_handler
                 .run_in_state(GameState::Playing)
                 .label(Labels::PreInputUpdate),
