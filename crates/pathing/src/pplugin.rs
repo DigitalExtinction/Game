@@ -5,22 +5,14 @@ use bevy::{
     prelude::*,
     tasks::{AsyncComputeTaskPool, Task},
 };
-use de_core::{
-    objects::{MovableSolid, ObjectType, StaticSolid},
-    projection::ToFlat,
-    stages::GameStage,
-    state::GameState,
-};
-use de_map::size::MapBounds;
-use de_objects::{IchnographyCache, ObjectCache};
+use de_core::{objects::MovableSolid, projection::ToFlat, stages::GameStage, state::GameState};
 use futures_lite::future;
 use iyes_loopless::prelude::*;
 
 use crate::{
-    exclusion::ExclusionArea,
     finder::PathFinder,
+    fplugin::{FinderLabel, PathFinderUpdated},
     path::{Path, ScheduledPath},
-    triangulation::triangulate,
     PathQueryProps, PathTarget,
 };
 
@@ -30,42 +22,14 @@ pub struct PathingPlugin;
 
 impl Plugin for PathingPlugin {
     fn build(&self, app: &mut App) {
-        app.init_resource::<UpdateFinderState>()
-            .init_resource::<UpdatePathsState>()
+        app.init_resource::<UpdatePathsState>()
             .add_event::<UpdateEntityPath>()
-            .add_event::<PathFinderUpdated>()
-            .add_enter_system(GameState::Playing, setup)
-            .add_system_to_stage(
-                GameStage::PostUpdate,
-                check_removed
-                    .run_in_state(GameState::Playing)
-                    .label(PathingLabel::CheckRemoved),
-            )
-            .add_system_to_stage(
-                GameStage::PostUpdate,
-                check_updated
-                    .run_in_state(GameState::Playing)
-                    .label(PathingLabel::CheckUpdated),
-            )
-            .add_system_to_stage(
-                GameStage::PostUpdate,
-                update
-                    .run_in_state(GameState::Playing)
-                    .after(PathingLabel::CheckUpdated)
-                    .after(PathingLabel::CheckRemoved),
-            )
-            .add_system_to_stage(
-                GameStage::PreMovement,
-                check_update_result
-                    .run_in_state(GameState::Playing)
-                    .label(PathingLabel::CheckUpdateResult),
-            )
             .add_system_to_stage(
                 GameStage::PreMovement,
                 update_existing_paths
                     .run_in_state(GameState::Playing)
                     .label(PathingLabel::UpdateExistingPaths)
-                    .after(PathingLabel::CheckUpdateResult),
+                    .after(FinderLabel::UpdateFinder),
             )
             .add_system_to_stage(
                 GameStage::PreMovement,
@@ -83,9 +47,6 @@ impl Plugin for PathingPlugin {
 
 #[derive(SystemLabel)]
 enum PathingLabel {
-    CheckUpdateResult,
-    CheckRemoved,
-    CheckUpdated,
     UpdateExistingPaths,
 }
 
@@ -112,60 +73,6 @@ impl UpdateEntityPath {
 
     fn target(&self) -> PathTarget {
         self.target
-    }
-}
-
-/// This event is sent whenever the path finder is updated.
-///
-/// Paths found before the event was sent may no longer be optimal or may lead
-/// through non-accessible area.
-struct PathFinderUpdated;
-
-struct UpdateFinderState {
-    invalid: bool,
-    task: Option<Task<PathFinder>>,
-}
-
-impl UpdateFinderState {
-    fn invalidate(&mut self) {
-        self.invalid = true;
-    }
-
-    fn should_update(&self) -> bool {
-        self.invalid && self.task.is_none()
-    }
-
-    fn spawn_update<'a, T>(&mut self, cache: ObjectCache, bounds: MapBounds, entities: T)
-    where
-        T: Iterator<Item = (&'a Transform, &'a ObjectType)>,
-    {
-        debug_assert!(self.task.is_none());
-        let entities: Vec<(Transform, ObjectType)> = entities
-            .map(|(transform, object_type)| (*transform, *object_type))
-            .collect();
-        let pool = AsyncComputeTaskPool::get();
-        self.task = Some(pool.spawn(async move { create_finder(cache, bounds, entities) }));
-        self.invalid = false;
-    }
-
-    fn check_result(&mut self) -> Option<PathFinder> {
-        let finder = self
-            .task
-            .as_mut()
-            .and_then(|task| future::block_on(future::poll_once(task)));
-        if finder.is_some() {
-            self.task = None;
-        }
-        finder
-    }
-}
-
-impl Default for UpdateFinderState {
-    fn default() -> Self {
-        Self {
-            invalid: true,
-            task: None,
-        }
     }
 }
 
@@ -226,65 +133,6 @@ impl UpdatePathTask {
 enum UpdatePathState {
     Resolved(Option<Path>),
     Processing,
-}
-
-type ChangedQuery<'world, 'state> =
-    Query<'world, 'state, Entity, (With<StaticSolid>, Changed<Transform>)>;
-
-fn setup(mut commands: Commands, bounds: Res<MapBounds>) {
-    commands.insert_resource(Arc::new(PathFinder::new(bounds.as_ref())));
-}
-
-fn check_removed(mut state: ResMut<UpdateFinderState>, removed: RemovedComponents<StaticSolid>) {
-    if removed.iter().next().is_some() {
-        state.invalidate();
-    }
-}
-
-fn check_updated(mut state: ResMut<UpdateFinderState>, changed: ChangedQuery) {
-    if changed.iter().next().is_some() {
-        state.invalidate();
-    }
-}
-
-fn update(
-    mut state: ResMut<UpdateFinderState>,
-    bounds: Res<MapBounds>,
-    cache: Res<ObjectCache>,
-    entities: Query<(&Transform, &ObjectType), With<StaticSolid>>,
-) {
-    if state.should_update() {
-        info!("Spawning path finder update task");
-        state.spawn_update(cache.clone(), *bounds, entities.iter());
-    }
-}
-
-fn check_update_result(
-    mut commands: Commands,
-    mut state: ResMut<UpdateFinderState>,
-    mut pf_updated: EventWriter<PathFinderUpdated>,
-) {
-    if let Some(finder) = state.check_result() {
-        info!("Inserting updated path finder");
-        commands.insert_resource(Arc::new(finder));
-        pf_updated.send(PathFinderUpdated);
-    }
-}
-
-/// Creates a new path finder by triangulating accessible area on the map.
-// This function has to be public due to its benchmark.
-pub fn create_finder(
-    cache: impl IchnographyCache,
-    bounds: MapBounds,
-    entities: Vec<(Transform, ObjectType)>,
-) -> PathFinder {
-    debug!(
-        "Going to create a new path finder from {} entities",
-        entities.len()
-    );
-    let exclusions = ExclusionArea::build(cache, entities.as_slice());
-    let triangles = triangulate(&bounds, exclusions.as_slice());
-    PathFinder::from_triangles(triangles, exclusions)
 }
 
 fn update_existing_paths(
