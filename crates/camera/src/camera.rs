@@ -231,7 +231,7 @@ fn update_focus(
     mut event: EventReader<FocusInvalidatedEvent>,
     mut focus: ResMut<CameraFocus>,
     terrain: TerrainCollider,
-    camera_query: Query<&GlobalTransform, With<Camera3d>>,
+    camera_query: Query<&Transform, With<Camera3d>>,
 ) {
     if event.iter().count() == 0 {
         return;
@@ -239,7 +239,7 @@ fn update_focus(
 
     let camera_transform = camera_query.single();
     let ray = Ray::new(
-        camera_transform.translation().into(),
+        camera_transform.translation.into(),
         camera_transform.forward().into(),
     );
 

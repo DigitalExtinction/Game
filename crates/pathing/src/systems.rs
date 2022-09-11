@@ -134,10 +134,10 @@ impl UpdateFinderState {
 
     fn spawn_update<'a, T>(&mut self, cache: ObjectCache, bounds: MapBounds, entities: T)
     where
-        T: Iterator<Item = (&'a GlobalTransform, &'a ObjectType)>,
+        T: Iterator<Item = (&'a Transform, &'a ObjectType)>,
     {
         debug_assert!(self.task.is_none());
-        let entities: Vec<(GlobalTransform, ObjectType)> = entities
+        let entities: Vec<(Transform, ObjectType)> = entities
             .map(|(transform, object_type)| (*transform, *object_type))
             .collect();
         let pool = AsyncComputeTaskPool::get();
@@ -248,7 +248,7 @@ fn update(
     mut state: ResMut<UpdateFinderState>,
     bounds: Res<MapBounds>,
     cache: Res<ObjectCache>,
-    entities: Query<(&GlobalTransform, &ObjectType), With<StaticSolid>>,
+    entities: Query<(&Transform, &ObjectType), With<StaticSolid>>,
 ) {
     if state.should_update() {
         info!("Spawning path finder update task");
@@ -273,7 +273,7 @@ fn check_update_result(
 pub fn create_finder(
     cache: impl IchnographyCache,
     bounds: MapBounds,
-    entities: Vec<(GlobalTransform, ObjectType)>,
+    entities: Vec<(Transform, ObjectType)>,
 ) -> PathFinder {
     debug!(
         "Going to create a new path finder from {} entities",
@@ -288,7 +288,7 @@ fn update_existing_paths(
     finder: Res<Arc<PathFinder>>,
     mut state: ResMut<UpdatePathsState>,
     mut events: EventReader<PathFinderUpdated>,
-    entities: Query<(Entity, &GlobalTransform, &PathTarget, Option<&Path>)>,
+    entities: Query<(Entity, &Transform, &PathTarget, Option<&Path>)>,
 ) {
     if events.iter().count() == 0 {
         // consume the iterator
@@ -296,7 +296,7 @@ fn update_existing_paths(
     }
 
     for (entity, transform, target, path) in entities.iter() {
-        let position = transform.translation().to_flat();
+        let position = transform.translation.to_flat();
         if path.is_none()
             && position.distance(target.location())
                 <= (target.properties().distance() + TARGET_TOLERANCE)

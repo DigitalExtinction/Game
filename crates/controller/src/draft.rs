@@ -61,9 +61,7 @@ fn spawn(
     mut commands: Commands,
     game_config: Res<GameConfig>,
     mut events: EventReader<SpawnDraftsEvent>,
-    // Use global transform, since that is the one rendered in the last frame
-    // (and seen by the user) and checked for collisions.
-    drafts: Query<(Entity, &GlobalTransform, &ObjectType, &Draft)>,
+    drafts: Query<(Entity, &Transform, &ObjectType, &Draft)>,
 ) {
     if events.iter().count() == 0 {
         return;
@@ -73,7 +71,7 @@ fn spawn(
         if draft.allowed() {
             commands.entity(entity).despawn_recursive();
             commands
-                .spawn_bundle(SpawnBundle::new(object_type, transform.into()))
+                .spawn_bundle(SpawnBundle::new(object_type, transform))
                 .insert(game_config.player());
         }
     }

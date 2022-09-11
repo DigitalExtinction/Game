@@ -52,7 +52,7 @@ impl Pointer {
 #[derive(SystemParam)]
 struct MouseInWorld<'w, 's> {
     windows: Res<'w, Windows>,
-    cameras: Query<'w, 's, (&'static GlobalTransform, &'static Camera), With<Camera3d>>,
+    cameras: Query<'w, 's, (&'static Transform, &'static Camera), With<Camera3d>>,
 }
 
 impl<'w, 's> MouseInWorld<'w, 's> {
@@ -72,7 +72,7 @@ impl<'w, 's> MouseInWorld<'w, 's> {
         let (camera_transform, camera) = self.cameras.single();
         let ndc_to_world = camera_transform.compute_matrix() * camera.projection_matrix().inverse();
         let ray_origin = ndc_to_world.project_point3(cursor_position.extend(1.));
-        let ray_direction = ray_origin - camera_transform.translation();
+        let ray_direction = ray_origin - camera_transform.translation;
         Some(Ray::new(ray_origin.into(), ray_direction.into()))
     }
 }

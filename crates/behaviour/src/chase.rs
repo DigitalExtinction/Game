@@ -70,12 +70,12 @@ impl ChaseTarget {
 fn chase(
     mut commands: Commands,
     mut path_events: EventWriter<UpdateEntityPath>,
-    chasing: Query<(Entity, &GlobalTransform, &ChaseTarget, Option<&PathTarget>)>,
-    targets: Query<&GlobalTransform>,
+    chasing: Query<(Entity, &Transform, &ChaseTarget, Option<&PathTarget>)>,
+    targets: Query<&Transform>,
 ) {
     for (entity, transform, chase_target, path_target) in chasing.iter() {
         let target_position = match targets.get(chase_target.entity()) {
-            Ok(transform) => transform.translation().to_flat(),
+            Ok(transform) => transform.translation.to_flat(),
             Err(_) => {
                 commands.entity(entity).remove::<ChaseTarget>();
                 continue;
@@ -84,7 +84,7 @@ fn chase(
 
         let (path_target, distance) = path_target
             .map(|path_target| (path_target.location(), path_target.properties().distance()))
-            .unwrap_or((transform.translation().to_flat(), 0.));
+            .unwrap_or((transform.translation.to_flat(), 0.));
 
         if (target_position - path_target).length() + distance <= chase_target.max_distance() {
             continue;

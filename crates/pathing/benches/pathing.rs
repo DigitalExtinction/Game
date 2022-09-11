@@ -4,7 +4,7 @@ use std::{
     path::PathBuf,
 };
 
-use bevy::prelude::GlobalTransform;
+use bevy::prelude::Transform;
 use criterion::{
     criterion_group, criterion_main, AxisScale, BenchmarkId, Criterion, PlotConfiguration,
     Throughput,
@@ -61,12 +61,12 @@ fn load_points(number: u32) -> Vec<Vec2> {
     points
 }
 
-fn load_entities(number: u32) -> Vec<(GlobalTransform, ObjectType)> {
+fn load_entities(number: u32) -> Vec<(Transform, ObjectType)> {
     load_points(number)
         .iter()
         .map(|p| {
             (
-                GlobalTransform::from_xyz(p.x, 0., -p.y),
+                Transform::from_xyz(p.x, 0., -p.y),
                 ObjectType::Active(ActiveObjectType::Building(BuildingType::Base)),
             )
         })
