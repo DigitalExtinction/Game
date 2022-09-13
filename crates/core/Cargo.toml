@@ -4,6 +4,11 @@ version = "0.1.0-dev"
 edition = "2021"
 authors = ["Martin Indra <martin.indra@mgn.cz>"]
 repository = "https://github.com/DigitalExtinction/Game"
+keywords = ["DigitalExtinction", "gamedev", "game", "bevy", "3d"]
+homepage = "https://de-game.org/"
+description = "Various simple core utilities, structs, and so on for Digital Extinction."
+license = "GPL-3.0"
+categories = ["games"]
 
 [dependencies]
 serde = { version = "1.0", features = ["derive"] }
