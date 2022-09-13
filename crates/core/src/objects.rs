@@ -34,7 +34,7 @@ impl fmt::Display for ObjectType {
     }
 }
 
-#[derive(Copy, Clone, Debug, Component, Serialize, Deserialize, PartialEq, Enum)]
+#[derive(Copy, Clone, Debug, Component, Serialize, Deserialize, PartialEq, Eq, Enum)]
 pub enum InactiveObjectType {
     Tree,
 }
@@ -47,7 +47,7 @@ impl fmt::Display for InactiveObjectType {
     }
 }
 
-#[derive(Copy, Clone, Debug, Component, Serialize, Deserialize, PartialEq, Enum)]
+#[derive(Copy, Clone, Debug, Component, Serialize, Deserialize, PartialEq, Eq, Enum)]
 pub enum ActiveObjectType {
     Building(BuildingType),
     Unit(UnitType),
@@ -62,7 +62,7 @@ impl fmt::Display for ActiveObjectType {
     }
 }
 
-#[derive(Copy, Clone, Debug, Component, Serialize, Deserialize, PartialEq, Enum)]
+#[derive(Copy, Clone, Debug, Component, Serialize, Deserialize, PartialEq, Eq, Enum)]
 pub enum BuildingType {
     Base,
     PowerHub,
@@ -77,7 +77,7 @@ impl fmt::Display for BuildingType {
     }
 }
 
-#[derive(Copy, Clone, Debug, Component, Serialize, Deserialize, PartialEq, Enum)]
+#[derive(Copy, Clone, Debug, Component, Serialize, Deserialize, PartialEq, Eq, Enum)]
 pub enum UnitType {
     Attacker,
 }
