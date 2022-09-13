@@ -187,7 +187,9 @@ fn check_status(
 ) -> Progress {
     if cache.is_some() {
         debug_assert!(loader.is_none());
+        debug_assert!(progress.done >= progress.total);
     } else if loader.is_none() && cache.is_none() {
+        *progress = false.into();
         *loader = Some(Box::new(CacheLoader::load(server.as_ref())));
     } else {
         *progress = loader.as_ref().unwrap().advance(server.as_ref());
