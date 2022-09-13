@@ -47,6 +47,8 @@ pub struct DraftBundle {
     object_type: ObjectType,
     transform: Transform,
     global_transform: GlobalTransform,
+    visibility: Visibility,
+    computed_visibility: ComputedVisibility,
     draft: Draft,
 }
 
@@ -56,6 +58,8 @@ impl DraftBundle {
             object_type: ObjectType::Active(ActiveObjectType::Building(building_type)),
             transform,
             global_transform: transform.into(),
+            visibility: Visibility::visible(),
+            computed_visibility: ComputedVisibility::not_visible(),
             draft: Draft::default(),
         }
     }
