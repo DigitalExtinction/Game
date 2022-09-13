@@ -1629,25 +1629,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "de"
-version = "0.1.0-dev"
-dependencies = [
- "bevy",
- "de_attacking",
- "de_behaviour",
- "de_camera",
- "de_controller",
- "de_core",
- "de_index",
- "de_loader",
- "de_movement",
- "de_objects",
- "de_pathing",
- "de_spawner",
- "iyes_loopless",
-]
-
-[[package]]
 name = "de_attacking"
 version = "0.1.0-dev"
 dependencies = [
@@ -1720,6 +1701,25 @@ dependencies = [
  "parry2d",
  "parry3d",
  "serde",
+]
+
+[[package]]
+name = "de_game"
+version = "0.1.0-dev"
+dependencies = [
+ "bevy",
+ "de_attacking",
+ "de_behaviour",
+ "de_camera",
+ "de_controller",
+ "de_core",
+ "de_index",
+ "de_loader",
+ "de_movement",
+ "de_objects",
+ "de_pathing",
+ "de_spawner",
+ "iyes_loopless",
 ]
 
 [[package]]
