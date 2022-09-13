@@ -1,7 +1,7 @@
 use std::f32::consts::{FRAC_2_PI, PI};
 
 use bevy::prelude::*;
-use de_core::{projection::ToMsl, state::GameState};
+use de_core::{projection::ToMsl, stages::GameStage, state::GameState};
 use de_pathing::Path;
 use iyes_loopless::prelude::*;
 
@@ -13,7 +13,7 @@ pub(crate) struct MovementPlugin;
 
 impl Plugin for MovementPlugin {
     fn build(&self, app: &mut App) {
-        app.add_system_to_stage(CoreStage::Update, update.run_in_state(GameState::Playing));
+        app.add_system_to_stage(GameStage::Movement, update.run_in_state(GameState::Playing));
     }
 }
 

@@ -1,5 +1,5 @@
 use bevy::{ecs::system::SystemParam, prelude::*, window::Windows};
-use de_core::state::GameState;
+use de_core::{stages::GameStage, state::GameState};
 use de_index::SpatialQuery;
 use de_terrain::TerrainCollider;
 use glam::{Vec2, Vec3};
@@ -13,7 +13,7 @@ pub(crate) struct PointerPlugin;
 impl Plugin for PointerPlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<Pointer>().add_system_to_stage(
-            CoreStage::PreUpdate,
+            GameStage::Input,
             mouse_move_handler
                 .run_in_state(GameState::Playing)
                 .label(Labels::PreInputUpdate),
@@ -52,7 +52,7 @@ impl Pointer {
 #[derive(SystemParam)]
 struct MouseInWorld<'w, 's> {
     windows: Res<'w, Windows>,
-    cameras: Query<'w, 's, (&'static GlobalTransform, &'static Camera), With<Camera3d>>,
+    cameras: Query<'w, 's, (&'static Transform, &'static Camera), With<Camera3d>>,
 }
 
 impl<'w, 's> MouseInWorld<'w, 's> {
@@ -72,7 +72,7 @@ impl<'w, 's> MouseInWorld<'w, 's> {
         let (camera_transform, camera) = self.cameras.single();
         let ndc_to_world = camera_transform.compute_matrix() * camera.projection_matrix().inverse();
         let ray_origin = ndc_to_world.project_point3(cursor_position.extend(1.));
-        let ray_direction = ray_origin - camera_transform.translation();
+        let ray_direction = ray_origin - camera_transform.translation;
         Some(Ray::new(ray_origin.into(), ray_direction.into()))
     }
 }

@@ -90,6 +90,10 @@ Topologically sorted crates:
 
 * [controller](/crates/controller) – handling of user input.
 
+### Bevy Schedule Stages
+
+See de_core::stages::GameStage.
+
 ### Coordinate Systems
 
 3D XYZ world coordinates are right handed. Mean sea level (MSL) plane lies on

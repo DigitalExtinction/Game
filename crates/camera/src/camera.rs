@@ -4,7 +4,7 @@ use bevy::{
     input::mouse::{MouseMotion, MouseScrollUnit, MouseWheel},
     prelude::*,
 };
-use de_core::{events::ResendEventPlugin, projection::ToMsl, state::GameState};
+use de_core::{events::ResendEventPlugin, projection::ToMsl, stages::GameStage, state::GameState};
 use de_map::size::MapBounds;
 use de_terrain::TerrainCollider;
 use de_uom::{InverseLogicalPixel, InverseSecond, LogicalPixel, Metre, Quantity, Radian, Second};
@@ -60,53 +60,42 @@ impl Plugin for CameraPlugin {
             .add_event::<FocusInvalidatedEvent>()
             .add_event::<PivotEvent>()
             .add_enter_system(GameState::Playing, setup)
-            .add_system(
+            .add_system_to_stage(
+                GameStage::PreMovement,
                 update_focus
                     .run_in_state(GameState::Playing)
                     .label("update_focus"),
             )
-            .add_system(
-                zoom_event
-                    .run_in_state(GameState::Playing)
-                    .label("zoom_event"),
+            .add_system_to_stage(
+                GameStage::Input,
+                zoom_event.run_in_state(GameState::Playing),
             )
-            .add_system(
-                pivot_event
-                    .run_in_state(GameState::Playing)
-                    .label("pivot_event"),
+            .add_system_to_stage(
+                GameStage::Input,
+                pivot_event.run_in_state(GameState::Playing),
             )
-            .add_system(
-                move_horizontaly_event
-                    .run_in_state(GameState::Playing)
-                    .label("move_horizontaly_event"),
+            .add_system_to_stage(
+                GameStage::Input,
+                move_horizontaly_event.run_in_state(GameState::Playing),
             )
-            .add_system(
+            .add_system_to_stage(
+                GameStage::PreMovement,
                 process_move_focus_events
                     .run_in_state(GameState::Playing)
-                    .label("process_move_focus_events")
                     .after("update_focus"),
             )
-            .add_system(
-                zoom.run_in_state(GameState::Playing)
-                    .label("zoom")
-                    .after("update_focus")
-                    .after("zoom_event")
-                    .after("process_move_focus_events"),
+            .add_system_to_stage(
+                GameStage::Movement,
+                zoom.run_in_state(GameState::Playing).label("zoom"),
             )
-            .add_system(
-                pivot
-                    .run_in_state(GameState::Playing)
-                    .label("pivot")
-                    .after("update_focus")
-                    .after("pivot_event"),
+            .add_system_to_stage(
+                GameStage::Movement,
+                pivot.run_in_state(GameState::Playing).label("pivot"),
             )
-            .add_system(
+            .add_system_to_stage(
+                GameStage::Movement,
                 move_horizontaly
                     .run_in_state(GameState::Playing)
-                    .label("move_horizontaly")
-                    .after("update_focus")
-                    .after("move_horizontaly_event")
-                    .after("process_move_focus_events")
                     // Zooming changes camera focus point so do it
                     // after other types of camera movement.
                     .after("zoom")
@@ -242,7 +231,7 @@ fn update_focus(
     mut event: EventReader<FocusInvalidatedEvent>,
     mut focus: ResMut<CameraFocus>,
     terrain: TerrainCollider,
-    camera_query: Query<&GlobalTransform, With<Camera3d>>,
+    camera_query: Query<&Transform, With<Camera3d>>,
 ) {
     if event.iter().count() == 0 {
         return;
@@ -250,7 +239,7 @@ fn update_focus(
 
     let camera_transform = camera_query.single();
     let ray = Ray::new(
-        camera_transform.translation().into(),
+        camera_transform.translation.into(),
         camera_transform.forward().into(),
     );
 

@@ -5,6 +5,7 @@ use de_core::{
     gconfig::GameConfig,
     objects::{ActiveObjectType, MovableSolid, ObjectType, Playable, StaticSolid},
     player::Player,
+    stages::GameStage,
     state::GameState,
 };
 use de_objects::{InitialHealths, ObjectCache};
@@ -14,7 +15,7 @@ pub(crate) struct SpawnerPlugin;
 
 impl Plugin for SpawnerPlugin {
     fn build(&self, app: &mut App) {
-        app.add_system(spawn.run_in_state(GameState::Playing));
+        app.add_system_to_stage(GameStage::Update, spawn.run_in_state(GameState::Playing));
     }
 }
 

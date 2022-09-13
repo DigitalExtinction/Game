@@ -2,6 +2,7 @@ use bevy::prelude::*;
 use de_core::{
     gconfig::GameConfig,
     objects::{BuildingType, ObjectType},
+    stages::GameStage,
 };
 use de_spawner::{Draft, DraftBundle, SpawnBundle};
 
@@ -16,7 +17,7 @@ impl Plugin for DraftPlugin {
             .add_event::<NewDraftEvent>()
             .add_event::<DiscardDraftsEvent>()
             .add_system_set_to_stage(
-                CoreStage::PreUpdate,
+                GameStage::Input,
                 SystemSet::new()
                     .with_system(spawn.after(Labels::InputUpdate))
                     .with_system(new_drafts.after(Labels::InputUpdate))
@@ -60,9 +61,7 @@ fn spawn(
     mut commands: Commands,
     game_config: Res<GameConfig>,
     mut events: EventReader<SpawnDraftsEvent>,
-    // Use global transform, since that is the one rendered in the last frame
-    // (and seen by the user) and checked for collisions.
-    drafts: Query<(Entity, &GlobalTransform, &ObjectType, &Draft)>,
+    drafts: Query<(Entity, &Transform, &ObjectType, &Draft)>,
 ) {
     if events.iter().count() == 0 {
         return;
@@ -72,7 +71,7 @@ fn spawn(
         if draft.allowed() {
             commands.entity(entity).despawn_recursive();
             commands
-                .spawn_bundle(SpawnBundle::new(object_type, transform.into()))
+                .spawn_bundle(SpawnBundle::new(object_type, transform))
                 .insert(game_config.player());
         }
     }

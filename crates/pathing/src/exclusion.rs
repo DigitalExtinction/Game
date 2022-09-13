@@ -1,4 +1,4 @@
-use bevy::prelude::GlobalTransform;
+use bevy::prelude::Transform;
 use de_core::{objects::ObjectType, projection::ToFlat};
 use de_objects::{Ichnography, IchnographyCache};
 use glam::EulerRot;
@@ -29,7 +29,7 @@ impl ExclusionArea {
     /// Each ichnography is offset by a padding.
     pub(crate) fn build(
         cache: impl IchnographyCache,
-        objects: &[(GlobalTransform, ObjectType)],
+        objects: &[(Transform, ObjectType)],
     ) -> Vec<Self> {
         if objects.is_empty() {
             return Vec::new();
@@ -64,10 +64,9 @@ impl ExclusionArea {
 
     /// Creates a new exclusion area from a static object ichnography and its
     /// world-to-object transform.
-    fn from_ichnography(transform: &GlobalTransform, ichnography: &Ichnography) -> Self {
-        let (_scale, rotation, translation) = transform.to_scale_rotation_translation();
-        let angle = rotation.to_euler(EulerRot::YXZ).0;
-        let isometry = Isometry::new(translation.to_flat().into(), angle);
+    fn from_ichnography(transform: &Transform, ichnography: &Ichnography) -> Self {
+        let angle = transform.rotation.to_euler(EulerRot::YXZ).0;
+        let isometry = Isometry::new(transform.translation.to_flat().into(), angle);
         let vertices: Vec<Point<f32>> = ichnography
             .offset_convex_hull()
             .points()
@@ -151,7 +150,7 @@ mod tests {
 
     #[test]
     fn test_merge() {
-        let transform_a = GlobalTransform::from_xyz(0., 0., -1.);
+        let transform_a = Transform::from_xyz(0., 0., -1.);
         let ichnography_a = Ichnography::new(
             ConvexPolygon::from_convex_hull(&[
                 Point::new(-2., 5.),
@@ -161,7 +160,7 @@ mod tests {
             ])
             .unwrap(),
         );
-        let transform_b = GlobalTransform::default();
+        let transform_b = Transform::default();
         let ichnography_b = Ichnography::new(
             ConvexPolygon::from_convex_hull(&[
                 Point::new(-1.5, 8.),
@@ -171,7 +170,7 @@ mod tests {
             ])
             .unwrap(),
         );
-        let transform_c = GlobalTransform::default();
+        let transform_c = Transform::default();
         let ichnography_c = Ichnography::new(
             ConvexPolygon::from_convex_hull(&[
                 Point::new(20., 20.),

@@ -19,9 +19,7 @@ impl PluginGroup for AttackingPluginGroup {
 }
 
 #[derive(Copy, Clone, Hash, Debug, PartialEq, Eq, SystemLabel)]
-pub enum AttackingLabels {
-    Attack,
+enum AttackingLabels {
     Update,
-    Aim,
     Fire,
 }

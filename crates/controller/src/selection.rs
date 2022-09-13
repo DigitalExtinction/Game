@@ -2,9 +2,9 @@ use std::collections::HashSet;
 
 use bevy::{
     ecs::system::SystemParam,
-    prelude::{App, Commands, Component, CoreStage, Entity, EventReader, Plugin, Query, With},
+    prelude::{App, Commands, Component, Entity, EventReader, Plugin, Query, With},
 };
-use de_core::state::GameState;
+use de_core::{stages::GameStage, state::GameState};
 use iyes_loopless::prelude::*;
 
 use crate::Labels;
@@ -14,7 +14,7 @@ pub(crate) struct SelectionPlugin;
 impl Plugin for SelectionPlugin {
     fn build(&self, app: &mut App) {
         app.add_event::<SelectEvent>().add_system_to_stage(
-            CoreStage::PreUpdate,
+            GameStage::Input,
             update_selection
                 .run_in_state(GameState::Playing)
                 .after(Labels::InputUpdate),

@@ -19,6 +19,7 @@ use systems::IndexPlugin;
 pub use self::{
     collider::{ColliderWithCache, LocalCollider, QueryCollider},
     index::{EntityIndex, RayEntityIntersection, SpatialQuery},
+    systems::IndexLabel,
 };
 
 /// Size (in world-space) of a single square tile where entities are kept.

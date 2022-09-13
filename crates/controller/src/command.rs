@@ -2,13 +2,14 @@ use bevy::{
     input::{keyboard::KeyboardInput, mouse::MouseButtonInput, ButtonState},
     prelude::*,
 };
-use de_attacking::{AttackEvent, AttackingLabels};
+use de_attacking::AttackEvent;
 use de_behaviour::ChaseTarget;
 use de_core::{
     gconfig::GameConfig,
     objects::{BuildingType, MovableSolid, Playable},
     player::Player,
     projection::ToFlat,
+    stages::GameStage,
 };
 use de_pathing::{PathQueryProps, PathTarget, UpdateEntityPath};
 use de_spawner::Draft;
@@ -27,14 +28,13 @@ pub(crate) struct CommandPlugin;
 impl Plugin for CommandPlugin {
     fn build(&self, app: &mut App) {
         app.add_system_set_to_stage(
-            CoreStage::PreUpdate,
+            GameStage::Input,
             SystemSet::new()
                 .with_system(
                     right_click_handler
                         .run_if(on_pressed(MouseButton::Right))
                         .label(Labels::InputUpdate)
-                        .after(Labels::PreInputUpdate)
-                        .before(AttackingLabels::Attack),
+                        .after(Labels::PreInputUpdate),
                 )
                 .with_system(
                     left_click_handler

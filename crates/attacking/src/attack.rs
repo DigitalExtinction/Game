@@ -2,7 +2,7 @@ use std::{cmp::Ordering, collections::BinaryHeap};
 
 use bevy::prelude::*;
 use de_behaviour::ChaseTarget;
-use de_core::{objects::ObjectType, state::GameState};
+use de_core::{objects::ObjectType, stages::GameStage, state::GameState};
 use de_objects::{ColliderCache, LaserCannon, ObjectCache};
 use iyes_loopless::prelude::*;
 use parry3d::query::Ray;
@@ -23,13 +23,11 @@ impl Plugin for AttackPlugin {
     fn build(&self, app: &mut App) {
         app.add_event::<AttackEvent>()
             .add_system_to_stage(
-                CoreStage::PreUpdate,
-                attack
-                    .run_in_state(GameState::Playing)
-                    .label(AttackingLabels::Attack),
+                GameStage::PreUpdate,
+                attack.run_in_state(GameState::Playing),
             )
             .add_system_set_to_stage(
-                CoreStage::Update,
+                GameStage::Update,
                 SystemSet::new()
                     .with_system(
                         update
@@ -39,7 +37,6 @@ impl Plugin for AttackPlugin {
                     .with_system(
                         aim_and_fire
                             .run_in_state(GameState::Playing)
-                            .label(AttackingLabels::Aim)
                             .after(AttackingLabels::Update)
                             .before(AttackingLabels::Fire),
                     ),
@@ -96,12 +93,12 @@ fn aim_and_fire(
     cache: Res<ObjectCache>,
     mut attackers: Query<(
         Entity,
-        &GlobalTransform,
+        &Transform,
         &mut LaserCannon,
         &ChaseTarget,
         Option<&Attacking>,
     )>,
-    targets: Query<(&GlobalTransform, &ObjectType)>,
+    targets: Query<(&Transform, &ObjectType)>,
     sightline: LineOfSight,
     mut events: EventWriter<LaserFireEvent>,
 ) {
@@ -118,12 +115,12 @@ fn aim_and_fire(
                     .compute_aabb()
                     .center()
                     .into();
-                transform.translation() + centroid
+                transform.translation + centroid
             }
             Err(_) => continue,
         };
 
-        let muzzle = attacker_transform.translation() + cannon.muzzle();
+        let muzzle = attacker_transform.translation + cannon.muzzle();
         let to_target = (target_position - muzzle)
             .try_normalize()
             .expect("Attacker and target to close together");

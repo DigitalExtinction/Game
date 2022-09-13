@@ -1,6 +1,6 @@
 use bevy::{
     ecs::system::SystemParam,
-    prelude::{Component, GlobalTransform, Query},
+    prelude::{Component, Query, Transform},
 };
 use de_map::size::MapBounds;
 use parry3d::{
@@ -34,7 +34,7 @@ impl Terrain {
 
 #[derive(SystemParam)]
 pub struct TerrainCollider<'w, 's> {
-    terrains: Query<'w, 's, (&'static Terrain, &'static GlobalTransform)>,
+    terrains: Query<'w, 's, (&'static Terrain, &'static Transform)>,
 }
 
 impl<'w, 's> TerrainCollider<'w, 's> {
@@ -42,7 +42,11 @@ impl<'w, 's> TerrainCollider<'w, 's> {
         self.terrains
             .iter()
             .filter_map(|(terrain, transform)| {
-                let isometry = Isometry::try_from(transform.compute_matrix()).unwrap();
+                let isometry = Isometry::new(
+                    transform.translation.into(),
+                    transform.rotation.to_scaled_axis().into(),
+                );
+
                 terrain.cast_ray(&isometry, ray, max_toi)
             })
             .min_by(|a, b| {
@@ -83,11 +87,11 @@ mod test {
         world
             .spawn()
             .insert(Terrain::flat(MapBounds::new(Vec2::new(100., 200.))))
-            .insert(GlobalTransform::from_translation(10000. * Vec3::ONE));
+            .insert(Transform::from_translation(10000. * Vec3::ONE));
         world
             .spawn()
             .insert(Terrain::flat(MapBounds::new(Vec2::new(100., 200.))))
-            .insert(GlobalTransform::from_xyz(-17., 3.2, -22.));
+            .insert(Transform::from_xyz(-17., 3.2, -22.));
 
         fn help_system(mut commands: Commands, terrain: TerrainCollider) {
             let ray = Ray::new(Vec3::new(0., 10., 0.).into(), Vec3::new(2., -1., 1.).into());

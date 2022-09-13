@@ -8,9 +8,10 @@ use bevy::prelude::*;
 use de_core::{
     objects::{ActiveObjectType, BuildingType, MovableSolid, ObjectType, StaticSolid},
     projection::ToFlat,
+    stages::GameStage,
     state::GameState,
 };
-use de_index::{ColliderWithCache, QueryCollider, SpatialQuery};
+use de_index::{ColliderWithCache, IndexLabel, QueryCollider, SpatialQuery};
 use de_map::size::MapBounds;
 use de_objects::{ColliderCache, ObjectCache, EXCLUSION_OFFSET};
 use iyes_loopless::prelude::*;
@@ -27,10 +28,15 @@ pub(crate) struct DraftPlugin;
 
 impl Plugin for DraftPlugin {
     fn build(&self, app: &mut App) {
-        app.add_system_set(
-            SystemSet::new()
-                .with_system(new_draft.run_in_state(GameState::Playing))
-                .with_system(update_draft.run_in_state(GameState::Playing)),
+        app.add_system_to_stage(
+            GameStage::Update,
+            new_draft.run_in_state(GameState::Playing),
+        )
+        .add_system_to_stage(
+            GameStage::PostUpdate,
+            update_draft
+                .run_in_state(GameState::Playing)
+                .after(IndexLabel::Index),
         );
     }
 }
@@ -41,6 +47,8 @@ pub struct DraftBundle {
     object_type: ObjectType,
     transform: Transform,
     global_transform: GlobalTransform,
+    visibility: Visibility,
+    computed_visibility: ComputedVisibility,
     draft: Draft,
 }
 
@@ -50,6 +58,8 @@ impl DraftBundle {
             object_type: ObjectType::Active(ActiveObjectType::Building(building_type)),
             transform,
             global_transform: transform.into(),
+            visibility: Visibility::visible(),
+            computed_visibility: ComputedVisibility::not_visible(),
             draft: Draft::default(),
         }
     }

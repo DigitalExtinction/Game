@@ -4,11 +4,11 @@ use ahash::AHashMap;
 use bevy::{
     prelude::*,
     tasks::{AsyncComputeTaskPool, Task},
-    transform::TransformSystem,
 };
 use de_core::{
     objects::{MovableSolid, ObjectType, StaticSolid},
     projection::ToFlat,
+    stages::GameStage,
     state::GameState,
 };
 use de_map::size::MapBounds;
@@ -22,7 +22,6 @@ use crate::{
 };
 
 const TARGET_TOLERANCE: f32 = 2.;
-static PRE_POST_UPDATE: &str = "PrePostUpdate";
 
 pub struct PathingPlugin;
 
@@ -34,51 +33,57 @@ impl Plugin for PathingPlugin {
             .add_event::<PathFinderUpdated>()
             .add_enter_system(GameState::Playing, setup)
             .add_system_to_stage(
-                CoreStage::PreUpdate,
-                check_update_result.run_in_state(GameState::Playing),
+                GameStage::PostUpdate,
+                check_removed
+                    .run_in_state(GameState::Playing)
+                    .label(PathingLabel::CheckRemoved),
             )
             .add_system_to_stage(
-                CoreStage::PostUpdate,
-                check_removed.run_in_state(GameState::Playing),
-            )
-            .add_system_to_stage(
-                CoreStage::PostUpdate,
+                GameStage::PostUpdate,
                 check_updated
                     .run_in_state(GameState::Playing)
-                    .label("check_updated")
-                    .after(TransformSystem::TransformPropagate),
+                    .label(PathingLabel::CheckUpdated),
             )
             .add_system_to_stage(
-                CoreStage::PostUpdate,
+                GameStage::PostUpdate,
                 update
                     .run_in_state(GameState::Playing)
-                    .after("check_updated"),
+                    .after(PathingLabel::CheckUpdated)
+                    .after(PathingLabel::CheckRemoved),
             )
             .add_system_to_stage(
-                CoreStage::PostUpdate,
+                GameStage::PreMovement,
+                check_update_result
+                    .run_in_state(GameState::Playing)
+                    .label(PathingLabel::CheckUpdateResult),
+            )
+            .add_system_to_stage(
+                GameStage::PreMovement,
                 update_existing_paths
                     .run_in_state(GameState::Playing)
-                    .label("update_existing_paths")
-                    .after(TransformSystem::TransformPropagate),
+                    .label(PathingLabel::UpdateExistingPaths)
+                    .after(PathingLabel::CheckUpdateResult),
             )
             .add_system_to_stage(
-                CoreStage::PostUpdate,
+                GameStage::PreMovement,
                 update_requested_paths
                     .run_in_state(GameState::Playing)
-                    .after(TransformSystem::TransformPropagate)
-                    .after("update_existing_paths"),
+                    .after(PathingLabel::UpdateExistingPaths),
             )
             .add_system_to_stage(
-                CoreStage::PreUpdate,
+                GameStage::PreMovement,
                 check_path_results.run_in_state(GameState::Playing),
             )
-            .add_stage_before(
-                CoreStage::PostUpdate,
-                PRE_POST_UPDATE,
-                SystemStage::parallel(),
-            )
-            .add_system_to_stage(PRE_POST_UPDATE, remove_path_targets);
+            .add_system_to_stage(GameStage::PostUpdate, remove_path_targets);
     }
+}
+
+#[derive(SystemLabel)]
+enum PathingLabel {
+    CheckUpdateResult,
+    CheckRemoved,
+    CheckUpdated,
+    UpdateExistingPaths,
 }
 
 /// This event triggers computation of shortest path to a target and
@@ -129,10 +134,10 @@ impl UpdateFinderState {
 
     fn spawn_update<'a, T>(&mut self, cache: ObjectCache, bounds: MapBounds, entities: T)
     where
-        T: Iterator<Item = (&'a GlobalTransform, &'a ObjectType)>,
+        T: Iterator<Item = (&'a Transform, &'a ObjectType)>,
     {
         debug_assert!(self.task.is_none());
-        let entities: Vec<(GlobalTransform, ObjectType)> = entities
+        let entities: Vec<(Transform, ObjectType)> = entities
             .map(|(transform, object_type)| (*transform, *object_type))
             .collect();
         let pool = AsyncComputeTaskPool::get();
@@ -221,7 +226,7 @@ enum UpdatePathState {
 }
 
 type ChangedQuery<'world, 'state> =
-    Query<'world, 'state, Entity, (With<StaticSolid>, Changed<GlobalTransform>)>;
+    Query<'world, 'state, Entity, (With<StaticSolid>, Changed<Transform>)>;
 
 fn setup(mut commands: Commands, bounds: Res<MapBounds>) {
     commands.insert_resource(Arc::new(PathFinder::new(bounds.as_ref())));
@@ -243,7 +248,7 @@ fn update(
     mut state: ResMut<UpdateFinderState>,
     bounds: Res<MapBounds>,
     cache: Res<ObjectCache>,
-    entities: Query<(&GlobalTransform, &ObjectType), With<StaticSolid>>,
+    entities: Query<(&Transform, &ObjectType), With<StaticSolid>>,
 ) {
     if state.should_update() {
         info!("Spawning path finder update task");
@@ -268,7 +273,7 @@ fn check_update_result(
 pub fn create_finder(
     cache: impl IchnographyCache,
     bounds: MapBounds,
-    entities: Vec<(GlobalTransform, ObjectType)>,
+    entities: Vec<(Transform, ObjectType)>,
 ) -> PathFinder {
     debug!(
         "Going to create a new path finder from {} entities",
@@ -283,7 +288,7 @@ fn update_existing_paths(
     finder: Res<Arc<PathFinder>>,
     mut state: ResMut<UpdatePathsState>,
     mut events: EventReader<PathFinderUpdated>,
-    entities: Query<(Entity, &GlobalTransform, &PathTarget, Option<&Path>)>,
+    entities: Query<(Entity, &Transform, &PathTarget, Option<&Path>)>,
 ) {
     if events.iter().count() == 0 {
         // consume the iterator
@@ -291,7 +296,7 @@ fn update_existing_paths(
     }
 
     for (entity, transform, target, path) in entities.iter() {
-        let position = transform.translation().to_flat();
+        let position = transform.translation.to_flat();
         if path.is_none()
             && position.distance(target.location())
                 <= (target.properties().distance() + TARGET_TOLERANCE)
@@ -314,7 +319,7 @@ fn update_requested_paths(
     finder: Res<Arc<PathFinder>>,
     mut state: ResMut<UpdatePathsState>,
     mut events: EventReader<UpdateEntityPath>,
-    entities: Query<&GlobalTransform, With<MovableSolid>>,
+    entities: Query<&Transform, With<MovableSolid>>,
 ) {
     for event in events.iter() {
         if let Ok(transform) = entities.get(event.entity()) {
@@ -322,7 +327,7 @@ fn update_requested_paths(
             state.spawn_new(
                 finder.clone(),
                 event.entity(),
-                transform.translation().to_flat(),
+                transform.translation.to_flat(),
                 event.target(),
             );
         }
