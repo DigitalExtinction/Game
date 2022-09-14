@@ -78,7 +78,7 @@ Topologically sorted crates:
 
 * [loader](/crates/loader) – map loading logic.
 
-* [pathing](/crates/pathing) – global path finding and patch (re)scheduling.
+* [pathing](/crates/pathing) – global path finding and path (re)scheduling.
 
 * [movement](/crates/movement) – entity movement, local dynamic obstacle
   avoidance, kinematics and similar.
