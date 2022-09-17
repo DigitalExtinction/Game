@@ -5,6 +5,11 @@ edition = "2021"
 authors = ["Martin Indra <martin.indra@mgn.cz>"]
 readme = "README.md"
 repository = "https://github.com/DigitalExtinction/Game"
+keywords = ["DigitalExtinction", "gamedev", "game", "bevy", "3d"]
+homepage = "https://de-game.org/"
+description = "Digital Extinction (DE) is a 3D real-time strategy (RTS) game build with Bevy."
+license = "GPL-3.0"
+categories = ["games"]
 
 [dependencies]
 # DE
