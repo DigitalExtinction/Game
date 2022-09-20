@@ -10,10 +10,10 @@ use de_core::{
     stages::GameStage,
     state::GameState,
 };
-use de_pathing::Path;
+use de_pathing::ScheduledPath;
 use iyes_loopless::prelude::*;
 
-const TARGET_ACCURACY_SQUARED: f32 = 0.01;
+const DESTINATION_ACCURACY: f32 = 0.1;
 /// Maximum object speed in meters per second.
 const MAX_SPEED: f32 = 10.;
 /// Maximum object acceleration in meters per second squared.
@@ -130,37 +130,25 @@ fn setup_entities(
 
 fn update_desired_velocity(
     mut commands: Commands,
-    mut objects: Query<(Entity, &Transform, &mut Path, &mut Movement)>,
+    mut objects: Query<(Entity, &Transform, &mut ScheduledPath, &mut Movement)>,
 ) {
     let finished = Arc::new(Mutex::new(Vec::new()));
 
     objects.par_for_each_mut(512, |(entity, transform, mut path, mut movement)| {
-        let direction = loop {
-            let target = path.waypoints().last().unwrap();
-            let object_to_next = target.to_msl() - transform.translation;
-
-            if object_to_next.length_squared() < TARGET_ACCURACY_SQUARED {
-                if path.advance() {
-                    finished.lock().unwrap().push(entity);
-                    movement.stop();
-                    return;
-                }
-            } else {
-                break object_to_next.normalize();
-            }
-        };
-
-        let distance_to_target = path
-            .waypoints()
-            .first()
-            .unwrap()
-            .distance(transform.translation.to_flat());
-        let desired_speed = MAX_SPEED.min((2. * distance_to_target * MAX_ACCELERATION).sqrt());
-        movement.set_desired_velocity(desired_speed * direction);
+        let remaining = path.destination().distance(transform.translation.to_flat());
+        if remaining <= DESTINATION_ACCURACY {
+            finished.lock().unwrap().push(entity);
+            movement.stop();
+        } else {
+            let advancement = path.advance(transform.translation.to_flat(), MAX_SPEED * 0.5);
+            let direction = (advancement.to_msl() - transform.translation).normalize();
+            let desired_speed = MAX_SPEED.min((2. * remaining * MAX_ACCELERATION).sqrt());
+            movement.set_desired_velocity(desired_speed * direction);
+        }
     });
 
     for entity in finished.lock().unwrap().drain(..) {
-        commands.entity(entity).remove::<Path>();
+        commands.entity(entity).remove::<ScheduledPath>();
     }
 }
 

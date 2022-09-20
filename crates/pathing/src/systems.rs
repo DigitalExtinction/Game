@@ -17,8 +17,11 @@ use futures_lite::future;
 use iyes_loopless::prelude::*;
 
 use crate::{
-    exclusion::ExclusionArea, finder::PathFinder, triangulation::triangulate, Path, PathQueryProps,
-    PathTarget,
+    exclusion::ExclusionArea,
+    finder::PathFinder,
+    path::{Path, ScheduledPath},
+    triangulation::triangulate,
+    PathQueryProps, PathTarget,
 };
 
 const TARGET_TOLERANCE: f32 = 2.;
@@ -288,7 +291,7 @@ fn update_existing_paths(
     finder: Res<Arc<PathFinder>>,
     mut state: ResMut<UpdatePathsState>,
     mut events: EventReader<PathFinderUpdated>,
-    entities: Query<(Entity, &Transform, &PathTarget, Option<&Path>)>,
+    entities: Query<(Entity, &Transform, &PathTarget, Option<&ScheduledPath>)>,
 ) {
     if events.iter().count() == 0 {
         // consume the iterator
@@ -339,10 +342,10 @@ fn check_path_results(mut commands: Commands, mut state: ResMut<UpdatePathsState
         let mut entity_commands = commands.entity(entity);
         match path {
             Some(path) => {
-                entity_commands.insert(path);
+                entity_commands.insert(ScheduledPath::new(path));
             }
             None => {
-                entity_commands.remove::<Path>();
+                entity_commands.remove::<ScheduledPath>();
             }
         }
     }
@@ -350,7 +353,7 @@ fn check_path_results(mut commands: Commands, mut state: ResMut<UpdatePathsState
 
 fn remove_path_targets(
     mut commands: Commands,
-    entities: Query<(Entity, &PathTarget), Without<Path>>,
+    entities: Query<(Entity, &PathTarget), Without<ScheduledPath>>,
 ) {
     for (entity, target) in entities.iter() {
         if !target.permanent() {
