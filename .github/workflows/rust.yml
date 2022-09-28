@@ -8,10 +8,10 @@ on:
     branches:
       - main
     types:
-      - labeled
       - opened
       - reopened
       - synchronize
+      - ready_for_review
 
 env:
   CARGO_TERM_COLOR: always
@@ -20,7 +20,7 @@ env:
 jobs:
   build:
     name: Build & Test
-    if: contains( github.event.pull_request.labels.*.name, 'S-Ready-For-Final-Review' )
+    if: github.event.pull_request.draft == false
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -77,7 +77,7 @@ jobs:
 
   format:
     name: Test Formatting
-    if: contains( github.event.pull_request.labels.*.name, 'S-Ready-For-Final-Review' )
+    if: github.event.pull_request.draft == false
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
@@ -87,7 +87,7 @@ jobs:
 
   udeps:
     name: Check Unused Dependencies
-    if: contains( github.event.pull_request.labels.*.name, 'S-Ready-For-Final-Review' )
+    if: github.event.pull_request.draft == false
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
