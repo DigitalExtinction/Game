@@ -5,6 +5,8 @@ use approx::assert_abs_diff_eq;
 use bevy::prelude::Component;
 use glam::Vec2;
 
+const CURRENT_SEGMENT_BIAS: f32 = 4.;
+
 /// A path on the map which may be followed by an object or a group of objects.
 #[derive(Component)]
 pub struct ScheduledPath {
@@ -37,19 +39,37 @@ impl ScheduledPath {
     /// * `position` - position of the object(s) tracking this path. It is used
     ///   as a base for the path advancement.
     ///
-    /// * `amount` - the advancement distance in meters.
+    /// * `amount` - advancement distance in meters. The advancement is
+    ///   computed in the mode which tries to keep the object withing `amount`
+    ///   meters from the scheduled path.
+    ///
+    ///   Advancement along current path line segment is multiplied by a factor
+    ///   larger than one.
     pub fn advance(&mut self, position: Vec2, amount: f32) -> Vec2 {
         if self.current == 0 {
             return self.path.waypoints()[0];
         }
 
-        let mut advancement = self.projection(position);
-        let mut amount = (amount - position.distance(advancement)).max(0.);
+        let (mut advancement, projection_factor) = self.projection(position);
+        let mut amount = amount - position.distance(advancement);
 
+        if amount <= 0. {
+            return advancement;
+        }
+
+        let start = if projection_factor > 0. {
+            self.current
+        } else {
+            self.current + 1
+        };
         while self.current > 0 {
             let segment_end = self.path.waypoints()[self.current - 1];
             let remainder = segment_end - advancement;
-            let remainder_lenght = remainder.length();
+            let mut remainder_lenght = remainder.length();
+
+            if self.current == start {
+                remainder_lenght /= CURRENT_SEGMENT_BIAS;
+            }
 
             if remainder_lenght > amount {
                 advancement += (amount / remainder_lenght) * remainder;
@@ -64,8 +84,8 @@ impl ScheduledPath {
         advancement
     }
 
-    /// Returns a point on current segment of the path closest to a given
-    /// `position`.
+    /// Returns a point and segment fraction on current segment of the path
+    /// closest to a given `position`.
     ///
     /// This method cannot be called if only one (last) point remains to be
     /// reached.
@@ -73,7 +93,7 @@ impl ScheduledPath {
     /// # Panics
     ///
     /// Panics if it is called when only last point remains.
-    fn projection(&self, position: Vec2) -> Vec2 {
+    fn projection(&self, position: Vec2) -> (Vec2, f32) {
         let start = self.path.waypoints()[self.current];
         let end = self.path.waypoints()[self.current - 1];
         let start_to_end = end - start;
@@ -81,7 +101,7 @@ impl ScheduledPath {
         let factor = (start_to_end / start_to_end.length_squared())
             .dot(position - start)
             .clamp(0., 1.);
-        factor * start_to_end + start
+        (factor * start_to_end + start, factor)
     }
 }
 
@@ -184,14 +204,16 @@ mod tests {
             7.,
             vec![Vec2::new(4., 6.), Vec2::new(4., 1.), Vec2::new(2., 1.)],
         ));
-        assert_eq!(
-            schedule.advance(Vec2::new(2.5, 1.1), 1.),
-            Vec2::new(3.4, 1.0)
+        assert!(
+            schedule
+                .advance(Vec2::new(2.5, 1.1), 0.2)
+                .distance(Vec2::new(2.9, 1.0))
+                < 0.001
         );
         assert!(
             schedule
                 .advance(Vec2::new(3.4, 1.), 1.)
-                .distance(Vec2::new(4.0, 1.4))
+                .distance(Vec2::new(4.0, 1.85))
                 < 0.001
         );
         // Cannon return a point before an already reached segment.
@@ -207,9 +229,18 @@ mod tests {
             9.071,
             vec![Vec2::new(5., 8.), Vec2::new(4., 1.), Vec2::new(2., 1.)],
         ));
-        assert_eq!(schedule.projection(Vec2::new(3.8, 5.)), Vec2::new(3.8, 1.));
-        assert_eq!(schedule.projection(Vec2::new(-2., 3.)), Vec2::new(2., 1.));
-        assert_eq!(schedule.projection(Vec2::new(7., 8.)), Vec2::new(4., 1.));
+        assert_eq!(
+            schedule.projection(Vec2::new(3.8, 5.)),
+            (Vec2::new(3.8, 1.), 0.9)
+        );
+        assert_eq!(
+            schedule.projection(Vec2::new(-2., 3.)),
+            (Vec2::new(2., 1.), 0.)
+        );
+        assert_eq!(
+            schedule.projection(Vec2::new(7., 8.)),
+            (Vec2::new(4., 1.), 1.)
+        );
     }
 
     #[test]
