@@ -49,6 +49,9 @@ impl Plugin for MovementPlugin {
     }
 }
 
+type Uninitialized<'w, 's> =
+    Query<'w, 's, (Entity, &'static Transform), (With<MovableSolid>, Without<Movement>)>;
+
 #[derive(Copy, Clone, Hash, Debug, PartialEq, Eq, SystemLabel)]
 enum MovementLabels {
     UpdateDesiredVelocity,
@@ -75,7 +78,7 @@ impl Movement {
     }
 }
 
-#[derive(Component, Default)]
+#[derive(Component)]
 struct Kinematics {
     /// Velocity during the last update.
     previous: Vec3,
@@ -116,15 +119,23 @@ impl Kinematics {
     }
 }
 
-fn setup_entities(
-    mut commands: Commands,
-    objects: Query<Entity, (With<MovableSolid>, Without<Movement>)>,
-) {
-    for entity in objects.iter() {
+impl From<&Transform> for Kinematics {
+    fn from(transform: &Transform) -> Self {
+        Self {
+            previous: Vec3::ZERO,
+            current: Vec3::ZERO,
+            speed: 0.,
+            heading: normalize_angle(transform.rotation.to_euler(EulerRot::YXZ).0),
+        }
+    }
+}
+
+fn setup_entities(mut commands: Commands, objects: Uninitialized) {
+    for (entity, transform) in objects.iter() {
         commands
             .entity(entity)
             .insert(Movement::default())
-            .insert(Kinematics::default());
+            .insert(Kinematics::from(transform));
     }
 }
 
