@@ -1,6 +1,9 @@
+mod shader;
+
 use bevy::{
+    app::{Plugin, PluginGroupBuilder},
     ecs::system::SystemParam,
-    prelude::{Component, Query, Transform},
+    prelude::{App, Component, MaterialPlugin, PluginGroup, Query, Transform},
 };
 use de_map::size::MapBounds;
 use parry3d::{
@@ -9,6 +12,23 @@ use parry3d::{
     query::{Ray, RayCast, RayIntersection},
     shape::HeightField,
 };
+pub use shader::TerrainMaterial;
+
+pub struct TerrainPluginGroup;
+
+impl PluginGroup for TerrainPluginGroup {
+    fn build(&mut self, group: &mut PluginGroupBuilder) {
+        group.add(TerrainPlugin);
+    }
+}
+
+pub(crate) struct TerrainPlugin;
+
+impl Plugin for TerrainPlugin {
+    fn build(&self, app: &mut App) {
+        app.add_plugin(MaterialPlugin::<TerrainMaterial>::default());
+    }
+}
 
 #[derive(Component)]
 pub struct Terrain {

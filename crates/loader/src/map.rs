@@ -18,7 +18,7 @@ use de_map::{
     size::MapBounds,
 };
 use de_spawner::SpawnBundle;
-use de_terrain::Terrain;
+use de_terrain::{Terrain, TerrainMaterial};
 use futures_lite::future;
 use iyes_loopless::prelude::*;
 use iyes_progress::prelude::*;
@@ -50,7 +50,7 @@ fn spawn_map(
     mut commands: Commands,
     task: Option<ResMut<MapLoadingTask>>,
     mut meshes: ResMut<Assets<Mesh>>,
-    mut materials: ResMut<Assets<StandardMaterial>>,
+    mut materials: ResMut<Assets<TerrainMaterial>>,
     mut move_focus_events: EventWriter<MoveFocusEvent>,
     game_config: Res<GameConfig>,
 ) -> Progress {
@@ -139,13 +139,13 @@ fn setup_light(commands: &mut Commands) {
 fn setup_terrain(
     commands: &mut Commands,
     meshes: &mut Assets<Mesh>,
-    materials: &mut Assets<StandardMaterial>,
+    materials: &mut Assets<TerrainMaterial>,
     bounds: MapBounds,
 ) {
     commands
-        .spawn_bundle(PbrBundle {
+        .spawn_bundle(MaterialMeshBundle::<TerrainMaterial> {
             mesh: meshes.add(terrain_mesh(bounds)),
-            material: materials.add(Color::rgb(0.3, 0.5, 0.3).into()),
+            material: materials.add(TerrainMaterial {}),
             ..Default::default()
         })
         .insert(Terrain::flat(bounds));

@@ -1719,6 +1719,7 @@ dependencies = [
  "de_objects",
  "de_pathing",
  "de_spawner",
+ "de_terrain",
  "iyes_loopless",
 ]
 
