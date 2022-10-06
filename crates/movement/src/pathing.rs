@@ -38,7 +38,7 @@ fn finish_paths(
     for (entity, transform, path, mut movement) in objects.iter_mut() {
         let remaining = path.destination().distance(transform.translation.to_flat());
         if remaining <= DESTINATION_ACCURACY {
-            movement.set_velocity(Vec2::ZERO);
+            movement.stop();
             commands.entity(entity).remove::<ScheduledPath>();
         }
     }
@@ -51,6 +51,6 @@ fn follow_path(mut objects: Query<(&Transform, &mut ScheduledPath, &mut DesiredM
         let advancement = path.advance(location, MAX_SPEED * 0.5);
         let direction = (advancement - location).normalize();
         let desired_speed = MAX_SPEED.min((2. * remaining * MAX_ACCELERATION).sqrt());
-        movement.set_velocity(desired_speed * direction);
+        movement.start(desired_speed * direction);
     });
 }

@@ -1,13 +1,18 @@
+mod cache;
 mod kinematics;
 mod movement;
+mod obstacles;
 mod pathing;
+mod repulsion;
 
 use std::f32::consts::PI;
 
 use bevy::{app::PluginGroupBuilder, prelude::PluginGroup};
 use kinematics::KinematicsPlugin;
 use movement::MovementPlugin;
+use obstacles::ObstaclesPlugin;
 use pathing::PathingPlugin;
+use repulsion::RepulsionPlugin;
 
 /// Maximum object speed in meters per second.
 const MAX_SPEED: f32 = 10.;
@@ -23,6 +28,8 @@ impl PluginGroup for MovementPluginGroup {
         group
             .add(MovementPlugin)
             .add(PathingPlugin)
+            .add(ObstaclesPlugin)
+            .add(RepulsionPlugin)
             .add(KinematicsPlugin);
     }
 }

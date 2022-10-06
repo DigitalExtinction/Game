@@ -14,9 +14,10 @@ impl Plugin for MovementPlugin {
 }
 
 /// Ideal velocity induced by a global path plan.
-#[derive(Component, Default)]
+#[derive(Component)]
 pub(crate) struct DesiredMovement {
     velocity: Vec2,
+    stopped: bool,
 }
 
 impl DesiredMovement {
@@ -24,8 +25,31 @@ impl DesiredMovement {
         self.velocity
     }
 
-    pub(crate) fn set_velocity(&mut self, velocity: Vec2) {
+    pub(crate) fn stopped(&self) -> bool {
+        self.stopped
+    }
+
+    pub(crate) fn stop(&mut self) {
+        self.velocity = Vec2::ZERO;
+        self.stopped = true;
+    }
+
+    pub(crate) fn start(&mut self, velocity: Vec2) {
         self.velocity = velocity;
+        self.stopped = false;
+    }
+
+    pub(crate) fn update(&mut self, velocity: Vec2) {
+        self.velocity = velocity;
+    }
+}
+
+impl Default for DesiredMovement {
+    fn default() -> Self {
+        Self {
+            velocity: Vec2::ZERO,
+            stopped: true,
+        }
     }
 }
 

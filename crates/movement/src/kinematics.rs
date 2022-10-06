@@ -5,7 +5,7 @@ use de_core::{objects::MovableSolid, projection::ToMsl, stages::GameStage, state
 use iyes_loopless::prelude::*;
 
 use crate::{
-    movement::DesiredMovement, pathing::PathingLabels, MAX_ACCELERATION, MAX_ANGULAR_SPEED,
+    movement::DesiredMovement, repulsion::RepulsionLables, MAX_ACCELERATION, MAX_ANGULAR_SPEED,
     MAX_SPEED,
 };
 
@@ -24,7 +24,7 @@ impl Plugin for KinematicsPlugin {
                     kinematics
                         .run_in_state(GameState::Playing)
                         .label(KinematicsLabels::Kinematics)
-                        .after(PathingLabels::FollowPath),
+                        .after(RepulsionLables::Apply),
                 )
                 .with_system(
                     update_transform
