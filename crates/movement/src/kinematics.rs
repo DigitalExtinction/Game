@@ -5,8 +5,8 @@ use de_core::{objects::MovableSolid, projection::ToMsl, stages::GameStage, state
 use iyes_loopless::prelude::*;
 
 use crate::{
-    movement::DesiredMovement, repulsion::RepulsionLables, MAX_ACCELERATION, MAX_ANGULAR_SPEED,
-    MAX_SPEED,
+    movement::DesiredMovement, repulsion::RepulsionLables, MAX_ACCELERATION,
+    MAX_ANGULAR_ACCELERATION, MAX_ANGULAR_SPEED, MAX_SPEED,
 };
 
 pub(crate) struct KinematicsPlugin;
@@ -51,6 +51,8 @@ struct Kinematics {
     current: Vec3,
     /// Current speed in meters per second.
     speed: f32,
+    /// Rotation of the object in radians per second.
+    angular_velocity: f32,
     /// Current object heading in radians.
     heading: f32,
 }
@@ -58,6 +60,14 @@ struct Kinematics {
 impl Kinematics {
     fn speed(&self) -> f32 {
         self.speed
+    }
+
+    fn angular_velocity(&self) -> f32 {
+        self.angular_velocity
+    }
+
+    fn update_angular_velocity(&mut self, delta: f32) {
+        self.angular_velocity += delta
     }
 
     fn heading(&self) -> f32 {
@@ -90,6 +100,7 @@ impl From<&Transform> for Kinematics {
             previous: Vec3::ZERO,
             current: Vec3::ZERO,
             speed: 0.,
+            angular_velocity: 0.,
             heading: normalize_angle(transform.rotation.to_euler(EulerRot::YXZ).0),
         }
     }
@@ -115,8 +126,17 @@ fn kinematics(time: Res<Time>, mut objects: Query<(&DesiredMovement, &mut Kinema
         };
 
         let heading_diff = normalize_angle(desired_heading - kinematics.heading());
-        let max_heading_delta = MAX_ANGULAR_SPEED * time_delta;
-        let heading_delta = heading_diff.clamp(-max_heading_delta, max_heading_delta);
+
+        // TODO proper variable names
+        // TODO speed vs velocity
+        let a = (2. * MAX_ANGULAR_ACCELERATION * heading_diff).abs().sqrt();
+        let b = a.min(MAX_ANGULAR_SPEED);
+        let desired_angular_velocity = heading_diff.signum() * b;
+        let max_angular_velocity_delta = MAX_ANGULAR_ACCELERATION * time_delta;
+        let angular_velocity_delta = (desired_angular_velocity - kinematics.angular_velocity())
+            .clamp(-max_angular_velocity_delta, max_angular_velocity_delta);
+        kinematics.update_angular_velocity(angular_velocity_delta);
+        let heading_delta = time_delta * kinematics.angular_velocity();
 
         let max_speed_delta = MAX_ACCELERATION * time_delta;
         let speed_delta = if (heading_diff - heading_delta).abs() > FRAC_PI_4 {

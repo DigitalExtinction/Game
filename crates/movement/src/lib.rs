@@ -20,6 +20,8 @@ const MAX_SPEED: f32 = 10.;
 const MAX_ACCELERATION: f32 = 2. * MAX_SPEED;
 /// Maximum object angular velocity in radians per second.
 const MAX_ANGULAR_SPEED: f32 = PI;
+/// Maximum angular acceleration in radians per second squared.
+const MAX_ANGULAR_ACCELERATION: f32 = 2.0 * MAX_ANGULAR_SPEED;
 
 pub struct MovementPluginGroup;
 
