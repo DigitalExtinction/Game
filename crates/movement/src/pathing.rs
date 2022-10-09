@@ -1,15 +1,11 @@
 use std::sync::{Arc, Mutex};
 
 use bevy::prelude::*;
-use de_core::{
-    projection::{ToFlat, ToMsl},
-    stages::GameStage,
-    state::GameState,
-};
+use de_core::{projection::ToFlat, stages::GameStage, state::GameState};
 use de_pathing::ScheduledPath;
 use iyes_loopless::prelude::*;
 
-use crate::{movement::Movement, MAX_ACCELERATION, MAX_SPEED};
+use crate::{movement::DesiredMovement, MAX_ACCELERATION, MAX_SPEED};
 
 const DESTINATION_ACCURACY: f32 = 0.1;
 
@@ -35,7 +31,7 @@ pub(crate) enum PathingLabels {
 
 fn follow_path(
     mut commands: Commands,
-    mut objects: Query<(Entity, &Transform, &mut ScheduledPath, &mut Movement)>,
+    mut objects: Query<(Entity, &Transform, &mut ScheduledPath, &mut DesiredMovement)>,
 ) {
     let finished = Arc::new(Mutex::new(Vec::new()));
 
@@ -43,12 +39,12 @@ fn follow_path(
         let remaining = path.destination().distance(transform.translation.to_flat());
         if remaining <= DESTINATION_ACCURACY {
             finished.lock().unwrap().push(entity);
-            movement.stop();
+            movement.set_velocity(Vec2::ZERO);
         } else {
             let advancement = path.advance(transform.translation.to_flat(), MAX_SPEED * 0.5);
-            let direction = (advancement.to_msl() - transform.translation).normalize();
+            let direction = (advancement - transform.translation.to_flat()).normalize();
             let desired_speed = MAX_SPEED.min((2. * remaining * MAX_ACCELERATION).sqrt());
-            movement.set_desired_velocity(desired_speed * direction);
+            movement.set_velocity(desired_speed * direction);
         }
     });
 

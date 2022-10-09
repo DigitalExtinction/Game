@@ -1,15 +1,13 @@
 use std::f32::consts::{FRAC_PI_4, PI, TAU};
 
 use bevy::prelude::*;
-use de_core::{
-    objects::MovableSolid,
-    projection::{ToFlat, ToMsl},
-    stages::GameStage,
-    state::GameState,
-};
+use de_core::{objects::MovableSolid, projection::ToMsl, stages::GameStage, state::GameState};
 use iyes_loopless::prelude::*;
 
-use crate::{movement::Movement, pathing::PathingLabels, MAX_ACCELERATION, MAX_ANGULAR_SPEED};
+use crate::{
+    movement::DesiredMovement, pathing::PathingLabels, MAX_ACCELERATION, MAX_ANGULAR_SPEED,
+    MAX_SPEED,
+};
 
 pub(crate) struct KinematicsPlugin;
 
@@ -78,7 +76,7 @@ impl Kinematics {
 
     fn update(&mut self, speed_delta: f32, heading_delta: f32) {
         debug_assert!(speed_delta.is_finite());
-        self.speed += speed_delta;
+        self.speed = (self.speed + speed_delta).clamp(0., MAX_SPEED);
         debug_assert!(heading_delta.is_finite());
         self.heading = normalize_angle(self.heading + heading_delta);
         let (sin, cos) = self.heading.sin_cos();
@@ -103,13 +101,13 @@ fn setup_entities(mut commands: Commands, objects: Uninitialized) {
     }
 }
 
-fn kinematics(time: Res<Time>, mut objects: Query<(&Movement, &mut Kinematics)>) {
+fn kinematics(time: Res<Time>, mut objects: Query<(&DesiredMovement, &mut Kinematics)>) {
     let time_delta = time.delta_seconds();
 
     objects.par_for_each_mut(512, |(movement, mut kinematics)| {
         kinematics.tick();
 
-        let desired_velocity = movement.desired_velocity().to_flat();
+        let desired_velocity = movement.velocity();
         let desired_heading = if desired_velocity == Vec2::ZERO {
             kinematics.heading()
         } else {

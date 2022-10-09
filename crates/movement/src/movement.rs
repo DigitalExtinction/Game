@@ -13,31 +13,27 @@ impl Plugin for MovementPlugin {
     }
 }
 
+/// Ideal velocity induced by a global path plan.
 #[derive(Component, Default)]
-pub(crate) struct Movement {
-    /// Ideal velocity induced by a global path plan.
-    desired: Vec3,
+pub(crate) struct DesiredMovement {
+    velocity: Vec2,
 }
 
-impl Movement {
-    pub(crate) fn desired_velocity(&self) -> Vec3 {
-        self.desired
+impl DesiredMovement {
+    pub(crate) fn velocity(&self) -> Vec2 {
+        self.velocity
     }
 
-    pub(crate) fn stop(&mut self) {
-        self.desired = Vec3::ZERO;
-    }
-
-    pub(crate) fn set_desired_velocity(&mut self, velocity: Vec3) {
-        self.desired = velocity;
+    pub(crate) fn set_velocity(&mut self, velocity: Vec2) {
+        self.velocity = velocity;
     }
 }
 
 fn setup_entities(
     mut commands: Commands,
-    objects: Query<Entity, (With<MovableSolid>, Without<Movement>)>,
+    objects: Query<Entity, (With<MovableSolid>, Without<DesiredMovement>)>,
 ) {
     for entity in objects.iter() {
-        commands.entity(entity).insert(Movement::default());
+        commands.entity(entity).insert(DesiredMovement::default());
     }
 }
