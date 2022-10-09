@@ -49,8 +49,33 @@ pub(crate) enum ObstaclesLables {
     UpdateNearby,
 }
 
-#[derive(Component, Deref, DerefMut)]
-pub(crate) struct Disc(BoundingSphere);
+/// Description of disc at a point in time.
+#[derive(Component, Clone, Copy)]
+pub(crate) struct Disc {
+    radius: f32,
+    position: Vec2,
+}
+
+impl Disc {
+    pub(crate) fn new(radius: f32, position: Vec2) -> Self {
+        debug_assert!(radius.is_finite());
+        debug_assert!(radius > 0.);
+        debug_assert!(position.is_finite());
+        Self { radius, position }
+    }
+
+    pub(super) fn radius(&self) -> f32 {
+        self.radius
+    }
+
+    pub(super) fn position(&self) -> Vec2 {
+        self.position
+    }
+
+    pub(super) fn set_position(&mut self, position: Vec2) {
+        self.position = position;
+    }
+}
 
 pub(crate) struct StaticObstacles;
 
@@ -65,7 +90,7 @@ type Uninitialized<'w, 's> = Query<
 
 fn setup_discs(mut commands: Commands, cache: Res<ObjectCache>, objects: Uninitialized) {
     for (entity, transform, &object_type) in objects.iter() {
-        let center = transform.translation.to_flat().into();
+        let center = transform.translation.to_flat();
         let footprint = cache.get_ichnography(object_type).convex_hull();
         let radius = footprint
             .points()
@@ -75,7 +100,7 @@ fn setup_discs(mut commands: Commands, cache: Res<ObjectCache>, objects: Uniniti
             .unwrap();
         commands
             .entity(entity)
-            .insert(Disc(BoundingSphere::new(center, radius)))
+            .insert(Disc::new(radius, center))
             .insert(DecayingCache::<StaticObstacles>::default())
             .insert(DecayingCache::<MovableObstacles>::default());
     }
@@ -83,7 +108,7 @@ fn setup_discs(mut commands: Commands, cache: Res<ObjectCache>, objects: Uniniti
 
 fn update_discs(mut objects: Query<(&Transform, &mut Disc), Changed<Transform>>) {
     for (transform, mut disc) in objects.iter_mut() {
-        disc.center = transform.translation.to_flat().into();
+        disc.set_position(transform.translation.to_flat())
     }
 }
 

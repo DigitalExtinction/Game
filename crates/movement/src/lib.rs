@@ -1,4 +1,5 @@
 mod cache;
+mod hrvo;
 mod kinematics;
 mod movement;
 mod obstacles;

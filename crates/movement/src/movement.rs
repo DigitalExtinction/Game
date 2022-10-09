@@ -53,11 +53,39 @@ impl Default for DesiredMovement {
     }
 }
 
+#[derive(Component, Default)]
+pub(crate) struct RealMovement {
+    /// Velocity during the last update.
+    previous: Vec3,
+    /// Current velocity.
+    current: Vec3,
+}
+
+impl RealMovement {
+    pub(crate) fn current_velocity(&self) -> Vec3 {
+        self.current
+    }
+
+    /// Returns mean velocity over the last frame duration.
+    pub(crate) fn frame_velocity(&self) -> Vec3 {
+        self.current.lerp(self.previous, 0.5)
+    }
+
+    /// This method should be called once every update.
+    pub(crate) fn update(&mut self, velocity: Vec3) {
+        self.previous = self.current;
+        self.current = velocity;
+    }
+}
+
 fn setup_entities(
     mut commands: Commands,
     objects: Query<Entity, (With<MovableSolid>, Without<DesiredMovement>)>,
 ) {
     for entity in objects.iter() {
-        commands.entity(entity).insert(DesiredMovement::default());
+        commands
+            .entity(entity)
+            .insert(DesiredMovement::default())
+            .insert(RealMovement::default());
     }
 }

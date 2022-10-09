@@ -5,8 +5,9 @@ use de_core::{objects::MovableSolid, projection::ToMsl, stages::GameStage, state
 use iyes_loopless::prelude::*;
 
 use crate::{
-    movement::DesiredMovement, repulsion::RepulsionLables, MAX_ACCELERATION, MAX_ANGULAR_SPEED,
-    MAX_SPEED,
+    movement::{DesiredMovement, RealMovement},
+    repulsion::RepulsionLables,
+    MAX_ACCELERATION, MAX_ANGULAR_SPEED, MAX_SPEED,
 };
 
 pub(crate) struct KinematicsPlugin;
@@ -64,23 +65,13 @@ impl Kinematics {
         self.heading
     }
 
-    /// Returns mean velocity over the last frame duration.
-    fn frame_velocity(&self) -> Vec3 {
-        self.current.lerp(self.previous, 0.5)
-    }
-
-    /// This method should be called once every update.
-    fn tick(&mut self) {
-        self.previous = self.current;
-    }
-
-    fn update(&mut self, speed_delta: f32, heading_delta: f32) {
+    fn update(&mut self, speed_delta: f32, heading_delta: f32) -> Vec2 {
         debug_assert!(speed_delta.is_finite());
         self.speed = (self.speed + speed_delta).clamp(0., MAX_SPEED);
         debug_assert!(heading_delta.is_finite());
         self.heading = normalize_angle(self.heading + heading_delta);
         let (sin, cos) = self.heading.sin_cos();
-        self.current = Vec2::new(self.speed * cos, self.speed * sin).to_msl();
+        Vec2::new(self.speed * cos, self.speed * sin)
     }
 }
 
@@ -101,40 +92,48 @@ fn setup_entities(mut commands: Commands, objects: Uninitialized) {
     }
 }
 
-fn kinematics(time: Res<Time>, mut objects: Query<(&DesiredMovement, &mut Kinematics)>) {
+fn kinematics(
+    time: Res<Time>,
+    mut objects: Query<(&DesiredMovement, &mut RealMovement, &mut Kinematics)>,
+) {
     let time_delta = time.delta_seconds();
 
-    objects.par_for_each_mut(512, |(movement, mut kinematics)| {
-        kinematics.tick();
+    objects.par_for_each_mut(
+        512,
+        |(desired_movement, mut real_movement, mut kinematics)| {
+            let desired_velocity = desired_movement.velocity();
+            let desired_heading = if desired_velocity == Vec2::ZERO {
+                kinematics.heading()
+            } else {
+                desired_velocity.y.atan2(desired_velocity.x)
+            };
 
-        let desired_velocity = movement.velocity();
-        let desired_heading = if desired_velocity == Vec2::ZERO {
-            kinematics.heading()
-        } else {
-            desired_velocity.y.atan2(desired_velocity.x)
-        };
+            let heading_diff = normalize_angle(desired_heading - kinematics.heading());
+            let max_heading_delta = MAX_ANGULAR_SPEED * time_delta;
+            let heading_delta = heading_diff.clamp(-max_heading_delta, max_heading_delta);
 
-        let heading_diff = normalize_angle(desired_heading - kinematics.heading());
-        let max_heading_delta = MAX_ANGULAR_SPEED * time_delta;
-        let heading_delta = heading_diff.clamp(-max_heading_delta, max_heading_delta);
+            let max_speed_delta = MAX_ACCELERATION * time_delta;
+            let speed_delta = if (heading_diff - heading_delta).abs() > FRAC_PI_4 {
+                // Slow down if not going in roughly good direction.
+                -kinematics.speed()
+            } else {
+                desired_velocity.length() - kinematics.speed()
+            }
+            .clamp(-max_speed_delta, max_speed_delta);
 
-        let max_speed_delta = MAX_ACCELERATION * time_delta;
-        let speed_delta = if (heading_diff - heading_delta).abs() > FRAC_PI_4 {
-            // Slow down if not going in roughly good direction.
-            -kinematics.speed()
-        } else {
-            desired_velocity.length() - kinematics.speed()
-        }
-        .clamp(-max_speed_delta, max_speed_delta);
-
-        kinematics.update(speed_delta, heading_delta);
-    });
+            let velocity = kinematics.update(speed_delta, heading_delta);
+            real_movement.update(velocity.to_msl());
+        },
+    );
 }
 
-fn update_transform(time: Res<Time>, mut objects: Query<(&Kinematics, &mut Transform)>) {
+fn update_transform(
+    time: Res<Time>,
+    mut objects: Query<(&RealMovement, &Kinematics, &mut Transform)>,
+) {
     let time_delta = time.delta_seconds();
-    for (kinematics, mut transform) in objects.iter_mut() {
-        transform.translation += time_delta * kinematics.frame_velocity();
+    for (movement, kinematics, mut transform) in objects.iter_mut() {
+        transform.translation += time_delta * movement.frame_velocity();
         transform.rotation = Quat::from_rotation_y(kinematics.heading());
     }
 }
