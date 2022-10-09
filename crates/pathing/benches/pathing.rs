@@ -25,12 +25,12 @@ struct IchnographyCacheMock {
 impl Default for IchnographyCacheMock {
     fn default() -> Self {
         Self {
-            fixed: Ichnography::new(
+            fixed: Ichnography::from(
                 ConvexPolygon::from_convex_hull(&[
-                    Point::new(-10., 10.),
-                    Point::new(-10., -10.),
-                    Point::new(10., -10.),
-                    Point::new(10., 10.),
+                    Point::new(-8., 8.),
+                    Point::new(-8., -8.),
+                    Point::new(8., -8.),
+                    Point::new(8., 8.),
                 ])
                 .unwrap(),
             ),

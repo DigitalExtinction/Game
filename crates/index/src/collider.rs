@@ -57,12 +57,18 @@ impl LocalCollider {
     }
 
     pub(crate) fn intersects(&self, rhs: &impl ColliderWithCache) -> bool {
-        if self.world_aabb.intersects(rhs.world_aabb()) {
+        if self.query_aabb(rhs.world_aabb()) {
             self.object_collider
                 .intersects(&self.position, rhs.inner(), rhs.position())
         } else {
             false
         }
+    }
+
+    /// Returns true if world-space axis-aligned bounding boxes of the two
+    /// colliders intersect.
+    pub(crate) fn query_aabb(&self, aabb: &AABB) -> bool {
+        self.world_aabb.intersects(aabb)
     }
 }
 

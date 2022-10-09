@@ -151,27 +151,27 @@ mod tests {
     #[test]
     fn test_merge() {
         let transform_a = Transform::from_xyz(0., 0., -1.);
-        let ichnography_a = Ichnography::new(
+        let ichnography_a = Ichnography::from(
             ConvexPolygon::from_convex_hull(&[
-                Point::new(-2., 5.),
-                Point::new(-2., -3.),
-                Point::new(4., -3.),
-                Point::new(4., 5.),
+                Point::new(0., 3.),
+                Point::new(0., -1.),
+                Point::new(2., -1.),
+                Point::new(2., 3.),
             ])
             .unwrap(),
         );
         let transform_b = Transform::default();
-        let ichnography_b = Ichnography::new(
+        let ichnography_b = Ichnography::from(
             ConvexPolygon::from_convex_hull(&[
-                Point::new(-1.5, 8.),
-                Point::new(-1.5, 3.),
-                Point::new(3.5, 3.),
-                Point::new(3.5, 8.),
+                Point::new(0.5, 6.),
+                Point::new(0.5, 5.),
+                Point::new(1.5, 5.),
+                Point::new(1.5, 6.),
             ])
             .unwrap(),
         );
         let transform_c = Transform::default();
-        let ichnography_c = Ichnography::new(
+        let ichnography_c = Ichnography::from(
             ConvexPolygon::from_convex_hull(&[
                 Point::new(20., 20.),
                 Point::new(20., 18.),

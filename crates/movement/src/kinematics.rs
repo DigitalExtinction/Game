@@ -1,7 +1,4 @@
-use std::{
-    f32::consts::{FRAC_PI_4, PI, TAU},
-    sync::{Arc, Mutex},
-};
+use std::f32::consts::{FRAC_PI_4, PI, TAU};
 
 use bevy::prelude::*;
 use de_core::{
@@ -10,73 +7,43 @@ use de_core::{
     stages::GameStage,
     state::GameState,
 };
-use de_pathing::ScheduledPath;
 use iyes_loopless::prelude::*;
 
-const DESTINATION_ACCURACY: f32 = 0.1;
-/// Maximum object speed in meters per second.
-const MAX_SPEED: f32 = 10.;
-/// Maximum object acceleration in meters per second squared.
-const MAX_ACCELERATION: f32 = 2. * MAX_SPEED;
-/// Maximum object angular velocity in radians per second.
-const MAX_ANGULAR_SPEED: f32 = PI;
+use crate::{movement::Movement, pathing::PathingLabels, MAX_ACCELERATION, MAX_ANGULAR_SPEED};
 
-pub(crate) struct MovementPlugin;
+pub(crate) struct KinematicsPlugin;
 
-impl Plugin for MovementPlugin {
+impl Plugin for KinematicsPlugin {
     fn build(&self, app: &mut App) {
-        app.add_system_to_stage(GameStage::PreMovement, setup_entities)
-            .add_system_set_to_stage(
-                GameStage::Movement,
-                SystemSet::new()
-                    .with_system(
-                        update_desired_velocity
-                            .run_in_state(GameState::Playing)
-                            .label(MovementLabels::UpdateDesiredVelocity),
-                    )
-                    .with_system(
-                        kinematics
-                            .run_in_state(GameState::Playing)
-                            .label(MovementLabels::Kinematics)
-                            .after(MovementLabels::UpdateDesiredVelocity),
-                    )
-                    .with_system(
-                        update_transform
-                            .run_in_state(GameState::Playing)
-                            .after(MovementLabels::Kinematics),
-                    ),
-            );
+        app.add_system_to_stage(
+            GameStage::PreMovement,
+            setup_entities.run_in_state(GameState::Playing),
+        )
+        .add_system_set_to_stage(
+            GameStage::Movement,
+            SystemSet::new()
+                .with_system(
+                    kinematics
+                        .run_in_state(GameState::Playing)
+                        .label(KinematicsLabels::Kinematics)
+                        .after(PathingLabels::FollowPath),
+                )
+                .with_system(
+                    update_transform
+                        .run_in_state(GameState::Playing)
+                        .after(KinematicsLabels::Kinematics),
+                ),
+        );
     }
 }
 
-type Uninitialized<'w, 's> =
-    Query<'w, 's, (Entity, &'static Transform), (With<MovableSolid>, Without<Movement>)>;
-
 #[derive(Copy, Clone, Hash, Debug, PartialEq, Eq, SystemLabel)]
-enum MovementLabels {
-    UpdateDesiredVelocity,
+enum KinematicsLabels {
     Kinematics,
 }
 
-#[derive(Component, Default)]
-struct Movement {
-    /// Ideal velocity induced by a global path plan.
-    desired: Vec3,
-}
-
-impl Movement {
-    fn desired_velocity(&self) -> Vec3 {
-        self.desired
-    }
-
-    fn stop(&mut self) {
-        self.desired = Vec3::ZERO;
-    }
-
-    fn set_desired_velocity(&mut self, velocity: Vec3) {
-        self.desired = velocity;
-    }
-}
+type Uninitialized<'w, 's> =
+    Query<'w, 's, (Entity, &'static Transform), (With<MovableSolid>, Without<Kinematics>)>;
 
 #[derive(Component)]
 struct Kinematics {
@@ -132,34 +99,7 @@ impl From<&Transform> for Kinematics {
 
 fn setup_entities(mut commands: Commands, objects: Uninitialized) {
     for (entity, transform) in objects.iter() {
-        commands
-            .entity(entity)
-            .insert(Movement::default())
-            .insert(Kinematics::from(transform));
-    }
-}
-
-fn update_desired_velocity(
-    mut commands: Commands,
-    mut objects: Query<(Entity, &Transform, &mut ScheduledPath, &mut Movement)>,
-) {
-    let finished = Arc::new(Mutex::new(Vec::new()));
-
-    objects.par_for_each_mut(512, |(entity, transform, mut path, mut movement)| {
-        let remaining = path.destination().distance(transform.translation.to_flat());
-        if remaining <= DESTINATION_ACCURACY {
-            finished.lock().unwrap().push(entity);
-            movement.stop();
-        } else {
-            let advancement = path.advance(transform.translation.to_flat(), MAX_SPEED * 0.5);
-            let direction = (advancement.to_msl() - transform.translation).normalize();
-            let desired_speed = MAX_SPEED.min((2. * remaining * MAX_ACCELERATION).sqrt());
-            movement.set_desired_velocity(desired_speed * direction);
-        }
-    });
-
-    for entity in finished.lock().unwrap().drain(..) {
-        commands.entity(entity).remove::<ScheduledPath>();
+        commands.entity(entity).insert(Kinematics::from(transform));
     }
 }
 

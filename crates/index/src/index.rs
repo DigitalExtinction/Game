@@ -185,6 +185,14 @@ where
             })
         })
     }
+
+    pub fn query_aabb<'a, 'b>(
+        &'a self,
+        aabb: &'b AABB,
+        ignore: Option<Entity>,
+    ) -> AabbQueryResults<'w, 's, 'a, 'b, Q, F> {
+        AabbQueryResults::new(&self.entities, &self.index, aabb, ignore)
+    }
 }
 
 pub struct RayEntityIntersection<T> {
@@ -240,6 +248,81 @@ impl<T> PartialEq for RayEntityIntersection<T> {
 }
 
 impl<T> Eq for RayEntityIntersection<T> {}
+
+pub struct AabbQueryResults<'w, 's, 'a, 'b, Q, F = ()>
+where
+    Q: WorldQuery + Sync + Send + 'static,
+    F: WorldQuery + Sync + Send + 'static,
+{
+    entities: &'a Query<'w, 's, Q, F>,
+    index: &'a EntityIndex,
+    candidates: AabbCandidates<'a>,
+    current: Vec<Entity>,
+    current_index: usize,
+    aabb: &'b AABB,
+    ignore: Option<Entity>,
+}
+
+impl<'w, 's, 'a, 'b, Q, F> AabbQueryResults<'w, 's, 'a, 'b, Q, F>
+where
+    Q: WorldQuery + Sync + Send + 'static,
+    F: WorldQuery + Sync + Send + 'static,
+{
+    fn new(
+        entities: &'a Query<'w, 's, Q, F>,
+        index: &'a EntityIndex,
+        aabb: &'b AABB,
+        ignore: Option<Entity>,
+    ) -> Self {
+        let candidates = index.query_aabb(aabb);
+
+        Self {
+            entities,
+            index,
+            candidates,
+            current: Vec::new(),
+            current_index: 0,
+            aabb,
+            ignore,
+        }
+    }
+}
+
+impl<'w, 's, 'a, 'b, Q, F> Iterator for AabbQueryResults<'w, 's, 'a, 'b, Q, F>
+where
+    Q: WorldQuery + Sync + Send + 'static,
+    F: WorldQuery + Sync + Send + 'static,
+    'a: 'w,
+{
+    type Item = <<<Q as WorldQuery>::ReadOnly as WorldQueryGats<'w>>::Fetch as Fetch<'w>>::Item;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        'outer: loop {
+            while self.current_index < self.current.len() {
+                let candidate = self.current[self.current_index];
+                self.current_index += 1;
+
+                if self.ignore.map(|e| e == candidate).unwrap_or(false) {
+                    continue;
+                }
+
+                if let Ok(item) = self.entities.get(candidate) {
+                    if self.index.get_collider(candidate).query_aabb(self.aabb) {
+                        break 'outer Some(item);
+                    }
+                }
+            }
+            match self.candidates.next() {
+                Some(candidates) => {
+                    self.current_index = 0;
+                    self.current.clear();
+                    self.current.extend(candidates);
+                }
+                None => break None,
+            }
+        }
+    }
+}
 
 #[cfg(test)]
 mod tests {
