@@ -1,7 +1,14 @@
 use std::f32::consts::{FRAC_PI_4, PI, TAU};
 
 use bevy::prelude::*;
-use de_core::{objects::MovableSolid, projection::ToMsl, stages::GameStage, state::GameState};
+use de_core::{
+    objects::MovableSolid,
+    projection::{ToFlat, ToMsl},
+    stages::GameStage,
+    state::GameState,
+};
+use de_map::size::MapBounds;
+use de_objects::EXCLUSION_OFFSET;
 use iyes_loopless::prelude::*;
 
 use crate::{
@@ -131,12 +138,27 @@ fn kinematics(time: Res<Time>, mut objects: Query<(&DesiredMovement, &mut Kinema
     });
 }
 
-fn update_transform(time: Res<Time>, mut objects: Query<(&Kinematics, &mut Transform)>) {
+fn update_transform(
+    time: Res<Time>,
+    bounds: Res<MapBounds>,
+    mut objects: Query<(&Kinematics, &mut Transform)>,
+) {
     let time_delta = time.delta_seconds();
     for (kinematics, mut transform) in objects.iter_mut() {
-        transform.translation += time_delta * kinematics.frame_velocity();
+        transform.translation = clamp(
+            bounds.as_ref(),
+            transform.translation + time_delta * kinematics.frame_velocity(),
+        );
         transform.rotation = Quat::from_rotation_y(kinematics.heading());
     }
+}
+
+fn clamp(bounds: &MapBounds, translation: Vec3) -> Vec3 {
+    let offset = Vec2::splat(EXCLUSION_OFFSET);
+    let min = bounds.min() + offset;
+    let max = bounds.max() - offset;
+    let clipped = translation.to_flat().clamp(min, max).to_msl();
+    Vec3::new(clipped.x, translation.y, clipped.z)
 }
 
 fn normalize_angle(mut angle: f32) -> f32 {

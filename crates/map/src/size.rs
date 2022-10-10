@@ -22,8 +22,18 @@ impl MapBounds {
     }
 
     /// Minimum point of the map.
+    pub fn min(&self) -> Vec2 {
+        -self.0
+    }
+
+    /// Maximum point of the map.
+    pub fn max(&self) -> Vec2 {
+        self.0
+    }
+
+    /// Bounding box of the map.
     pub fn aabb(&self) -> AABB {
-        AABB::new((-self.0).into(), self.0.into())
+        AABB::new(self.min().into(), self.max().into())
     }
 
     pub fn size(&self) -> Vec2 {
