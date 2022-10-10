@@ -61,7 +61,7 @@ fn avoid_obstacles(
         &RealMovement,
         &DecayingCache<MovableObstacles>,
     )>,
-    others: Query<(&Disc, &DesiredMovement, &RealMovement)>,
+    //others: Query<(&Disc, &DesiredMovement, &RealMovement)>,
 ) {
     objects.par_for_each_mut(
         512,
@@ -71,17 +71,18 @@ fn avoid_obstacles(
             }
 
             let disc = MovingDisc::new(disc, real_movement.current_velocity().to_flat());
-            let obstacles: Vec<Obstacle> = obstacles
-                .entities()
-                .iter()
-                .map(|&entity| {
-                    let (&disc, desired_movement, real_movement) = others.get(entity).unwrap();
-                    Obstacle::new(
-                        MovingDisc::new(disc, real_movement.current_velocity().to_flat()),
-                        !desired_movement.stopped(),
-                    )
-                })
-                .collect();
+            let obstacles: Vec<Obstacle> = Vec::new();
+            // obstacles
+            // .entities()
+            // .iter()
+            // .map(|&entity| {
+            //     let (&disc, desired_movement, real_movement) = others.get(entity).unwrap();
+            //     Obstacle::new(
+            //         MovingDisc::new(disc, real_movement.current_velocity().to_flat()),
+            //         !desired_movement.stopped(),
+            //     )
+            // })
+            // .collect();
 
             let velocity = hrvo(
                 real_movement.current_velocity().to_flat(),
@@ -89,6 +90,9 @@ fn avoid_obstacles(
                 &disc,
                 &obstacles,
             );
+
+            println!("V: {:?}", velocity);
+
             desired_movement.update(velocity);
         },
     );
