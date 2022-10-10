@@ -1776,6 +1776,7 @@ dependencies = [
  "bevy",
  "de_core",
  "de_index",
+ "de_map",
  "de_objects",
  "de_pathing",
  "iyes_loopless",
