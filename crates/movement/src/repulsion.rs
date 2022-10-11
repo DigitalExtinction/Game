@@ -5,7 +5,8 @@ use de_core::{
     stages::GameStage,
     state::GameState,
 };
-use de_objects::{IchnographyCache, ObjectCache};
+use de_map::size::MapBounds;
+use de_objects::{IchnographyCache, ObjectCache, EXCLUSION_OFFSET};
 use iyes_loopless::prelude::*;
 use parry2d::{math::Isometry, na::Unit, query::PointQuery};
 
@@ -48,11 +49,18 @@ impl Plugin for RepulsionPlugin {
                         .after(PathingLabels::FollowPath),
                 )
                 .with_system(
+                    repel_bounds
+                        .run_in_state(GameState::Playing)
+                        .label(RepulsionLables::RepelBounds)
+                        .after(PathingLabels::FollowPath),
+                )
+                .with_system(
                     apply
                         .run_in_state(GameState::Playing)
                         .label(RepulsionLables::Apply)
                         .after(RepulsionLables::RepelStatic)
-                        .after(RepulsionLables::RepelMovable),
+                        .after(RepulsionLables::RepelMovable)
+                        .after(RepulsionLables::RepelBounds),
                 ),
         );
     }
@@ -62,6 +70,7 @@ impl Plugin for RepulsionPlugin {
 pub(crate) enum RepulsionLables {
     RepelStatic,
     RepelMovable,
+    RepelBounds,
     Apply,
 }
 
@@ -221,6 +230,28 @@ fn repel_movable(
             if distance < MAX_REPULSION_DISTANCE {
                 repulsion.add(direction, distance - MIN_MOVABLE_OBJECT_DISTANCE);
             }
+        }
+    });
+}
+
+fn repel_bounds(
+    bounds: Res<MapBounds>,
+    mut objects: Query<(&DesiredMovement, &Disc, &mut Repulsion)>,
+) {
+    objects.par_for_each_mut(512, |(movement, disc, mut repulsion)| {
+        if movement.stopped() {
+            return;
+        }
+
+        let projection = bounds.aabb().project_local_point(&disc.center, false);
+        debug_assert!(projection.is_inside);
+
+        let diff = projection.point - disc.center;
+        let diff_norm = diff.norm();
+        let distance = diff_norm - disc.radius;
+
+        if distance < MAX_REPULSION_DISTANCE {
+            repulsion.add(Vec2::from(diff / diff_norm), distance - EXCLUSION_OFFSET);
         }
     });
 }
