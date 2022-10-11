@@ -18,7 +18,18 @@ Feedback, bug reports and other [contributions](#contributing) are welcomed.
 
 # How to Play?
 
-[Currently](#status), the only possibility is to build the game from source.
+Game controls & game play tutorial is at [TUTORIAL.md](/TUTORIAL.md).
+
+## Using Build from `main` Branch
+
+A ZIP file with a binary and all assets is produced by a GitHub Action which is
+run on every push to `main` branch. You can browse the actions
+[here](https://github.com/DigitalExtinction/Game/actions).
+
+On a “usual setup” it is sufficient to extract the ZIP file and execute the
+binary called `de` or `de.exe`.
+
+## Building from Source
 
 What you need:
 
