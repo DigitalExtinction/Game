@@ -2,31 +2,9 @@
 //! This library implements a Bevy plugin for optimal path finding on the game
 //! map.
 //!
-//! The plugin [`PathingPlugin`] registers systems which
-//! automatically update the path finder when static solid objects are added or
-//! removed from the world.
-//!
 //! When [`UpdateEntityPath`] event is sent, the entity paths is automatically
 //! (re)planned.
 //!
-//! # World Update
-//!
-//! * Each solid static object's ichnography (a convex polygon) is offset by
-//!   some amount. See [`crate::exclusion`].
-//!
-//! * Overlapping polygons from the previous steps are merged -- their convex
-//!   hull is used. These are called exclusion areas.
-//!
-//! * Whole map (surface) is triangulated with Constrained Delaunay
-//!   triangulation (CDT). All edges from the exclusion areas are used as
-//!   constrains. See [`crate::triangulation`].
-//!
-//! * Triangles from inside the exclusion areas are dropped, remaining
-//!   triangles are used in successive steps.
-//!
-//! * A visibility sub-graph is created. The each triangle edge is connected
-//!   with all neighboring triangle edges. See
-//!   [`crate::finder::PathFinder::from_triangles`].
 //!
 //! # Path Search
 //!
@@ -42,25 +20,28 @@ mod chain;
 mod dijkstra;
 mod exclusion;
 mod finder;
+mod fplugin;
 mod funnel;
 mod geometry;
 mod graph;
 mod path;
+mod pplugin;
 mod query;
-mod systems;
 mod triangulation;
 mod utils;
 
 use bevy::{app::PluginGroupBuilder, prelude::PluginGroup};
+pub use fplugin::create_finder;
+use fplugin::FinderPlugin;
 pub use path::ScheduledPath;
+use pplugin::PathingPlugin;
+pub use pplugin::UpdateEntityPath;
 pub use query::{PathQueryProps, PathTarget};
-use systems::PathingPlugin;
-pub use systems::{create_finder, UpdateEntityPath};
 
 pub struct PathingPluginGroup;
 
 impl PluginGroup for PathingPluginGroup {
     fn build(&mut self, group: &mut PluginGroupBuilder) {
-        group.add(PathingPlugin);
+        group.add(FinderPlugin).add(PathingPlugin);
     }
 }
