@@ -39,7 +39,17 @@ impl Plugin for PathingPlugin {
             )
             .add_system_to_stage(
                 GameStage::PreMovement,
-                check_path_results.run_in_state(GameState::Playing),
+                check_path_results
+                    .run_in_state(GameState::Playing)
+                    // This system removes finished tasks from UpdatePathsState
+                    // and inserts Scheduledpath components. When this happen,
+                    // the tasks is no longer available however the component
+                    // is not available as well until the end of the stage.
+                    //
+                    // System PathingLabel::UpdateExistingPaths needs to detect
+                    // that a path is either already scheduled or being
+                    // computed. Thus this system must run after it.
+                    .after(PathingLabel::UpdateExistingPaths),
             )
             .add_system_to_stage(GameStage::PostUpdate, remove_path_targets);
     }
@@ -81,6 +91,10 @@ struct UpdatePathsState {
 }
 
 impl UpdatePathsState {
+    fn contains(&self, entity: Entity) -> bool {
+        self.tasks.contains_key(&entity)
+    }
+
     fn spawn_new(
         &mut self,
         finder: Arc<PathFinder>,
@@ -148,11 +162,12 @@ fn update_existing_paths(
 
     for (entity, transform, target, path) in entities.iter() {
         let position = transform.translation.to_flat();
-        if path.is_none()
-            && position.distance(target.location())
-                <= (target.properties().distance() + TARGET_TOLERANCE)
-        {
-            continue;
+        if path.is_none() && !state.contains(entity) {
+            let current_distance = position.distance(target.location());
+            let desired_distance = target.properties().distance();
+            if (current_distance - desired_distance).abs() <= TARGET_TOLERANCE {
+                continue;
+            }
         }
 
         let new_target = PathTarget::new(
