@@ -1,4 +1,4 @@
-use std::sync::Arc;
+use std::{ops::Deref, sync::Arc};
 
 use bevy::{
     prelude::*,
@@ -85,6 +85,27 @@ pub(crate) enum FinderLabel {
 /// through non-accessible area.
 pub(crate) struct PathFinderUpdated;
 
+#[derive(Clone)]
+pub(crate) struct FinderRes(Arc<PathFinder>);
+
+impl FinderRes {
+    fn new(finder: PathFinder) -> Self {
+        Self(Arc::new(finder))
+    }
+
+    fn update(&mut self, finder: PathFinder) {
+        self.0 = Arc::new(finder);
+    }
+}
+
+impl Deref for FinderRes {
+    type Target = PathFinder;
+
+    fn deref(&self) -> &Self::Target {
+        self.0.as_ref()
+    }
+}
+
 struct UpdateFinderState {
     invalid: bool,
     task: Option<Task<PathFinder>>,
@@ -137,7 +158,7 @@ type ChangedQuery<'world, 'state> =
     Query<'world, 'state, Entity, (With<StaticSolid>, Changed<Transform>)>;
 
 fn setup(mut commands: Commands, bounds: Res<MapBounds>) {
-    commands.insert_resource(Arc::new(PathFinder::new(bounds.as_ref())));
+    commands.insert_resource(FinderRes::new(PathFinder::new(bounds.as_ref())));
 }
 
 fn check_removed(mut state: ResMut<UpdateFinderState>, removed: RemovedComponents<StaticSolid>) {
@@ -165,13 +186,13 @@ fn update(
 }
 
 fn check_update_result(
-    mut commands: Commands,
     mut state: ResMut<UpdateFinderState>,
+    mut finder_res: ResMut<FinderRes>,
     mut pf_updated: EventWriter<PathFinderUpdated>,
 ) {
     if let Some(finder) = state.check_result() {
         info!("Inserting updated path finder");
-        commands.insert_resource(Arc::new(finder));
+        finder_res.update(finder);
         pf_updated.send(PathFinderUpdated);
     }
 }

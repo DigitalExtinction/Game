@@ -1,5 +1,3 @@
-use std::sync::Arc;
-
 use ahash::AHashMap;
 use bevy::{
     prelude::*,
@@ -10,8 +8,7 @@ use futures_lite::future;
 use iyes_loopless::prelude::*;
 
 use crate::{
-    finder::PathFinder,
-    fplugin::{FinderLabel, PathFinderUpdated},
+    fplugin::{FinderLabel, FinderRes, PathFinderUpdated},
     path::{Path, ScheduledPath},
     PathQueryProps, PathTarget,
 };
@@ -101,13 +98,7 @@ impl UpdatePathsState {
         self.tasks.contains_key(&entity)
     }
 
-    fn spawn_new(
-        &mut self,
-        finder: Arc<PathFinder>,
-        entity: Entity,
-        source: Vec2,
-        target: PathTarget,
-    ) {
+    fn spawn_new(&mut self, finder: FinderRes, entity: Entity, source: Vec2, target: PathTarget) {
         let pool = AsyncComputeTaskPool::get();
         let task = pool.spawn(async move { finder.find_path(source, target) });
         self.tasks.insert(entity, UpdatePathTask::new(task));
@@ -156,7 +147,7 @@ enum UpdatePathState {
 }
 
 fn update_existing_paths(
-    finder: Res<Arc<PathFinder>>,
+    finder: Res<FinderRes>,
     mut state: ResMut<UpdatePathsState>,
     mut events: EventReader<PathFinderUpdated>,
     entities: Query<(Entity, &Transform, &PathTarget, Option<&ScheduledPath>)>,
@@ -191,7 +182,7 @@ fn update_existing_paths(
 
 fn update_requested_paths(
     mut commands: Commands,
-    finder: Res<Arc<PathFinder>>,
+    finder: Res<FinderRes>,
     mut state: ResMut<UpdatePathsState>,
     mut events: EventReader<UpdateEntityPath>,
     entities: Query<&Transform, With<MovableSolid>>,
