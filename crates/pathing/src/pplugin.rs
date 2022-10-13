@@ -35,12 +35,17 @@ impl Plugin for PathingPlugin {
                 GameStage::PreMovement,
                 update_requested_paths
                     .run_in_state(GameState::Playing)
+                    .label(PathingLabel::UpdateRequestedPaths)
                     .after(PathingLabel::UpdateExistingPaths),
             )
             .add_system_to_stage(
                 GameStage::PreMovement,
                 check_path_results
                     .run_in_state(GameState::Playing)
+                    // This is needed to avoid race condition in PathTarget
+                    // removal which would happen if path was not-found before
+                    // this system is run.
+                    .before(PathingLabel::UpdateRequestedPaths)
                     // This system removes finished tasks from UpdatePathsState
                     // and inserts Scheduledpath components. When this happen,
                     // the tasks is no longer available however the component
@@ -51,12 +56,13 @@ impl Plugin for PathingPlugin {
                     // computed. Thus this system must run after it.
                     .after(PathingLabel::UpdateExistingPaths),
             )
-            .add_system_to_stage(GameStage::PostUpdate, remove_path_targets);
+            .add_system_to_stage(GameStage::PostMovement, remove_path_targets);
     }
 }
 
 #[derive(SystemLabel)]
 enum PathingLabel {
+    UpdateRequestedPaths,
     UpdateExistingPaths,
 }
 
@@ -203,7 +209,11 @@ fn update_requested_paths(
     }
 }
 
-fn check_path_results(mut commands: Commands, mut state: ResMut<UpdatePathsState>) {
+fn check_path_results(
+    mut commands: Commands,
+    mut state: ResMut<UpdatePathsState>,
+    targets: Query<&PathTarget>,
+) {
     for (entity, path) in state.check_results() {
         let mut entity_commands = commands.entity(entity);
         match path {
@@ -212,6 +222,15 @@ fn check_path_results(mut commands: Commands, mut state: ResMut<UpdatePathsState
             }
             None => {
                 entity_commands.remove::<ScheduledPath>();
+
+                // This must be here on top of target removal in
+                // remove_path_targets due to the possibility that
+                // `ScheduledPath` was never found.
+                if let Ok(target) = targets.get(entity) {
+                    if !target.permanent() {
+                        entity_commands.remove::<PathTarget>();
+                    }
+                }
             }
         }
     }
@@ -219,11 +238,14 @@ fn check_path_results(mut commands: Commands, mut state: ResMut<UpdatePathsState
 
 fn remove_path_targets(
     mut commands: Commands,
-    entities: Query<(Entity, &PathTarget), Without<ScheduledPath>>,
+    targets: Query<&PathTarget>,
+    removed: RemovedComponents<ScheduledPath>,
 ) {
-    for (entity, target) in entities.iter() {
-        if !target.permanent() {
-            commands.entity(entity).remove::<PathTarget>();
+    for entity in removed.iter() {
+        if let Ok(target) = targets.get(entity) {
+            if !target.permanent() {
+                commands.entity(entity).remove::<PathTarget>();
+            }
         }
     }
 }
