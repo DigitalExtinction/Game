@@ -157,6 +157,9 @@ fn update_existing_paths(
 
         let new_target = PathTarget::new(
             target.location(),
+            // Set max distance to infinity: the object has already departed
+            // from the original point so it would not make sense to stop in
+            // the middle of the path instead of getting as close as possible.
             PathQueryProps::new(target.properties().distance(), f32::INFINITY),
             target.permanent(),
         );
