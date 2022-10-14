@@ -15,6 +15,7 @@ categories = ["games"]
 # DE
 de_core = { path = "crates/core", version = "0.1.0-dev" }
 de_objects = { path = "crates/objects", version = "0.1.0-dev" }
+de_terrain = { path = "crates/terrain", version = "0.1.0-dev" }
 de_loader = { path = "crates/loader", version = "0.1.0-dev" }
 de_index = { path = "crates/index", version = "0.1.0-dev" }
 de_pathing = { path = "crates/pathing", version = "0.1.0-dev" }

@@ -10,6 +10,7 @@ use de_movement::MovementPluginGroup;
 use de_objects::ObjectsPluginGroup;
 use de_pathing::PathingPluginGroup;
 use de_spawner::SpawnerPluginGroup;
+use de_terrain::TerrainPluginGroup;
 use iyes_loopless::prelude::*;
 
 fn main() {
@@ -24,6 +25,7 @@ fn main() {
         .add_plugin(GamePlugin)
         .add_plugins(CorePluginGroup)
         .add_plugins(ObjectsPluginGroup)
+        .add_plugins(TerrainPluginGroup)
         .add_plugins(LoaderPluginGroup)
         .add_plugins(IndexPluginGroup)
         .add_plugins(PathingPluginGroup)
