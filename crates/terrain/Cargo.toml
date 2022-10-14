@@ -12,6 +12,7 @@ categories = ["games"]
 
 [dependencies]
 # DE
+de_core = { path = "../core", version = "0.1.0-dev" }
 de_map = { path = "../map", version = "0.1.0-dev" }
 
 # Other
