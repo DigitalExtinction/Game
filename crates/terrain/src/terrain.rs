@@ -1,10 +1,12 @@
+use ahash::AHashMap;
 use bevy::{
     prelude::{Bundle, Component, Mesh, Transform},
     render::{mesh::Indices, render_resource::PrimitiveTopology},
+    utils::FloatOrd,
 };
 use de_core::projection::{ToFlat, ToMsl};
 use de_map::size::MapBounds;
-use glam::Vec3;
+use glam::{Vec2, Vec3};
 use parry3d::{
     math::Isometry,
     na::{DMatrix, Vector3},
@@ -52,49 +54,36 @@ impl Terrain {
     }
 
     pub(crate) fn generate_mesh(&self, translation: Vec3) -> Mesh {
-        // Note that local AABB XZ axes correspond to 2D (flat) XY coordinates
-        // on the map and not XZ world coordinates.
-        let local_aabb = self.heightfield.local_aabb();
         let translation = translation.to_flat();
-        let translation = Isometry::translation(translation.x, 0., translation.y);
-        let aabb = local_aabb.transform_by(&translation);
 
-        let vertices = [
-            (
-                [local_aabb.mins.x, 0., local_aabb.mins.z],
-                [0., 1., 0.],
-                [aabb.mins.x, aabb.mins.z],
-            ),
-            (
-                [local_aabb.mins.x, 0., local_aabb.maxs.z],
-                [0., 1., 0.],
-                [aabb.mins.x, aabb.maxs.z],
-            ),
-            (
-                [local_aabb.maxs.x, 0., local_aabb.maxs.z],
-                [0., 1., 0.],
-                [aabb.maxs.x, aabb.maxs.z],
-            ),
-            (
-                [local_aabb.maxs.x, 0., local_aabb.mins.z],
-                [0., 1., 0.],
-                [aabb.maxs.x, aabb.mins.z],
-            ),
-        ];
-
-        let indices = Indices::U32(vec![0, 1, 2, 0, 2, 3]);
+        let mut point_to_index: AHashMap<[FloatOrd; 2], u32> = AHashMap::new();
+        let mut indices: Vec<u32> = Vec::new();
 
         let mut positions = Vec::<[f32; 3]>::new();
         let mut normals = Vec::<[f32; 3]>::new();
         let mut uvs = Vec::<[f32; 2]>::new();
-        for (position, normal, uv) in &vertices {
-            positions.push(*position);
-            normals.push(*normal);
-            uvs.push(*uv);
+
+        for triangle in self.heightfield.triangles() {
+            for point in [triangle.a, triangle.c, triangle.b] {
+                let key = [FloatOrd(point.x), FloatOrd(point.z)];
+                match point_to_index.get(&key) {
+                    Some(&index) => indices.push(index),
+                    None => {
+                        let index = point_to_index.len() as u32;
+                        point_to_index.insert(key, index);
+                        indices.push(index);
+
+                        let world = Vec2::new(point.x, point.z).to_msl();
+                        positions.push([world.x, point.y, world.z]);
+                        normals.push([0., 1., 0.]);
+                        uvs.push([point.x + translation.x, point.z + translation.y]);
+                    }
+                }
+            }
         }
 
         let mut mesh = Mesh::new(PrimitiveTopology::TriangleList);
-        mesh.set_indices(Some(indices));
+        mesh.set_indices(Some(Indices::U32(indices)));
         mesh.insert_attribute(Mesh::ATTRIBUTE_POSITION, positions);
         mesh.insert_attribute(Mesh::ATTRIBUTE_NORMAL, normals);
         mesh.insert_attribute(Mesh::ATTRIBUTE_UV_0, uvs);

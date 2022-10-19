@@ -1842,6 +1842,7 @@ dependencies = [
 name = "de_terrain"
 version = "0.1.0-dev"
 dependencies = [
+ "ahash",
  "bevy",
  "de_core",
  "de_map",
