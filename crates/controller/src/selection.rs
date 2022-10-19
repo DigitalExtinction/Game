@@ -1,9 +1,12 @@
 use ahash::AHashSet;
-use bevy::{
-    ecs::system::SystemParam,
-    prelude::{App, Commands, Component, Entity, EventReader, Plugin, Query, With},
+use bevy::{ecs::system::SystemParam, prelude::*};
+use de_core::{
+    objects::{MovableSolid, ObjectType},
+    stages::GameStage,
+    state::GameState,
 };
-use de_core::{stages::GameStage, state::GameState};
+use de_objects::{IchnographyCache, ObjectCache};
+use de_terrain::CircleMarker;
 use iyes_loopless::prelude::*;
 
 use crate::Labels;
@@ -68,7 +71,9 @@ pub(crate) enum SelectionMode {
 #[derive(SystemParam)]
 struct Selector<'w, 's> {
     commands: Commands<'w, 's>,
+    cache: Res<'w, ObjectCache>,
     selected: Query<'w, 's, Entity, With<Selected>>,
+    movable: Query<'w, 's, &'static ObjectType, With<MovableSolid>>,
 }
 
 impl<'w, 's> Selector<'w, 's> {
@@ -82,11 +87,20 @@ impl<'w, 's> Selector<'w, 's> {
         };
 
         for entity in deselect {
-            self.commands.entity(entity).remove::<Selected>();
+            let mut entity_commands = self.commands.entity(entity);
+            entity_commands.remove::<Selected>();
+            if self.movable.contains(entity) {
+                entity_commands.remove::<CircleMarker>();
+            }
         }
 
         for entity in select {
-            self.commands.entity(entity).insert(Selected);
+            let mut entity_commands = self.commands.entity(entity);
+            entity_commands.insert(Selected);
+            if let Ok(&object_type) = self.movable.get(entity) {
+                let radius = self.cache.get_ichnography(object_type).radius();
+                entity_commands.insert(CircleMarker::new(radius));
+            }
         }
     }
 }

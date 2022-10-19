@@ -13,6 +13,7 @@ categories = ["games"]
 [dependencies]
 # DE
 de_core = { path = "../core", version = "0.1.0-dev" }
+de_objects = { path = "../objects", version = "0.1.0-dev" }
 de_index = { path = "../index", version = "0.1.0-dev" }
 de_terrain = { path = "../terrain", version = "0.1.0-dev" }
 de_pathing = { path = "../pathing", version = "0.1.0-dev" }
