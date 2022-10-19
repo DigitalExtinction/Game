@@ -66,13 +66,7 @@ type Uninitialized<'w, 's> = Query<
 fn setup_discs(mut commands: Commands, cache: Res<ObjectCache>, objects: Uninitialized) {
     for (entity, transform, &object_type) in objects.iter() {
         let center = transform.translation.to_flat().into();
-        let footprint = cache.get_ichnography(object_type).convex_hull();
-        let radius = footprint
-            .points()
-            .iter()
-            .map(|p| p.coords.norm())
-            .max_by(f32::total_cmp)
-            .unwrap();
+        let radius = cache.get_ichnography(object_type).radius();
         commands
             .entity(entity)
             .insert(Disc(BoundingSphere::new(center, radius)))

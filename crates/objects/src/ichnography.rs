@@ -18,6 +18,7 @@ impl IchnographyCache for ObjectCache {
 }
 
 pub struct Ichnography {
+    radius: f32,
     local_aabb: AABB,
     convex_hull: ConvexPolygon,
     offset_convex_hull: ConvexPolygon,
@@ -25,11 +26,13 @@ pub struct Ichnography {
 
 impl Ichnography {
     fn new(
+        radius: f32,
         local_aabb: AABB,
         convex_hull: ConvexPolygon,
         offset_convex_hull: ConvexPolygon,
     ) -> Self {
         Self {
+            radius,
             local_aabb,
             convex_hull,
             offset_convex_hull,
@@ -47,13 +50,28 @@ impl Ichnography {
     pub fn offset_convex_hull(&self) -> &ConvexPolygon {
         &self.offset_convex_hull
     }
+
+    /// Returns minimum radius of a circle containing convex hull of the
+    /// ichnography placed at local origin (0., 0.).
+    pub fn radius(&self) -> f32 {
+        self.radius
+    }
 }
 
 impl From<ConvexPolygon> for Ichnography {
     fn from(footprint: ConvexPolygon) -> Self {
+        // self.convex_hull.bounding_sphere() cannot be used since it assumes
+        // different circle center.
+        let radius = footprint
+            .points()
+            .iter()
+            .map(|p| p.coords.norm())
+            .max_by(f32::total_cmp)
+            .unwrap();
+
         let local_aabb = footprint.local_aabb();
         let offset = footprint.offsetted(EXCLUSION_OFFSET);
-        Self::new(local_aabb, footprint, offset)
+        Self::new(radius, local_aabb, footprint, offset)
     }
 }
 
@@ -74,6 +92,18 @@ impl From<&Footprint> for Ichnography {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn test_radius() {
+        let footpring = ConvexPolygon::from_convex_polyline(vec![
+            Point::new(-10., 125.),
+            Point::new(2., 125.),
+            Point::new(2., 225.),
+        ])
+        .unwrap();
+        let radius = Ichnography::from(footpring).radius();
+        assert!((radius - 225.009).abs() < 0.01);
+    }
 
     #[test]
     fn test_ichnography_from() {
