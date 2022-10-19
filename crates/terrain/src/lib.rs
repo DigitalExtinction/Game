@@ -1,5 +1,6 @@
 mod collider;
 mod plugin;
+mod shader;
 mod terrain;
 
 use bevy::{app::PluginGroupBuilder, prelude::*};

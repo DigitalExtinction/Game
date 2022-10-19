@@ -1846,6 +1846,8 @@ dependencies = [
  "de_core",
  "de_map",
  "glam",
+ "iyes_loopless",
+ "iyes_progress",
  "parry3d",
 ]
 
