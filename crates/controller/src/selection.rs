@@ -41,6 +41,10 @@ impl SelectEvent {
         }
     }
 
+    pub(crate) fn many(entities: Vec<Entity>, mode: SelectionMode) -> Self {
+        Self { entities, mode }
+    }
+
     fn entities(&self) -> &[Entity] {
         self.entities.as_slice()
     }

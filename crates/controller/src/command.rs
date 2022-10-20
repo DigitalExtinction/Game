@@ -67,6 +67,12 @@ impl Plugin for CommandPlugin {
                         .run_if(KeyCondition::single(KeyCode::Escape).build())
                         .label(Labels::InputUpdate)
                         .after(Labels::PreInputUpdate),
+                )
+                .with_system(
+                    select_all
+                        .run_if(KeyCondition::with_ctrl(KeyCode::A).build())
+                        .label(Labels::InputUpdate)
+                        .after(Labels::PreInputUpdate),
                 ),
         )
         .add_system_set_to_stage(GameStage::Input, Self::place_draft_systems());
@@ -165,4 +171,12 @@ fn place_draft(building_type: BuildingType) -> impl Fn(Res<Pointer>, EventWriter
         };
         events.send(NewDraftEvent::new(point, building_type));
     }
+}
+
+fn select_all(
+    playable: Query<Entity, (With<Playable>, Without<Selected>)>,
+    mut events: EventWriter<SelectEvent>,
+) {
+    let entities = playable.iter().collect();
+    events.send(SelectEvent::many(entities, SelectionMode::AddToggle))
 }
