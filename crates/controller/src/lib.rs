@@ -8,6 +8,7 @@ use selection::SelectionPlugin;
 
 mod command;
 mod draft;
+mod keyboard;
 mod pointer;
 mod selection;
 

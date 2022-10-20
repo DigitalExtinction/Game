@@ -1,5 +1,5 @@
 use bevy::{
-    input::{keyboard::KeyboardInput, mouse::MouseButtonInput, ButtonState},
+    input::{mouse::MouseButtonInput, ButtonState},
     prelude::*,
 };
 use de_attacking::AttackEvent;
@@ -18,12 +18,32 @@ use iyes_loopless::prelude::*;
 
 use crate::{
     draft::{DiscardDraftsEvent, NewDraftEvent, SpawnDraftsEvent},
+    keyboard::KeyCondition,
     pointer::Pointer,
     selection::{SelectEvent, Selected, SelectionMode},
     Labels,
 };
 
 pub(crate) struct CommandPlugin;
+
+impl CommandPlugin {
+    fn place_draft_systems() -> SystemSet {
+        let key_map = enum_map! {
+            BuildingType::Base => KeyCode::B,
+            BuildingType::PowerHub => KeyCode::P,
+        };
+        key_map
+            .iter()
+            .fold(SystemSet::new(), |systems, (building_type, &key)| {
+                systems.with_system(
+                    place_draft(building_type)
+                        .run_if(KeyCondition::single(key).build())
+                        .label(Labels::InputUpdate)
+                        .after(Labels::PreInputUpdate),
+                )
+            })
+    }
+}
 
 impl Plugin for CommandPlugin {
     fn build(&self, app: &mut App) {
@@ -43,11 +63,19 @@ impl Plugin for CommandPlugin {
                         .after(Labels::PreInputUpdate),
                 )
                 .with_system(
-                    key_press_handler
+                    discard_drafts
+                        .run_if(KeyCondition::single(KeyCode::Escape).build())
+                        .label(Labels::InputUpdate)
+                        .after(Labels::PreInputUpdate),
+                )
+                .with_system(
+                    select_all
+                        .run_if(KeyCondition::with_ctrl(KeyCode::A).build())
                         .label(Labels::InputUpdate)
                         .after(Labels::PreInputUpdate),
                 ),
-        );
+        )
+        .add_system_set_to_stage(GameStage::Input, Self::place_draft_systems());
     }
 }
 
@@ -131,46 +159,24 @@ fn left_click_handler(
     }
 }
 
-fn key_press_handler(
-    mut key_events: EventReader<KeyboardInput>,
-    pointer: Res<Pointer>,
-    mut new_draft_events: EventWriter<NewDraftEvent>,
-    mut discard_drafts_events: EventWriter<DiscardDraftsEvent>,
-) {
-    let key = match key_events
-        .iter()
-        .filter(|e| e.state == ButtonState::Pressed)
-        .last()
-    {
-        Some(event) => match event.key_code {
-            Some(key) => key,
+fn discard_drafts(mut events: EventWriter<DiscardDraftsEvent>) {
+    events.send(DiscardDraftsEvent);
+}
+
+fn place_draft(building_type: BuildingType) -> impl Fn(Res<Pointer>, EventWriter<NewDraftEvent>) {
+    move |pointer: Res<Pointer>, mut events: EventWriter<NewDraftEvent>| {
+        let point = match pointer.terrain_point() {
+            Some(point) => point,
             None => return,
-        },
-        None => return,
-    };
-
-    if key == KeyCode::Escape {
-        discard_drafts_events.send(DiscardDraftsEvent);
-        return;
+        };
+        events.send(NewDraftEvent::new(point, building_type));
     }
+}
 
-    let point = match pointer.terrain_point() {
-        Some(point) => point,
-        None => return,
-    };
-
-    let key_map = enum_map! {
-        BuildingType::Base => KeyCode::B,
-        BuildingType::PowerHub => KeyCode::P,
-    };
-
-    if let Some(building_type) = key_map.iter().find_map(|(building_type, &associated_key)| {
-        if associated_key == key {
-            Some(building_type)
-        } else {
-            None
-        }
-    }) {
-        new_draft_events.send(NewDraftEvent::new(point, building_type));
-    }
+fn select_all(
+    playable: Query<Entity, (With<Playable>, Without<Selected>)>,
+    mut events: EventWriter<SelectEvent>,
+) {
+    let entities = playable.iter().collect();
+    events.send(SelectEvent::many(entities, SelectionMode::AddToggle))
 }
