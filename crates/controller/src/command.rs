@@ -116,7 +116,7 @@ fn left_click_handler(
 ) {
     if drafts.is_empty() {
         let selection_mode = if keys.pressed(KeyCode::LControl) {
-            SelectionMode::Add
+            SelectionMode::AddToggle
         } else {
             SelectionMode::Replace
         };

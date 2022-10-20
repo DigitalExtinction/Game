@@ -1,5 +1,4 @@
-use std::collections::HashSet;
-
+use ahash::AHashSet;
 use bevy::{
     ecs::system::SystemParam,
     prelude::{App, Commands, Component, Entity, EventReader, Plugin, Query, With},
@@ -57,7 +56,9 @@ pub(crate) struct Selected;
 #[derive(Clone, Copy, PartialEq)]
 pub(crate) enum SelectionMode {
     Replace,
-    Add,
+    /// Toggle selection for all updated entities, and keep other entities
+    /// untouched.
+    AddToggle,
 }
 
 #[derive(SystemParam)]
@@ -68,16 +69,20 @@ struct Selector<'w, 's> {
 
 impl<'w, 's> Selector<'w, 's> {
     fn select(&mut self, entities: &[Entity], mode: SelectionMode) {
-        let selected: HashSet<Entity> = self.selected.iter().collect();
-        let desired: HashSet<Entity> = entities.iter().cloned().collect();
+        let selected: AHashSet<Entity> = self.selected.iter().collect();
+        let updated: AHashSet<Entity> = entities.iter().cloned().collect();
 
-        if mode == SelectionMode::Replace {
-            for deselect in &selected - &desired {
-                self.commands.entity(deselect).remove::<Selected>();
-            }
+        let (select, deselect): (AHashSet<Entity>, AHashSet<Entity>) = match mode {
+            SelectionMode::Replace => (&updated - &selected, &selected - &updated),
+            SelectionMode::AddToggle => (&updated - &selected, &updated & &selected),
+        };
+
+        for entity in deselect {
+            self.commands.entity(entity).remove::<Selected>();
         }
-        for select in &desired - &selected {
-            self.commands.entity(select).insert(Selected);
+
+        for entity in select {
+            self.commands.entity(entity).insert(Selected);
         }
     }
 }
