@@ -4,7 +4,7 @@ use std::cmp::Ordering;
 use bevy::prelude::*;
 use serde::{Deserialize, Serialize};
 
-#[derive(Copy, Clone, Debug, Serialize, Deserialize, Component, PartialEq, Eq)]
+#[derive(Copy, Clone, Debug, Serialize, Deserialize, Component, PartialEq, Eq, Hash)]
 pub enum Player {
     Player1,
     Player2,

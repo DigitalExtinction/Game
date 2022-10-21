@@ -1,8 +1,9 @@
 use core::f32::consts::TAU;
 
+use ahash::AHashMap;
 use bevy::prelude::Transform;
 use de_core::{
-    objects::{ActiveObjectType, InactiveObjectType},
+    objects::{ActiveObjectType, InactiveObjectType, PLAYER_MAX_BUILDINGS, PLAYER_MAX_UNITS},
     player::Player,
     projection::ToMsl,
 };
@@ -93,11 +94,47 @@ impl Map {
             return Err(MapValidationError::MaxPlayers(self.max_player));
         }
 
+        #[derive(Default)]
+        struct Counter {
+            buildings: usize,
+            units: usize,
+        }
+
+        let mut counts: AHashMap<Player, Counter> = AHashMap::new();
+
         for (i, object) in self.objects.iter().enumerate() {
+            if let InnerObject::Active(object) = object.inner() {
+                let counter = counts
+                    .entry(object.player())
+                    .or_insert_with(Counter::default);
+
+                match object.object_type() {
+                    ActiveObjectType::Building(_) => counter.buildings += 1,
+                    ActiveObjectType::Unit(_) => counter.units += 1,
+                }
+            }
+
             if let Err(error) = object.validate(self.bounds, self.max_player) {
                 return Err(MapValidationError::Object {
                     index: i,
                     source: error,
+                });
+            }
+        }
+
+        for (&player, counter) in counts.iter() {
+            if counter.buildings > PLAYER_MAX_BUILDINGS {
+                return Err(MapValidationError::MaxBuildings {
+                    player,
+                    max: PLAYER_MAX_BUILDINGS,
+                    number: counter.buildings,
+                });
+            }
+            if counter.units > PLAYER_MAX_UNITS {
+                return Err(MapValidationError::MaxUnits {
+                    player,
+                    max: PLAYER_MAX_UNITS,
+                    number: counter.units,
                 });
             }
         }
@@ -112,6 +149,18 @@ pub enum MapValidationError {
     MapBounds { source: MapBoundsValidationError },
     #[error("map has to have at least 2 players, got {0}")]
     MaxPlayers(Player),
+    #[error("maximum number {player} buildings is {max}, got {number}")]
+    MaxBuildings {
+        player: Player,
+        max: usize,
+        number: usize,
+    },
+    #[error("maximum number of {player} units is {max}, got {number}")]
+    MaxUnits {
+        player: Player,
+        max: usize,
+        number: usize,
+    },
     #[error("invalid objects[{index}]")]
     Object {
         index: usize,
