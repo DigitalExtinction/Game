@@ -6,13 +6,13 @@ use de_attacking::AttackEvent;
 use de_behaviour::ChaseTarget;
 use de_core::{
     gconfig::GameConfig,
-    objects::{BuildingType, MovableSolid, Playable},
+    objects::{BuildingType, MovableSolid, Playable, PLAYER_MAX_BUILDINGS},
     player::Player,
     projection::ToFlat,
     stages::GameStage,
 };
 use de_pathing::{PathQueryProps, PathTarget, UpdateEntityPath};
-use de_spawner::Draft;
+use de_spawner::{Draft, ObjectCounter};
 use enum_map::enum_map;
 use iyes_loopless::prelude::*;
 
@@ -163,8 +163,17 @@ fn discard_drafts(mut events: EventWriter<DiscardDraftsEvent>) {
     events.send(DiscardDraftsEvent);
 }
 
-fn place_draft(building_type: BuildingType) -> impl Fn(Res<Pointer>, EventWriter<NewDraftEvent>) {
-    move |pointer: Res<Pointer>, mut events: EventWriter<NewDraftEvent>| {
+fn place_draft(
+    building_type: BuildingType,
+) -> impl Fn(Res<ObjectCounter>, Res<Pointer>, EventWriter<NewDraftEvent>) {
+    move |counter: Res<ObjectCounter>,
+          pointer: Res<Pointer>,
+          mut events: EventWriter<NewDraftEvent>| {
+        if counter.building_count() >= PLAYER_MAX_BUILDINGS {
+            warn!("Maximum number of buildings reached.");
+            return;
+        }
+
         let point = match pointer.terrain_point() {
             Some(point) => point,
             None => return,

@@ -7,6 +7,11 @@ use bevy::prelude::*;
 use enum_map::Enum;
 use serde::{Deserialize, Serialize};
 
+/// Maximum number of buildings belonging to a single player.
+pub const PLAYER_MAX_BUILDINGS: usize = 128;
+/// Maximum number of units belonging to a single player.
+pub const PLAYER_MAX_UNITS: usize = 1024;
+
 /// Active object which can be played by the local player.
 #[derive(Component)]
 pub struct Playable;

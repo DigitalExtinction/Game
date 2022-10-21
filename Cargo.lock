@@ -1759,6 +1759,7 @@ dependencies = [
 name = "de_map"
 version = "0.1.0-dev"
 dependencies = [
+ "ahash",
  "async-std",
  "async-tar",
  "bevy",
