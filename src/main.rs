@@ -1,4 +1,8 @@
-use bevy::{prelude::*, window::WindowMode};
+use bevy::{
+    diagnostic::{FrameTimeDiagnosticsPlugin, LogDiagnosticsPlugin},
+    prelude::*,
+    window::WindowMode,
+};
 use de_attacking::AttackingPluginGroup;
 use de_behaviour::BehaviourPluginGroup;
 use de_camera::CameraPluginGroup;
@@ -22,6 +26,8 @@ fn main() {
         })
         .insert_resource(Msaa { samples: 4 })
         .add_plugins(DefaultPlugins)
+        .add_plugin(LogDiagnosticsPlugin::default())
+        .add_plugin(FrameTimeDiagnosticsPlugin::default())
         .add_plugin(GamePlugin)
         .add_plugins(CorePluginGroup)
         .add_plugins(ObjectsPluginGroup)
