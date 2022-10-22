@@ -31,7 +31,7 @@ impl LocalCollider {
     /// Creates a new entity collider from entity shape and position.
     // Needs to be public because it is used in a benchmark.
     pub fn new(object_collider: ObjectCollider, position: Isometry<f32>) -> Self {
-        let local_aabb = object_collider.compute_aabb();
+        let local_aabb = object_collider.aabb();
         let world_aabb = local_aabb.transform_by(&position);
 
         Self {
@@ -94,7 +94,7 @@ pub struct QueryCollider<'a> {
 
 impl<'a> QueryCollider<'a> {
     pub fn new(inner: &'a ObjectCollider, position: Isometry<f32>) -> Self {
-        let world_aabb = inner.compute_aabb().transform_by(&position);
+        let world_aabb = inner.aabb().transform_by(&position);
         Self {
             inner,
             position,

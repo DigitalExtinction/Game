@@ -110,11 +110,7 @@ fn aim_and_fire(
     for (attacker, attacker_transform, mut cannon, target, marker) in attackers {
         let target_position = match targets.get(target.entity()) {
             Ok((transform, &object_type)) => {
-                let centroid: Vec3 = cache
-                    .get_collider(object_type)
-                    .compute_aabb()
-                    .center()
-                    .into();
+                let centroid: Vec3 = cache.get_collider(object_type).aabb().center().into();
                 transform.translation + centroid
             }
             Err(_) => continue,
