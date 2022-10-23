@@ -14,6 +14,7 @@ categories = ["games"]
 # DE
 de_core = { path = "../core", version = "0.1.0-dev" }
 de_map = { path = "../map", version = "0.1.0-dev" }
+de_objects = { path = "../objects", version = "0.1.0-dev" }
 
 # Other
 bevy = "0.8"
@@ -22,3 +23,6 @@ iyes_progress = { version = "0.4", features = [ "iyes_loopless" ] }
 glam = "0.21"
 parry3d = "0.9.0"
 ahash = "0.7.6"
+
+[dev-dependencies]
+itertools = "0.10.5"

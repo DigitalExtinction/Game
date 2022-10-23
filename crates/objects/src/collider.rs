@@ -20,17 +20,18 @@ impl ColliderCache for ObjectCache {
 
 #[derive(Clone)]
 pub struct ObjectCollider {
+    aabb: AABB,
     shape: TriMesh,
 }
 
 impl ObjectCollider {
-    pub fn new(shape: TriMesh) -> Self {
+    fn new(aabb: AABB, shape: TriMesh) -> Self {
         debug_assert!(shape.pseudo_normals().is_some());
-        Self { shape }
+        Self { aabb, shape }
     }
 
-    pub fn compute_aabb(&self) -> AABB {
-        self.shape.compute_local_aabb()
+    pub fn aabb(&self) -> AABB {
+        self.aabb
     }
 
     pub fn cast_ray(&self, position: &Isometry<f32>, ray: &Ray, max_toi: f32) -> Option<f32> {
@@ -67,6 +68,12 @@ impl ObjectCollider {
     }
 }
 
+impl From<TriMesh> for ObjectCollider {
+    fn from(mesh: TriMesh) -> Self {
+        Self::new(mesh.compute_local_aabb(), mesh)
+    }
+}
+
 impl From<&TriMeshShape> for ObjectCollider {
     fn from(shape: &TriMeshShape) -> Self {
         let vertices: Vec<Point<f32>> = shape
@@ -75,11 +82,12 @@ impl From<&TriMeshShape> for ObjectCollider {
             .map(|&[x, y, z]| Point::new(x, y, z))
             .collect();
         let indices = shape.indices().to_owned();
-        Self::new(TriMesh::with_flags(
+        let trimesh = TriMesh::with_flags(
             vertices,
             indices,
             TriMeshFlags::MERGE_DUPLICATE_VERTICES | TriMeshFlags::ORIENTED,
-        ))
+        );
+        Self::from(trimesh)
     }
 }
 
@@ -124,7 +132,7 @@ mod tests {
     fn collider(size: f32) -> ObjectCollider {
         let cube = Cuboid::new(Vector::new(size, size, size));
         let (vertices, indices) = cube.to_trimesh();
-        ObjectCollider::new(TriMesh::with_flags(
+        ObjectCollider::from(TriMesh::with_flags(
             vertices,
             indices,
             TriMeshFlags::ORIENTED,

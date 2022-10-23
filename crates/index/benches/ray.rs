@@ -15,7 +15,7 @@ use glam::Vec2;
 use parry3d::{
     math::{Isometry, Point, Vector},
     query::Ray,
-    shape::Cuboid,
+    shape::{Cuboid, TriMesh},
 };
 
 const MAP_SIZE: f32 = 2000.;
@@ -78,7 +78,7 @@ fn setup_world(num_entities: u32, max_distance: f32) -> World {
 
     for (i, point) in points.iter().enumerate() {
         let collider = LocalCollider::new(
-            ObjectCollider::new(Cuboid::new(Vector::new(3., 3., 4.)).into()),
+            ObjectCollider::from(TriMesh::from(Cuboid::new(Vector::new(3., 3., 4.)))),
             Isometry::new(Vector::new(point.x, 0., point.y), Vector::identity()),
         );
         index.insert(Entity::from_raw(i as u32), collider);
