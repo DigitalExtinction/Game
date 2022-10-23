@@ -1,29 +1,26 @@
-use bevy::{
-    input::{mouse::MouseButtonInput, ButtonState},
-    prelude::*,
-    render::primitives::Frustum,
-};
+use bevy::prelude::*;
 use de_attacking::AttackEvent;
 use de_behaviour::ChaseTarget;
 use de_core::{
-    frustum,
     gconfig::GameConfig,
-    objects::{BuildingType, MovableSolid, ObjectType, Playable, PLAYER_MAX_BUILDINGS},
+    objects::{BuildingType, MovableSolid, Playable, PLAYER_MAX_BUILDINGS},
     player::Player,
     projection::ToFlat,
+    screengeom::ScreenRect,
     stages::GameStage,
 };
-use de_objects::{ColliderCache, ObjectCache};
 use de_pathing::{PathQueryProps, PathTarget, UpdateEntityPath};
 use de_spawner::{Draft, ObjectCounter};
 use enum_map::enum_map;
 use iyes_loopless::prelude::*;
 
 use crate::{
+    areaselect::{AreaSelectLabels, SelectInRectEvent},
     draft::{DiscardDraftsEvent, NewDraftEvent, SpawnDraftsEvent},
     keyboard::KeyCondition,
+    mouse::{MouseClicked, MouseLabels},
     pointer::Pointer,
-    selection::{SelectEvent, Selected, SelectionMode},
+    selection::{SelectEvent, Selected, SelectionLabels, SelectionMode},
     Labels,
 };
 
@@ -55,15 +52,16 @@ impl Plugin for CommandPlugin {
             SystemSet::new()
                 .with_system(
                     right_click_handler
-                        .run_if(on_pressed(MouseButton::Right))
+                        .run_if(on_click(MouseButton::Right))
                         .label(Labels::InputUpdate)
-                        .after(Labels::PreInputUpdate),
+                        .after(MouseLabels::Buttons),
                 )
                 .with_system(
                     left_click_handler
-                        .run_if(on_pressed(MouseButton::Left))
+                        .run_if(on_click(MouseButton::Left))
                         .label(Labels::InputUpdate)
-                        .after(Labels::PreInputUpdate),
+                        .before(SelectionLabels::Update)
+                        .after(MouseLabels::Buttons),
                 )
                 .with_system(
                     discard_drafts
@@ -75,6 +73,7 @@ impl Plugin for CommandPlugin {
                     select_all
                         .run_if(KeyCondition::single(KeyCode::A).with_ctrl().build())
                         .label(Labels::InputUpdate)
+                        .before(SelectionLabels::Update)
                         .after(Labels::PreInputUpdate),
                 )
                 .with_system(
@@ -86,6 +85,7 @@ impl Plugin for CommandPlugin {
                                 .build(),
                         )
                         .label(Labels::InputUpdate)
+                        .before(AreaSelectLabels::SelectInArea)
                         .after(Labels::PreInputUpdate),
                 ),
         )
@@ -93,15 +93,11 @@ impl Plugin for CommandPlugin {
     }
 }
 
-fn on_pressed(button: MouseButton) -> impl Fn(EventReader<MouseButtonInput>) -> bool {
-    move |mut events: EventReader<MouseButtonInput>| {
+fn on_click(button: MouseButton) -> impl Fn(EventReader<MouseClicked>) -> bool {
+    move |mut events: EventReader<MouseClicked>| {
         // It is desirable to exhaust the iterator, thus .filter().count() is
         // used instead of .any()
-        events
-            .iter()
-            .filter(|e| e.button == button && e.state == ButtonState::Pressed)
-            .count()
-            > 0
+        events.iter().filter(|e| e.button() == button).count() > 0
     }
 }
 
@@ -204,24 +200,9 @@ fn select_all(
     events.send(SelectEvent::many(entities, SelectionMode::AddToggle));
 }
 
-fn select_all_visible(
-    cache: Res<ObjectCache>,
-    candidates: Query<(Entity, &ObjectType, &Transform), With<Playable>>,
-    camera: Query<&Frustum, With<Camera3d>>,
-    mut events: EventWriter<SelectEvent>,
-) {
-    let frustum = camera.single();
-    let entities: Vec<Entity> = candidates
-        .iter()
-        .filter_map(|(entity, &object_type, &transform)| {
-            let aabb = cache.get_collider(object_type).aabb();
-            if frustum::intersects_parry(frustum, transform, &aabb) {
-                Some(entity)
-            } else {
-                None
-            }
-        })
-        .collect();
-
-    events.send(SelectEvent::many(entities, SelectionMode::Replace));
+fn select_all_visible(mut events: EventWriter<SelectInRectEvent>) {
+    events.send(SelectInRectEvent::new(
+        ScreenRect::full(),
+        SelectionMode::Replace,
+    ));
 }

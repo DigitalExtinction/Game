@@ -15,6 +15,7 @@ use de_objects::ObjectsPluginGroup;
 use de_pathing::PathingPluginGroup;
 use de_spawner::SpawnerPluginGroup;
 use de_terrain::TerrainPluginGroup;
+use de_ui::UiPluginGroup;
 use iyes_loopless::prelude::*;
 
 fn main() {
@@ -41,6 +42,7 @@ fn main() {
         .add_plugins(CameraPluginGroup)
         .add_plugins(BehaviourPluginGroup)
         .add_plugins(AttackingPluginGroup)
+        .add_plugins(UiPluginGroup)
         .run();
 }
 

@@ -11,6 +11,7 @@ pub mod gconfig;
 pub mod objects;
 pub mod player;
 pub mod projection;
+pub mod screengeom;
 pub mod stages;
 pub mod state;
 

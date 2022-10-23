@@ -1,4 +1,4 @@
-use bevy::{ecs::system::SystemParam, prelude::*, window::Windows};
+use bevy::{ecs::system::SystemParam, prelude::*};
 use de_core::{stages::GameStage, state::GameState};
 use de_index::SpatialQuery;
 use de_terrain::TerrainCollider;
@@ -6,7 +6,10 @@ use glam::{Vec2, Vec3};
 use iyes_loopless::prelude::*;
 use parry3d::query::Ray;
 
-use crate::Labels;
+use crate::{
+    mouse::{MouseLabels, MousePosition},
+    Labels,
+};
 
 pub(crate) struct PointerPlugin;
 
@@ -16,7 +19,8 @@ impl Plugin for PointerPlugin {
             GameStage::Input,
             mouse_move_handler
                 .run_in_state(GameState::Playing)
-                .label(Labels::PreInputUpdate),
+                .label(Labels::PreInputUpdate)
+                .after(MouseLabels::Position),
         );
     }
 }
@@ -50,40 +54,36 @@ impl Pointer {
 }
 
 #[derive(SystemParam)]
-struct MouseInWorld<'w, 's> {
-    windows: Res<'w, Windows>,
+struct ScreenRay<'w, 's> {
     cameras: Query<'w, 's, (&'static Transform, &'static Camera), With<Camera3d>>,
 }
 
-impl<'w, 's> MouseInWorld<'w, 's> {
-    fn mouse_ray(&self) -> Option<Ray> {
-        let window = self.windows.get_primary().unwrap();
-
-        // Normalized to values between -1.0 to 1.0 with (0.0, 0.0) in the
-        // middle of the screen.
-        let cursor_position = match window.cursor_position() {
-            Some(position) => {
-                let screen_size = Vec2::new(window.width(), window.height());
-                (position / screen_size) * 2.0 - Vec2::ONE
-            }
-            None => return None,
-        };
-
+impl<'w, 's> ScreenRay<'w, 's> {
+    /// Returns line of sight of a point on the screen.
+    ///
+    /// The ray originates on the near plane of the projection frustum.
+    ///
+    /// # Arguments
+    ///
+    /// * `point` - normalized coordinates (between [-1., -1.] and [1., 1.]) of
+    ///   a point on the screen.
+    fn ray(&self, point: Vec2) -> Ray {
         let (camera_transform, camera) = self.cameras.single();
         let ndc_to_world = camera_transform.compute_matrix() * camera.projection_matrix().inverse();
-        let ray_origin = ndc_to_world.project_point3(cursor_position.extend(1.));
+        let ray_origin = ndc_to_world.project_point3(point.extend(1.));
         let ray_direction = ray_origin - camera_transform.translation;
-        Some(Ray::new(ray_origin.into(), ray_direction.into()))
+        Ray::new(ray_origin.into(), ray_direction.into())
     }
 }
 
 fn mouse_move_handler(
     mut resource: ResMut<Pointer>,
-    mouse: MouseInWorld,
+    mouse: Res<MousePosition>,
+    screen_ray: ScreenRay,
     entities: SpatialQuery<()>,
     terrain: TerrainCollider,
 ) {
-    let ray = mouse.mouse_ray();
+    let ray = mouse.ndc().map(|cursor| screen_ray.ray(cursor));
 
     let entity = ray
         .as_ref()

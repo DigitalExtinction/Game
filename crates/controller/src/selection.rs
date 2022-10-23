@@ -9,8 +9,6 @@ use de_objects::{IchnographyCache, ObjectCache};
 use de_terrain::CircleMarker;
 use iyes_loopless::prelude::*;
 
-use crate::Labels;
-
 pub(crate) struct SelectionPlugin;
 
 impl Plugin for SelectionPlugin {
@@ -19,9 +17,14 @@ impl Plugin for SelectionPlugin {
             GameStage::Input,
             update_selection
                 .run_in_state(GameState::Playing)
-                .after(Labels::InputUpdate),
+                .label(SelectionLabels::Update),
         );
     }
+}
+
+#[derive(Copy, Clone, Hash, Debug, PartialEq, Eq, SystemLabel)]
+pub(crate) enum SelectionLabels {
+    Update,
 }
 
 pub(crate) struct SelectEvent {
@@ -63,6 +66,9 @@ pub(crate) struct Selected;
 #[derive(Clone, Copy, PartialEq)]
 pub(crate) enum SelectionMode {
     Replace,
+    /// Selected entities are union of currently selected and to be selected
+    /// entities.
+    Add,
     /// Toggle selection for all updated entities, and keep other entities
     /// untouched.
     AddToggle,
@@ -84,6 +90,7 @@ impl<'w, 's> Selector<'w, 's> {
         let (select, deselect): (AHashSet<Entity>, AHashSet<Entity>) = match mode {
             SelectionMode::Replace => (&updated - &selected, &selected - &updated),
             SelectionMode::AddToggle => (&updated - &selected, &updated & &selected),
+            SelectionMode::Add => (&updated - &selected, AHashSet::new()),
         };
 
         for entity in deselect {
