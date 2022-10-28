@@ -6,6 +6,7 @@ use state::GameState;
 pub mod assets;
 mod errors;
 pub mod events;
+pub mod frustum;
 pub mod gconfig;
 pub mod objects;
 pub mod player;
