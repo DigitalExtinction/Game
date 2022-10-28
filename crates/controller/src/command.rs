@@ -187,5 +187,5 @@ fn select_all(
     mut events: EventWriter<SelectEvent>,
 ) {
     let entities = playable.iter().collect();
-    events.send(SelectEvent::many(entities, SelectionMode::AddToggle))
+    events.send(SelectEvent::many(entities, SelectionMode::AddToggle));
 }
