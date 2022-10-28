@@ -1,16 +1,19 @@
 use bevy::{
     input::{mouse::MouseButtonInput, ButtonState},
     prelude::*,
+    render::primitives::Frustum,
 };
 use de_attacking::AttackEvent;
 use de_behaviour::ChaseTarget;
 use de_core::{
+    frustum,
     gconfig::GameConfig,
-    objects::{BuildingType, MovableSolid, Playable, PLAYER_MAX_BUILDINGS},
+    objects::{BuildingType, MovableSolid, ObjectType, Playable, PLAYER_MAX_BUILDINGS},
     player::Player,
     projection::ToFlat,
     stages::GameStage,
 };
+use de_objects::{ColliderCache, ObjectCache};
 use de_pathing::{PathQueryProps, PathTarget, UpdateEntityPath};
 use de_spawner::{Draft, ObjectCounter};
 use enum_map::enum_map;
@@ -70,7 +73,18 @@ impl Plugin for CommandPlugin {
                 )
                 .with_system(
                     select_all
-                        .run_if(KeyCondition::with_ctrl(KeyCode::A).build())
+                        .run_if(KeyCondition::single(KeyCode::A).with_ctrl().build())
+                        .label(Labels::InputUpdate)
+                        .after(Labels::PreInputUpdate),
+                )
+                .with_system(
+                    select_all_visible
+                        .run_if(
+                            KeyCondition::single(KeyCode::A)
+                                .with_ctrl()
+                                .with_shift()
+                                .build(),
+                        )
                         .label(Labels::InputUpdate)
                         .after(Labels::PreInputUpdate),
                 ),
@@ -187,5 +201,27 @@ fn select_all(
     mut events: EventWriter<SelectEvent>,
 ) {
     let entities = playable.iter().collect();
-    events.send(SelectEvent::many(entities, SelectionMode::AddToggle))
+    events.send(SelectEvent::many(entities, SelectionMode::AddToggle));
+}
+
+fn select_all_visible(
+    cache: Res<ObjectCache>,
+    candidates: Query<(Entity, &ObjectType, &Transform), With<Playable>>,
+    camera: Query<&Frustum, With<Camera3d>>,
+    mut events: EventWriter<SelectEvent>,
+) {
+    let frustum = camera.single();
+    let entities: Vec<Entity> = candidates
+        .iter()
+        .filter_map(|(entity, &object_type, &transform)| {
+            let aabb = cache.get_collider(object_type).aabb();
+            if frustum::intersects_parry(frustum, transform, &aabb) {
+                Some(entity)
+            } else {
+                None
+            }
+        })
+        .collect();
+
+    events.send(SelectEvent::many(entities, SelectionMode::Replace));
 }

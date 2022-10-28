@@ -30,6 +30,8 @@ before left clicking on buildings and units to (de)select more entities.
 
 Press CTRL+A to select all entities.
 
+Press CTRL+SHIFT+A to select all visible entities.
+
 # Commanding Units and Buildings
 
 Right click on the terrain sends selected units to that location. Right click

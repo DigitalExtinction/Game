@@ -7,6 +7,7 @@ use bevy::{
 #[derive(Copy, Clone)]
 pub(crate) struct KeyCondition {
     control: bool,
+    shift: bool,
     key: KeyCode,
 }
 
@@ -15,13 +16,21 @@ impl KeyCondition {
     pub(crate) fn single(key: KeyCode) -> Self {
         Self {
             control: false,
+            shift: false,
             key,
         }
     }
 
     /// Run if a key is pressed together with control.
-    pub(crate) fn with_ctrl(key: KeyCode) -> Self {
-        Self { control: true, key }
+    pub(crate) fn with_ctrl(mut self) -> Self {
+        self.control = true;
+        self
+    }
+
+    /// Run if a key is pressed together with shift.
+    pub(crate) fn with_shift(mut self) -> Self {
+        self.shift = true;
+        self
     }
 
     pub(crate) fn build(self) -> impl Fn(Res<Input<KeyCode>>, EventReader<KeyboardInput>) -> bool {
@@ -35,7 +44,8 @@ impl KeyCondition {
                 > 0;
 
             let control = keys.pressed(KeyCode::LControl) || keys.pressed(KeyCode::RControl);
-            self.control == control && proper_key
+            let shift = keys.pressed(KeyCode::LShift) || keys.pressed(KeyCode::RShift);
+            self.control == control && shift == self.shift && proper_key
         }
     }
 }

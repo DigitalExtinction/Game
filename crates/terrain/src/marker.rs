@@ -1,12 +1,12 @@
 use bevy::{
     prelude::*,
     render::{
-        primitives::{Aabb, Frustum, Sphere},
+        primitives::{Aabb, Frustum},
         view::VisibilitySystems,
     },
     utils::FloatOrd,
 };
-use de_core::{objects::ObjectType, projection::ToFlat, state::GameState};
+use de_core::{frustum, objects::ObjectType, projection::ToFlat, state::GameState};
 use de_objects::{ColliderCache, ObjectCache};
 use glam::Vec3A;
 use iyes_loopless::prelude::*;
@@ -55,7 +55,7 @@ fn update_markers(
         &CircleMarker,
     )>,
 ) {
-    let (eye, frustum) = match camera.get_single() {
+    let (eye, cam_frustum) = match camera.get_single() {
         Ok((transform, frustum)) => (transform.translation, frustum),
         Err(_) => return,
     };
@@ -77,7 +77,7 @@ fn update_markers(
             half_extents: Vec3A::from(aabb.half_extents()),
         };
 
-        if intersects_frustum(frustum, transform, &aabb) {
+        if frustum::intersects_bevy(cam_frustum, transform, &aabb) {
             let translation = transform.translation();
             candidates.push(CircleWithDist {
                 circle: Circle::new(translation.to_flat(), marker.radius()),
@@ -101,14 +101,4 @@ fn update_markers(
         let material = materials.get_mut(material).unwrap();
         material.set_markers(circles.clone());
     }
-}
-
-fn intersects_frustum(frustum: &Frustum, transform: &GlobalTransform, aabb: &Aabb) -> bool {
-    let model = transform.compute_matrix();
-    let model_sphere = Sphere {
-        center: model.transform_point3a(aabb.center),
-        radius: transform.radius_vec3a(aabb.half_extents),
-    };
-
-    frustum.intersects_sphere(&model_sphere, false) && frustum.intersects_obb(aabb, &model, false)
 }
