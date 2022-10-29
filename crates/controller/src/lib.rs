@@ -33,9 +33,3 @@ impl PluginGroup for ControllerPluginGroup {
             .add(DraftPlugin);
     }
 }
-
-#[derive(Copy, Clone, Hash, Debug, PartialEq, Eq, SystemLabel)]
-enum Labels {
-    PreInputUpdate,
-    InputUpdate,
-}

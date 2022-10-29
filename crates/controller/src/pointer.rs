@@ -6,10 +6,7 @@ use glam::{Vec2, Vec3};
 use iyes_loopless::prelude::*;
 use parry3d::query::Ray;
 
-use crate::{
-    mouse::{MouseLabels, MousePosition},
-    Labels,
-};
+use crate::mouse::{MouseLabels, MousePosition};
 
 pub(crate) struct PointerPlugin;
 
@@ -19,10 +16,15 @@ impl Plugin for PointerPlugin {
             GameStage::Input,
             mouse_move_handler
                 .run_in_state(GameState::Playing)
-                .label(Labels::PreInputUpdate)
+                .label(PointerLabels::Update)
                 .after(MouseLabels::Position),
         );
     }
+}
+
+#[derive(Copy, Clone, Hash, Debug, PartialEq, Eq, SystemLabel)]
+pub(crate) enum PointerLabels {
+    Update,
 }
 
 #[derive(Default)]

@@ -17,12 +17,11 @@ use iyes_loopless::prelude::*;
 
 use crate::{
     areaselect::{AreaSelectLabels, SelectInRectEvent},
-    draft::{DiscardDraftsEvent, NewDraftEvent, SpawnDraftsEvent},
+    draft::{DiscardDraftsEvent, DraftLabels, NewDraftEvent, SpawnDraftsEvent},
     keyboard::KeyCondition,
     mouse::{MouseClicked, MouseLabels},
-    pointer::Pointer,
+    pointer::{Pointer, PointerLabels},
     selection::{SelectEvent, Selected, SelectionLabels, SelectionMode},
-    Labels,
 };
 
 pub(crate) struct CommandPlugin;
@@ -39,8 +38,8 @@ impl CommandPlugin {
                 systems.with_system(
                     place_draft(building_type)
                         .run_if(KeyCondition::single(key).build())
-                        .label(Labels::InputUpdate)
-                        .after(Labels::PreInputUpdate),
+                        .before(DraftLabels::New)
+                        .after(PointerLabels::Update),
                 )
             })
     }
@@ -55,31 +54,29 @@ impl Plugin for CommandPlugin {
                     right_click_handler
                         .run_in_state(GameState::Playing)
                         .run_if(on_click(MouseButton::Right))
-                        .label(Labels::InputUpdate)
+                        .after(PointerLabels::Update)
                         .after(MouseLabels::Buttons),
                 )
                 .with_system(
                     left_click_handler
                         .run_in_state(GameState::Playing)
                         .run_if(on_click(MouseButton::Left))
-                        .label(Labels::InputUpdate)
                         .before(SelectionLabels::Update)
+                        .before(DraftLabels::Spawn)
+                        .after(PointerLabels::Update)
                         .after(MouseLabels::Buttons),
                 )
                 .with_system(
                     discard_drafts
                         .run_in_state(GameState::Playing)
                         .run_if(KeyCondition::single(KeyCode::Escape).build())
-                        .label(Labels::InputUpdate)
-                        .after(Labels::PreInputUpdate),
+                        .before(DraftLabels::Discard),
                 )
                 .with_system(
                     select_all
                         .run_in_state(GameState::Playing)
                         .run_if(KeyCondition::single(KeyCode::A).with_ctrl().build())
-                        .label(Labels::InputUpdate)
-                        .before(SelectionLabels::Update)
-                        .after(Labels::PreInputUpdate),
+                        .before(SelectionLabels::Update),
                 )
                 .with_system(
                     select_all_visible
@@ -90,9 +87,7 @@ impl Plugin for CommandPlugin {
                                 .with_shift()
                                 .build(),
                         )
-                        .label(Labels::InputUpdate)
-                        .before(AreaSelectLabels::SelectInArea)
-                        .after(Labels::PreInputUpdate),
+                        .before(AreaSelectLabels::SelectInArea),
                 ),
         )
         .add_system_set_to_stage(GameStage::Input, Self::place_draft_systems());

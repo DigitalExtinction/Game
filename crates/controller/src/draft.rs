@@ -6,8 +6,7 @@ use de_core::{
 };
 use de_spawner::{Draft, DraftBundle, SpawnBundle};
 
-use super::Labels;
-use crate::pointer::Pointer;
+use crate::pointer::{Pointer, PointerLabels};
 
 pub(crate) struct DraftPlugin;
 
@@ -19,16 +18,19 @@ impl Plugin for DraftPlugin {
             .add_system_set_to_stage(
                 GameStage::Input,
                 SystemSet::new()
-                    .with_system(spawn.after(Labels::InputUpdate))
-                    .with_system(new_drafts.after(Labels::InputUpdate))
-                    .with_system(discard_drafts.after(Labels::InputUpdate))
-                    .with_system(
-                        move_drafts
-                            .label(Labels::InputUpdate)
-                            .after(Labels::PreInputUpdate),
-                    ),
+                    .with_system(spawn.label(DraftLabels::Spawn))
+                    .with_system(new_drafts.label(DraftLabels::New))
+                    .with_system(discard_drafts.label(DraftLabels::Discard))
+                    .with_system(move_drafts.after(PointerLabels::Update)),
             );
     }
+}
+
+#[derive(Copy, Clone, Hash, Debug, PartialEq, Eq, SystemLabel)]
+pub(crate) enum DraftLabels {
+    Spawn,
+    New,
+    Discard,
 }
 
 pub(crate) struct SpawnDraftsEvent;
