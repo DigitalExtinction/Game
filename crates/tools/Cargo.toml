@@ -1,14 +1,15 @@
 [package]
 name = "de_tools"
-version = "0.1.0-dev"
-edition = "2021"
-authors = ["Martin Indra <martin.indra@mgn.cz>"]
-repository = "https://github.com/DigitalExtinction/Game"
-keywords = ["DigitalExtinction", "gamedev", "game", "bevy", "3d"]
-homepage = "https://de-game.org/"
 description = "Tools and utilities for Digital Extinction developers, and artists."
-license = "GPL-3.0"
-categories = ["games"]
+
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+repository.workspace = true
+keywords.workspace = true
+homepage.workspace = true
+license.workspace = true
+categories.workspace = true
 
 [dependencies]
 gltf = "1.0"
