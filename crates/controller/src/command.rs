@@ -8,6 +8,7 @@ use de_core::{
     projection::ToFlat,
     screengeom::ScreenRect,
     stages::GameStage,
+    state::GameState,
 };
 use de_pathing::{PathQueryProps, PathTarget, UpdateEntityPath};
 use de_spawner::{Draft, ObjectCounter};
@@ -52,12 +53,14 @@ impl Plugin for CommandPlugin {
             SystemSet::new()
                 .with_system(
                     right_click_handler
+                        .run_in_state(GameState::Playing)
                         .run_if(on_click(MouseButton::Right))
                         .label(Labels::InputUpdate)
                         .after(MouseLabels::Buttons),
                 )
                 .with_system(
                     left_click_handler
+                        .run_in_state(GameState::Playing)
                         .run_if(on_click(MouseButton::Left))
                         .label(Labels::InputUpdate)
                         .before(SelectionLabels::Update)
@@ -65,12 +68,14 @@ impl Plugin for CommandPlugin {
                 )
                 .with_system(
                     discard_drafts
+                        .run_in_state(GameState::Playing)
                         .run_if(KeyCondition::single(KeyCode::Escape).build())
                         .label(Labels::InputUpdate)
                         .after(Labels::PreInputUpdate),
                 )
                 .with_system(
                     select_all
+                        .run_in_state(GameState::Playing)
                         .run_if(KeyCondition::single(KeyCode::A).with_ctrl().build())
                         .label(Labels::InputUpdate)
                         .before(SelectionLabels::Update)
@@ -78,6 +83,7 @@ impl Plugin for CommandPlugin {
                 )
                 .with_system(
                     select_all_visible
+                        .run_in_state(GameState::Playing)
                         .run_if(
                             KeyCondition::single(KeyCode::A)
                                 .with_ctrl()
