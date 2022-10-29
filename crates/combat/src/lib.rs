@@ -10,9 +10,9 @@ mod attack;
 mod laser;
 mod sightline;
 
-pub struct AttackingPluginGroup;
+pub struct CombatPluginGroup;
 
-impl PluginGroup for AttackingPluginGroup {
+impl PluginGroup for CombatPluginGroup {
     fn build(&mut self, group: &mut PluginGroupBuilder) {
         group.add(LaserPlugin).add(AttackPlugin);
     }
