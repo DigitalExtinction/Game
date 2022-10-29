@@ -1684,6 +1684,7 @@ dependencies = [
  "de_pathing",
  "de_spawner",
  "de_terrain",
+ "de_ui",
  "enum-map",
  "glam",
  "iyes_loopless",
@@ -1722,6 +1723,7 @@ dependencies = [
  "de_pathing",
  "de_spawner",
  "de_terrain",
+ "de_ui",
  "iyes_loopless",
 ]
 
@@ -1864,6 +1866,15 @@ dependencies = [
  "clap 3.2.20",
  "gltf",
  "parry3d",
+]
+
+[[package]]
+name = "de_ui"
+version = "0.1.0-dev"
+dependencies = [
+ "bevy",
+ "de_core",
+ "iyes_loopless",
 ]
 
 [[package]]

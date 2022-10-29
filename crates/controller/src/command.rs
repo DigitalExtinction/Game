@@ -1,30 +1,27 @@
-use bevy::{
-    input::{mouse::MouseButtonInput, ButtonState},
-    prelude::*,
-    render::primitives::Frustum,
-};
+use bevy::prelude::*;
 use de_attacking::AttackEvent;
 use de_behaviour::ChaseTarget;
 use de_core::{
-    frustum,
     gconfig::GameConfig,
-    objects::{BuildingType, MovableSolid, ObjectType, Playable, PLAYER_MAX_BUILDINGS},
+    objects::{BuildingType, MovableSolid, Playable, PLAYER_MAX_BUILDINGS},
     player::Player,
     projection::ToFlat,
+    screengeom::ScreenRect,
     stages::GameStage,
+    state::GameState,
 };
-use de_objects::{ColliderCache, ObjectCache};
 use de_pathing::{PathQueryProps, PathTarget, UpdateEntityPath};
 use de_spawner::{Draft, ObjectCounter};
 use enum_map::enum_map;
 use iyes_loopless::prelude::*;
 
 use crate::{
-    draft::{DiscardDraftsEvent, NewDraftEvent, SpawnDraftsEvent},
+    areaselect::{AreaSelectLabels, SelectInRectEvent},
+    draft::{DiscardDraftsEvent, DraftLabels, NewDraftEvent, SpawnDraftsEvent},
     keyboard::KeyCondition,
-    pointer::Pointer,
-    selection::{SelectEvent, Selected, SelectionMode},
-    Labels,
+    mouse::{MouseClicked, MouseLabels},
+    pointer::{Pointer, PointerLabels},
+    selection::{SelectEvent, Selected, SelectionLabels, SelectionMode},
 };
 
 pub(crate) struct CommandPlugin;
@@ -41,8 +38,8 @@ impl CommandPlugin {
                 systems.with_system(
                     place_draft(building_type)
                         .run_if(KeyCondition::single(key).build())
-                        .label(Labels::InputUpdate)
-                        .after(Labels::PreInputUpdate),
+                        .before(DraftLabels::New)
+                        .after(PointerLabels::Update),
                 )
             })
     }
@@ -55,53 +52,53 @@ impl Plugin for CommandPlugin {
             SystemSet::new()
                 .with_system(
                     right_click_handler
-                        .run_if(on_pressed(MouseButton::Right))
-                        .label(Labels::InputUpdate)
-                        .after(Labels::PreInputUpdate),
+                        .run_in_state(GameState::Playing)
+                        .run_if(on_click(MouseButton::Right))
+                        .after(PointerLabels::Update)
+                        .after(MouseLabels::Buttons),
                 )
                 .with_system(
                     left_click_handler
-                        .run_if(on_pressed(MouseButton::Left))
-                        .label(Labels::InputUpdate)
-                        .after(Labels::PreInputUpdate),
+                        .run_in_state(GameState::Playing)
+                        .run_if(on_click(MouseButton::Left))
+                        .before(SelectionLabels::Update)
+                        .before(DraftLabels::Spawn)
+                        .after(PointerLabels::Update)
+                        .after(MouseLabels::Buttons),
                 )
                 .with_system(
                     discard_drafts
+                        .run_in_state(GameState::Playing)
                         .run_if(KeyCondition::single(KeyCode::Escape).build())
-                        .label(Labels::InputUpdate)
-                        .after(Labels::PreInputUpdate),
+                        .before(DraftLabels::Discard),
                 )
                 .with_system(
                     select_all
+                        .run_in_state(GameState::Playing)
                         .run_if(KeyCondition::single(KeyCode::A).with_ctrl().build())
-                        .label(Labels::InputUpdate)
-                        .after(Labels::PreInputUpdate),
+                        .before(SelectionLabels::Update),
                 )
                 .with_system(
                     select_all_visible
+                        .run_in_state(GameState::Playing)
                         .run_if(
                             KeyCondition::single(KeyCode::A)
                                 .with_ctrl()
                                 .with_shift()
                                 .build(),
                         )
-                        .label(Labels::InputUpdate)
-                        .after(Labels::PreInputUpdate),
+                        .before(AreaSelectLabels::SelectInArea),
                 ),
         )
         .add_system_set_to_stage(GameStage::Input, Self::place_draft_systems());
     }
 }
 
-fn on_pressed(button: MouseButton) -> impl Fn(EventReader<MouseButtonInput>) -> bool {
-    move |mut events: EventReader<MouseButtonInput>| {
+fn on_click(button: MouseButton) -> impl Fn(EventReader<MouseClicked>) -> bool {
+    move |mut events: EventReader<MouseClicked>| {
         // It is desirable to exhaust the iterator, thus .filter().count() is
         // used instead of .any()
-        events
-            .iter()
-            .filter(|e| e.button == button && e.state == ButtonState::Pressed)
-            .count()
-            > 0
+        events.iter().filter(|e| e.button() == button).count() > 0
     }
 }
 
@@ -204,24 +201,9 @@ fn select_all(
     events.send(SelectEvent::many(entities, SelectionMode::AddToggle));
 }
 
-fn select_all_visible(
-    cache: Res<ObjectCache>,
-    candidates: Query<(Entity, &ObjectType, &Transform), With<Playable>>,
-    camera: Query<&Frustum, With<Camera3d>>,
-    mut events: EventWriter<SelectEvent>,
-) {
-    let frustum = camera.single();
-    let entities: Vec<Entity> = candidates
-        .iter()
-        .filter_map(|(entity, &object_type, &transform)| {
-            let aabb = cache.get_collider(object_type).aabb();
-            if frustum::intersects_parry(frustum, transform, &aabb) {
-                Some(entity)
-            } else {
-                None
-            }
-        })
-        .collect();
-
-    events.send(SelectEvent::many(entities, SelectionMode::Replace));
+fn select_all_visible(mut events: EventWriter<SelectInRectEvent>) {
+    events.send(SelectInRectEvent::new(
+        ScreenRect::full(),
+        SelectionMode::Replace,
+    ));
 }

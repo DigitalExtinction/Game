@@ -20,6 +20,7 @@ de_pathing = { path = "../pathing", version = "0.1.0-dev" }
 de_spawner = { path = "../spawner", version = "0.1.0-dev" }
 de_behaviour = { path = "../behaviour", version = "0.1.0-dev" }
 de_attacking = { path = "../attacking", version = "0.1.0-dev" }
+de_ui = { path = "../ui", version = "0.1.0-dev" }
 
 # Other
 bevy = "0.8"

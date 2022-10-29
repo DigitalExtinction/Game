@@ -1,0 +1,19 @@
+[package]
+name = "de_ui"
+version = "0.1.0-dev"
+edition = "2021"
+authors = ["Martin Indra <martin.indra@mgn.cz>"]
+repository = "https://github.com/DigitalExtinction/Game"
+keywords = ["DigitalExtinction", "gamedev", "game", "bevy", "3d"]
+homepage = "https://de-game.org/"
+description = "2D game UI for Digital Extinction."
+license = "GPL-3.0"
+categories = ["games"]
+
+[dependencies]
+# DE
+de_core = { path = "../core", version = "0.1.0-dev" }
+
+# Other
+bevy = "0.8"
+iyes_loopless = "0.7"

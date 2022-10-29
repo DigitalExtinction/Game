@@ -88,6 +88,8 @@ Topologically sorted crates:
 * [attacking](/crates/attacking) – attacking, projectile & laser simulation and
   similar.
 
+* [ui](/crates/ui) – 2D in game UI.
+
 * [controller](/crates/controller) – handling of user input.
 
 ### Bevy Schedule Stages

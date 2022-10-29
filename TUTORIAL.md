@@ -28,6 +28,9 @@ construction by left clicking the mouse.
 Left click on any of your units or buildings to select it. Press and hold CTRL
 before left clicking on buildings and units to (de)select more entities.
 
+Drag mouse to select all entities inside a rectangle. Press on hold CTRL extend
+current selections instead of replacing it.
+
 Press CTRL+A to select all entities.
 
 Press CTRL+SHIFT+A to select all visible entities.
