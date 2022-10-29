@@ -12,7 +12,7 @@ license.workspace = true
 categories.workspace = true
 
 [dependencies]
-thiserror = "1.0"
+thiserror.workspace = true
 
 [dev-dependencies]
-approx = "0.5.1"
+approx.workspace = true

@@ -13,14 +13,14 @@ categories.workspace = true
 
 [dependencies]
 # DE
-de_core = { path = "../core", version = "0.1.0-dev" }
-de_map = { path = "../map", version = "0.1.0-dev" }
-de_terrain = { path = "../terrain", version = "0.1.0-dev" }
-de_spawner = { path = "../spawner", version = "0.1.0-dev" }
-de_camera = { path = "../camera", version = "0.1.0-dev" }
+de_core.workspace = true
+de_map.workspace = true
+de_terrain.workspace = true
+de_spawner.workspace = true
+de_camera.workspace = true
 
 # Other
-bevy = "0.8"
-iyes_loopless = "0.7"
-iyes_progress = { version = "0.4", features = [ "iyes_loopless" ] }
-futures-lite = "1.11"
+bevy.workspace = true
+iyes_loopless.workspace = true
+iyes_progress.workspace = true
+futures-lite.workspace = true

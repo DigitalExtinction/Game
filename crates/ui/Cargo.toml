@@ -13,8 +13,8 @@ categories.workspace = true
 
 [dependencies]
 # DE
-de_core = { path = "../core", version = "0.1.0-dev" }
+de_core.workspace = true
 
 # Other
-bevy = "0.8"
-iyes_loopless = "0.7"
+bevy.workspace = true
+iyes_loopless.workspace = true

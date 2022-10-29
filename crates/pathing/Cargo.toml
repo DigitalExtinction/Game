@@ -13,29 +13,26 @@ categories.workspace = true
 
 [dependencies]
 # DE
-de_core = { path = "../core", version = "0.1.0-dev" }
-de_map = { path = "../map", version = "0.1.0-dev" }
-de_objects = { path = "../objects", version = "0.1.0-dev" }
+de_core.workspace = true
+de_map.workspace = true
+de_objects.workspace = true
 
 # Other
-bevy = "0.8"
-glam = "0.21"
-parry2d = { git = "https://github.com/Indy2222/parry", branch = "feature/dilation" }
-nalgebra = { version = "0.31.0", features = ["convert-glam021"] }
-ahash = "0.7.6"
-approx = "0.5.1"
-# Use released version once this
-# https://github.com/georust/rstar/commit/923e73fc4dbee43ed43f2248eae6c4143e5282cc
-# is released.
-rstar = { git = "https://github.com/georust/rstar", branch = "master" }
-tinyvec = { version = "1.6.0", features = ["rustc_1_40", "alloc"] }
-iyes_loopless = "0.7"
-spade = "2.0.0"
-futures-lite = "1.11.3"
+bevy.workspace = true
+glam.workspace = true
+parry2d.workspace = true
+nalgebra.workspace = true
+ahash.workspace = true
+approx.workspace = true
+rstar.workspace = true
+tinyvec.workspace = true
+iyes_loopless.workspace = true
+spade.workspace = true
+futures-lite.workspace = true
 
 [dev-dependencies]
-ntest = "0.8.0"
-criterion = "0.3"
+ntest.workspace = true
+criterion.workspace = true
 
 [[bench]]
 name = "pathing"

@@ -12,6 +12,6 @@ license.workspace = true
 categories.workspace = true
 
 [dependencies]
-gltf = "1.0"
-parry3d = "0.9.0"
-clap = { version = "3.2.6", features = ["derive"] }
+gltf.workspace = true
+parry3d.workspace = true
+clap.workspace = true

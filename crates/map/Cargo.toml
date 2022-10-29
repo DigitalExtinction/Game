@@ -13,18 +13,18 @@ categories.workspace = true
 
 [dependencies]
 # DE
-de_core = { path = "../core", version = "0.1.0-dev" }
+de_core.workspace = true
 
 # other
-bevy = "0.8"
-glam = "0.21"
-parry2d = { git = "https://github.com/Indy2222/parry", branch = "feature/dilation" }
-serde = "1.0"
-serde_json = "1.0"
-thiserror = "1.0"
-async-std = { version = "1.11", features = ["default", "unstable", "attributes"] }
-async-tar = "0.4.2"
-ahash = "0.7.6"
+bevy.workspace = true
+glam.workspace = true
+parry2d.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+thiserror.workspace = true
+async-std = { workspace = true, features = ["default", "unstable", "attributes"] }
+async-tar.workspace = true
+ahash.workspace = true
 
 [dev-dependencies]
 tempfile = "3.3"
