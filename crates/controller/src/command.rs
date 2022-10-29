@@ -1,6 +1,6 @@
 use bevy::prelude::*;
-use de_attacking::AttackEvent;
 use de_behaviour::ChaseTarget;
+use de_combat::AttackEvent;
 use de_core::{
     gconfig::GameConfig,
     objects::{BuildingType, MovableSolid, Playable, PLAYER_MAX_BUILDINGS},

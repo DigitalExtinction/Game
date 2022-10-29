@@ -1,22 +1,23 @@
 [package]
 name = "de_core"
-version = "0.1.0-dev"
-edition = "2021"
-authors = ["Martin Indra <martin.indra@mgn.cz>"]
-repository = "https://github.com/DigitalExtinction/Game"
-keywords = ["DigitalExtinction", "gamedev", "game", "bevy", "3d"]
-homepage = "https://de-game.org/"
 description = "Various simple core utilities, structs, and so on for Digital Extinction."
-license = "GPL-3.0"
-categories = ["games"]
+
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+repository.workspace = true
+keywords.workspace = true
+homepage.workspace = true
+license.workspace = true
+categories.workspace = true
 
 [dependencies]
-serde = { version = "1.0", features = ["derive"] }
-bevy = "0.8"
-iyes_loopless = "0.7"
-iyes_progress = { version = "0.4", features = [ "iyes_loopless" ] }
-glam = "0.21"
-nalgebra = { version = "0.31.0", features = ["convert-glam021"] }
-parry2d = { git = "https://github.com/Indy2222/parry", branch = "feature/dilation" }
-parry3d = "0.9.0"
-enum-map = "2.3.0"
+serde.workspace = true
+bevy.workspace = true
+iyes_loopless.workspace = true
+iyes_progress.workspace = true
+glam.workspace = true
+nalgebra.workspace = true
+parry2d.workspace = true
+parry3d.workspace = true
+enum-map.workspace = true

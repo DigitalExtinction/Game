@@ -1,6 +1,6 @@
 [package]
-name = "de_terrain"
-description = "Functionality related to game terrain in Digital Extinction."
+name = "de_combat"
+description = "Attacking, projectile & laser simulation and similar in Digital Extinction."
 
 version.workspace = true
 edition.workspace = true
@@ -14,16 +14,14 @@ categories.workspace = true
 [dependencies]
 # DE
 de_core.workspace = true
-de_map.workspace = true
 de_objects.workspace = true
+de_terrain.workspace = true
+de_index.workspace = true
+de_spawner.workspace = true
+de_behaviour.workspace = true
 
 # Other
 bevy.workspace = true
 iyes_loopless.workspace = true
-iyes_progress.workspace = true
 glam.workspace = true
 parry3d.workspace = true
-ahash.workspace = true
-
-[dev-dependencies]
-itertools.workspace = true

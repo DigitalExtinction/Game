@@ -1,19 +1,20 @@
 [package]
 name = "de_ui"
-version = "0.1.0-dev"
-edition = "2021"
-authors = ["Martin Indra <martin.indra@mgn.cz>"]
-repository = "https://github.com/DigitalExtinction/Game"
-keywords = ["DigitalExtinction", "gamedev", "game", "bevy", "3d"]
-homepage = "https://de-game.org/"
 description = "2D game UI for Digital Extinction."
-license = "GPL-3.0"
-categories = ["games"]
+
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+repository.workspace = true
+keywords.workspace = true
+homepage.workspace = true
+license.workspace = true
+categories.workspace = true
 
 [dependencies]
 # DE
-de_core = { path = "../core", version = "0.1.0-dev" }
+de_core.workspace = true
 
 # Other
-bevy = "0.8"
-iyes_loopless = "0.7"
+bevy.workspace = true
+iyes_loopless.workspace = true

@@ -85,7 +85,7 @@ Topologically sorted crates:
 
 * [behaviour](/crates/behaviour) – unit level behaviour and AI.
 
-* [attacking](/crates/attacking) – attacking, projectile & laser simulation and
+* [combat](/crates/combat) – attacking, projectile & laser simulation and
   similar.
 
 * [ui](/crates/ui) – 2D in game UI.

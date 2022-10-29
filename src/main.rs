@@ -3,9 +3,9 @@ use bevy::{
     prelude::*,
     window::WindowMode,
 };
-use de_attacking::AttackingPluginGroup;
 use de_behaviour::BehaviourPluginGroup;
 use de_camera::CameraPluginGroup;
+use de_combat::CombatPluginGroup;
 use de_controller::ControllerPluginGroup;
 use de_core::{gconfig::GameConfig, player::Player, state::GameState, CorePluginGroup};
 use de_index::IndexPluginGroup;
@@ -41,7 +41,7 @@ fn main() {
         .add_plugins(ControllerPluginGroup)
         .add_plugins(CameraPluginGroup)
         .add_plugins(BehaviourPluginGroup)
-        .add_plugins(AttackingPluginGroup)
+        .add_plugins(CombatPluginGroup)
         .add_plugins(UiPluginGroup)
         .run();
 }
