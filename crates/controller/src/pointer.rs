@@ -71,7 +71,7 @@ impl<'w, 's> ScreenRay<'w, 's> {
         let (camera_transform, camera) = self.cameras.single();
         let ndc_to_world = camera_transform.compute_matrix() * camera.projection_matrix().inverse();
         let ray_origin = ndc_to_world.project_point3(point.extend(1.));
-        let ray_direction = ray_origin - camera_transform.translation;
+        let ray_direction = (ray_origin - camera_transform.translation).normalize();
         Ray::new(ray_origin.into(), ray_direction.into())
     }
 }
