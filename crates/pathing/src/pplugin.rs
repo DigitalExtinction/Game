@@ -89,6 +89,7 @@ impl UpdateEntityPath {
     }
 }
 
+#[derive(Default)]
 struct UpdatePathsState {
     tasks: AHashMap<Entity, UpdatePathTask>,
 }
@@ -115,14 +116,6 @@ impl UpdatePathsState {
         });
 
         results
-    }
-}
-
-impl Default for UpdatePathsState {
-    fn default() -> Self {
-        Self {
-            tasks: AHashMap::new(),
-        }
     }
 }
 
