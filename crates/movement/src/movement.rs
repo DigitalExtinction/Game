@@ -81,12 +81,14 @@ pub(crate) struct ObjectVelocity {
     /// Current velocity.
     current: Vec3,
     heading: f32,
+    heading_changed: bool,
 }
 
 impl ObjectVelocity {
     pub(crate) fn update(&mut self, velocity: Vec3, heading: f32) {
         self.previous = self.current;
         self.current = velocity;
+        self.heading_changed = self.heading != heading;
         self.heading = heading;
     }
 
@@ -97,6 +99,10 @@ impl ObjectVelocity {
 
     fn heading(&self) -> f32 {
         self.heading
+    }
+
+    fn heading_changed(&self) -> bool {
+        self.heading_changed
     }
 }
 
@@ -119,11 +125,19 @@ fn update_transform(
 ) {
     let time_delta = time.delta_seconds();
     for (velocity, mut transform) in objects.iter_mut() {
-        transform.translation = clamp(
-            bounds.as_ref(),
-            transform.translation + time_delta * velocity.frame(),
-        );
-        transform.rotation = Quat::from_rotation_y(velocity.heading());
+        let frame_velocity = velocity.frame();
+
+        // Do not trigger Bevy's change detection when not necessary.
+        if frame_velocity != Vec3::ZERO {
+            transform.translation = clamp(
+                bounds.as_ref(),
+                transform.translation + time_delta * frame_velocity,
+            );
+        }
+
+        if velocity.heading_changed() {
+            transform.rotation = Quat::from_rotation_y(velocity.heading());
+        }
     }
 }
 
