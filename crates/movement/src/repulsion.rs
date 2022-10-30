@@ -13,9 +13,9 @@ use parry2d::{math::Isometry, na::Unit, query::PointQuery};
 use crate::{
     cache::DecayingCache,
     disc::Disc,
-    movement::DesiredMovement,
+    movement::{add_desired_velocity, DesiredVelocity},
     obstacles::{MovableObstacles, ObstaclesLables, StaticObstacles},
-    pathing::PathingLabels,
+    pathing::{PathVelocity, PathingLabels},
     MAX_ACCELERATION, MAX_SPEED,
 };
 
@@ -30,7 +30,11 @@ impl Plugin for RepulsionPlugin {
     fn build(&self, app: &mut App) {
         app.add_system_set_to_stage(
             GameStage::PreMovement,
-            SystemSet::new().with_system(setup_entities.run_in_state(GameState::Playing)),
+            SystemSet::new()
+                .with_system(setup_entities.run_in_state(GameState::Playing))
+                .with_system(
+                    add_desired_velocity::<RepulsionVelocity>.run_in_state(GameState::Playing),
+                ),
         )
         .add_system_set_to_stage(
             GameStage::Movement,
@@ -74,6 +78,8 @@ pub(crate) enum RepulsionLables {
     RepelBounds,
     Apply,
 }
+
+pub(crate) struct RepulsionVelocity;
 
 /// This component collects directional bounds and computes bounded desired
 /// velocity based on the bounds.
@@ -157,7 +163,7 @@ fn setup_entities(
 fn repel_static(
     cache: Res<ObjectCache>,
     mut objects: Query<(
-        &DesiredMovement,
+        &DesiredVelocity<PathVelocity>,
         &Disc,
         &DecayingCache<StaticObstacles>,
         &mut Repulsion,
@@ -165,7 +171,7 @@ fn repel_static(
     obstacles: Query<(&ObjectType, &Transform), With<StaticSolid>>,
 ) {
     objects.par_for_each_mut(512, |(movement, disc, static_obstacles, mut repulsion)| {
-        if movement.stopped() {
+        if movement.stationary() {
             return;
         }
 
@@ -206,7 +212,7 @@ fn repel_static(
 
 fn repel_movable(
     mut objects: Query<(
-        &DesiredMovement,
+        &DesiredVelocity<PathVelocity>,
         &Disc,
         &DecayingCache<MovableObstacles>,
         &mut Repulsion,
@@ -214,7 +220,7 @@ fn repel_movable(
     obstacles: Query<&Disc>,
 ) {
     objects.par_for_each_mut(512, |(movement, disc, movable_obstacles, mut repulsion)| {
-        if movement.stopped() {
+        if movement.stationary() {
             return;
         }
 
@@ -237,10 +243,10 @@ fn repel_movable(
 
 fn repel_bounds(
     bounds: Res<MapBounds>,
-    mut objects: Query<(&DesiredMovement, &Disc, &mut Repulsion)>,
+    mut objects: Query<(&DesiredVelocity<PathVelocity>, &Disc, &mut Repulsion)>,
 ) {
     objects.par_for_each_mut(512, |(movement, disc, mut repulsion)| {
-        if movement.stopped() {
+        if movement.stationary() {
             return;
         }
 
@@ -259,10 +265,19 @@ fn repel_bounds(
     });
 }
 
-fn apply(mut objects: Query<(&mut Repulsion, &mut DesiredMovement)>) {
-    objects.par_for_each_mut(512, |(mut repulsion, mut movement)| {
-        let velocity = repulsion.apply(movement.velocity());
-        movement.update(velocity.clamp_length_max(MAX_SPEED));
-        repulsion.clear();
-    });
+fn apply(
+    mut objects: Query<(
+        &mut Repulsion,
+        &DesiredVelocity<PathVelocity>,
+        &mut DesiredVelocity<RepulsionVelocity>,
+    )>,
+) {
+    objects.par_for_each_mut(
+        512,
+        |(mut repulsion, path_velocity, mut repulsion_velocity)| {
+            let velocity = repulsion.apply(path_velocity.velocity());
+            repulsion_velocity.update(velocity.clamp_length_max(MAX_SPEED));
+            repulsion.clear();
+        },
+    );
 }

@@ -5,8 +5,8 @@ use de_core::{objects::MovableSolid, projection::ToMsl, stages::GameStage, state
 use iyes_loopless::prelude::*;
 
 use crate::{
-    movement::{DesiredMovement, MovementLabels, ObjectVelocity},
-    repulsion::RepulsionLables,
+    movement::{DesiredVelocity, MovementLabels, ObjectVelocity},
+    repulsion::{RepulsionLables, RepulsionVelocity},
     MAX_ACCELERATION, MAX_ANGULAR_SPEED, MAX_SPEED,
 };
 
@@ -89,7 +89,11 @@ fn setup_entities(mut commands: Commands, objects: Uninitialized) {
 
 fn kinematics(
     time: Res<Time>,
-    mut objects: Query<(&DesiredMovement, &mut Kinematics, &mut ObjectVelocity)>,
+    mut objects: Query<(
+        &DesiredVelocity<RepulsionVelocity>,
+        &mut Kinematics,
+        &mut ObjectVelocity,
+    )>,
 ) {
     let time_delta = time.delta_seconds();
 

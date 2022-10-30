@@ -1,3 +1,5 @@
+use std::marker::PhantomData;
+
 use bevy::prelude::*;
 use de_core::{
     objects::MovableSolid,
@@ -33,30 +35,26 @@ pub(crate) enum MovementLabels {
     UpdateTransform,
 }
 
-/// Ideal velocity induced by a global path plan.
+/// Velocity is computed in stages, this is a generic over all of them.
 #[derive(Component)]
-pub(crate) struct DesiredMovement {
+pub(crate) struct DesiredVelocity<T> {
     velocity: Vec2,
-    stopped: bool,
+    // PhantomData<fn() -> T> gives this safe Send/Sync impls
+    _m: PhantomData<fn() -> T>,
 }
 
-impl DesiredMovement {
+impl<T> DesiredVelocity<T> {
     pub(crate) fn velocity(&self) -> Vec2 {
         self.velocity
     }
 
-    pub(crate) fn stopped(&self) -> bool {
-        self.stopped
+    /// Returns true if the velocity is zero.
+    pub(crate) fn stationary(&self) -> bool {
+        self.velocity == Vec2::ZERO
     }
 
     pub(crate) fn stop(&mut self) {
         self.velocity = Vec2::ZERO;
-        self.stopped = true;
-    }
-
-    pub(crate) fn start(&mut self, velocity: Vec2) {
-        self.velocity = velocity;
-        self.stopped = false;
     }
 
     pub(crate) fn update(&mut self, velocity: Vec2) {
@@ -64,11 +62,11 @@ impl DesiredMovement {
     }
 }
 
-impl Default for DesiredMovement {
+impl<T> Default for DesiredVelocity<T> {
     fn default() -> Self {
         Self {
             velocity: Vec2::ZERO,
-            stopped: true,
+            _m: PhantomData,
         }
     }
 }
@@ -106,15 +104,23 @@ impl ObjectVelocity {
     }
 }
 
-fn setup_entities(
+pub(crate) fn add_desired_velocity<T: 'static>(
     mut commands: Commands,
-    objects: Query<Entity, (With<MovableSolid>, Without<DesiredMovement>)>,
+    objects: Query<Entity, (With<MovableSolid>, Without<DesiredVelocity<T>>)>,
 ) {
     for entity in objects.iter() {
         commands
             .entity(entity)
-            .insert(DesiredMovement::default())
-            .insert(ObjectVelocity::default());
+            .insert(DesiredVelocity::<T>::default());
+    }
+}
+
+fn setup_entities(
+    mut commands: Commands,
+    objects: Query<Entity, (With<MovableSolid>, Without<ObjectVelocity>)>,
+) {
+    for entity in objects.iter() {
+        commands.entity(entity).insert(ObjectVelocity::default());
     }
 }
 
