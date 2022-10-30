@@ -12,6 +12,9 @@ homepage.workspace = true
 license.workspace = true
 categories.workspace = true
 
+[profile.release]
+lto = true
+
 [dependencies]
 # DE
 de_core.workspace = true

@@ -46,6 +46,11 @@ Clone, build & run recipe (will work in majority of the cases):
 * make sure that Git LFS files in [assets/](assets/) are pulled
 * `cargo run --release`
 
+# Build Profiles
+
+Link time optimizations (LTO) are enabled on release profile. Thus release
+build takes a long time.
+
 # Where to Get Help?
 
 * Open a question in [Q&A category of this repository's
