@@ -51,6 +51,13 @@ Clone, build & run recipe (will work in majority of the cases):
 Link time optimizations (LTO) are enabled on release profile. Thus release
 build takes a long time.
 
+## Testing Profile
+
+On top of the standard Cargo build profiles, there is a `testing` profile
+optimized for manual testing of the game. In this profile, extra checks and
+debug info is included in the build. LTO is disabled and optimization level is
+fine tuned for fast compilation times while keeping performance reasonable.
+
 # Where to Get Help?
 
 * Open a question in [Q&A category of this repository's
