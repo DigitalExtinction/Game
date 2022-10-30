@@ -25,3 +25,8 @@ iyes_loopless.workspace = true
 parry3d.workspace = true
 parry2d.workspace = true
 glam.workspace = true
+nalgebra.workspace = true
+tinyvec.workspace = true
+
+[dev-dependencies]
+ahash.workspace = true

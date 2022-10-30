@@ -90,6 +90,10 @@ impl ObjectVelocity {
         self.heading = heading;
     }
 
+    pub(crate) fn current(&self) -> Vec3 {
+        self.current
+    }
+
     /// Returns mean velocity over the last frame duration.
     fn frame(&self) -> Vec3 {
         self.current.lerp(self.previous, 0.5)

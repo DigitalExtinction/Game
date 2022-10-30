@@ -1,5 +1,6 @@
 mod cache;
 mod disc;
+mod hrvo;
 mod kinematics;
 mod movement;
 mod obstacles;
@@ -9,6 +10,7 @@ mod repulsion;
 use std::f32::consts::PI;
 
 use bevy::{app::PluginGroupBuilder, prelude::PluginGroup};
+use hrvo::HrvoPlugin;
 use kinematics::KinematicsPlugin;
 use movement::MovementPlugin;
 use obstacles::ObstaclesPlugin;
@@ -27,6 +29,7 @@ pub struct MovementPluginGroup;
 impl PluginGroup for MovementPluginGroup {
     fn build(&mut self, group: &mut PluginGroupBuilder) {
         group
+            .add(HrvoPlugin)
             .add(MovementPlugin)
             .add(PathingPlugin)
             .add(ObstaclesPlugin)

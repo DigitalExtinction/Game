@@ -1779,6 +1779,7 @@ dependencies = [
 name = "de_movement"
 version = "0.1.0-dev"
 dependencies = [
+ "ahash",
  "bevy",
  "de_core",
  "de_index",
@@ -1787,8 +1788,10 @@ dependencies = [
  "de_pathing",
  "glam",
  "iyes_loopless",
+ "nalgebra",
  "parry2d",
  "parry3d",
+ "tinyvec",
 ]
 
 [[package]]

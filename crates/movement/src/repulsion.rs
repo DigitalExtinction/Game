@@ -13,9 +13,10 @@ use parry2d::{math::Isometry, na::Unit, query::PointQuery};
 use crate::{
     cache::DecayingCache,
     disc::Disc,
+    hrvo::{HrvoLabels, HrvoVelocity},
     movement::{add_desired_velocity, DesiredVelocity},
     obstacles::{MovableObstacles, ObstaclesLables, StaticObstacles},
-    pathing::{PathVelocity, PathingLabels},
+    pathing::PathingLabels,
     MAX_ACCELERATION, MAX_SPEED,
 };
 
@@ -65,7 +66,8 @@ impl Plugin for RepulsionPlugin {
                         .label(RepulsionLables::Apply)
                         .after(RepulsionLables::RepelStatic)
                         .after(RepulsionLables::RepelMovable)
-                        .after(RepulsionLables::RepelBounds),
+                        .after(RepulsionLables::RepelBounds)
+                        .after(HrvoLabels::AvoidObstacles),
                 ),
         );
     }
@@ -163,7 +165,7 @@ fn setup_entities(
 fn repel_static(
     cache: Res<ObjectCache>,
     mut objects: Query<(
-        &DesiredVelocity<PathVelocity>,
+        &DesiredVelocity<HrvoVelocity>,
         &Disc,
         &DecayingCache<StaticObstacles>,
         &mut Repulsion,
@@ -212,7 +214,7 @@ fn repel_static(
 
 fn repel_movable(
     mut objects: Query<(
-        &DesiredVelocity<PathVelocity>,
+        &DesiredVelocity<HrvoVelocity>,
         &Disc,
         &DecayingCache<MovableObstacles>,
         &mut Repulsion,
@@ -243,7 +245,7 @@ fn repel_movable(
 
 fn repel_bounds(
     bounds: Res<MapBounds>,
-    mut objects: Query<(&DesiredVelocity<PathVelocity>, &Disc, &mut Repulsion)>,
+    mut objects: Query<(&DesiredVelocity<HrvoVelocity>, &Disc, &mut Repulsion)>,
 ) {
     objects.par_for_each_mut(512, |(movement, disc, mut repulsion)| {
         if movement.stationary() {
@@ -268,7 +270,7 @@ fn repel_bounds(
 fn apply(
     mut objects: Query<(
         &mut Repulsion,
-        &DesiredVelocity<PathVelocity>,
+        &DesiredVelocity<HrvoVelocity>,
         &mut DesiredVelocity<RepulsionVelocity>,
     )>,
 ) {

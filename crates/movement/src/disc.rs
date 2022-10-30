@@ -23,4 +23,11 @@ impl Disc {
     pub(crate) fn set_center(&mut self, center: Vec2) {
         self.center = center;
     }
+
+    pub(crate) fn inflated(&self, amount: f32) -> Self {
+        Self {
+            center: self.center,
+            radius: self.radius + amount,
+        }
+    }
 }
