@@ -1,6 +1,6 @@
 use ahash::AHashSet;
 use bevy::prelude::Entity;
-use parry3d::bounding_volume::AABB;
+use parry3d::bounding_volume::Aabb;
 
 use crate::{grid::TileGrid, range::TileRange};
 
@@ -16,7 +16,7 @@ pub(crate) struct AabbCandidates<'a> {
 impl<'a> AabbCandidates<'a> {
     /// Creates a new iterator of entities potentially colliding with a given
     /// AABB.
-    pub(crate) fn new(grid: &'a TileGrid, aabb: &AABB) -> Self {
+    pub(crate) fn new(grid: &'a TileGrid, aabb: &Aabb) -> Self {
         Self {
             grid,
             tiles: TileRange::from_aabb(aabb),
@@ -74,17 +74,17 @@ mod tests {
     #[test]
     fn test_aabb() {
         let entity_a = Entity::from_raw(1);
-        let aabb_a = AABB::new(
+        let aabb_a = Aabb::new(
             Point::new(0.5 * TILE_SIZE, 0., 1.1 * TILE_SIZE),
             Point::new(3.7 * TILE_SIZE, 3., 1.6 * TILE_SIZE),
         );
         let entity_b = Entity::from_raw(2);
-        let aabb_b = AABB::new(
+        let aabb_b = Aabb::new(
             Point::new(-TILE_SIZE * 0.7, -100.5, -TILE_SIZE * 3.5),
             Point::new(-TILE_SIZE * 0.6, 3.5, -TILE_SIZE * 3.2),
         );
         let entity_c = Entity::from_raw(3);
-        let aabb_c = AABB::new(
+        let aabb_c = Aabb::new(
             Point::new(TILE_SIZE * 20.1, 0.5, TILE_SIZE * 20.5),
             Point::new(TILE_SIZE * 20., 0.5, TILE_SIZE * 20.2),
         );
@@ -96,7 +96,7 @@ mod tests {
 
         let mut candidates = AabbCandidates::new(
             &grid,
-            &AABB::new(
+            &Aabb::new(
                 Point::new(-TILE_SIZE * 0.1, 0.5, -TILE_SIZE * 5.5),
                 Point::new(TILE_SIZE * 0.9, 0.5, TILE_SIZE * 1.2),
             ),

@@ -1,5 +1,5 @@
 use de_core::objects::ObjectType;
-use parry2d::{bounding_volume::AABB, math::Point, shape::ConvexPolygon};
+use parry2d::{bounding_volume::Aabb, math::Point, shape::ConvexPolygon};
 
 use crate::{loader::Footprint, ObjectCache};
 
@@ -19,7 +19,7 @@ impl IchnographyCache for ObjectCache {
 
 pub struct Ichnography {
     radius: f32,
-    local_aabb: AABB,
+    local_aabb: Aabb,
     convex_hull: ConvexPolygon,
     offset_convex_hull: ConvexPolygon,
 }
@@ -27,7 +27,7 @@ pub struct Ichnography {
 impl Ichnography {
     fn new(
         radius: f32,
-        local_aabb: AABB,
+        local_aabb: Aabb,
         convex_hull: ConvexPolygon,
         offset_convex_hull: ConvexPolygon,
     ) -> Self {
@@ -39,7 +39,7 @@ impl Ichnography {
         }
     }
 
-    pub fn local_aabb(&self) -> AABB {
+    pub fn local_aabb(&self) -> Aabb {
         self.local_aabb
     }
 
@@ -117,7 +117,7 @@ mod tests {
         let ichnography = Ichnography::from(footpring);
         assert_eq!(
             ichnography.local_aabb(),
-            AABB::new(Point::new(15., 125.), Point::new(20., 225.),)
+            Aabb::new(Point::new(15., 125.), Point::new(20., 225.),)
         );
         assert_eq!(
             ichnography.convex_hull().points(),

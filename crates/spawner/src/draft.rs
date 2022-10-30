@@ -16,7 +16,7 @@ use de_map::size::MapBounds;
 use de_objects::{ColliderCache, ObjectCache, EXCLUSION_OFFSET};
 use iyes_loopless::prelude::*;
 use parry2d::{
-    bounding_volume::{BoundingVolume, AABB},
+    bounding_volume::{Aabb, BoundingVolume},
     math::Vector,
 };
 use parry3d::math::Isometry;
@@ -116,7 +116,7 @@ fn update_draft(
         let flat_aabb = collider.world_aabb().to_flat();
         let shrinked_map = {
             let aabb = bounds.aabb();
-            AABB::new(aabb.mins + MAP_OFFSET, aabb.maxs - MAP_OFFSET)
+            Aabb::new(aabb.mins + MAP_OFFSET, aabb.maxs - MAP_OFFSET)
         };
         let allowed = shrinked_map.contains(&flat_aabb) && !solids.collides(&collider);
         if allowed != draft.allowed {

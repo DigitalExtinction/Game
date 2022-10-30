@@ -1,6 +1,6 @@
 use de_core::projection::ToFlat;
 use glam::{IVec2, Vec2};
-use parry3d::bounding_volume::AABB;
+use parry3d::bounding_volume::Aabb;
 
 use crate::TILE_SIZE;
 
@@ -21,7 +21,7 @@ impl TileRange {
     ///
     /// Tiles are assumed to be topologically closed. In other words, both
     /// touching and intersecting tiles are included in the range.
-    pub(crate) fn from_aabb(aabb: &AABB) -> Self {
+    pub(crate) fn from_aabb(aabb: &Aabb) -> Self {
         let aabb = aabb.to_flat();
         let min_flat: Vec2 = aabb.mins.into();
         let max_flat: Vec2 = aabb.maxs.into();

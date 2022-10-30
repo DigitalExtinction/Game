@@ -12,7 +12,7 @@ use bevy::{
     prelude::{Entity, Query, Res},
 };
 use parry3d::{
-    bounding_volume::{BoundingVolume, AABB},
+    bounding_volume::{Aabb, BoundingVolume},
     math::{Isometry, Point},
     query::Ray,
     shape::Segment,
@@ -24,7 +24,7 @@ use crate::{aabb::AabbCandidates, collider::ColliderWithCache};
 /// 2D rectangular grid based spatial index of entities.
 pub struct EntityIndex {
     grid: TileGrid,
-    world_bounds: AABB,
+    world_bounds: Aabb,
     colliders: AHashMap<Entity, LocalCollider>,
 }
 
@@ -34,7 +34,7 @@ impl EntityIndex {
     pub fn new() -> Self {
         Self {
             grid: TileGrid::new(),
-            world_bounds: AABB::new(Point::origin(), Point::origin()),
+            world_bounds: Aabb::new(Point::origin(), Point::origin()),
             colliders: AHashMap::new(),
         }
     }
@@ -86,7 +86,7 @@ impl EntityIndex {
     }
 
     /// Returns an iterator of potentially intersecting entities.
-    fn query_aabb<'a>(&'a self, aabb: &AABB) -> AabbCandidates<'a> {
+    fn query_aabb<'a>(&'a self, aabb: &Aabb) -> AabbCandidates<'a> {
         AabbCandidates::new(&self.grid, aabb)
     }
 
@@ -188,7 +188,7 @@ where
 
     pub fn query_aabb<'a, 'b>(
         &'a self,
-        aabb: &'b AABB,
+        aabb: &'b Aabb,
         ignore: Option<Entity>,
     ) -> AabbQueryResults<'w, 's, 'a, 'b, Q, F> {
         AabbQueryResults::new(&self.entities, &self.index, aabb, ignore)
@@ -259,7 +259,7 @@ where
     candidates: AabbCandidates<'a>,
     current: Vec<Entity>,
     current_index: usize,
-    aabb: &'b AABB,
+    aabb: &'b Aabb,
     ignore: Option<Entity>,
 }
 
@@ -271,7 +271,7 @@ where
     fn new(
         entities: &'a Query<'w, 's, Q, F>,
         index: &'a EntityIndex,
-        aabb: &'b AABB,
+        aabb: &'b Aabb,
         ignore: Option<Entity>,
     ) -> Self {
         let candidates = index.query_aabb(aabb);
@@ -329,7 +329,7 @@ mod tests {
     use ahash::AHashSet;
     use de_objects::ObjectCollider;
     use parry3d::{
-        bounding_volume::AABB,
+        bounding_volume::Aabb,
         math::{Isometry, Point, Vector},
         shape::{Cuboid, TriMesh, TriMeshFlags},
     };
@@ -373,7 +373,7 @@ mod tests {
 
         assert_eq!(
             index.get_collider(entity_a).world_aabb(),
-            &AABB::new(Point::new(6., -2., -3.), Point::new(8., 2., 3.))
+            &Aabb::new(Point::new(6., -2., -3.), Point::new(8., 2., 3.))
         );
         let entities_a: AHashSet<Entity> =
             index.cast_ray(&ray_a, 120.).unwrap().flatten().collect();
@@ -382,7 +382,7 @@ mod tests {
         index.update(entity_b, position_b_2);
         assert_eq!(
             index.get_collider(entity_b).world_aabb(),
-            &AABB::new(Point::new(5., 999., -202.), Point::new(9., 1001., -198.))
+            &Aabb::new(Point::new(5., 999., -202.), Point::new(9., 1001., -198.))
         );
         let entities_b: AHashSet<Entity> =
             index.cast_ray(&ray_a, 120.).unwrap().flatten().collect();
@@ -408,7 +408,7 @@ mod tests {
         let mut collider = LocalCollider::new(object_collider, position_a);
         assert_eq!(
             collider.world_aabb(),
-            &AABB::new(Point::new(6., -2., -3.), Point::new(8., 2., 3.))
+            &Aabb::new(Point::new(6., -2., -3.), Point::new(8., 2., 3.))
         );
 
         let intersection_a = collider.cast_ray(&ray, f32::INFINITY).unwrap();
@@ -417,7 +417,7 @@ mod tests {
         collider.update_position(position_b);
         assert_eq!(
             collider.world_aabb(),
-            &AABB::new(Point::new(8., -2., -3.), Point::new(10., 2., 3.))
+            &Aabb::new(Point::new(8., -2., -3.), Point::new(10., 2., 3.))
         );
 
         let intersection_b = collider.cast_ray(&ray, f32::INFINITY).unwrap();

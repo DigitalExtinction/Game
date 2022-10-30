@@ -4,7 +4,7 @@
 use ahash::{AHashMap, AHashSet};
 use bevy::prelude::Entity;
 use glam::IVec2;
-use parry3d::bounding_volume::AABB;
+use parry3d::bounding_volume::Aabb;
 
 use crate::range::TileRange;
 
@@ -36,7 +36,7 @@ impl TileGrid {
     /// # Panics
     ///
     /// Might panic if the entity is already present in the grid.
-    pub(crate) fn insert(&mut self, entity: Entity, aabb: &AABB) {
+    pub(crate) fn insert(&mut self, entity: Entity, aabb: &Aabb) {
         for tile in TileRange::from_aabb(aabb) {
             self.insert_to_tile(entity, tile);
         }
@@ -56,7 +56,7 @@ impl TileGrid {
     ///
     /// Might panic if the entity is not stored in the grid or if the last used
     /// update / insertion AABB differs from the one passed as an argument.
-    pub(crate) fn remove(&mut self, entity: Entity, aabb: &AABB) {
+    pub(crate) fn remove(&mut self, entity: Entity, aabb: &Aabb) {
         for tile in TileRange::from_aabb(aabb) {
             self.remove_from_tile(entity, tile);
         }
@@ -77,7 +77,7 @@ impl TileGrid {
     ///
     /// Might panic if the entity is not present in the grid or if `old_aabb`
     /// differs from the last used update / insert AABB.
-    pub(crate) fn update(&mut self, entity: Entity, old_aabb: &AABB, new_aabb: &AABB) {
+    pub(crate) fn update(&mut self, entity: Entity, old_aabb: &Aabb, new_aabb: &Aabb) {
         let old_tiles = TileRange::from_aabb(old_aabb);
         let new_tiles = TileRange::from_aabb(new_aabb);
 
@@ -149,23 +149,23 @@ mod tests {
         let mut grid = TileGrid::new();
 
         let entity_a = Entity::from_raw(1);
-        let aabb_a = AABB::new(
+        let aabb_a = Aabb::new(
             Point::new(-TILE_SIZE * 0.5, -100.5, TILE_SIZE * 3.2),
             Point::new(-TILE_SIZE * 0.4, 3.5, TILE_SIZE * 3.5),
         );
 
         let entity_b = Entity::from_raw(2);
-        let aabb_b = AABB::new(
+        let aabb_b = Aabb::new(
             Point::new(-TILE_SIZE * 0.7, -100.5, TILE_SIZE * 3.2),
             Point::new(-TILE_SIZE * 0.6, 3.5, TILE_SIZE * 3.5),
         );
 
         let entity_c = Entity::from_raw(3);
-        let aabb_c_old = AABB::new(
+        let aabb_c_old = Aabb::new(
             Point::new(TILE_SIZE * 7., -100.5, -TILE_SIZE * 9.9),
             Point::new(TILE_SIZE * 8.5, 3.5, -TILE_SIZE * 8.),
         );
-        let aabb_c_new = AABB::new(
+        let aabb_c_new = Aabb::new(
             Point::new(TILE_SIZE * 7.1, -100.5, -TILE_SIZE * 12.2),
             Point::new(TILE_SIZE * 8.5, 3.5, -TILE_SIZE * 9.3),
         );
@@ -233,7 +233,7 @@ mod tests {
 
     #[test]
     fn test_tile_range_from_aabb() {
-        let aabb = AABB::new(
+        let aabb = Aabb::new(
             Point::new(-TILE_SIZE * 0.5, -100.5, -TILE_SIZE * 4.5),
             Point::new(TILE_SIZE * 1., 3.5, -TILE_SIZE * 3.5),
         );

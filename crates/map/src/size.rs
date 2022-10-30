@@ -1,6 +1,6 @@
 use bevy::reflect::TypeUuid;
 use glam::Vec2;
-use parry2d::bounding_volume::AABB;
+use parry2d::bounding_volume::Aabb;
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
@@ -32,8 +32,8 @@ impl MapBounds {
     }
 
     /// Bounding box of the map.
-    pub fn aabb(&self) -> AABB {
-        AABB::new(self.min().into(), self.max().into())
+    pub fn aabb(&self) -> Aabb {
+        Aabb::new(self.min().into(), self.max().into())
     }
 
     pub fn size(&self) -> Vec2 {
@@ -71,7 +71,7 @@ mod test {
         let bounds = MapBounds(Vec2::new(2.5, 3.5));
         assert_eq!(
             bounds.aabb(),
-            AABB::new(Point::new(-2.5, -3.5), Point::new(2.5, 3.5))
+            Aabb::new(Point::new(-2.5, -3.5), Point::new(2.5, 3.5))
         );
     }
 

@@ -3,10 +3,10 @@ use bevy::{
     render::primitives::{Aabb, Frustum, Sphere},
 };
 use glam::Vec3;
-use parry3d::bounding_volume::AABB;
+use parry3d::bounding_volume::Aabb as AabbP;
 
 /// See [`intersects_bevy`].
-pub fn intersects_parry(frustum: &Frustum, transform: Transform, aabb: &AABB) -> bool {
+pub fn intersects_parry(frustum: &Frustum, transform: Transform, aabb: &AabbP) -> bool {
     let transform = GlobalTransform::from(transform);
     let aabb = Aabb::from_min_max(Vec3::from(aabb.mins), Vec3::from(aabb.maxs));
     intersects_bevy(frustum, &transform, &aabb)
