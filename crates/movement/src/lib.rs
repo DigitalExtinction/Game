@@ -1,4 +1,5 @@
 mod cache;
+mod disc;
 mod kinematics;
 mod movement;
 mod obstacles;

@@ -12,8 +12,9 @@ use parry2d::{math::Isometry, na::Unit, query::PointQuery};
 
 use crate::{
     cache::DecayingCache,
+    disc::Disc,
     movement::DesiredMovement,
-    obstacles::{Disc, MovableObstacles, ObstaclesLables, StaticObstacles},
+    obstacles::{MovableObstacles, ObstaclesLables, StaticObstacles},
     pathing::PathingLabels,
     MAX_ACCELERATION, MAX_SPEED,
 };
@@ -173,7 +174,7 @@ fn repel_static(
 
             let angle = transform.rotation.to_euler(EulerRot::YXZ).0;
             let isometry = Isometry::new(transform.translation.to_flat().into(), angle);
-            let local_point = isometry.inverse_transform_point(&disc.center);
+            let local_point = isometry.inverse_transform_point(&From::from(disc.center()));
 
             let footprint = cache.get_ichnography(object_type).convex_hull();
             let projection = footprint.project_local_point(&local_point, true);
@@ -184,7 +185,7 @@ fn repel_static(
                 diff *= -1.;
                 distance *= -1.;
             }
-            distance -= disc.radius;
+            distance -= disc.radius();
 
             if distance > MAX_REPULSION_DISTANCE {
                 continue;
@@ -219,14 +220,14 @@ fn repel_movable(
 
         for &entity in movable_obstacles.entities() {
             let other_disc = obstacles.get(entity).unwrap();
-            let diff = other_disc.center - disc.center;
-            let mut distance = diff.norm();
+            let diff = other_disc.center() - disc.center();
+            let mut distance = diff.length();
             let direction = if distance <= parry2d::math::DEFAULT_EPSILON {
                 Vec2::X
             } else {
-                Vec2::from(diff / distance)
+                diff / distance
             };
-            distance -= disc.radius + other_disc.radius;
+            distance -= disc.radius() + other_disc.radius();
             if distance < MAX_REPULSION_DISTANCE {
                 repulsion.add(direction, distance - MIN_MOVABLE_OBJECT_DISTANCE);
             }
@@ -243,15 +244,17 @@ fn repel_bounds(
             return;
         }
 
-        let projection = bounds.aabb().project_local_point(&disc.center, false);
+        let projection = bounds
+            .aabb()
+            .project_local_point(&From::from(disc.center()), false);
         debug_assert!(projection.is_inside);
 
-        let diff = projection.point - disc.center;
-        let diff_norm = diff.norm();
-        let distance = diff_norm - disc.radius;
+        let diff = Vec2::from(projection.point) - disc.center();
+        let diff_norm = diff.length();
+        let distance = diff_norm - disc.radius();
 
         if distance < MAX_REPULSION_DISTANCE {
-            repulsion.add(Vec2::from(diff / diff_norm), distance - EXCLUSION_OFFSET);
+            repulsion.add(diff / diff_norm, distance - EXCLUSION_OFFSET);
         }
     });
 }
