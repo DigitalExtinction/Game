@@ -3289,8 +3289,9 @@ dependencies = [
 
 [[package]]
 name = "parry2d"
-version = "0.9.0"
-source = "git+https://github.com/Indy2222/parry?branch=feature/dilation#0ca6b18677a2ccfebdfb825fab13c4db6132cff4"
+version = "0.11.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8a351dbf84025e59c40666bb6d5cd4a0315d58e696ad7d8ca890daaba5e9a539"
 dependencies = [
  "approx",
  "arrayvec",
@@ -3309,9 +3310,9 @@ dependencies = [
 
 [[package]]
 name = "parry3d"
-version = "0.9.0"
+version = "0.11.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "89cd07f0e1e9e207662f430a4e758c357fdf89450a548ef1ce59113822fd5fa7"
+checksum = "98367b3043acb830b515b5f167831bf25e7b5452a75da5f27d647295c3980011"
 dependencies = [
  "approx",
  "arrayvec",
@@ -3862,9 +3863,9 @@ dependencies = [
 
 [[package]]
 name = "simba"
-version = "0.7.2"
+version = "0.7.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c48e45e5961033db030b56ad67aef22e9c908c493a6e8348c0a0f6b93433cd77"
+checksum = "2f3fd720c48c53cace224ae62bef1bbff363a70c68c4802a78b5cc6159618176"
 dependencies = [
  "approx",
  "num-complex",

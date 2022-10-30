@@ -1,13 +1,13 @@
 use de_objects::ObjectCollider;
 use parry3d::{
-    bounding_volume::{BoundingVolume, AABB},
+    bounding_volume::{Aabb, BoundingVolume},
     math::Isometry,
     query::{Ray, RayCast},
 };
 
 pub trait ColliderWithCache {
     /// World-space AABB of the collider.
-    fn world_aabb(&self) -> &AABB;
+    fn world_aabb(&self) -> &Aabb;
 
     /// World-to-collider mapping.
     fn position(&self) -> &Isometry<f32>;
@@ -22,9 +22,9 @@ pub struct LocalCollider {
     /// World-space position of the collider.
     position: Isometry<f32>,
     /// Collider-space AABB.
-    local_aabb: AABB,
+    local_aabb: Aabb,
     /// World-space AABB. It is kept for fast geometric pre-filtering.
-    world_aabb: AABB,
+    world_aabb: Aabb,
 }
 
 impl LocalCollider {
@@ -67,13 +67,13 @@ impl LocalCollider {
 
     /// Returns true if world-space axis-aligned bounding boxes of the two
     /// colliders intersect.
-    pub(crate) fn query_aabb(&self, aabb: &AABB) -> bool {
+    pub(crate) fn query_aabb(&self, aabb: &Aabb) -> bool {
         self.world_aabb.intersects(aabb)
     }
 }
 
 impl ColliderWithCache for LocalCollider {
-    fn world_aabb(&self) -> &AABB {
+    fn world_aabb(&self) -> &Aabb {
         &self.world_aabb
     }
 
@@ -89,7 +89,7 @@ impl ColliderWithCache for LocalCollider {
 pub struct QueryCollider<'a> {
     inner: &'a ObjectCollider,
     position: Isometry<f32>,
-    world_aabb: AABB,
+    world_aabb: Aabb,
 }
 
 impl<'a> QueryCollider<'a> {
@@ -104,7 +104,7 @@ impl<'a> QueryCollider<'a> {
 }
 
 impl<'a> ColliderWithCache for QueryCollider<'a> {
-    fn world_aabb(&self) -> &AABB {
+    fn world_aabb(&self) -> &Aabb {
         &self.world_aabb
     }
 

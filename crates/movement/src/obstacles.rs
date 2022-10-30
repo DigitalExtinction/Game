@@ -9,7 +9,7 @@ use de_index::SpatialQuery;
 use de_objects::{IchnographyCache, ObjectCache};
 use iyes_loopless::prelude::*;
 use parry2d::bounding_volume::BoundingSphere;
-use parry3d::{bounding_volume::AABB, math::Point};
+use parry3d::{bounding_volume::Aabb, math::Point};
 
 use crate::cache::DecayingCache;
 
@@ -91,7 +91,7 @@ fn update_nearby<M: Send + Sync + 'static, T: Component>(
         let half_extent = Vec3::splat(NEARBY_HALF_EXTENT);
         let mins = transform.translation - half_extent;
         let maxs = transform.translation + half_extent;
-        let region = AABB::new(Point::from(mins), Point::from(maxs));
+        let region = Aabb::new(Point::from(mins), Point::from(maxs));
         cache.extend(space.query_aabb(&region, Some(entity)));
         cache.decay(time.delta_seconds());
     });

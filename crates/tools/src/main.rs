@@ -1,7 +1,7 @@
 use std::path::PathBuf;
 
 use clap::Parser;
-use parry3d::{bounding_volume::AABB, math::Point};
+use parry3d::{bounding_volume::Aabb, math::Point};
 
 #[derive(Parser)]
 #[clap(author, version, about)]
@@ -37,7 +37,7 @@ fn main() {
             },
         );
 
-    let (positions, indices) = AABB::new(Point::from(min), Point::from(max)).to_trimesh();
+    let (positions, indices) = Aabb::new(Point::from(min), Point::from(max)).to_trimesh();
     println!("Positions: {:?}", positions);
     println!("Indices: {:?}", indices);
 }

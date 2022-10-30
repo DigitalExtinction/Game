@@ -1,6 +1,6 @@
 use de_core::objects::ObjectType;
 use parry3d::{
-    bounding_volume::AABB,
+    bounding_volume::Aabb,
     math::{Isometry, Point},
     query::{intersection_test, PointQuery, Ray, RayCast},
     shape::{Shape, TriMesh, TriMeshFlags},
@@ -20,17 +20,17 @@ impl ColliderCache for ObjectCache {
 
 #[derive(Clone)]
 pub struct ObjectCollider {
-    aabb: AABB,
+    aabb: Aabb,
     shape: TriMesh,
 }
 
 impl ObjectCollider {
-    fn new(aabb: AABB, shape: TriMesh) -> Self {
+    fn new(aabb: Aabb, shape: TriMesh) -> Self {
         debug_assert!(shape.pseudo_normals().is_some());
         Self { aabb, shape }
     }
 
-    pub fn aabb(&self) -> AABB {
+    pub fn aabb(&self) -> Aabb {
         self.aabb
     }
 

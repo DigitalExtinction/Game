@@ -131,7 +131,7 @@ mod test {
         player::Player,
     };
     use glam::Vec2;
-    use parry2d::{bounding_volume::AABB, math::Point};
+    use parry2d::{bounding_volume::Aabb, math::Point};
     use tempfile::Builder;
 
     use super::*;
@@ -171,7 +171,7 @@ mod test {
 
         assert_eq!(
             loaded_map.bounds().aabb(),
-            AABB::new(Point::new(-500., -1000.), Point::new(500., 1000.))
+            Aabb::new(Point::new(-500., -1000.), Point::new(500., 1000.))
         );
     }
 }

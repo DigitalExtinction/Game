@@ -82,8 +82,8 @@ iyes_loopless = "0.7"
 iyes_progress = { version = "0.4", features = [ "iyes_loopless" ] }
 nalgebra = { version = "0.31.0", features = ["convert-glam021"] }
 ntest = "0.8.0"
-parry2d = { git = "https://github.com/Indy2222/parry", branch = "feature/dilation" }
-parry3d = "0.9.0"
+parry2d = "0.11.0"
+parry3d = "0.11.0"
 # Use released version once this
 # https://github.com/georust/rstar/commit/923e73fc4dbee43ed43f2248eae6c4143e5282cc
 # is released.

@@ -169,7 +169,7 @@ impl Iterator for TileIterator {
 
 #[cfg(test)]
 mod tests {
-    use parry3d::{bounding_volume::AABB, math::Point, shape::Segment};
+    use parry3d::{bounding_volume::Aabb, math::Point, shape::Segment};
 
     use super::*;
     use crate::grid::TileGrid;
@@ -177,13 +177,13 @@ mod tests {
     #[test]
     fn test_segment_candidates() {
         let entity_a = Entity::from_raw(1);
-        let aabb_a = AABB::new(
+        let aabb_a = Aabb::new(
             Point::new(0.5 * TILE_SIZE, 0., 1.1 * TILE_SIZE),
             Point::new(3.7 * TILE_SIZE, 3., 1.6 * TILE_SIZE),
         );
 
         let entity_b = Entity::from_raw(2);
-        let aabb_b = AABB::new(
+        let aabb_b = Aabb::new(
             Point::new(-TILE_SIZE * 0.7, -100.5, -TILE_SIZE * 3.5),
             Point::new(-TILE_SIZE * 0.6, 3.5, -TILE_SIZE * 3.2),
         );

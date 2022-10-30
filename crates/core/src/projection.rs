@@ -4,8 +4,8 @@
 
 use glam::{Vec2, Vec3};
 use nalgebra::{Const, OPoint};
-use parry2d::{bounding_volume::AABB as AABB2D, math::Point as Point2D};
-use parry3d::{bounding_volume::AABB as AABB3D, math::Point as Point3D};
+use parry2d::{bounding_volume::Aabb as Aabb2D, math::Point as Point2D};
+use parry3d::{bounding_volume::Aabb as Aabb3D, math::Point as Point3D};
 
 /// Trait for conversion of various geometrical objects to their 3D equivalents
 /// placed to mean sea level.
@@ -25,9 +25,9 @@ impl ToMsl<Vec3> for Vec3 {
     }
 }
 
-impl ToMsl<AABB3D> for AABB2D {
-    fn to_msl(self) -> AABB3D {
-        AABB3D::new(
+impl ToMsl<Aabb3D> for Aabb2D {
+    fn to_msl(self) -> Aabb3D {
+        Aabb3D::new(
             Point3D::new(self.mins.x, 0., -self.maxs.y),
             Point3D::new(self.maxs.x, 0., -self.mins.y),
         )
@@ -51,9 +51,9 @@ impl ToFlat<Vec2> for OPoint<f32, Const<3>> {
     }
 }
 
-impl ToFlat<AABB2D> for AABB3D {
-    fn to_flat(self) -> AABB2D {
-        AABB2D::new(
+impl ToFlat<Aabb2D> for Aabb3D {
+    fn to_flat(self) -> Aabb2D {
+        Aabb2D::new(
             Point2D::new(self.mins.x, -self.maxs.z),
             Point2D::new(self.maxs.x, -self.mins.z),
         )
