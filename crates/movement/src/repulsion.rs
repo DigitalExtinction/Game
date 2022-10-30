@@ -12,9 +12,10 @@ use parry2d::{math::Isometry, na::Unit, query::PointQuery};
 
 use crate::{
     cache::DecayingCache,
-    movement::DesiredMovement,
-    obstacles::{Disc, MovableObstacles, ObstaclesLables, StaticObstacles},
-    pathing::PathingLabels,
+    disc::Disc,
+    movement::{add_desired_velocity, DesiredVelocity},
+    obstacles::{MovableObstacles, ObstaclesLables, StaticObstacles},
+    pathing::{PathVelocity, PathingLabels},
     MAX_ACCELERATION, MAX_SPEED,
 };
 
@@ -29,7 +30,11 @@ impl Plugin for RepulsionPlugin {
     fn build(&self, app: &mut App) {
         app.add_system_set_to_stage(
             GameStage::PreMovement,
-            SystemSet::new().with_system(setup_entities.run_in_state(GameState::Playing)),
+            SystemSet::new()
+                .with_system(setup_entities.run_in_state(GameState::Playing))
+                .with_system(
+                    add_desired_velocity::<RepulsionVelocity>.run_in_state(GameState::Playing),
+                ),
         )
         .add_system_set_to_stage(
             GameStage::Movement,
@@ -73,6 +78,8 @@ pub(crate) enum RepulsionLables {
     RepelBounds,
     Apply,
 }
+
+pub(crate) struct RepulsionVelocity;
 
 /// This component collects directional bounds and computes bounded desired
 /// velocity based on the bounds.
@@ -156,7 +163,7 @@ fn setup_entities(
 fn repel_static(
     cache: Res<ObjectCache>,
     mut objects: Query<(
-        &DesiredMovement,
+        &DesiredVelocity<PathVelocity>,
         &Disc,
         &DecayingCache<StaticObstacles>,
         &mut Repulsion,
@@ -164,7 +171,7 @@ fn repel_static(
     obstacles: Query<(&ObjectType, &Transform), With<StaticSolid>>,
 ) {
     objects.par_for_each_mut(512, |(movement, disc, static_obstacles, mut repulsion)| {
-        if movement.stopped() {
+        if movement.stationary() {
             return;
         }
 
@@ -173,7 +180,7 @@ fn repel_static(
 
             let angle = transform.rotation.to_euler(EulerRot::YXZ).0;
             let isometry = Isometry::new(transform.translation.to_flat().into(), angle);
-            let local_point = isometry.inverse_transform_point(&disc.center);
+            let local_point = isometry.inverse_transform_point(&From::from(disc.center()));
 
             let footprint = cache.get_ichnography(object_type).convex_hull();
             let projection = footprint.project_local_point(&local_point, true);
@@ -184,7 +191,7 @@ fn repel_static(
                 diff *= -1.;
                 distance *= -1.;
             }
-            distance -= disc.radius;
+            distance -= disc.radius();
 
             if distance > MAX_REPULSION_DISTANCE {
                 continue;
@@ -205,7 +212,7 @@ fn repel_static(
 
 fn repel_movable(
     mut objects: Query<(
-        &DesiredMovement,
+        &DesiredVelocity<PathVelocity>,
         &Disc,
         &DecayingCache<MovableObstacles>,
         &mut Repulsion,
@@ -213,20 +220,20 @@ fn repel_movable(
     obstacles: Query<&Disc>,
 ) {
     objects.par_for_each_mut(512, |(movement, disc, movable_obstacles, mut repulsion)| {
-        if movement.stopped() {
+        if movement.stationary() {
             return;
         }
 
         for &entity in movable_obstacles.entities() {
             let other_disc = obstacles.get(entity).unwrap();
-            let diff = other_disc.center - disc.center;
-            let mut distance = diff.norm();
+            let diff = other_disc.center() - disc.center();
+            let mut distance = diff.length();
             let direction = if distance <= parry2d::math::DEFAULT_EPSILON {
                 Vec2::X
             } else {
-                Vec2::from(diff / distance)
+                diff / distance
             };
-            distance -= disc.radius + other_disc.radius;
+            distance -= disc.radius() + other_disc.radius();
             if distance < MAX_REPULSION_DISTANCE {
                 repulsion.add(direction, distance - MIN_MOVABLE_OBJECT_DISTANCE);
             }
@@ -236,30 +243,41 @@ fn repel_movable(
 
 fn repel_bounds(
     bounds: Res<MapBounds>,
-    mut objects: Query<(&DesiredMovement, &Disc, &mut Repulsion)>,
+    mut objects: Query<(&DesiredVelocity<PathVelocity>, &Disc, &mut Repulsion)>,
 ) {
     objects.par_for_each_mut(512, |(movement, disc, mut repulsion)| {
-        if movement.stopped() {
+        if movement.stationary() {
             return;
         }
 
-        let projection = bounds.aabb().project_local_point(&disc.center, false);
+        let projection = bounds
+            .aabb()
+            .project_local_point(&From::from(disc.center()), false);
         debug_assert!(projection.is_inside);
 
-        let diff = projection.point - disc.center;
-        let diff_norm = diff.norm();
-        let distance = diff_norm - disc.radius;
+        let diff = Vec2::from(projection.point) - disc.center();
+        let diff_norm = diff.length();
+        let distance = diff_norm - disc.radius();
 
         if distance < MAX_REPULSION_DISTANCE {
-            repulsion.add(Vec2::from(diff / diff_norm), distance - EXCLUSION_OFFSET);
+            repulsion.add(diff / diff_norm, distance - EXCLUSION_OFFSET);
         }
     });
 }
 
-fn apply(mut objects: Query<(&mut Repulsion, &mut DesiredMovement)>) {
-    objects.par_for_each_mut(512, |(mut repulsion, mut movement)| {
-        let velocity = repulsion.apply(movement.velocity());
-        movement.update(velocity.clamp_length_max(MAX_SPEED));
-        repulsion.clear();
-    });
+fn apply(
+    mut objects: Query<(
+        &mut Repulsion,
+        &DesiredVelocity<PathVelocity>,
+        &mut DesiredVelocity<RepulsionVelocity>,
+    )>,
+) {
+    objects.par_for_each_mut(
+        512,
+        |(mut repulsion, path_velocity, mut repulsion_velocity)| {
+            let velocity = repulsion.apply(path_velocity.velocity());
+            repulsion_velocity.update(velocity.clamp_length_max(MAX_SPEED));
+            repulsion.clear();
+        },
+    );
 }

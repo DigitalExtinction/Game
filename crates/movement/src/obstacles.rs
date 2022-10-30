@@ -8,10 +8,9 @@ use de_core::{
 use de_index::SpatialQuery;
 use de_objects::{IchnographyCache, ObjectCache};
 use iyes_loopless::prelude::*;
-use parry2d::bounding_volume::BoundingSphere;
 use parry3d::{bounding_volume::Aabb, math::Point};
 
-use crate::cache::DecayingCache;
+use crate::{cache::DecayingCache, disc::Disc};
 
 /// Obstacle avoidance algorithm takes into account only obstacles inside a
 /// rectangle of this half-size.
@@ -49,9 +48,6 @@ pub(crate) enum ObstaclesLables {
     UpdateNearby,
 }
 
-#[derive(Component, Deref, DerefMut)]
-pub(crate) struct Disc(BoundingSphere);
-
 pub(crate) struct StaticObstacles;
 
 pub(crate) struct MovableObstacles;
@@ -65,11 +61,11 @@ type Uninitialized<'w, 's> = Query<
 
 fn setup_discs(mut commands: Commands, cache: Res<ObjectCache>, objects: Uninitialized) {
     for (entity, transform, &object_type) in objects.iter() {
-        let center = transform.translation.to_flat().into();
+        let center = transform.translation.to_flat();
         let radius = cache.get_ichnography(object_type).radius();
         commands
             .entity(entity)
-            .insert(Disc(BoundingSphere::new(center, radius)))
+            .insert(Disc::new(center, radius))
             .insert(DecayingCache::<StaticObstacles>::default())
             .insert(DecayingCache::<MovableObstacles>::default());
     }
@@ -77,7 +73,7 @@ fn setup_discs(mut commands: Commands, cache: Res<ObjectCache>, objects: Uniniti
 
 fn update_discs(mut objects: Query<(&Transform, &mut Disc), Changed<Transform>>) {
     for (transform, mut disc) in objects.iter_mut() {
-        disc.center = transform.translation.to_flat().into();
+        disc.set_center(transform.translation.to_flat());
     }
 }
 

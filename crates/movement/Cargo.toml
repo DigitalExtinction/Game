@@ -24,3 +24,4 @@ bevy.workspace = true
 iyes_loopless.workspace = true
 parry3d.workspace = true
 parry2d.workspace = true
+glam.workspace = true
