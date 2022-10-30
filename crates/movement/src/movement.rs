@@ -1,5 +1,12 @@
 use bevy::prelude::*;
-use de_core::{objects::MovableSolid, stages::GameStage, state::GameState};
+use de_core::{
+    objects::MovableSolid,
+    projection::{ToFlat, ToMsl},
+    stages::GameStage,
+    state::GameState,
+};
+use de_map::size::MapBounds;
+use de_objects::EXCLUSION_OFFSET;
 use iyes_loopless::prelude::*;
 
 pub(crate) struct MovementPlugin;
@@ -9,8 +16,21 @@ impl Plugin for MovementPlugin {
         app.add_system_to_stage(
             GameStage::PreMovement,
             setup_entities.run_in_state(GameState::Playing),
+        )
+        .add_system_set_to_stage(
+            GameStage::Movement,
+            SystemSet::new().with_system(
+                update_transform
+                    .run_in_state(GameState::Playing)
+                    .label(MovementLabels::UpdateTransform),
+            ),
         );
     }
+}
+
+#[derive(Copy, Clone, Hash, Debug, PartialEq, Eq, SystemLabel)]
+pub(crate) enum MovementLabels {
+    UpdateTransform,
 }
 
 /// Ideal velocity induced by a global path plan.
@@ -53,11 +73,64 @@ impl Default for DesiredMovement {
     }
 }
 
+/// Real velocity as applied to transform of the each movable object.
+#[derive(Component, Default)]
+pub(crate) struct ObjectVelocity {
+    /// Velocity during the last update.
+    previous: Vec3,
+    /// Current velocity.
+    current: Vec3,
+    heading: f32,
+}
+
+impl ObjectVelocity {
+    pub(crate) fn update(&mut self, velocity: Vec3, heading: f32) {
+        self.previous = self.current;
+        self.current = velocity;
+        self.heading = heading;
+    }
+
+    /// Returns mean velocity over the last frame duration.
+    fn frame(&self) -> Vec3 {
+        self.current.lerp(self.previous, 0.5)
+    }
+
+    fn heading(&self) -> f32 {
+        self.heading
+    }
+}
+
 fn setup_entities(
     mut commands: Commands,
     objects: Query<Entity, (With<MovableSolid>, Without<DesiredMovement>)>,
 ) {
     for entity in objects.iter() {
-        commands.entity(entity).insert(DesiredMovement::default());
+        commands
+            .entity(entity)
+            .insert(DesiredMovement::default())
+            .insert(ObjectVelocity::default());
     }
+}
+
+fn update_transform(
+    time: Res<Time>,
+    bounds: Res<MapBounds>,
+    mut objects: Query<(&ObjectVelocity, &mut Transform)>,
+) {
+    let time_delta = time.delta_seconds();
+    for (velocity, mut transform) in objects.iter_mut() {
+        transform.translation = clamp(
+            bounds.as_ref(),
+            transform.translation + time_delta * velocity.frame(),
+        );
+        transform.rotation = Quat::from_rotation_y(velocity.heading());
+    }
+}
+
+fn clamp(bounds: &MapBounds, translation: Vec3) -> Vec3 {
+    let offset = Vec2::splat(EXCLUSION_OFFSET);
+    let min = bounds.min() + offset;
+    let max = bounds.max() - offset;
+    let clipped = translation.to_flat().clamp(min, max).to_msl();
+    Vec3::new(clipped.x, translation.y, clipped.z)
 }
