@@ -28,18 +28,18 @@ opt-level = 3
 
 [dependencies]
 # DE
+de_behaviour.workspace = true
+de_camera.workspace = true
+de_combat.workspace = true
+de_controller.workspace = true
 de_core.workspace = true
-de_objects.workspace = true
-de_terrain.workspace = true
-de_loader.workspace = true
 de_index.workspace = true
+de_loader.workspace = true
+de_movement.workspace = true
+de_objects.workspace = true
 de_pathing.workspace = true
 de_spawner.workspace = true
-de_movement.workspace = true
-de_controller.workspace = true
-de_camera.workspace = true
-de_behaviour.workspace = true
-de_combat.workspace = true
+de_terrain.workspace = true
 de_ui.workspace = true
 
 # Other
