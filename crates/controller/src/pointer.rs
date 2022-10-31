@@ -1,24 +1,35 @@
 use bevy::{ecs::system::SystemParam, prelude::*};
 use de_core::{stages::GameStage, state::GameState};
 use de_index::SpatialQuery;
+use de_signs::UpdateBarVisibilityEvent;
 use de_terrain::TerrainCollider;
 use glam::{Vec2, Vec3};
 use iyes_loopless::prelude::*;
 use parry3d::query::Ray;
 
-use crate::mouse::{MouseLabels, MousePosition};
+use crate::{
+    mouse::{MouseLabels, MousePosition},
+    POINTER_BAR_ID,
+};
 
 pub(crate) struct PointerPlugin;
 
 impl Plugin for PointerPlugin {
     fn build(&self, app: &mut App) {
-        app.init_resource::<Pointer>().add_system_to_stage(
-            GameStage::Input,
-            mouse_move_handler
-                .run_in_state(GameState::Playing)
-                .label(PointerLabels::Update)
-                .after(MouseLabels::Position),
-        );
+        app.init_resource::<Pointer>()
+            .add_system_to_stage(
+                GameStage::Input,
+                mouse_move_handler
+                    .run_in_state(GameState::Playing)
+                    .label(PointerLabels::Update)
+                    .after(MouseLabels::Position),
+            )
+            .add_system_to_stage(
+                GameStage::Input,
+                update_bar_visibility
+                    .run_in_state(GameState::Playing)
+                    .after(PointerLabels::Update),
+            );
     }
 }
 
@@ -97,4 +108,23 @@ fn mouse_move_handler(
         .and_then(|ray| terrain.cast_ray(&ray, f32::INFINITY))
         .map(|intersection| ray.unwrap().point_at(intersection.toi).into());
     resource.set_terrain_point(terrain_point);
+}
+
+fn update_bar_visibility(
+    pointer: Res<Pointer>,
+    mut previous: Local<Option<Entity>>,
+    mut events: EventWriter<UpdateBarVisibilityEvent>,
+) {
+    if pointer.entity() == *previous {
+        return;
+    }
+
+    if let Some(entity) = *previous {
+        events.send(UpdateBarVisibilityEvent::new(entity, POINTER_BAR_ID, false));
+    }
+    if let Some(entity) = pointer.entity() {
+        events.send(UpdateBarVisibilityEvent::new(entity, POINTER_BAR_ID, true));
+    }
+
+    *previous = pointer.entity();
 }

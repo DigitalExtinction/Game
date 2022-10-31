@@ -1663,6 +1663,7 @@ dependencies = [
  "de_core",
  "de_index",
  "de_objects",
+ "de_signs",
  "de_spawner",
  "de_terrain",
  "glam",
@@ -1682,6 +1683,7 @@ dependencies = [
  "de_index",
  "de_objects",
  "de_pathing",
+ "de_signs",
  "de_spawner",
  "de_terrain",
  "de_ui",
@@ -1721,6 +1723,7 @@ dependencies = [
  "de_movement",
  "de_objects",
  "de_pathing",
+ "de_signs",
  "de_spawner",
  "de_terrain",
  "de_ui",
@@ -1828,6 +1831,17 @@ dependencies = [
  "rstar",
  "spade",
  "tinyvec",
+]
+
+[[package]]
+name = "de_signs"
+version = "0.1.0-dev"
+dependencies = [
+ "bevy",
+ "de_core",
+ "de_objects",
+ "glam",
+ "iyes_loopless",
 ]
 
 [[package]]

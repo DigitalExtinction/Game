@@ -1,6 +1,7 @@
 use bevy::prelude::*;
 use de_core::{stages::GameStage, state::GameState};
 use de_objects::Health;
+use de_signs::UpdateBarValueEvent;
 use de_spawner::SpawnerLabels;
 use iyes_loopless::prelude::*;
 use parry3d::query::Ray;
@@ -76,6 +77,7 @@ fn fire(
     mut fires: EventReader<LaserFireEvent>,
     sightline: LineOfSight,
     mut susceptible: Query<&mut Health>,
+    mut bar: EventWriter<UpdateBarValueEvent>,
 ) {
     for fire in fires.iter() {
         if susceptible
@@ -87,7 +89,9 @@ fn fire(
 
         let observation = sightline.sight(fire.ray(), fire.max_toi(), fire.attacker());
         if let Some(entity) = observation.entity() {
-            susceptible.get_mut(entity).unwrap().hit(fire.damage());
+            let mut health = susceptible.get_mut(entity).unwrap();
+            health.hit(fire.damage());
+            bar.send(UpdateBarValueEvent::new(entity, health.fraction()));
         }
     }
 }

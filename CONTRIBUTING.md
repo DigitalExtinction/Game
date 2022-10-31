@@ -72,6 +72,9 @@ Topologically sorted crates:
 
 * [index](/crates/index) – spatial index of all solid entities in the game.
 
+* [signs](/crates/signs) – various world space UI signs in Digital Extinction.
+  For example health bars, arrows, and so on.
+
 * [spawner](/crates/spawner) – object spawning, drafting and construction.
 
 * [camera](/crates/camera)

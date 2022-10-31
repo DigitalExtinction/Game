@@ -3,7 +3,7 @@
 use bevy::prelude::*;
 use de_core::{
     gconfig::GameConfig,
-    objects::{ActiveObjectType, MovableSolid, ObjectType, Playable, StaticSolid},
+    objects::{Active, ActiveObjectType, MovableSolid, ObjectType, Playable, StaticSolid},
     player::Player,
     stages::GameStage,
     state::GameState,
@@ -61,6 +61,8 @@ fn spawn(
 
         match object_type {
             ObjectType::Active(active_type) => {
+                entity_commands.insert(Active);
+
                 let player = *player.expect("Active object without an associated was spawned.");
                 if player == game_config.player() {
                     entity_commands.insert(Playable);
