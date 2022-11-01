@@ -43,7 +43,20 @@ impl Health {
         Self { health }
     }
 
+    /// This method decreases health.
+    ///
+    /// # Arguments
+    ///
+    /// * `damage` - amount of damage, i.e. by how much is the health
+    ///   decreased. This has to be a non-negative finite number or positive
+    ///   infinity.
+    ///
+    /// # Panics
+    ///
+    /// This method might panic if `damage` is not a non-negative finite number
+    /// or positive infinity.
     pub fn hit(&mut self, damage: f32) {
+        debug_assert!(damage >= 0.);
         self.health = 0f32.max(self.health - damage);
     }
 
