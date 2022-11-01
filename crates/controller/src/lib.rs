@@ -19,6 +19,9 @@ mod mouse;
 mod pointer;
 mod selection;
 
+const SELECTION_BAR_ID: u32 = 1;
+const POINTER_BAR_ID: u32 = 1 << 1;
+
 pub struct ControllerPluginGroup;
 
 impl PluginGroup for ControllerPluginGroup {

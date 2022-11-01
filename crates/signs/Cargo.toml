@@ -1,6 +1,6 @@
 [package]
-name = "de_combat"
-description = "Attacking, projectile & laser simulation and similar in Digital Extinction."
+name = "de_signs"
+description = "Various world space UI signs in Digital Extinction."
 
 version.workspace = true
 edition.workspace = true
@@ -15,14 +15,8 @@ categories.workspace = true
 # DE
 de_core.workspace = true
 de_objects.workspace = true
-de_terrain.workspace = true
-de_index.workspace = true
-de_spawner.workspace = true
-de_behaviour.workspace = true
-de_signs.workspace = true
 
 # Other
 bevy.workspace = true
-iyes_loopless.workspace = true
 glam.workspace = true
-parry3d.workspace = true
+iyes_loopless.workspace = true

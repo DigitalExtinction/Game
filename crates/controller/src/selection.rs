@@ -6,8 +6,11 @@ use de_core::{
     state::GameState,
 };
 use de_objects::{IchnographyCache, ObjectCache};
+use de_signs::UpdateBarVisibilityEvent;
 use de_terrain::CircleMarker;
 use iyes_loopless::prelude::*;
+
+use crate::SELECTION_BAR_ID;
 
 pub(crate) struct SelectionPlugin;
 
@@ -80,6 +83,7 @@ struct Selector<'w, 's> {
     cache: Res<'w, ObjectCache>,
     selected: Query<'w, 's, Entity, With<Selected>>,
     movable: Query<'w, 's, &'static ObjectType, With<MovableSolid>>,
+    bars: EventWriter<'w, 's, UpdateBarVisibilityEvent>,
 }
 
 impl<'w, 's> Selector<'w, 's> {
@@ -99,6 +103,12 @@ impl<'w, 's> Selector<'w, 's> {
             if self.movable.contains(entity) {
                 entity_commands.remove::<CircleMarker>();
             }
+
+            self.bars.send(UpdateBarVisibilityEvent::new(
+                entity,
+                SELECTION_BAR_ID,
+                false,
+            ));
         }
 
         for entity in select {
@@ -108,6 +118,12 @@ impl<'w, 's> Selector<'w, 's> {
                 let radius = self.cache.get_ichnography(object_type).radius();
                 entity_commands.insert(CircleMarker::new(radius));
             }
+
+            self.bars.send(UpdateBarVisibilityEvent::new(
+                entity,
+                SELECTION_BAR_ID,
+                true,
+            ));
         }
     }
 }

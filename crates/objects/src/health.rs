@@ -25,9 +25,9 @@ impl Default for InitialHealths {
     fn default() -> Self {
         Self {
             healths: enum_map! {
-                ActiveObjectType::Building(BuildingType::Base) => Health::new(10_000.),
-                ActiveObjectType::Building(BuildingType::PowerHub) => Health::new(1000.),
-                ActiveObjectType::Unit(UnitType::Attacker) => Health::new(100.),
+                ActiveObjectType::Building(BuildingType::Base) => Health::full(10_000.),
+                ActiveObjectType::Building(BuildingType::PowerHub) => Health::full(1000.),
+                ActiveObjectType::Unit(UnitType::Attacker) => Health::full(100.),
             },
         }
     }
@@ -35,15 +35,50 @@ impl Default for InitialHealths {
 
 #[derive(Clone, Component)]
 pub struct Health {
+    max: f32,
     health: f32,
 }
 
 impl Health {
-    const fn new(health: f32) -> Self {
-        Self { health }
+    /// Crates a new health object with a given maximum health. Current health
+    /// is set to maximum.
+    ///
+    /// # Arguments
+    ///
+    /// * `health` - maximum & current health. Must be a positive finite
+    ///   number.
+    const fn full(health: f32) -> Self {
+        Self {
+            max: health,
+            health,
+        }
     }
 
+    /// Returns the fraction of remaining health, i.e. ratio between current
+    /// health and maximum health.
+    pub fn fraction(&self) -> f32 {
+        debug_assert!(self.health.is_finite());
+        debug_assert!(self.max.is_finite());
+        debug_assert!(0. <= self.health);
+        debug_assert!(self.health <= self.max);
+
+        self.health / self.max
+    }
+
+    /// This method decreases health.
+    ///
+    /// # Arguments
+    ///
+    /// * `damage` - amount of damage, i.e. by how much is the health
+    ///   decreased. This has to be a non-negative finite number or positive
+    ///   infinity.
+    ///
+    /// # Panics
+    ///
+    /// This method might panic if `damage` is not a non-negative finite number
+    /// or positive infinity.
     pub fn hit(&mut self, damage: f32) {
+        debug_assert!(damage >= 0.);
         self.health = 0f32.max(self.health - damage);
     }
 
