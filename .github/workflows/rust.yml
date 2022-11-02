@@ -39,12 +39,9 @@ jobs:
       - name: Git LFS Pull
         run: git lfs pull
 
-      - uses: actions-rs/toolchain@v1
+      - uses: dtolnay/rust-toolchain@stable
         with:
-          toolchain: stable
-          profile: minimal
           components: clippy
-          override: true
 
       - name: Rust Cache
         uses: actions/cache@v3
@@ -102,10 +99,7 @@ jobs:
           key: udeps-${{ runner.os }}-${{ hashFiles('**/Cargo.lock') }}
           restore-keys: |
             udeps-${{ runner.os }}-
-      - uses: actions-rs/toolchain@v1
-        with:
-          toolchain: nightly
-          override: true
+      - uses: dtolnay/rust-toolchain@nightly
       - name: Install cargo-udeps
         run: cargo install --force cargo-udeps
       - name: Install alsa and udev
@@ -135,12 +129,7 @@ jobs:
       - name: Git LFS Pull
         run: git lfs pull
 
-      - uses: actions-rs/toolchain@v1
-        with:
-          toolchain: stable
-          profile: minimal
-          override: true
-
+      - uses: dtolnay/rust-toolchain@stable
       - name: Rust Cache
         uses: actions/cache@v3
         id: rust-cache
