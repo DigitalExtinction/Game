@@ -78,9 +78,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      - run: rustup update
-      - run: cargo fmt --version
-      - run: cargo fmt --all -- --check
+      - uses: dtolnay/rust-toolchain@nightly
+        with:
+          components: rustfmt
+      - run: cargo +nightly fmt --version
+      - run: cargo +nightly fmt --all -- --check
 
   udeps:
     name: Check Unused Dependencies
