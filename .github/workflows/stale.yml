@@ -22,5 +22,5 @@ jobs:
           automatically closed in 3 weeks.
         stale-issue-label: 'S-Stale'
         stale-pr-label: 'S-Stale'
-        days-before-issue-stale: 180
+        days-before-issue-stale: 547
         days-before-close: 21
