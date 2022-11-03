@@ -49,6 +49,10 @@ impl<const U: Unit> Quantity<U> {
         panic_on_invalid(self.0);
         Self::new(self.0.abs())
     }
+
+    pub const fn inner(&self) -> f32 {
+        self.0
+    }
 }
 
 impl<const U: Unit> Clone for Quantity<U> {

@@ -51,7 +51,7 @@ fn draw_circle(
     radius: f32,
 ) -> vec4<f32> {
     let distance: f32 = distance(uv, center);
-    if distance <= (radius + SHAPE_THICKNESS) && radius <= distance  {
+    if distance <= (radius + SHAPE_THICKNESS) && radius <= distance {
         return mix_colors(base, SHAPE_COLOR);
     }
     return base;
@@ -103,7 +103,7 @@ fn nearest(uv: vec2<f32>) -> u32 {
 
         let axis = next.depth % 2u;
         let diff = uv[axis] - node.location[axis];
-        
+
         var close = 2u * next.index + 2u;
         var away = 2u * next.index + 1u;
 
