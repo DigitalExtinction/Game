@@ -11,6 +11,7 @@ rotate the camera around its focus point on the terrain.
 # Hotkeys
 
 * Press `Esc` — cancel current action.
+* Key `M` — Cycle through default maps
 
 # Building Construction
 

@@ -31,6 +31,9 @@ impl Plugin for MapLoaderPlugin {
 
 struct MapLoadingTask(Task<Result<Map, MapLoadingError>>);
 
+#[derive(Component, Reflect)]
+pub struct RemoveBeforeLoad;
+
 fn load_map_system(mut commands: Commands, game_config: Res<GameConfig>) {
     let map_path = if game_config.map_path().is_relative() {
         asset_path(game_config.map_path())
@@ -48,6 +51,7 @@ fn spawn_map(
     task: Option<ResMut<MapLoadingTask>>,
     mut move_focus_events: EventWriter<MoveFocusEvent>,
     game_config: Res<GameConfig>,
+    entities_to_remove: Query<Entity, Or<(With<Handle<Scene>>, With<RemoveBeforeLoad>)>>,
 ) -> Progress {
     let mut task = match task {
         Some(task) => task,
@@ -59,6 +63,10 @@ fn spawn_map(
         None => return false.into(),
     };
 
+    info!("Map loaded, removing old one");
+    for to_remove in entities_to_remove.iter() {
+        commands.entity(to_remove).despawn_recursive();
+    }
     info!("Map loaded, spawning");
     commands.remove_resource::<MapLoadingTask>();
 
@@ -91,7 +99,9 @@ fn spawn_map(
     }
 
     setup_light(&mut commands);
-    commands.spawn_bundle(TerrainBundle::flat(map.bounds()));
+    commands
+        .spawn_bundle(TerrainBundle::flat(map.bounds()))
+        .insert(RemoveBeforeLoad);
 
     for object in map.objects() {
         let mut entity_commands = commands.spawn();
@@ -120,13 +130,15 @@ fn setup_light(commands: &mut Commands) {
 
     let mut transform = Transform::identity();
     transform.look_at(Vec3::new(1., -1., 0.), Vec3::new(1., 1., 0.));
-    commands.spawn_bundle(DirectionalLightBundle {
-        directional_light: DirectionalLight {
-            color: Color::WHITE,
-            illuminance: 30000.,
+    commands
+        .spawn_bundle(DirectionalLightBundle {
+            directional_light: DirectionalLight {
+                color: Color::WHITE,
+                illuminance: 30000.,
+                ..Default::default()
+            },
+            transform,
             ..Default::default()
-        },
-        transform,
-        ..Default::default()
-    });
+        })
+        .insert(RemoveBeforeLoad);
 }

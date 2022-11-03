@@ -214,7 +214,7 @@ impl DesiredPoW {
     }
 }
 
-fn setup(mut commands: Commands) {
+fn setup(mut commands: Commands, camera_query: Query<Entity, With<Camera3d>>) {
     commands.insert_resource(HorizontalMovement::default());
     commands.insert_resource(DesiredPoW {
         distance: DEFAULT_CAMERA_DISTANCE,
@@ -225,6 +225,10 @@ fn setup(mut commands: Commands) {
         point: Vec3::ZERO,
         distance: DEFAULT_CAMERA_DISTANCE,
     });
+    if let Ok(cam_entity) = camera_query.get_single() {
+        commands.entity(cam_entity).despawn();
+    }
+
     commands.spawn_bundle(Camera3dBundle {
         transform: Transform::from_xyz(0.0, DEFAULT_CAMERA_DISTANCE.into(), 0.0)
             .looking_at(Vec3::ZERO, -Vec3::Z),
