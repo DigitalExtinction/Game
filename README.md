@@ -65,6 +65,8 @@ fine tuned for fast compilation times while keeping performance reasonable.
 
 # Community
 
+* [Digital Extinction Updates](https://mgn.cz/categories/de-updates/)
+
 * [Discord server](https://discord.gg/vHMFuCWGSX)
 
 * [Subreddit /r/DigitalExtinction/](https://www.reddit.com/r/DigitalExtinction/)
