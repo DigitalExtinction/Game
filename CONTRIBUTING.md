@@ -14,6 +14,10 @@
    You can skip this step if you are basing you changes on an already concluded
    discussion or an [issue](https://github.com/DigitalExtinction/Game/issues).
 
+1. Currently, the surface area of the game is still relatively small. To avoid
+   duplicate work while working on non-trivial changes, please mention your
+   intention to do the work in the appropriate issue.
+
 1. Implement the changes. Do not forget to include appropriate unit tests and,
    when possible, thoroughly test you changes manually.
 
