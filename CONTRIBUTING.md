@@ -14,6 +14,10 @@
    You can skip this step if you are basing you changes on an already concluded
    discussion or an [issue](https://github.com/DigitalExtinction/Game/issues).
 
+1. Currently, the surface area of the game is still relatively small. To avoid
+   duplicate work while working on non-trivial changes, please mention your
+   intention to do the work in the appropriate issue.
+
 1. Implement the changes. Do not forget to include appropriate unit tests and,
    when possible, thoroughly test you changes manually.
 
@@ -22,6 +26,20 @@
 1. [@Indy2222](https://github.com/Indy2222) and the community review the PR.
    During the review process, the PR might be accepted right away, changes
    might be requested or it might be rejected.
+
+## Pull Requests & Git
+
+* Try to split your work into separate and atomic commits. Put any non-obvious
+  reasoning behind any change to the commit description. Separate “preparatory”
+  changes and modifications from new features & improvements. [Hide the sausage
+  making](https://sethrobertson.github.io/GitBestPractices/#sausage).
+
+* Do not push any binary files larger than 32KiB directly to the repository,
+  use [Git LFS](https://git-lfs.github.com/) instead. For consistency reasons,
+  you may track even smaller binary files with Git LFS.
+
+* [Link](https://docs.github.com/en/issues/tracking-your-work-with-issues/linking-a-pull-request-to-an-issue#linking-a-pull-request-to-an-issue-using-a-keyword)
+  relevant issues from your commits.
 
 ## Development Process
 
