@@ -23,13 +23,18 @@ const CAMERA_HORIZONTAL_SPEED: InverseSecond = Quantity::new_unchecked(2.0);
 /// Minimum camera distance from terrain achievable with zooming along.
 const MIN_CAMERA_DISTANCE: Metre = Quantity::new_unchecked(20.);
 /// Maximum camera distance from terrain achievable with zooming alone.
-const MAX_CAMERA_DISTANCE: Metre = Quantity::new_unchecked(100.);
+const MAX_CAMERA_DISTANCE: Metre = Quantity::new_unchecked(300.);
+/// Maximum camera distance from terrain achievable with zooming alone.
+const DEFAULT_CAMERA_DISTANCE: Metre = Quantity::new_unchecked(
+    (MIN_CAMERA_DISTANCE.inner() + (MAX_CAMERA_DISTANCE.inner() - MIN_CAMERA_DISTANCE.inner()))
+        * 0.4,
+);
 /// Minimum temporary distance from terrain. Forward/backward camera motion is
 /// smooth within this range. Step adjustment is applied outside of this range.
 const HARD_MIN_CAMERA_DISTANCE: Metre = Quantity::new_unchecked(16.);
 /// Maximum temporary distance from terrain. Forward/backward camera motion is
 /// smooth within this range. Step adjustment is applied outside of this range.
-const HARD_MAX_CAMERA_DISTANCE: Metre = Quantity::new_unchecked(110.);
+const HARD_MAX_CAMERA_DISTANCE: Metre = Quantity::new_unchecked(310.);
 /// Camera moves along forward axis (zooming) at speed `distance *
 /// CAMERA_VERTICAL_SPEED`.
 const CAMERA_VERTICAL_SPEED: InverseSecond = Quantity::new_unchecked(2.0);
@@ -212,16 +217,16 @@ impl DesiredPoW {
 fn setup(mut commands: Commands) {
     commands.insert_resource(HorizontalMovement::default());
     commands.insert_resource(DesiredPoW {
-        distance: MAX_CAMERA_DISTANCE,
+        distance: DEFAULT_CAMERA_DISTANCE,
         off_nadir: Radian::ZERO,
         azimuth: Radian::ZERO,
     });
     commands.insert_resource(CameraFocus {
         point: Vec3::ZERO,
-        distance: MAX_CAMERA_DISTANCE,
+        distance: DEFAULT_CAMERA_DISTANCE,
     });
     commands.spawn_bundle(Camera3dBundle {
-        transform: Transform::from_xyz(0.0, MAX_CAMERA_DISTANCE.into(), 0.0)
+        transform: Transform::from_xyz(0.0, DEFAULT_CAMERA_DISTANCE.into(), 0.0)
             .looking_at(Vec3::ZERO, -Vec3::Z),
         ..Default::default()
     });
