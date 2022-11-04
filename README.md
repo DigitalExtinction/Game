@@ -109,6 +109,10 @@ go hand in hand with the spirit of the following goals.
 * Show that non-trivial games could be created in Rust and by extension Bevy
   engine.
 
+# Game Design
+
+See [Game Design document](/DESIGN.md).
+
 # Contributing
 
 Contributions to the project in any form are welcomed. Check out our
