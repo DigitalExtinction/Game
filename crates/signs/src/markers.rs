@@ -1,7 +1,8 @@
 use bevy::prelude::*;
 use de_camera::{CameraDistance, DistanceLabels};
-use de_core::stages::GameStage;
+use de_core::{stages::GameStage, state::AppState};
 use de_terrain::CircleMarker;
+use iyes_loopless::prelude::*;
 
 use crate::{DISTANCE_FLAG_BIT, MAX_VISIBILITY_DISTANCE};
 
@@ -11,7 +12,9 @@ impl Plugin for MarkersPlugin {
     fn build(&self, app: &mut App) {
         app.add_system_to_stage(
             GameStage::PostUpdate,
-            update_distance.after(DistanceLabels::Update),
+            update_distance
+                .run_in_state(AppState::InGame)
+                .after(DistanceLabels::Update),
         );
     }
 }

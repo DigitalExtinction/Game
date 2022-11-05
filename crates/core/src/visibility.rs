@@ -1,6 +1,7 @@
 use bevy::prelude::*;
+use iyes_loopless::prelude::*;
 
-use crate::stages::GameStage;
+use crate::{stages::GameStage, state::AppState};
 
 pub(crate) struct VisibilityPlugin;
 
@@ -8,7 +9,9 @@ impl Plugin for VisibilityPlugin {
     fn build(&self, app: &mut App) {
         app.add_system_to_stage(
             GameStage::PostUpdate,
-            update.label(VisibilityLabels::Update),
+            update
+                .run_in_state(AppState::InGame)
+                .label(VisibilityLabels::Update),
         );
     }
 }

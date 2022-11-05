@@ -2,7 +2,9 @@ use bevy::prelude::*;
 use de_core::{
     objects::{MovableSolid, StaticSolid},
     stages::GameStage,
+    state::AppState,
 };
+use iyes_loopless::prelude::*;
 
 pub(crate) struct DistancePlugin;
 
@@ -11,9 +13,13 @@ impl Plugin for DistancePlugin {
         app.add_system_set_to_stage(
             GameStage::PostUpdate,
             SystemSet::new()
-                .with_system(init::<MovableSolid>)
-                .with_system(init::<StaticSolid>)
-                .with_system(update.label(DistanceLabels::Update)),
+                .with_system(init::<MovableSolid>.run_in_state(AppState::InGame))
+                .with_system(init::<StaticSolid>.run_in_state(AppState::InGame))
+                .with_system(
+                    update
+                        .run_in_state(AppState::InGame)
+                        .label(DistanceLabels::Update),
+                ),
         );
     }
 }

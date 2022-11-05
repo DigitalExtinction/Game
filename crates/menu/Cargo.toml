@@ -1,0 +1,20 @@
+[package]
+name = "de_menu"
+description = "Digital Extinction menu."
+
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+repository.workspace = true
+keywords.workspace = true
+homepage.workspace = true
+license.workspace = true
+categories.workspace = true
+
+[dependencies]
+# DE
+de_core.workspace = true
+
+# Other
+bevy.workspace = true
+iyes_loopless.workspace = true

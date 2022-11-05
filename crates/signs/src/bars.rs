@@ -11,7 +11,7 @@ use de_camera::{CameraDistance, DistanceLabels};
 use de_core::{
     objects::{Active, ObjectType},
     stages::GameStage,
-    state::GameState,
+    state::{AppState, GameState},
     visibility::{VisibilityFlags, VisibilityLabels},
 };
 use de_objects::{ColliderCache, ObjectCache};
@@ -34,11 +34,16 @@ impl Plugin for BarsPlugin {
             .add_system_set_to_stage(
                 GameStage::PostUpdate,
                 SystemSet::new()
-                    .with_system(spawn)
-                    .with_system(update_value)
-                    .with_system(update_visibility_events.before(VisibilityLabels::Update))
+                    .with_system(spawn.run_in_state(AppState::InGame))
+                    .with_system(update_value.run_in_state(AppState::InGame))
+                    .with_system(
+                        update_visibility_events
+                            .run_in_state(AppState::InGame)
+                            .before(VisibilityLabels::Update),
+                    )
                     .with_system(
                         update_visibility_distance
+                            .run_in_state(AppState::InGame)
                             .before(VisibilityLabels::Update)
                             .after(DistanceLabels::Update),
                     ),

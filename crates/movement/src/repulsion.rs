@@ -3,7 +3,7 @@ use de_core::{
     objects::{MovableSolid, ObjectType, StaticSolid},
     projection::ToFlat,
     stages::GameStage,
-    state::GameState,
+    state::{AppState, GameState},
 };
 use de_map::size::MapBounds;
 use de_objects::{IchnographyCache, ObjectCache, EXCLUSION_OFFSET};
@@ -31,9 +31,9 @@ impl Plugin for RepulsionPlugin {
         app.add_system_set_to_stage(
             GameStage::PreMovement,
             SystemSet::new()
-                .with_system(setup_entities.run_in_state(GameState::Playing))
+                .with_system(setup_entities.run_in_state(AppState::InGame))
                 .with_system(
-                    add_desired_velocity::<RepulsionVelocity>.run_in_state(GameState::Playing),
+                    add_desired_velocity::<RepulsionVelocity>.run_in_state(AppState::InGame),
                 ),
         )
         .add_system_set_to_stage(

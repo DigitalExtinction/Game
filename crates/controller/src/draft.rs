@@ -3,8 +3,10 @@ use de_core::{
     gconfig::GameConfig,
     objects::{BuildingType, ObjectType},
     stages::GameStage,
+    state::{AppState, GameState},
 };
 use de_spawner::{Draft, DraftBundle, SpawnBundle};
+use iyes_loopless::prelude::*;
 
 use crate::pointer::{Pointer, PointerLabels};
 
@@ -18,10 +20,26 @@ impl Plugin for DraftPlugin {
             .add_system_set_to_stage(
                 GameStage::Input,
                 SystemSet::new()
-                    .with_system(spawn.label(DraftLabels::Spawn))
-                    .with_system(new_drafts.label(DraftLabels::New))
-                    .with_system(discard_drafts.label(DraftLabels::Discard))
-                    .with_system(move_drafts.after(PointerLabels::Update)),
+                    .with_system(
+                        spawn
+                            .run_in_state(AppState::InGame)
+                            .label(DraftLabels::Spawn),
+                    )
+                    .with_system(
+                        new_drafts
+                            .run_in_state(AppState::InGame)
+                            .label(DraftLabels::New),
+                    )
+                    .with_system(
+                        discard_drafts
+                            .run_in_state(AppState::InGame)
+                            .label(DraftLabels::Discard),
+                    )
+                    .with_system(
+                        move_drafts
+                            .run_in_state(GameState::Playing)
+                            .after(PointerLabels::Update),
+                    ),
             );
     }
 }

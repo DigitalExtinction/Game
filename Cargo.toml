@@ -35,6 +35,7 @@ de_controller.workspace = true
 de_core.workspace = true
 de_index.workspace = true
 de_loader.workspace = true
+de_menu.workspace = true
 de_movement.workspace = true
 de_objects.workspace = true
 de_pathing.workspace = true
@@ -71,6 +72,7 @@ de_core = { path = "crates/core", version = "0.1.0-dev" }
 de_index = { path = "crates/index", version = "0.1.0-dev" }
 de_loader = { path = "crates/loader", version = "0.1.0-dev" }
 de_map = { path = "crates/map", version = "0.1.0-dev" }
+de_menu = { path = "crates/menu", version = "0.1.0-dev" }
 de_movement = { path = "crates/movement", version = "0.1.0-dev" }
 de_objects = { path = "crates/objects", version = "0.1.0-dev" }
 de_pathing = { path = "crates/pathing", version = "0.1.0-dev" }

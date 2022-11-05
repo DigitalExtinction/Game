@@ -64,7 +64,7 @@ impl Plugin for CameraPlugin {
             .add_plugin(ResendEventPlugin::<MoveFocusEvent>::default())
             .add_event::<FocusInvalidatedEvent>()
             .add_event::<PivotEvent>()
-            .add_enter_system(GameState::Playing, setup)
+            .add_enter_system(GameState::Loading, setup)
             .add_system_to_stage(
                 GameStage::PreMovement,
                 update_focus

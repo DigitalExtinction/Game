@@ -1,5 +1,5 @@
 use bevy::prelude::*;
-use de_core::{stages::GameStage, state::GameState};
+use de_core::{stages::GameStage, state::AppState};
 use de_objects::Health;
 use iyes_loopless::prelude::*;
 
@@ -12,13 +12,13 @@ impl Plugin for DestroyerPlugin {
         app.add_system_to_stage(
             GameStage::Update,
             destroy
-                .run_in_state(GameState::Playing)
+                .run_in_state(AppState::InGame)
                 .label(SpawnerLabels::Destroyer),
         );
     }
 }
 
-fn destroy(mut commands: Commands, entities: Query<(Entity, &Health)>) {
+fn destroy(mut commands: Commands, entities: Query<(Entity, &Health), Changed<Health>>) {
     for (entity, health) in entities.iter() {
         if health.destroyed() {
             commands.entity(entity).despawn_recursive();

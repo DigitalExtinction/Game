@@ -5,7 +5,7 @@ use bevy::prelude::*;
 use de_core::{
     objects::{MovableSolid, ObjectType, StaticSolid},
     stages::GameStage,
-    state::GameState,
+    state::{AppState, GameState},
 };
 use de_objects::{ColliderCache, ObjectCache};
 use iyes_loopless::prelude::*;
@@ -42,8 +42,8 @@ pub(crate) struct IndexPlugin;
 
 impl Plugin for IndexPlugin {
     fn build(&self, app: &mut App) {
-        app.add_enter_system(GameState::Loading, setup)
-            .add_exit_system(GameState::Playing, destruct)
+        app.add_enter_system(AppState::InGame, setup)
+            .add_exit_system(AppState::InGame, destruct)
             .add_system_to_stage(
                 GameStage::PostUpdate,
                 insert

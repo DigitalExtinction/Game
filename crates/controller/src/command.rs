@@ -37,6 +37,7 @@ impl CommandPlugin {
             .fold(SystemSet::new(), |systems, (building_type, &key)| {
                 systems.with_system(
                     place_draft(building_type)
+                        .run_in_state(GameState::Playing)
                         .run_if(KeyCondition::single(key).build())
                         .before(DraftLabels::New)
                         .after(PointerLabels::Update),

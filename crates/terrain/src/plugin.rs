@@ -6,7 +6,10 @@ use bevy::{
         texture::ImageSampler,
     },
 };
-use de_core::{stages::GameStage, state::GameState};
+use de_core::{
+    stages::GameStage,
+    state::{AppState, GameState},
+};
 use iyes_loopless::prelude::*;
 use iyes_progress::prelude::*;
 
@@ -25,7 +28,7 @@ impl Plugin for TerrainPlugin {
                     .track_progress()
                     .run_in_state(GameState::Loading),
             )
-            .add_system_to_stage(GameStage::Update, init);
+            .add_system_to_stage(GameStage::Update, init.run_in_state(AppState::InGame));
     }
 }
 

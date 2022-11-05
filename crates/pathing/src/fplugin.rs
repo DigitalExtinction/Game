@@ -7,7 +7,7 @@ use bevy::{
 use de_core::{
     objects::{ObjectType, StaticSolid},
     stages::GameStage,
-    state::GameState,
+    state::{AppState, GameState},
 };
 use de_map::size::MapBounds;
 use de_objects::{IchnographyCache, ObjectCache};
@@ -47,7 +47,7 @@ impl Plugin for FinderPlugin {
             .add_system_to_stage(
                 GameStage::PostUpdate,
                 check_removed
-                    .run_in_state(GameState::Playing)
+                    .run_in_state(AppState::InGame)
                     .label(FinderLabel::CheckRemoved),
             )
             .add_system_to_stage(

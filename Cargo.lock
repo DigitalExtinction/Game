@@ -1720,6 +1720,7 @@ dependencies = [
  "de_core",
  "de_index",
  "de_loader",
+ "de_menu",
  "de_movement",
  "de_objects",
  "de_pathing",
@@ -1776,6 +1777,15 @@ dependencies = [
  "serde_json",
  "tempfile",
  "thiserror",
+]
+
+[[package]]
+name = "de_menu"
+version = "0.1.0-dev"
+dependencies = [
+ "bevy",
+ "de_core",
+ "iyes_loopless",
 ]
 
 [[package]]
