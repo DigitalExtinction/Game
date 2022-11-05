@@ -1854,6 +1854,7 @@ dependencies = [
  "de_index",
  "de_map",
  "de_objects",
+ "de_terrain",
  "iyes_loopless",
  "parry2d",
  "parry3d",

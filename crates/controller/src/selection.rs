@@ -1,11 +1,6 @@
 use ahash::AHashSet;
 use bevy::{ecs::system::SystemParam, prelude::*};
-use de_core::{
-    objects::{MovableSolid, ObjectType},
-    stages::GameStage,
-    state::GameState,
-};
-use de_objects::{IchnographyCache, ObjectCache};
+use de_core::{stages::GameStage, state::GameState};
 use de_signs::UpdateBarVisibilityEvent;
 use de_terrain::CircleMarker;
 use iyes_loopless::prelude::*;
@@ -80,9 +75,8 @@ pub(crate) enum SelectionMode {
 #[derive(SystemParam)]
 struct Selector<'w, 's> {
     commands: Commands<'w, 's>,
-    cache: Res<'w, ObjectCache>,
     selected: Query<'w, 's, Entity, With<Selected>>,
-    movable: Query<'w, 's, &'static ObjectType, With<MovableSolid>>,
+    markers: Query<'w, 's, &'static mut CircleMarker>,
     bars: EventWriter<'w, 's, UpdateBarVisibilityEvent>,
 }
 
@@ -100,8 +94,11 @@ impl<'w, 's> Selector<'w, 's> {
         for entity in deselect {
             let mut entity_commands = self.commands.entity(entity);
             entity_commands.remove::<Selected>();
-            if self.movable.contains(entity) {
-                entity_commands.remove::<CircleMarker>();
+
+            if let Ok(mut marker) = self.markers.get_mut(entity) {
+                marker
+                    .visibility_mut()
+                    .update_visible(SELECTION_BAR_ID, false);
             }
 
             self.bars.send(UpdateBarVisibilityEvent::new(
@@ -114,9 +111,11 @@ impl<'w, 's> Selector<'w, 's> {
         for entity in select {
             let mut entity_commands = self.commands.entity(entity);
             entity_commands.insert(Selected);
-            if let Ok(&object_type) = self.movable.get(entity) {
-                let radius = self.cache.get_ichnography(object_type).radius();
-                entity_commands.insert(CircleMarker::new(radius));
+
+            if let Ok(mut marker) = self.markers.get_mut(entity) {
+                marker
+                    .visibility_mut()
+                    .update_visible(SELECTION_BAR_ID, true);
             }
 
             self.bars.send(UpdateBarVisibilityEvent::new(

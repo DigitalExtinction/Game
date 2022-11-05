@@ -6,7 +6,9 @@ use bevy::{
     },
     utils::FloatOrd,
 };
-use de_core::{frustum, objects::ObjectType, projection::ToFlat, state::GameState};
+use de_core::{
+    frustum, objects::ObjectType, projection::ToFlat, state::GameState, visibility::VisibilityFlags,
+};
 use de_objects::{ColliderCache, ObjectCache};
 use glam::Vec3A;
 use iyes_loopless::prelude::*;
@@ -26,16 +28,29 @@ impl Plugin for MarkerPlugin {
     }
 }
 
-/// A semi-transparent circle is drawn on the terrain surface below every
-/// entity with this component.
+/// This component configures a semi-transparent circle drawn on the terrain
+/// surface below the entity.
 #[derive(Component)]
 pub struct CircleMarker {
     radius: f32,
+    visibility: VisibilityFlags,
 }
 
 impl CircleMarker {
+    /// Crates a new circle marker with default visibility flags.
     pub fn new(radius: f32) -> Self {
-        Self { radius }
+        Self {
+            radius,
+            visibility: VisibilityFlags::default(),
+        }
+    }
+
+    pub fn visibility(&self) -> &VisibilityFlags {
+        &self.visibility
+    }
+
+    pub fn visibility_mut(&mut self) -> &mut VisibilityFlags {
+        &mut self.visibility
     }
 
     pub(crate) fn radius(&self) -> f32 {
@@ -68,6 +83,10 @@ fn update_markers(
     let mut candidates = Vec::new();
     for (&object_type, circle_visibility, transform, marker) in markers.iter() {
         if !circle_visibility.is_visible_in_hierarchy() {
+            continue;
+        }
+
+        if !marker.visibility().visible() {
             continue;
         }
 
