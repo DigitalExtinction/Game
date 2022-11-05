@@ -1,20 +1,6 @@
 #![allow(rustdoc::private_intra_doc_links)]
-//! This library implements a Bevy plugin for optimal path finding on the game
-//! map.
-//!
-//! When [`UpdateEntityPath`] event is sent, the entity paths is automatically
-//! (re)planned.
-//!
-//!
-//! # Path Search
-//!
-//! * Neighboring nodes (triangle edges) to the starting and target points are
-//!   found. See [`crate::finder`].
-//!
-//! * Visibility graph is traversed with a modified Dijkstra's algorithm. See
-//!   [`crate::dijkstra`]. Funnel algorithm is embedded into the algorithm so
-//!   path funneling can be gradually applied during the graph traversal. See
-//!   [`crate::funnel`].
+//! This library implements a Bevy plugin for any angle path finding on the
+//! game map.
 
 mod chain;
 mod dijkstra;
