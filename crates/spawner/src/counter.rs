@@ -4,14 +4,18 @@ use de_core::{
     objects::{ActiveObjectType, ObjectType, PLAYER_MAX_BUILDINGS, PLAYER_MAX_UNITS},
     player::Player,
     stages::GameStage,
+    state::AppState,
 };
+use iyes_loopless::prelude::*;
 
 pub(crate) struct CounterPlugin;
 
 impl Plugin for CounterPlugin {
     fn build(&self, app: &mut App) {
-        app.init_resource::<ObjectCounter>()
-            .add_system_to_stage(GameStage::PostUpdate, recount);
+        app.init_resource::<ObjectCounter>().add_system_to_stage(
+            GameStage::PostUpdate,
+            recount.run_in_state(AppState::InGame),
+        );
     }
 }
 

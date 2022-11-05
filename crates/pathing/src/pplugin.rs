@@ -3,7 +3,12 @@ use bevy::{
     prelude::*,
     tasks::{AsyncComputeTaskPool, Task},
 };
-use de_core::{objects::MovableSolid, projection::ToFlat, stages::GameStage, state::GameState};
+use de_core::{
+    objects::MovableSolid,
+    projection::ToFlat,
+    stages::GameStage,
+    state::{AppState, GameState},
+};
 use futures_lite::future;
 use iyes_loopless::prelude::*;
 
@@ -65,7 +70,10 @@ impl Plugin for PathingPlugin {
                     // computed. Thus this system must run after it.
                     .after(PathingLabel::UpdateExistingPaths),
             )
-            .add_system_to_stage(GameStage::PostMovement, remove_path_targets);
+            .add_system_to_stage(
+                GameStage::PostMovement,
+                remove_path_targets.run_in_state(AppState::InGame),
+            );
     }
 }
 

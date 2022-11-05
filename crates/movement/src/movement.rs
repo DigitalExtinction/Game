@@ -5,7 +5,7 @@ use de_core::{
     objects::MovableSolid,
     projection::{ToFlat, ToMsl},
     stages::GameStage,
-    state::GameState,
+    state::{AppState, GameState},
 };
 use de_map::size::MapBounds;
 use de_objects::EXCLUSION_OFFSET;
@@ -17,7 +17,7 @@ impl Plugin for MovementPlugin {
     fn build(&self, app: &mut App) {
         app.add_system_to_stage(
             GameStage::PreMovement,
-            setup_entities.run_in_state(GameState::Playing),
+            setup_entities.run_in_state(AppState::InGame),
         )
         .add_system_set_to_stage(
             GameStage::Movement,

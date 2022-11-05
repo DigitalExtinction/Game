@@ -1,5 +1,9 @@
 use bevy::prelude::*;
-use de_core::{projection::ToFlat, stages::GameStage, state::GameState};
+use de_core::{
+    projection::ToFlat,
+    stages::GameStage,
+    state::{AppState, GameState},
+};
 use de_pathing::ScheduledPath;
 use iyes_loopless::prelude::*;
 
@@ -18,7 +22,7 @@ impl Plugin for PathingPlugin {
             GameStage::PreMovement,
             SystemSet::new()
                 .with_system(finish_paths.run_in_state(GameState::Playing))
-                .with_system(add_desired_velocity::<PathVelocity>.run_in_state(GameState::Playing)),
+                .with_system(add_desired_velocity::<PathVelocity>.run_in_state(AppState::InGame)),
         )
         .add_system_set_to_stage(
             GameStage::Movement,

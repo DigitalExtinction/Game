@@ -1,7 +1,12 @@
 use std::f32::consts::{FRAC_PI_4, PI, TAU};
 
 use bevy::prelude::*;
-use de_core::{objects::MovableSolid, projection::ToMsl, stages::GameStage, state::GameState};
+use de_core::{
+    objects::MovableSolid,
+    projection::ToMsl,
+    stages::GameStage,
+    state::{AppState, GameState},
+};
 use iyes_loopless::prelude::*;
 
 use crate::{
@@ -16,7 +21,7 @@ impl Plugin for KinematicsPlugin {
     fn build(&self, app: &mut App) {
         app.add_system_to_stage(
             GameStage::PreMovement,
-            setup_entities.run_in_state(GameState::Playing),
+            setup_entities.run_in_state(AppState::InGame),
         )
         .add_system_set_to_stage(
             GameStage::Movement,

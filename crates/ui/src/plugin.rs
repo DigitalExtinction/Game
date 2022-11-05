@@ -1,5 +1,5 @@
 use bevy::prelude::*;
-use de_core::{screengeom::ScreenRect, stages::GameStage, state::GameState};
+use de_core::{screengeom::ScreenRect, stages::GameStage, state::AppState};
 use iyes_loopless::prelude::*;
 
 const SELECTION_BOX_COLOR: Color = Color::rgba(0., 0.5, 0.8, 0.2);
@@ -11,7 +11,7 @@ impl Plugin for UiPlugin {
         app.add_event::<UpdateSelectionBoxEvent>()
             .add_system_set_to_stage(
                 GameStage::PostUpdate,
-                SystemSet::new().with_system(process_events.run_in_state(GameState::Playing)),
+                SystemSet::new().with_system(process_events.run_in_state(AppState::InGame)),
             );
     }
 }

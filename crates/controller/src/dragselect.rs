@@ -1,5 +1,5 @@
 use bevy::prelude::*;
-use de_core::{stages::GameStage, state::GameState};
+use de_core::{stages::GameStage, state::AppState};
 use de_ui::UpdateSelectionBoxEvent;
 use iyes_loopless::prelude::*;
 
@@ -17,7 +17,7 @@ impl Plugin for DragSelectPlugin {
             GameStage::Input,
             SystemSet::new().with_system(
                 update_drags
-                    .run_in_state(GameState::Playing)
+                    .run_in_state(AppState::InGame)
                     .before(AreaSelectLabels::SelectInArea)
                     .after(MouseLabels::Buttons),
             ),
