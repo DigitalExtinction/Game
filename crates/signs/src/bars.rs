@@ -17,12 +17,11 @@ use de_core::{
 use de_objects::{ColliderCache, ObjectCache};
 use iyes_loopless::prelude::*;
 
-use crate::MAX_VISIBILITY_DISTANCE;
+use crate::{DISTANCE_FLAG_BIT, MAX_VISIBILITY_DISTANCE};
 
 /// Vertical distance in meters between the bar center and the top of the
 /// parent entity collider.
 const BAR_HEIGHT: f32 = 2.;
-const DISTANCE_FLAG_BIT: u32 = 0;
 
 pub(crate) struct BarsPlugin;
 

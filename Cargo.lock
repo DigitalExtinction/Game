@@ -1841,6 +1841,7 @@ dependencies = [
  "de_camera",
  "de_core",
  "de_objects",
+ "de_terrain",
  "glam",
  "iyes_loopless",
 ]
