@@ -18,7 +18,7 @@ impl Plugin for DestroyerPlugin {
     }
 }
 
-fn destroy(mut commands: Commands, entities: Query<(Entity, &Health)>) {
+fn destroy(mut commands: Commands, entities: Query<(Entity, &Health), Changed<Health>>) {
     for (entity, health) in entities.iter() {
         if health.destroyed() {
             commands.entity(entity).despawn_recursive();
