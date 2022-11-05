@@ -18,27 +18,44 @@ pub enum VisibilityLabels {
     Update,
 }
 
-/// This represents visibility flags. An object is visible if at least one flag
-/// is set to true. The individual flags can be controlled independently.
+/// This represents visibility flags. An object is visible if at least one
+/// "visible" flag is set to true and none of "invisible" flag is true. The
+/// individual flags can be controlled independently.
 ///
 /// The system [`VisibilityLabels::Update`] executed during
 /// [`GameStage::PostUpdate`] automatically updates
 /// [`bevy::render::prelude::Visibility`] of entities with this component.
 #[derive(Component, Default)]
-pub struct VisibilityFlags(u32);
+pub struct VisibilityFlags {
+    visible: u32,
+    invisible: u32,
+}
 
 impl VisibilityFlags {
-    pub fn update(&mut self, bit: u32, value: bool) {
+    pub fn update_visible(&mut self, bit: u32, value: bool) {
+        Self::update(&mut self.visible, bit, value);
+    }
+
+    pub fn update_invisible(&mut self, bit: u32, value: bool) {
+        Self::update(&mut self.invisible, bit, value);
+    }
+
+    fn update(flags: &mut u32, bit: u32, value: bool) {
         let mask = 1 << bit;
         if value {
-            self.0 |= mask;
+            *flags |= mask;
         } else {
-            self.0 &= !mask;
+            *flags &= !mask;
         }
     }
 
+    /// Returns value of a specific "invisible" flag.
+    pub fn invisible_value(&self, bit: u32) -> bool {
+        self.invisible & (1 << bit) != 0
+    }
+
     pub fn visible(&self) -> bool {
-        self.0 > 0
+        self.invisible == 0 && self.visible > 0
     }
 }
 
@@ -57,13 +74,24 @@ mod tests {
         let mut flags = VisibilityFlags::default();
         assert!(!flags.visible());
 
-        flags.update(1, true);
+        flags.update_visible(1, true);
         assert!(flags.visible());
-        flags.update(3, true);
+        flags.update_visible(3, true);
         assert!(flags.visible());
-        flags.update(1, false);
+        flags.update_visible(1, false);
         assert!(flags.visible());
-        flags.update(3, false);
+        flags.update_visible(3, false);
         assert!(!flags.visible());
+
+        assert!(!flags.invisible_value(1));
+        flags.update_invisible(1, true);
+        assert!(!flags.visible());
+        assert!(flags.invisible_value(1));
+        flags.update_visible(1, true);
+        assert!(!flags.visible());
+        assert!(flags.invisible_value(1));
+        flags.update_invisible(1, false);
+        assert!(flags.visible());
+        assert!(!flags.invisible_value(1));
     }
 }

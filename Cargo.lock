@@ -1838,6 +1838,7 @@ name = "de_signs"
 version = "0.1.0-dev"
 dependencies = [
  "bevy",
+ "de_camera",
  "de_core",
  "de_objects",
  "glam",

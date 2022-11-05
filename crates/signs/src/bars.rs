@@ -7,6 +7,7 @@ use bevy::{
         render_resource::{AsBindGroup, PrimitiveTopology, ShaderRef},
     },
 };
+use de_camera::{CameraDistance, DistanceLabels};
 use de_core::{
     objects::{Active, ObjectType},
     stages::GameStage,
@@ -16,9 +17,12 @@ use de_core::{
 use de_objects::{ColliderCache, ObjectCache};
 use iyes_loopless::prelude::*;
 
+use crate::MAX_VISIBILITY_DISTANCE;
+
 /// Vertical distance in meters between the bar center and the top of the
 /// parent entity collider.
 const BAR_HEIGHT: f32 = 2.;
+const DISTANCE_FLAG_BIT: u32 = 0;
 
 pub(crate) struct BarsPlugin;
 
@@ -33,7 +37,12 @@ impl Plugin for BarsPlugin {
                 SystemSet::new()
                     .with_system(spawn)
                     .with_system(update_value)
-                    .with_system(update_visibility.before(VisibilityLabels::Update)),
+                    .with_system(update_visibility_events.before(VisibilityLabels::Update))
+                    .with_system(
+                        update_visibility_distance
+                            .before(VisibilityLabels::Update)
+                            .after(DistanceLabels::Update),
+                    ),
             );
     }
 }
@@ -201,7 +210,7 @@ fn update_value(
     }
 }
 
-fn update_visibility(
+fn update_visibility_events(
     parents: Query<&BarChild, With<Active>>,
     mut bars: Query<&mut VisibilityFlags>,
     mut events: EventReader<UpdateBarVisibilityEvent>,
@@ -210,7 +219,22 @@ fn update_visibility(
         if let Ok(child) = parents.get(event.entity()) {
             bars.get_mut(child.0)
                 .unwrap()
-                .update(event.id(), event.value());
+                .update_visible(event.id(), event.value());
+        }
+    }
+}
+
+fn update_visibility_distance(
+    parents: Query<(&BarChild, &CameraDistance), Changed<CameraDistance>>,
+    mut bars: Query<&mut VisibilityFlags>,
+) {
+    for (child, distance) in parents.iter() {
+        let invisible = distance.distance() > MAX_VISIBILITY_DISTANCE;
+        let mut flags = bars.get_mut(child.0).unwrap();
+
+        // Do not trigger change detection unnecessarily.
+        if flags.invisible_value(DISTANCE_FLAG_BIT) != invisible {
+            flags.update_invisible(DISTANCE_FLAG_BIT, invisible);
         }
     }
 }
