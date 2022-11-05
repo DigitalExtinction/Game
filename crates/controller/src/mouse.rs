@@ -4,7 +4,7 @@ use bevy::{
     prelude::*,
 };
 use de_core::{screengeom::ScreenRect, stages::GameStage, state::GameState};
-use iyes_loopless::condition::IntoConditionalExclusiveSystem;
+use iyes_loopless::prelude::*;
 
 const DRAGGING_THRESHOLD: f32 = 0.02;
 
