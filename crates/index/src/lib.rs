@@ -1,3 +1,4 @@
+#![allow(rustdoc::private_intra_doc_links)]
 //! This module implements 2D object partitioning for fast geometric lookup,
 //! for example ray casting.
 //!
