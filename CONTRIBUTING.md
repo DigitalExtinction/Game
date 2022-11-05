@@ -6,6 +6,12 @@
    [discussions](https://github.com/DigitalExtinction/Game/discussions).
 1. Open a formal [issue](https://github.com/DigitalExtinction/Game/issues).
 
+## First Time Contributions
+
+* Look for already opened issues marked with the
+  [E-Good-First-Issue](https://github.com/DigitalExtinction/Game/labels/E-Good-First-Issue)
+  label.
+
 ## Making Changes
 
 1. First, discuss any non-trivial or potentially controversial changes in our
