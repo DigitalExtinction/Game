@@ -16,6 +16,7 @@ on:
 env:
   CARGO_TERM_COLOR: always
   RUSTFLAGS: --deny warnings
+  RUSTDOCFLAGS: --deny warnings
 
 jobs:
   build:
