@@ -11,6 +11,7 @@ use de_core::{
     objects::{Active, ObjectType},
     stages::GameStage,
     state::GameState,
+    visibility::{VisibilityFlags, VisibilityLabels},
 };
 use de_objects::{ColliderCache, ObjectCache};
 use iyes_loopless::prelude::*;
@@ -32,7 +33,7 @@ impl Plugin for BarsPlugin {
                 SystemSet::new()
                     .with_system(spawn)
                     .with_system(update_value)
-                    .with_system(update_visibility),
+                    .with_system(update_visibility.before(VisibilityLabels::Update)),
             );
     }
 }
@@ -141,24 +142,6 @@ impl Material for BarMaterial {
 #[derive(Component)]
 struct BarChild(Entity);
 
-#[derive(Component, Default)]
-struct BarVisibility(u32);
-
-impl BarVisibility {
-    fn update(&mut self, id: u32, value: bool) {
-        let mask = 1 << id;
-        if value {
-            self.0 |= mask;
-        } else {
-            self.0 &= !mask;
-        }
-    }
-
-    fn visible(&self) -> bool {
-        self.0 > 0
-    }
-}
-
 fn setup(mut commans: Commands, mut meshes: ResMut<Assets<Mesh>>) {
     commans.insert_resource(BarMesh(meshes.add(bar_mesh(1.5, 0.3))));
 }
@@ -193,7 +176,7 @@ fn spawn(
             })
             .insert(NotShadowCaster)
             .insert(NotShadowReceiver)
-            .insert(BarVisibility::default())
+            .insert(VisibilityFlags::default())
             .id();
 
         commands
@@ -220,14 +203,14 @@ fn update_value(
 
 fn update_visibility(
     parents: Query<&BarChild, With<Active>>,
-    mut bars: Query<(&mut Visibility, &mut BarVisibility)>,
+    mut bars: Query<&mut VisibilityFlags>,
     mut events: EventReader<UpdateBarVisibilityEvent>,
 ) {
     for event in events.iter() {
         if let Ok(child) = parents.get(event.entity()) {
-            let (mut visibility, mut bar_visibility) = bars.get_mut(child.0).unwrap();
-            bar_visibility.update(event.id(), event.value());
-            visibility.is_visible = bar_visibility.visible();
+            bars.get_mut(child.0)
+                .unwrap()
+                .update(event.id(), event.value());
         }
     }
 }
