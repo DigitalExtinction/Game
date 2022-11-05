@@ -163,6 +163,6 @@ intentionally submitted for inclusion in the work by you, shall be licensed as
 above, without any additional terms or conditions.
 
 All other artwork in this repository, including 3D models, textures,
-animations, UI bitmaps, sounds and music is licensed under
+animations, UI bitmaps, sounds and music are licensed under
 [Attribution-ShareAlike 4.0 International (CC BY-SA
 4.0)](https://creativecommons.org/licenses/by-sa/4.0/legalcode)
