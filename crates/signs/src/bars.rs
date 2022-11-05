@@ -7,13 +7,17 @@ use bevy::{
         render_resource::{AsBindGroup, PrimitiveTopology, ShaderRef},
     },
 };
+use de_camera::{CameraDistance, DistanceLabels};
 use de_core::{
     objects::{Active, ObjectType},
     stages::GameStage,
     state::GameState,
+    visibility::{VisibilityFlags, VisibilityLabels},
 };
 use de_objects::{ColliderCache, ObjectCache};
 use iyes_loopless::prelude::*;
+
+use crate::{DISTANCE_FLAG_BIT, MAX_VISIBILITY_DISTANCE};
 
 /// Vertical distance in meters between the bar center and the top of the
 /// parent entity collider.
@@ -32,7 +36,12 @@ impl Plugin for BarsPlugin {
                 SystemSet::new()
                     .with_system(spawn)
                     .with_system(update_value)
-                    .with_system(update_visibility),
+                    .with_system(update_visibility_events.before(VisibilityLabels::Update))
+                    .with_system(
+                        update_visibility_distance
+                            .before(VisibilityLabels::Update)
+                            .after(DistanceLabels::Update),
+                    ),
             );
     }
 }
@@ -141,24 +150,6 @@ impl Material for BarMaterial {
 #[derive(Component)]
 struct BarChild(Entity);
 
-#[derive(Component, Default)]
-struct BarVisibility(u32);
-
-impl BarVisibility {
-    fn update(&mut self, id: u32, value: bool) {
-        let mask = 1 << id;
-        if value {
-            self.0 |= mask;
-        } else {
-            self.0 &= !mask;
-        }
-    }
-
-    fn visible(&self) -> bool {
-        self.0 > 0
-    }
-}
-
 fn setup(mut commans: Commands, mut meshes: ResMut<Assets<Mesh>>) {
     commans.insert_resource(BarMesh(meshes.add(bar_mesh(1.5, 0.3))));
 }
@@ -193,7 +184,7 @@ fn spawn(
             })
             .insert(NotShadowCaster)
             .insert(NotShadowReceiver)
-            .insert(BarVisibility::default())
+            .insert(VisibilityFlags::default())
             .id();
 
         commands
@@ -218,16 +209,31 @@ fn update_value(
     }
 }
 
-fn update_visibility(
+fn update_visibility_events(
     parents: Query<&BarChild, With<Active>>,
-    mut bars: Query<(&mut Visibility, &mut BarVisibility)>,
+    mut bars: Query<&mut VisibilityFlags>,
     mut events: EventReader<UpdateBarVisibilityEvent>,
 ) {
     for event in events.iter() {
         if let Ok(child) = parents.get(event.entity()) {
-            let (mut visibility, mut bar_visibility) = bars.get_mut(child.0).unwrap();
-            bar_visibility.update(event.id(), event.value());
-            visibility.is_visible = bar_visibility.visible();
+            bars.get_mut(child.0)
+                .unwrap()
+                .update_visible(event.id(), event.value());
+        }
+    }
+}
+
+fn update_visibility_distance(
+    parents: Query<(&BarChild, &CameraDistance), Changed<CameraDistance>>,
+    mut bars: Query<&mut VisibilityFlags>,
+) {
+    for (child, distance) in parents.iter() {
+        let invisible = distance.distance() > MAX_VISIBILITY_DISTANCE;
+        let mut flags = bars.get_mut(child.0).unwrap();
+
+        // Do not trigger change detection unnecessarily.
+        if flags.invisible_value(DISTANCE_FLAG_BIT) != invisible {
+            flags.update_invisible(DISTANCE_FLAG_BIT, invisible);
         }
     }
 }

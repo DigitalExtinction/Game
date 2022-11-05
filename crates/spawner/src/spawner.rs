@@ -8,7 +8,8 @@ use de_core::{
     stages::GameStage,
     state::GameState,
 };
-use de_objects::{InitialHealths, ObjectCache};
+use de_objects::{IchnographyCache, InitialHealths, ObjectCache};
+use de_terrain::CircleMarker;
 use iyes_loopless::prelude::*;
 
 pub(crate) struct SpawnerPlugin;
@@ -74,6 +75,9 @@ fn spawn(
                     }
                     ActiveObjectType::Unit(_) => {
                         entity_commands.insert(MovableSolid);
+
+                        let radius = cache.get_ichnography(object_type).radius();
+                        entity_commands.insert(CircleMarker::new(radius));
                     }
                 }
 

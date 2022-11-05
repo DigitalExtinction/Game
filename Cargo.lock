@@ -1838,8 +1838,10 @@ name = "de_signs"
 version = "0.1.0-dev"
 dependencies = [
  "bevy",
+ "de_camera",
  "de_core",
  "de_objects",
+ "de_terrain",
  "glam",
  "iyes_loopless",
 ]
@@ -1853,6 +1855,7 @@ dependencies = [
  "de_index",
  "de_map",
  "de_objects",
+ "de_terrain",
  "iyes_loopless",
  "parry2d",
  "parry3d",

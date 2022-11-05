@@ -13,8 +13,10 @@ categories.workspace = true
 
 [dependencies]
 # DE
+de_camera.workspace = true
 de_core.workspace = true
 de_objects.workspace = true
+de_terrain.workspace = true
 
 # Other
 bevy.workspace = true
