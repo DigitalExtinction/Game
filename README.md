@@ -154,6 +154,8 @@ The game mechanics is somewhat expanded so it is no longer thoroughly "dummy".
 
 # License
 
+## Source Code
+
 Digital Extinction is free and open source. All code in this repository is
 licensed under GNU GPLv3 ([LICENSE](LICENSE) or
 [https://www.gnu.org/licenses/gpl-3.0.en.html](https://www.gnu.org/licenses/gpl-3.0.en.html)).
@@ -161,6 +163,12 @@ licensed under GNU GPLv3 ([LICENSE](LICENSE) or
 Unless you explicitly state otherwise, any source code contribution
 intentionally submitted for inclusion in the work by you, shall be licensed as
 above, without any additional terms or conditions.
+
+## Assets
+
+All game assets are located in [/assets](/assets) directory of this repository.
+Assets placed in a directory with a file named `LICENSE` are licensed under the
+license stated in the file.
 
 All other artwork in this repository, including 3D models, textures,
 animations, UI bitmaps, sounds and music are licensed under

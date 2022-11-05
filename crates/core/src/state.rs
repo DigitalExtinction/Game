@@ -8,6 +8,7 @@ pub enum AppState {
 /// finishing.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum GameState {
+    None,
     Loading,
     Playing,
 }
