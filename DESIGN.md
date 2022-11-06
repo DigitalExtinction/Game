@@ -35,3 +35,56 @@ There is only one currency / resource in the game and that is energy.
 * The energy grid operates autonomously: it constructs a semi-optimal
   transmission network based on priorities, remaining battery capacities, and
   other criteria.
+
+## Buildings
+
+### Base
+
+* Is capable of producing all unit.
+* Has a battery of a very high capacity.
+* Is equipped with several laser cannons for defense.
+* Produces small amount of energy via integrated solar panels.
+* Has several energy lasers.
+* Has several energy panels.
+
+### Factory
+
+* Is capable of producing all unit.
+* Has a battery of medium capacity.
+
+### Solar Power Plant
+
+* Has a single energy laser.
+
+### Battery Farm
+
+* Stores large amount of energy.
+* Has a single energy panel.
+
+### Power Hub
+
+* Has several energy lasers.
+* Has several energy panels.
+* Has no batteries.
+
+## Units
+
+### Attacker Drone
+
+* Has an integrated battery of medium capacity.
+* Has a single energy panel.
+* Is equipped with a laser cannon.
+
+### Construction Drone
+
+* Has an integrated battery of small capacity.
+* Has a single energy panel.
+* Can construct any kind of building.
+
+### Battery Drone
+
+This drone can be used to deliver energy to areas of scarcity.
+
+* Has a battery of large capacity.
+* Has a single energy panel.
+* Has a single energy laser.
