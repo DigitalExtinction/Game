@@ -1,5 +1,14 @@
 # Game Design
 
+This documents summarizes high level design of the game. It does not capture
+current state but the desired state attainable in reasonable amount of time.
+
+The document is based on conclusions from our [discussions on
+ideas](https://github.com/DigitalExtinction/Game/discussions/categories/ideas).
+If you have an idea, consult the discussions first.
+
+## Energy
+
 There is only one currency / resource in the game and that is energy.
 
 * Energy can be generated with several different kinds of power plants: solar,
