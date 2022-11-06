@@ -142,3 +142,31 @@ algebra crate.
 geometry. Parry is using [Nalgebra](https://github.com/dimforge/nalgebra) for
 linear algebra, thus Nalgebra is used in various places where usage of Glam
 would lead to frequent back and forth conversions.
+
+## Contributing Assets
+
+### 3D Models
+
+* See the [A-Models](https://github.com/DigitalExtinction/Game/labels/A-Models)
+  issue label to filter issues related to the 3D models.
+
+* 3D models (buildings, units, map elements, etc.) are located in
+  [/assets/models](/assets/models).
+
+* 3D models need to be exported into glTF format.
+
+* Whenever applicable and desirable by the author, track the original 3D
+  modeling project file (e.g. .blend file from Blender) alongside the exported
+  model.
+
+* The +Y axis points upwards, and the front of the model points in the +X
+  direction.
+
+* The ground consists of the XZ plane (Y = 0) and is located just below the
+  model. Foundations of buildings may go below the ground plane to allow
+  construction on uneven terrain. The altitude of flying units is controlled
+  independently of the model, thus even flying objects should be just above the
+  ground plane (and not higher).
+
+* Whenever applicable, models are centered in the XZ axes. I.e. axis-aligned
+  bounding box (AABB) of the model has its center at (X=0, Y=?, Z=0).
