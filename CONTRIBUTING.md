@@ -90,6 +90,8 @@ Topologically sorted crates:
 * [map](/crates/map) – map (de)serialization, validation and representation
   functionalities.
 
+* [menu](/crates/menu) – game menu and related functionality.
+
 * [terrain](/crates/terrain) – functionality related to game terrain.
 
 * [objects](/crates/objects) – caching of object on the game map.
