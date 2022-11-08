@@ -70,7 +70,7 @@ fn button_system(mut commands: Commands, mut interactions: Interactions) {
     for (&interaction, mut color) in interactions.iter_mut() {
         match interaction {
             Interaction::Clicked => {
-                commands.insert_resource(GameConfig::new("map.tar", Player::Player1));
+                commands.insert_resource(GameConfig::new("maps/huge.tar", Player::Player1));
                 commands.insert_resource(NextState(AppState::InGame));
                 commands.insert_resource(NextState(GameState::Loading));
             }
