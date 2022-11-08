@@ -90,14 +90,14 @@ async-std = "1.11"
 async-tar = "0.4.2"
 bevy = "0.8"
 clap = { version = "3.2.6", features = ["derive"] }
-criterion = "0.3"
+criterion = "0.4"
 enum-map = "2.3.0"
 futures-lite = "1.11"
 glam = "0.21"
 gltf = "1.0"
 itertools = "0.10.5"
-iyes_loopless = "0.7"
-iyes_progress = { version = "0.4", features = [ "iyes_loopless" ] }
+iyes_loopless = "0.8"
+iyes_progress = { version = "0.6", features = [ "iyes_loopless" ] }
 nalgebra = { version = "0.31.0", features = ["convert-glam021"] }
 ntest = "0.8.0"
 parry2d = "0.11.0"
