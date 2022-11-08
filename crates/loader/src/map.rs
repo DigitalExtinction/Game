@@ -11,8 +11,9 @@ use de_core::{
     state::GameState,
 };
 use de_map::{
-    description::{InnerObject, Map},
+    content::InnerObject,
     io::{load_map, MapLoadingError},
+    map::Map,
 };
 use de_spawner::SpawnBundle;
 use de_terrain::TerrainBundle;
@@ -71,6 +72,7 @@ fn spawn_map(
     };
 
     let initial_focus = map
+        .content()
         .objects()
         .iter()
         .filter_map(|object| match object.inner() {
@@ -91,9 +93,9 @@ fn spawn_map(
     }
 
     setup_light(&mut commands);
-    commands.spawn_bundle(TerrainBundle::flat(map.bounds()));
+    commands.spawn_bundle(TerrainBundle::flat(map.metadata().bounds()));
 
-    for object in map.objects() {
+    for object in map.content().objects() {
         let mut entity_commands = commands.spawn();
         let object_type = match object.inner() {
             InnerObject::Active(object) => {
@@ -108,7 +110,7 @@ fn spawn_map(
         ));
     }
 
-    commands.insert_resource(map.bounds());
+    commands.insert_resource(map.metadata().bounds());
     true.into()
 }
 

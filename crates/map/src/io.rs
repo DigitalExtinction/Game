@@ -1,12 +1,16 @@
 use std::io;
 
-use async_std::fs::{File, OpenOptions};
-use async_std::path::Path;
-use async_std::prelude::*;
-use async_tar::{Archive, Builder, EntryType, Header};
+use async_std::{
+    fs::{File, OpenOptions},
+    io::{ReadExt, Write},
+    path::Path,
+    stream::StreamExt,
+};
+use async_tar::{Archive, Builder, Entry, EntryType, Header};
+use serde::{de::DeserializeOwned, Serialize};
 use thiserror::Error;
 
-use crate::description::{Map, MapValidationError};
+use crate::map::{Map, MapValidationError};
 
 macro_rules! loading_io_error {
     ($expression:expr) => {
@@ -26,45 +30,67 @@ macro_rules! storing_io_error {
     };
 }
 
-const MAP_JSON_ENTRY: &str = "map.json";
+const METADATA_JSON_ENTRY: &str = "metadata.json";
+const CONTENT_JSON_ENTRY: &str = "content.json";
+
+type LoadingResult<T> = Result<T, MapLoadingError>;
+type StoringResult = Result<(), MapStoringError>;
 
 /// Load a map TAR file.
-pub async fn load_map<P: AsRef<Path>>(path: P) -> Result<Map, MapLoadingError> {
+pub async fn load_map<P: AsRef<Path>>(path: P) -> LoadingResult<Map> {
     let mut file = loading_io_error!(File::open(&path).await);
     let archive = Archive::new(&mut file);
     let mut entries = loading_io_error!(archive.entries());
 
-    let mut map = None;
+    let mut map_meta = None;
+    let mut map_content = None;
 
     while let Some(entry) = entries.next().await {
         let mut entry = loading_io_error!(entry);
         let path = loading_io_error!(entry.path());
-        if path.to_str().map_or(false, |p| p == MAP_JSON_ENTRY) {
-            let entry_size = loading_io_error!(entry.header().entry_size());
-            let mut buf: Vec<u8> = Vec::with_capacity(entry_size.try_into().unwrap());
-            loading_io_error!(entry.read_to_end(&mut buf).await);
-            map = match serde_json::from_slice(buf.as_slice()) {
-                Ok(map_inner) => Some(map_inner),
-                Err(error) => return Err(MapLoadingError::JsonParsing { source: error }),
-            };
+        let Some(path) = path.to_str() else {
+            return Err(MapLoadingError::ArchiveContent(
+                String::from("The map archive contains an entry with non-UTF-8 path.")));
+        };
+
+        if path == METADATA_JSON_ENTRY {
+            map_meta = deserialize_entry(&mut entry).await?;
+        } else if path == CONTENT_JSON_ENTRY {
+            map_content = deserialize_entry(&mut entry).await?;
         }
     }
 
-    let map: Map = match map {
-        Some(map) => map,
-        None => {
-            return Err(MapLoadingError::ArchiveContent(format!(
-                "{} entry is not present",
-                MAP_JSON_ENTRY
-            )));
-        }
-    };
+    let map_meta = unwrap(METADATA_JSON_ENTRY, map_meta)?;
+    let map_content = unwrap(CONTENT_JSON_ENTRY, map_content)?;
+    let map = Map::new(map_meta, map_content);
 
     if let Err(error) = map.validate() {
         return Err(MapLoadingError::Validation { source: error });
     }
 
     Ok(map)
+}
+
+async fn deserialize_entry<T: DeserializeOwned>(
+    entry: &mut Entry<Archive<&mut File>>,
+) -> LoadingResult<T> {
+    let entry_size = loading_io_error!(entry.header().entry_size());
+    let mut buf: Vec<u8> = Vec::with_capacity(entry_size.try_into().unwrap());
+    loading_io_error!(entry.read_to_end(&mut buf).await);
+    match serde_json::from_slice(buf.as_slice()) {
+        Ok(map_inner) => Ok(map_inner),
+        Err(error) => Err(MapLoadingError::JsonParsing { source: error }),
+    }
+}
+
+fn unwrap<T>(entry_name: &str, wrapped: Option<T>) -> LoadingResult<T> {
+    match wrapped {
+        Some(wrapped) => Ok(wrapped),
+        None => Err(MapLoadingError::ArchiveContent(format!(
+            "{} entry is not present",
+            entry_name
+        ))),
+    }
 }
 
 #[derive(Error, Debug)]
@@ -80,7 +106,7 @@ pub enum MapLoadingError {
 }
 
 /// Writes a map to a TAR file. Overwrites the file if it already exists.
-pub async fn store_map<P: AsRef<Path>>(map: &Map, path: P) -> Result<(), MapStoringError> {
+pub async fn store_map<P: AsRef<Path>>(map: &Map, path: P) -> StoringResult {
     let file = storing_io_error!(
         OpenOptions::new()
             .write(true)
@@ -92,21 +118,33 @@ pub async fn store_map<P: AsRef<Path>>(map: &Map, path: P) -> Result<(), MapStor
 
     let mut archive = Builder::new(file);
 
-    let map_data = match serde_json::ser::to_vec(map) {
+    serialize_entry(&mut archive, METADATA_JSON_ENTRY, map.metadata()).await?;
+    serialize_entry(&mut archive, CONTENT_JSON_ENTRY, map.content()).await?;
+
+    Ok(())
+}
+
+async fn serialize_entry<W, T>(
+    archive: &mut Builder<W>,
+    entry_name: &str,
+    part: &T,
+) -> StoringResult
+where
+    W: Write + Unpin + Send + Sync,
+    T: ?Sized + Serialize,
+{
+    let data = match serde_json::ser::to_vec(part) {
         Ok(data) => data,
         Err(error) => return Err(MapStoringError::JsonSerialization { source: error }),
     };
-    let mut map_header = Header::new_gnu();
-    map_header.set_entry_type(EntryType::Regular);
-    map_header.set_mode(0x400);
-    map_header.set_size(map_data.len().try_into().unwrap());
+
+    let mut header = Header::new_gnu();
+    header.set_entry_type(EntryType::Regular);
+    header.set_mode(0x400);
+    header.set_size(data.len().try_into().unwrap());
     storing_io_error!(
         archive
-            .append_data(
-                &mut map_header,
-                Path::new(MAP_JSON_ENTRY),
-                map_data.as_slice(),
-            )
+            .append_data(&mut header, Path::new(entry_name), data.as_slice())
             .await
     );
 
@@ -136,14 +174,16 @@ mod test {
 
     use super::*;
     use crate::{
-        description::{ActiveObject, InnerObject, Map, Object},
+        content::{ActiveObject, InnerObject, Object},
+        map::Map,
+        meta::MapMetadata,
         size::MapBounds,
     };
 
     #[test]
     fn test_store_load() {
         let bounds = MapBounds::new(Vec2::new(1000., 2000.));
-        let mut map = Map::empty(bounds, Player::Player4);
+        let mut map = Map::empty(MapMetadata::new(bounds, Player::Player4));
 
         let bases = [
             (Vec2::new(-400., -900.), Player::Player1),
@@ -170,7 +210,7 @@ mod test {
         let loaded_map = task::block_on(load_map(tmp_dir_path.as_path())).unwrap();
 
         assert_eq!(
-            loaded_map.bounds().aabb(),
+            loaded_map.metadata().bounds().aabb(),
             Aabb::new(Point::new(-500., -1000.), Point::new(500., 1000.))
         );
     }
