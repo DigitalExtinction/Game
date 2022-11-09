@@ -8,6 +8,7 @@ pub enum AppState {
 pub enum MenuState {
     None,
     MainMenu,
+    MapSelection,
 }
 
 /// Phase of an already started game. The game might be still loading or

@@ -1,9 +1,5 @@
 use bevy::prelude::*;
-use de_core::{
-    gconfig::GameConfig,
-    player::Player,
-    state::{AppState, GameState, MenuState},
-};
+use de_core::state::MenuState;
 use iyes_loopless::prelude::*;
 
 use crate::menu::{despawn_root_nodes, Text};
@@ -44,10 +40,7 @@ fn button_system(
 ) {
     for &interaction in interactions.iter() {
         if let Interaction::Clicked = interaction {
-            commands.insert_resource(GameConfig::new("maps/huge.dem.tar", Player::Player1));
-            commands.insert_resource(NextState(MenuState::None));
-            commands.insert_resource(NextState(AppState::InGame));
-            commands.insert_resource(NextState(GameState::Loading));
+            commands.insert_resource(NextState(MenuState::MapSelection));
         }
     }
 }

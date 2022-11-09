@@ -1783,9 +1783,13 @@ dependencies = [
 name = "de_menu"
 version = "0.1.0-dev"
 dependencies = [
+ "async-std",
  "bevy",
  "de_core",
+ "de_map",
+ "futures-lite",
  "iyes_loopless",
+ "thiserror",
 ]
 
 [[package]]
