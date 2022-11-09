@@ -183,7 +183,7 @@ mod test {
     #[test]
     fn test_store_load() {
         let bounds = MapBounds::new(Vec2::new(1000., 2000.));
-        let mut map = Map::empty(MapMetadata::new(bounds, Player::Player4));
+        let mut map = Map::empty(MapMetadata::new("Test Map".into(), bounds, Player::Player4));
 
         let bases = [
             (Vec2::new(-400., -900.), Player::Player1),
