@@ -8,7 +8,7 @@ use de_camera::CameraPluginGroup;
 use de_combat::CombatPluginGroup;
 use de_controller::ControllerPluginGroup;
 use de_core::{
-    state::{AppState, GameState},
+    state::{AppState, GameState, MenuState},
     CorePluginGroup,
 };
 use de_index::IndexPluginGroup;
@@ -58,6 +58,7 @@ struct GamePlugin;
 impl Plugin for GamePlugin {
     fn build(&self, app: &mut App) {
         app.add_loopless_state(AppState::InMenu)
+            .add_loopless_state(MenuState::MainMenu)
             .add_loopless_state(GameState::None);
     }
 }
