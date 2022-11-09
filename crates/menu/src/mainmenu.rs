@@ -15,7 +15,7 @@ impl Plugin for MainMenuPlugin {
     fn build(&self, app: &mut App) {
         app.add_enter_system(AppState::InMenu, setup)
             .add_exit_system(AppState::InMenu, cleanup)
-            .add_system(button_system);
+            .add_system(button_system.run_in_state(AppState::InMenu));
     }
 }
 
