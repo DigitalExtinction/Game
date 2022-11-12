@@ -123,6 +123,10 @@ of Rust.
 
 # Roadmap
 
+Bellow is a high-level roadmap. Also, see [Issue
+#246](https://github.com/DigitalExtinction/Game/issues/246) with a detailed
+path toward version 0.1.
+
 1. [MVP](https://github.com/DigitalExtinction/Game/milestone/1)
 1. Release (first) [version
    0.1](https://github.com/DigitalExtinction/Game/milestone/2)
