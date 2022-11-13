@@ -1,7 +1,7 @@
 # Digital Extinction
 
 Digital Extinction is a 3D real-time strategy (RTS) game. It is set in the near
-future where humans and AI fight over their existence.
+future when humans and AI fight over their existence.
 
 It is [open source & free software](#license). Forever! It runs on Linux,
 Windows and potentially other platforms.
@@ -13,14 +13,14 @@ The game is completely written in [Rust](https://www.rust-lang.org/) with
 
 # Status
 
-The game is still in [early phases](#roadmap) of its development. If you are
-looking for a mature game, come back in a few months.
+The game is still in [the early phases](#roadmap) of its development. If you
+are looking for a mature game, come back in a few months.
 
-Feedback, bug reports and other [contributions](#contributing) are welcomed.
+Feedback, bug reports, and other [contributions](#contributing) are welcome.
 
 # How to Play?
 
-Game controls & game play tutorial is at [TUTORIAL.md](/TUTORIAL.md).
+Game controls & gameplay tutorial is at [TUTORIAL.md](/TUTORIAL.md).
 
 ## Using Build from `main` Branch
 
@@ -28,7 +28,7 @@ A ZIP file with a binary and all assets is produced by a GitHub Action which is
 run on every push to `main` branch. You can browse the actions
 [here](https://github.com/DigitalExtinction/Game/actions).
 
-On a “usual setup” it is sufficient to extract the ZIP file and execute the
+On a “usual setup,” it is sufficient to extract the ZIP file and execute the
 binary called `de` or `de.exe`.
 
 ## Building from Source
@@ -39,7 +39,7 @@ What you need:
 * [Git LFS](https://git-lfs.github.com/)
 * [Rust](https://www.rust-lang.org/tools/install)
 
-Clone, build & run recipe (will work in majority of the cases):
+Clone, build & run recipe (will work in the majority of the cases):
 
 * `git clone git@github.com:DigitalExtinction/Game.git DigitalExtinction`
 * `cd DigitalExtinction`
@@ -48,19 +48,19 @@ Clone, build & run recipe (will work in majority of the cases):
 
 # Build Profiles
 
-Link time optimizations (LTO) are enabled on release profile. Thus release
+Link time optimizations (LTO) are enabled on `release` profile. Thus release
 build takes a long time.
 
 ## Testing Profile
 
 On top of the standard Cargo build profiles, there is a `testing` profile
-optimized for manual testing of the game. In this profile, extra checks and
-debug info is included in the build. LTO is disabled and optimization level is
-fine tuned for fast compilation times while keeping performance reasonable.
+optimized for manual testing. In this profile, extra checks and debug info are
+included in the build. LTO is disabled and the optimization level is fine-tuned
+for fast compilation times while keeping performance reasonable.
 
 # Where to Get Help?
 
-* Open a question in [Q&A category of this repository's
+* Open a question in [the Q&A category of this repository's
   discussions](https://github.com/DigitalExtinction/Game/discussions/categories/q-a).
 
 # Community
@@ -74,29 +74,29 @@ fine tuned for fast compilation times while keeping performance reasonable.
 # Goals
 
 Many of the goals are intentionally vague and aspirational. They serve as a
-general direction for the future development. All changes and decisions shall
-go hand in hand with the spirit of the following goals.
+general direction for future development. All changes and decisions shall go
+hand in hand with the spirit of the following goals.
 
 * Develop a forever free (as in free speech) and open source RTS game. A game
-  without the restraints of commercial development – no marketing motivated
+  without the restraints of commercial development – no marketing-motivated
   features, no dopamine traps, no in-game purchases…
 
 * Design an original game, not yet another clone of an existing (and often a
   very old) game. The game is a combination of tried and true concepts and
-  mechanics from RTS genre with new and innovative ideas.
+  mechanics from the RTS genre with new and innovative ideas.
 
-* Create a true **strategy** game, where dexterity or APS do not play primary
-  role.
+* Create a true **strategy** game, where dexterity or APS do not play the
+  primary role.
 
 * Focus on exponential in-game technological and economical progress. Players
   who consistently outperform their competitors for extended times prevail.
-  Short term boosts and performance fluctuations do have proportionately small
-  impact on the game results.
+  Short-term boosts and performance fluctuations do have a proportionately
+  small impact on the game results.
 
 * Produce a modern game, unchained from obsoleted constraints and utilizing
   current technology. Truly utilize the power of modern multi-core CPUs and
-  other capable hardware with the help of the advances in software development,
-  like fearless concurrency of Rust programming language, or ECS based Bevy
+  other capable hardware with the help of advances in software development,
+  like fearless concurrency of Rust programming language, or ECS-based Bevy
   engine.
 
   Seize this technological opportunity to create an RTS of grand scale, with
@@ -104,7 +104,7 @@ go hand in hand with the spirit of the following goals.
 
 * Develop the game indefinitely and incrementally. To regularly ship a new
   version (rolling release) and to forever improve the game based on new
-  experience and new ideas.
+  experiences and new ideas.
 
 * Show that non-trivial games could be created in Rust and by extension Bevy
   engine.
