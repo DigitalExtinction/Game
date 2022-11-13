@@ -102,6 +102,7 @@ mod test {
     #[test]
     fn test_map() {
         let mut map = Map::empty(MapMetadata::new(
+            "Test Map".into(),
             MapBounds::new(Vec2::new(1000., 1000.)),
             Player::Player3,
         ));
@@ -141,7 +142,11 @@ mod test {
         ));
 
         let map = Map::new(
-            MapMetadata::new(MapBounds::new(Vec2::new(5., 5.)), Player::Player4),
+            MapMetadata::new(
+                "Test Map".into(),
+                MapBounds::new(Vec2::new(5., 5.)),
+                Player::Player4,
+            ),
             content,
         );
 

@@ -10,7 +10,10 @@ use async_tar::{Archive, Builder, Entry, EntryType, Header};
 use serde::{de::DeserializeOwned, Serialize};
 use thiserror::Error;
 
-use crate::map::{Map, MapValidationError};
+use crate::{
+    map::{Map, MapValidationError},
+    meta::MapMetadata,
+};
 
 macro_rules! loading_io_error {
     ($expression:expr) => {
@@ -30,11 +33,38 @@ macro_rules! storing_io_error {
     };
 }
 
+/// Maps are normally named with this suffix.
+pub const MAP_FILE_SUFFIX: &str = ".dem.tar";
 const METADATA_JSON_ENTRY: &str = "metadata.json";
 const CONTENT_JSON_ENTRY: &str = "content.json";
 
 type LoadingResult<T> = Result<T, MapLoadingError>;
 type StoringResult = Result<(), MapStoringError>;
+
+/// Load map metadata from a map file.
+pub async fn load_metadata<P: AsRef<Path>>(path: P) -> LoadingResult<MapMetadata> {
+    let mut file = loading_io_error!(File::open(&path).await);
+    let archive = Archive::new(&mut file);
+    let mut entries = loading_io_error!(archive.entries());
+
+    while let Some(entry) = entries.next().await {
+        let mut entry = loading_io_error!(entry);
+        let path = loading_io_error!(entry.path());
+        let Some(path) = path.to_str() else {
+            return Err(MapLoadingError::ArchiveContent(
+                String::from("The map archive contains an entry with non-UTF-8 path.")));
+        };
+
+        if path == METADATA_JSON_ENTRY {
+            return deserialize_entry(&mut entry).await;
+        }
+    }
+
+    Err(MapLoadingError::ArchiveContent(format!(
+        "{} entry is not present",
+        METADATA_JSON_ENTRY
+    )))
+}
 
 /// Load a map TAR file.
 pub async fn load_map<P: AsRef<Path>>(path: P) -> LoadingResult<Map> {
@@ -183,7 +213,7 @@ mod test {
     #[test]
     fn test_store_load() {
         let bounds = MapBounds::new(Vec2::new(1000., 2000.));
-        let mut map = Map::empty(MapMetadata::new(bounds, Player::Player4));
+        let mut map = Map::empty(MapMetadata::new("Test Map".into(), bounds, Player::Player4));
 
         let bases = [
             (Vec2::new(-400., -900.), Player::Player1),
@@ -204,7 +234,7 @@ mod test {
 
         let tmp_dir = Builder::new().prefix("de_map_").tempdir().unwrap();
         let mut tmp_dir_path = PathBuf::from(tmp_dir.path());
-        tmp_dir_path.push("test-map.tar");
+        tmp_dir_path.push("test-map.dem.tar");
 
         task::block_on(store_map(&map, tmp_dir_path.as_path())).unwrap();
         let loaded_map = task::block_on(load_map(tmp_dir_path.as_path())).unwrap();
@@ -213,5 +243,16 @@ mod test {
             loaded_map.metadata().bounds().aabb(),
             Aabb::new(Point::new(-500., -1000.), Point::new(500., 1000.))
         );
+    }
+
+    #[test]
+    fn test_load_metadata() {
+        let manifest_dir = env!("CARGO_MANIFEST_DIR");
+        let mut map_path = PathBuf::from(manifest_dir);
+        map_path.push("tests");
+        map_path.push("test-map.dem.tar");
+
+        let metadata = task::block_on(load_metadata(map_path)).unwrap();
+        assert_eq!(metadata.name(), "A Test Map 🦀");
     }
 }

@@ -14,7 +14,11 @@ categories.workspace = true
 [dependencies]
 # DE
 de_core.workspace = true
+de_map.workspace = true
 
 # Other
+async-std.workspace = true
 bevy.workspace = true
+futures-lite.workspace = true
 iyes_loopless.workspace = true
+thiserror.workspace = true

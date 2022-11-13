@@ -4,10 +4,13 @@ use thiserror::Error;
 
 use crate::size::{MapBounds, MapBoundsValidationError};
 
+pub const MAX_MAP_NAME_LEN: usize = 16;
+
 /// General information about a map. It does not hold full content of the map
 /// (i.e. location of objects on the map).
 #[derive(Serialize, Deserialize)]
 pub struct MapMetadata {
+    name: String,
     bounds: MapBounds,
     max_player: Player,
 }
@@ -16,6 +19,8 @@ impl MapMetadata {
     /// Creates a new map description.
     ///
     /// # Arguments
+    ///
+    /// * `name` - name of the map.
     ///
     /// * `bounds` - bounds of the map.
     ///
@@ -26,10 +31,18 @@ impl MapMetadata {
     /// # Panics
     ///
     /// Panics if any of the map parameters is invalid.
-    pub fn new(bounds: MapBounds, max_player: Player) -> Self {
-        let map = Self { bounds, max_player };
+    pub fn new(name: String, bounds: MapBounds, max_player: Player) -> Self {
+        let map = Self {
+            name,
+            bounds,
+            max_player,
+        };
         map.validate().unwrap();
         map
+    }
+
+    pub fn name(&self) -> &str {
+        self.name.as_str()
     }
 
     pub fn bounds(&self) -> MapBounds {
@@ -41,6 +54,19 @@ impl MapMetadata {
     }
 
     pub(crate) fn validate(&self) -> Result<(), MapMetadataValidationError> {
+        if self.name.is_empty() {
+            return Err(MapMetadataValidationError::MapName(
+                "map name is empty".into(),
+            ));
+        }
+        if self.name.len() > MAX_MAP_NAME_LEN {
+            return Err(MapMetadataValidationError::MapName(format!(
+                "map name too long: {} > {}",
+                self.name.len(),
+                MAX_MAP_NAME_LEN
+            )));
+        }
+
         if let Err(error) = self.bounds.validate() {
             return Err(MapMetadataValidationError::MapBounds { source: error });
         }
@@ -55,6 +81,8 @@ impl MapMetadata {
 
 #[derive(Error, Debug)]
 pub enum MapMetadataValidationError {
+    #[error("invalid map name: {0}")]
+    MapName(String),
     #[error("invalid map bounds")]
     MapBounds { source: MapBoundsValidationError },
     #[error("map has to have at least 2 players, got {0}")]
