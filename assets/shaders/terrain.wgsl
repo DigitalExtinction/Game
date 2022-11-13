@@ -80,7 +80,7 @@ fn nearest(uv: vec2<f32>) -> u32 {
     var stack_size: u32 = 1u;
     // Make sure that the stack size is large enought to cover balanced three
     // of size MAX_KD_TREE_SIZE.
-    var stack: array<Next, 12>;
+    var stack: array<Next, 8>;
     stack[0].index = 0u;
     stack[0].potential = 0.;
     stack[0].depth = 0u;
