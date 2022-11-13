@@ -24,6 +24,10 @@
    duplicate work while working on non-trivial changes, please mention your
    intention to do the work in the appropriate issue.
 
+   You may consult [Indy's
+   Backlog](https://github.com/orgs/DigitalExtinction/projects/2) to see what
+   he intends to work on in the near future.
+
 1. Implement the changes. Do not forget to include appropriate unit tests and,
    when possible, thoroughly test you changes manually.
 
