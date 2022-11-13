@@ -151,8 +151,10 @@ jobs:
           sudo apt-get update
           sudo apt-get install --no-install-recommends -y libasound2-dev libudev-dev
       - run: rustc --version && cargo --version
+      - name: Install cargo-auditable
+        run: cargo install cargo-auditable
       - name: Build
-        run: cargo build --release
+        run: cargo auditable build --release
 
       - name: Prepare Build Files
         shell: bash
