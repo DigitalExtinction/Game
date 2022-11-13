@@ -33,6 +33,8 @@ macro_rules! storing_io_error {
     };
 }
 
+/// Maps are normally named with this suffix.
+pub const MAP_FILE_SUFFIX: &str = ".dem.tar";
 const METADATA_JSON_ENTRY: &str = "metadata.json";
 const CONTENT_JSON_ENTRY: &str = "content.json";
 
@@ -232,7 +234,7 @@ mod test {
 
         let tmp_dir = Builder::new().prefix("de_map_").tempdir().unwrap();
         let mut tmp_dir_path = PathBuf::from(tmp_dir.path());
-        tmp_dir_path.push("test-map.tar");
+        tmp_dir_path.push("test-map.dem.tar");
 
         task::block_on(store_map(&map, tmp_dir_path.as_path())).unwrap();
         let loaded_map = task::block_on(load_map(tmp_dir_path.as_path())).unwrap();
@@ -248,7 +250,7 @@ mod test {
         let manifest_dir = env!("CARGO_MANIFEST_DIR");
         let mut map_path = PathBuf::from(manifest_dir);
         map_path.push("tests");
-        map_path.push("test-map.tar");
+        map_path.push("test-map.dem.tar");
 
         let metadata = task::block_on(load_metadata(map_path)).unwrap();
         assert_eq!(metadata.name(), "A Test Map 🦀");
