@@ -23,34 +23,44 @@ use de_terrain::TerrainPluginGroup;
 use de_ui::UiPluginGroup;
 use iyes_loopless::prelude::*;
 
+const CARGO_PKG_VERSION: &str = env!("CARGO_PKG_VERSION");
+const GIT_SHA: &str = env!("GIT_SHA");
+
 fn main() {
-    App::new()
-        .insert_resource(WindowDescriptor {
-            title: "Digital Extinction".to_string(),
-            mode: WindowMode::BorderlessFullscreen,
-            ..Default::default()
-        })
-        .insert_resource(Msaa { samples: 4 })
-        .add_plugins(DefaultPlugins)
-        .add_plugin(LogDiagnosticsPlugin::default())
-        .add_plugin(FrameTimeDiagnosticsPlugin::default())
-        .add_plugin(GamePlugin)
-        .add_plugins(MenuPluginGroup)
-        .add_plugins(CorePluginGroup)
-        .add_plugins(ObjectsPluginGroup)
-        .add_plugins(TerrainPluginGroup)
-        .add_plugins(LoaderPluginGroup)
-        .add_plugins(IndexPluginGroup)
-        .add_plugins(PathingPluginGroup)
-        .add_plugins(SignsPluginGroup)
-        .add_plugins(SpawnerPluginGroup)
-        .add_plugins(MovementPluginGroup)
-        .add_plugins(ControllerPluginGroup)
-        .add_plugins(CameraPluginGroup)
-        .add_plugins(BehaviourPluginGroup)
-        .add_plugins(CombatPluginGroup)
-        .add_plugins(UiPluginGroup)
-        .run();
+    let mut app = App::new();
+    app.insert_resource(WindowDescriptor {
+        title: "Digital Extinction".to_string(),
+        mode: WindowMode::BorderlessFullscreen,
+        ..Default::default()
+    })
+    .insert_resource(Msaa { samples: 4 })
+    .add_plugins(DefaultPlugins)
+    .add_plugin(LogDiagnosticsPlugin::default())
+    .add_plugin(FrameTimeDiagnosticsPlugin::default())
+    .add_plugin(GamePlugin)
+    .add_plugins(MenuPluginGroup)
+    .add_plugins(CorePluginGroup)
+    .add_plugins(ObjectsPluginGroup)
+    .add_plugins(TerrainPluginGroup)
+    .add_plugins(LoaderPluginGroup)
+    .add_plugins(IndexPluginGroup)
+    .add_plugins(PathingPluginGroup)
+    .add_plugins(SignsPluginGroup)
+    .add_plugins(SpawnerPluginGroup)
+    .add_plugins(MovementPluginGroup)
+    .add_plugins(ControllerPluginGroup)
+    .add_plugins(CameraPluginGroup)
+    .add_plugins(BehaviourPluginGroup)
+    .add_plugins(CombatPluginGroup)
+    .add_plugins(UiPluginGroup);
+
+    // This has to be after LogPlugin is inserted.
+    info!(
+        "Starting Digital Extinction {{ \"Version\": \"{}\", \"GitSha\": \"{}\" }}",
+        CARGO_PKG_VERSION, GIT_SHA
+    );
+
+    app.run();
 }
 
 struct GamePlugin;

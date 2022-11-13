@@ -90,7 +90,7 @@ async-std = "1.11"
 async-tar = "0.4.2"
 bevy = "0.8"
 clap = { version = "3.2.6", features = ["derive"] }
-criterion = "0.3"
+criterion = "0.4"
 enum-map = "2.3.0"
 futures-lite = "1.11"
 glam = "0.21"
