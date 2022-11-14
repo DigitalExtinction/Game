@@ -31,6 +31,8 @@ jobs:
         run: cargo doc --no-deps --all-features --workspace --document-private-items
       - name: Create CNAME
         run: echo "docs.de-game.org" > target/doc/CNAME
+      - name: Add index
+        run: cp doc/index.html target/doc/index.html
       - name: Upload Artifact
         uses: actions/upload-pages-artifact@v1
         with:
