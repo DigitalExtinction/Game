@@ -152,7 +152,7 @@ jobs:
           sudo apt-get install --no-install-recommends -y libasound2-dev libudev-dev
       - run: rustc --version && cargo --version
       - name: Install cargo-auditable
-        run: cargo install cargo-auditable
+        run: cargo install --force cargo-auditable
       - name: Build
         run: cargo auditable build --release
 
