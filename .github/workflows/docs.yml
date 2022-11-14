@@ -1,0 +1,56 @@
+name: Docs
+
+on:
+  push:
+    branches:
+      - main
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: true
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Install Linux Dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install --no-install-recommends -y libasound2-dev libudev-dev
+      - name: Rust Toolchain
+        uses: dtolnay/rust-toolchain@stable
+      - name: Versions
+        run: rustc --version && cargo --version
+      - name: Build Docs
+        run: cargo doc --no-deps --all-features --workspace --document-private-items
+      - name: Create CNAME
+        run: echo "docs.de-game.org" > target/doc/CNAME
+      - name: Upload Artifact
+        uses: actions/upload-pages-artifact@v1
+        with:
+          path: target/doc/
+
+  deploy:
+    name: Deploy
+    needs: build
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v1

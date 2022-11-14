@@ -72,6 +72,9 @@
 
 ## Getting Oriented
 
+Rust documentation is automatically build and deployed from `main` branch to
+[docs.de-game.org](https://docs.de-game.org/).
+
 The game is split into multiple [crates](/crates), each implementing part of
 the game logic. This repository contains a Cargo workspace which consists of
 all the sub-crates.
