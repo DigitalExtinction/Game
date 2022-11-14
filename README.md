@@ -65,6 +65,8 @@ for fast compilation times while keeping performance reasonable.
 
 # Community
 
+See [Contributor Covenant Code of Conduct](CODE_OF_CONDUCT.md).
+
 * [Digital Extinction Updates](https://mgn.cz/categories/de-updates/)
 
 * [Discord server](https://discord.gg/vHMFuCWGSX)
