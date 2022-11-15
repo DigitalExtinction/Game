@@ -6,7 +6,7 @@ use de_spawner::SpawnerLabels;
 use iyes_loopless::prelude::*;
 use parry3d::query::Ray;
 
-use crate::{sightline::LineOfSight, AttackingLabels};
+use crate::{sightline::LineOfSight, trail::TrailEvent, AttackingLabels};
 
 pub(crate) struct LaserPlugin;
 
@@ -78,6 +78,7 @@ fn fire(
     sightline: LineOfSight,
     mut susceptible: Query<&mut Health>,
     mut bar: EventWriter<UpdateBarValueEvent>,
+    mut trail: EventWriter<TrailEvent>,
 ) {
     for fire in fires.iter() {
         if susceptible
@@ -88,6 +89,12 @@ fn fire(
         }
 
         let observation = sightline.sight(fire.ray(), fire.max_toi(), fire.attacker());
+
+        trail.send(TrailEvent::new(Ray::new(
+            fire.ray().origin,
+            observation.toi() * fire.ray().dir,
+        )));
+
         if let Some(entity) = observation.entity() {
             let mut health = susceptible.get_mut(entity).unwrap();
             health.hit(fire.damage());
