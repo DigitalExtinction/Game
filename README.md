@@ -156,7 +156,7 @@ earliest possible version, minimizing development time and effort, which is
 threshold enjoyable for an actual player.
 
 As opposed to MVP, this version has all the basic UI to make the UX acceptable.
-The game mechanics is somewhat expanded so it is no longer thoroughly "dummy".
+The game mechanics are somewhat expanded so it is no longer thoroughly “dummy”.
 
 # License
 
