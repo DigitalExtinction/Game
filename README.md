@@ -129,14 +129,15 @@ Bellow is a high-level roadmap. Also, see [Issue
 #246](https://github.com/DigitalExtinction/Game/issues/246) with a detailed
 path toward version 0.1.
 
-1. [MVP](https://github.com/DigitalExtinction/Game/milestone/1)
+1. [Proof of Concept
+   (PoC)](https://github.com/DigitalExtinction/Game/milestone/1)
 1. Release (first) [version
    0.1](https://github.com/DigitalExtinction/Game/milestone/2)
 1. Publicly announce the game:
    [#60](https://github.com/DigitalExtinction/Game/issues/60)
 1. [Indefinitely improve the game](/CONTRIBUTING.md#development-process)
 
-## MVP
+## Proof of Concept
 
 This is an embarrassingly bare bones game. It is complete in the sense that you
 can start the game, play against someone and win or loose.
@@ -155,7 +156,7 @@ This is the first published version of the game. In theory, this should be the
 earliest possible version, minimizing development time and effort, which is
 threshold enjoyable for an actual player.
 
-As opposed to MVP, this version has all the basic UI to make the UX acceptable.
+As opposed to PoC, this version has all the basic UI to make the UX acceptable.
 The game mechanics are somewhat expanded so it is no longer thoroughly “dummy”.
 
 # License
