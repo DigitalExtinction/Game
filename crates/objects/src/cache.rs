@@ -102,7 +102,7 @@ impl CacheLoader {
                 ObjectType::Active(ActiveObjectType::Building(BuildingType::PowerHub))
                     => ItemLoader::from_name(server, "powerhub"),
                 ObjectType::Active(ActiveObjectType::Unit(UnitType::Attacker))
-                    => ItemLoader::from_name(server, "attacker"),
+                    => ItemLoader::from_name(server, "monk_tank"),
                 ObjectType::Inactive(InactiveObjectType::Tree)
                     => ItemLoader::from_name(server, "tree"),
             },
