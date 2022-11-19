@@ -164,9 +164,8 @@ would lead to frequent back and forth conversions.
 
 * 3D models need to be exported into glTF format.
 
-* Whenever applicable and desirable by the author, track the original 3D
-  modeling project file (e.g. .blend file from Blender) alongside the exported
-  model.
+* Whenever applicable and desirable by the author, add the original 3D modeling
+  project file (e.g. .blend file from Blender) to `/projects/` directory.
 
 * The +Y axis points upwards, and the front of the model points in the +X
   direction.
