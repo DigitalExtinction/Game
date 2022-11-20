@@ -1,9 +1,6 @@
 name: Docs
 
-on:
-  push:
-    branches:
-      - main
+on: [push, pull_request]
 
 concurrency:
   group: "pages"
@@ -15,31 +12,43 @@ env:
 jobs:
   build:
     name: Build
+    if: github.event.pull_request.draft == false
+
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v3
+        with:
+          submodules: true
       - name: Install Linux Dependencies
         run: |
           sudo apt-get update
           sudo apt-get install --no-install-recommends -y libasound2-dev libudev-dev
+      - name: Install Zola
+        run: |
+          wget -q -O - \
+          "https://github.com/getzola/zola/releases/download/v0.16.1/zola-v0.16.1-x86_64-unknown-linux-gnu.tar.gz" \
+          | sudo tar xzf - -C /usr/bin
       - name: Rust Toolchain
         uses: dtolnay/rust-toolchain@stable
       - name: Versions
-        run: rustc --version && cargo --version
-      - name: Build Docs
+        run: rustc --version && cargo --version && zola --version
+      - name: Build Rust Docs
         run: cargo doc --no-deps --all-features --workspace --document-private-items
-      - name: Create CNAME
-        run: echo "docs.de-game.org" > target/doc/CNAME
-      - name: Add index
-        run: cp docs/index.html target/doc/index.html
+      - name: Move Rust Docs
+        run: mv target/doc/ docs/static/rust
+      - name: Build Zola Docs
+        working-directory: docs
+        run: zola build
       - name: Upload Artifact
         uses: actions/upload-pages-artifact@v1
         with:
-          path: target/doc/
+          path: docs/public/
 
   deploy:
     name: Deploy
+    if: github.ref == 'refs/heads/main'
+
     needs: build
     runs-on: ubuntu-latest
 
