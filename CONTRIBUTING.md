@@ -136,7 +136,8 @@ Topologically sorted crates:
   * [/assets/maps](/assets/maps) — game maps.
   * [/assets/models](/assets/models) — 3D models in [glTF
     2.0](https://registry.khronos.org/glTF/specs/2.0/glTF-2.0.html) format.
-  * [/assets/objects](/assets/objects) — game object definitions.
+  * [/assets/objects](/assets/objects) — game [object
+    definitions](https://docs.de-game.org/objects/).
   * …
 
 * [/crates](/crates) — the game comprises many small crates in a single
