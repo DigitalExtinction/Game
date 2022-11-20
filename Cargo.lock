@@ -1884,6 +1884,7 @@ name = "de_tools"
 version = "0.1.0-dev"
 dependencies = [
  "clap",
+ "glam",
  "gltf",
  "parry3d",
 ]

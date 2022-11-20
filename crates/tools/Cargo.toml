@@ -12,6 +12,7 @@ license.workspace = true
 categories.workspace = true
 
 [dependencies]
+glam.workspace = true
 gltf.workspace = true
 parry3d.workspace = true
 clap.workspace = true
