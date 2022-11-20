@@ -128,6 +128,39 @@ Topologically sorted crates:
 
 * [controller](/crates/controller) – handling of user input.
 
+### Repository Structure
+
+* [/assets](/assets) — all game assets are located here. These are distributed
+  together with the game executable.
+
+  * [/assets/maps](/assets/maps) — game maps.
+  * [/assets/models](/assets/models) — 3D models in [glTF
+    2.0](https://registry.khronos.org/glTF/specs/2.0/glTF-2.0.html) format.
+  * [/assets/objects](/assets/objects) — game object definitions.
+  * …
+
+* [/crates](/crates) — the game comprises many small crates in a single
+  [workspace](https://doc.rust-lang.org/cargo/reference/workspaces.html), all
+  of them except the main crate (`de_game`) are located in this directory.
+
+  Each sub-directory contains sources of a crate whose name is the same as the
+  name of its directory plus the `de_` prefix.
+
+* [/projects](/projects) — project files (e.g. Blender `.blend` files) used
+  during creation of the assets.
+
+* [/docs](/docs) — technical documentation of the game. The documentation is
+  automatically extended with Rust docs and deployed to
+  [docs.de-game.org](https://docs.de-game.org/) from the `main` branch.
+
+* [/src](/src) — source code of the main crate (`de_game`). All of the game
+  functionality is broken down into separate crates. The purpose of the main
+  crate is to put everything together via Bevy's plugin groups, thus its source
+  code is very compact.
+
+* [/utils](/utils) — various utilities (e.g. small Python scripts) intended for
+  contributors.
+
 ### Bevy Schedule Stages
 
 See de_core::stages::GameStage.
