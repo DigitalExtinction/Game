@@ -162,7 +162,8 @@ would lead to frequent back and forth conversions.
 * 3D models (buildings, units, map elements, etc.) are located in
   [/assets/models](/assets/models).
 
-* 3D models need to be exported into glTF format.
+* 3D models need to be exported into [glTF
+  2.0](https://registry.khronos.org/glTF/specs/2.0/glTF-2.0.html) format.
 
 * Whenever applicable and desirable by the author, add the original 3D modeling
   project file (e.g. .blend file from Blender) to `/projects/` directory.
