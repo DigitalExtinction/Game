@@ -1,4 +1,6 @@
-assets/maps/* filter=lfs diff=lfs merge=lfs -text
-assets/textures/* filter=lfs diff=lfs merge=lfs -text
 assets/fonts/**/*.ttf filter=lfs diff=lfs merge=lfs -text
+assets/maps/* filter=lfs diff=lfs merge=lfs -text
+assets/models/* filter=lfs diff=lfs merge=lfs -text
+assets/textures/* filter=lfs diff=lfs merge=lfs -text
+projects/** filter=lfs diff=lfs merge=lfs -text
 video.png filter=lfs diff=lfs merge=lfs -text
