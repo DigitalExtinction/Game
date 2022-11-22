@@ -415,11 +415,12 @@ fn pivot_event(
     keys: Res<Input<KeyCode>>,
     mut mouse_event: EventReader<MouseMotion>,
 ) {
+    let delta = mouse_event.iter().fold(Vec2::ZERO, |sum, e| sum + e.delta);
+
     if !buttons.pressed(MouseButton::Middle) && !keys.pressed(KeyCode::LShift) {
         return;
     }
 
-    let delta = mouse_event.iter().fold(Vec2::ZERO, |sum, e| sum + e.delta);
     if delta == Vec2::ZERO {
         return;
     }
