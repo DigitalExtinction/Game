@@ -99,7 +99,7 @@ itertools = "0.10.5"
 iyes_loopless = "0.9.1"
 iyes_progress = { version = "0.7.1", features = [ "iyes_loopless" ] }
 nalgebra = { version = "0.31.0", features = ["convert-glam022"] }
-ntest = "0.8.0"
+ntest = "0.9.0"
 parry2d = "0.11.0"
 parry3d = "0.11.0"
 # Use released version once this
