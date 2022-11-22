@@ -9,8 +9,8 @@ let FOREGROUND_COLOR = vec4<f32>(0.6, 1., 0.6, 0.75);
 var<uniform> value: f32;
 
 struct Vertex {
-    @location(0) position: vec3<f32>,
-    @location(2) uv: vec2<f32>,
+    @location(0) position: vec2<f32>,
+    @location(1) uv: vec2<f32>,
 };
 
 struct VertexOutput {
@@ -29,7 +29,7 @@ fn vertex(vertex: Vertex) -> VertexOutput {
     out.clip_position = mesh_position_local_to_clip(mesh.model, vec4<f32>(0., 0., 0., 1.0));
 
     let scale = max(1., out.clip_position.w / 40.);
-    out.clip_position += vec4<f32>(scale * vertex.position.xy, 0., 0.);
+    out.clip_position += vec4<f32>(scale * vertex.position, 0., 0.);
 
     out.x = vertex.uv.x;
     return out;

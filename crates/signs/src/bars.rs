@@ -1,10 +1,13 @@
 use bevy::{
-    pbr::{NotShadowCaster, NotShadowReceiver},
+    pbr::{MaterialPipeline, MaterialPipelineKey, NotShadowCaster, NotShadowReceiver},
     prelude::*,
     reflect::TypeUuid,
     render::{
-        mesh::Indices,
-        render_resource::{AsBindGroup, PrimitiveTopology, ShaderRef},
+        mesh::{Indices, MeshVertexAttribute, MeshVertexBufferLayout},
+        render_resource::{
+            AsBindGroup, PrimitiveTopology, RenderPipelineDescriptor, ShaderRef,
+            SpecializedMeshPipelineError, VertexFormat,
+        },
     },
 };
 use de_camera::{CameraDistance, DistanceLabels};
@@ -22,6 +25,9 @@ use crate::{DISTANCE_FLAG_BIT, MAX_VISIBILITY_DISTANCE};
 /// Vertical distance in meters between the bar center and the top of the
 /// parent entity collider.
 const BAR_HEIGHT: f32 = 2.;
+
+const ATTRIBUTE_POSITION: MeshVertexAttribute =
+    MeshVertexAttribute::new("Position", 732918835, VertexFormat::Float32x2);
 
 pub(crate) struct BarsPlugin;
 
@@ -151,6 +157,20 @@ impl Material for BarMaterial {
     fn alpha_mode(&self) -> AlphaMode {
         AlphaMode::Blend
     }
+
+    fn specialize(
+        _pipeline: &MaterialPipeline<Self>,
+        descriptor: &mut RenderPipelineDescriptor,
+        layout: &MeshVertexBufferLayout,
+        _key: MaterialPipelineKey<Self>,
+    ) -> Result<(), SpecializedMeshPipelineError> {
+        let vertex_layout = layout.get_layout(&[
+            ATTRIBUTE_POSITION.at_shader_location(0),
+            Mesh::ATTRIBUTE_UV_0.at_shader_location(1),
+        ])?;
+        descriptor.vertex.buffers = vec![vertex_layout];
+        Ok(())
+    }
 }
 
 #[derive(Component)]
@@ -249,17 +269,13 @@ fn update_visibility_distance(
 fn bar_mesh(width: f32, height: f32) -> Mesh {
     let mut mesh = Mesh::new(PrimitiveTopology::TriangleList);
     mesh.insert_attribute(
-        Mesh::ATTRIBUTE_POSITION,
+        ATTRIBUTE_POSITION,
         vec![
-            [-0.5 * width, 0.5 * height, 0.],
-            [-0.5 * width, -0.5 * height, 0.],
-            [0.5 * width, -0.5 * height, 0.],
-            [0.5 * width, 0.5 * height, 0.],
+            [-0.5 * width, 0.5 * height],
+            [-0.5 * width, -0.5 * height],
+            [0.5 * width, -0.5 * height],
+            [0.5 * width, 0.5 * height],
         ],
-    );
-    mesh.insert_attribute(
-        Mesh::ATTRIBUTE_NORMAL,
-        vec![[0., 0., 1.], [0., 0., 1.], [0., 0., 1.], [0., 0., 1.]],
     );
     mesh.insert_attribute(
         Mesh::ATTRIBUTE_UV_0,
