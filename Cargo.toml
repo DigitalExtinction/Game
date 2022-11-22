@@ -45,8 +45,8 @@ de_terrain.workspace = true
 de_ui.workspace = true
 
 # Other
-bevy = "0.8"
-iyes_loopless = "0.7"
+bevy.workspace = true
+iyes_loopless.workspace = true
 
 [workspace]
 members = ["crates/*"]
