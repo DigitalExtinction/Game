@@ -64,20 +64,25 @@ impl Trail {
         self.0 += duration;
     }
 
-    fn as_secs(&self) -> f32 {
-        self.0.as_secs_f32()
-    }
-
     fn finished(&self) -> bool {
         self.0 >= TRAIL_LIFESPAN
     }
 }
 
-#[derive(AsBindGroup, TypeUuid, Debug, Clone, Default)]
+#[derive(AsBindGroup, TypeUuid, Debug, Clone)]
 #[uuid = "560ab431-1a54-48b3-87ea-8de8d94ceafb"]
 struct TrailMaterial {
     #[uniform(0)]
-    time: f32,
+    start_time: f32,
+}
+
+impl TrailMaterial {
+    /// # Arguments
+    ///
+    /// `start_time` - wrapped time since the application startup.
+    fn new(start_time: f32) -> Self {
+        Self { start_time }
+    }
 }
 
 impl Material for TrailMaterial {
@@ -103,14 +108,15 @@ impl Material for TrailMaterial {
 fn spawn(
     mut commands: Commands,
     mut materials: ResMut<Assets<TrailMaterial>>,
+    time: Res<Time>,
     mesh: Res<MeshHandle>,
     mut events: EventReader<TrailEvent>,
 ) {
     for event in events.iter() {
-        let material = materials.add(TrailMaterial::default());
+        let material = materials.add(TrailMaterial::new(time.elapsed_seconds_wrapped()));
 
-        commands
-            .spawn(MaterialMeshBundle::<TrailMaterial> {
+        commands.spawn((
+            MaterialMeshBundle::<TrailMaterial> {
                 mesh: mesh.0.clone(),
                 material,
                 transform: Transform {
@@ -119,23 +125,17 @@ fn spawn(
                     scale: Vec3::new(event.ray().dir.norm(), 1., 1.),
                 },
                 ..Default::default()
-            })
-            .insert(Trail::default());
+            },
+            Trail::default(),
+        ));
     }
 }
 
-fn update(
-    mut commands: Commands,
-    time: Res<Time>,
-    mut materials: ResMut<Assets<TrailMaterial>>,
-    mut query: Query<(Entity, &mut Trail, &Handle<TrailMaterial>)>,
-) {
-    for (entity, mut trail, handle) in query.iter_mut() {
+fn update(mut commands: Commands, time: Res<Time>, mut query: Query<(Entity, &mut Trail)>) {
+    for (entity, mut trail) in query.iter_mut() {
         trail.tick(time.delta());
         if trail.finished() {
             commands.entity(entity).despawn();
-        } else {
-            materials.get_mut(handle).unwrap().time = trail.as_secs();
         }
     }
 }
