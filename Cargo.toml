@@ -89,7 +89,7 @@ approx = "0.5.1"
 async-std = "1.11"
 async-tar = "0.4.2"
 bevy = "0.9"
-clap = { version = "3.2.6", features = ["derive"] }
+clap = { version = "4.0", features = ["derive"] }
 criterion = "0.4"
 enum-map = "2.3.0"
 futures-lite = "1.11"
