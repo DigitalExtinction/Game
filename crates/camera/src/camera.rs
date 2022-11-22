@@ -123,6 +123,7 @@ impl MoveFocusEvent {
     }
 }
 
+#[derive(Resource)]
 struct CameraFocus {
     point: Vec3,
     distance: Metre,
@@ -163,7 +164,7 @@ enum HorizontalMovementDirection {
     Right,
 }
 
-#[derive(Default)]
+#[derive(Default, Resource)]
 struct HorizontalMovement {
     movement: Option<HorizontalMovementDirection>,
 }
@@ -182,6 +183,7 @@ impl HorizontalMovement {
     }
 }
 
+#[derive(Resource)]
 struct DesiredPoW {
     distance: Metre,
     off_nadir: Radian,
@@ -225,7 +227,7 @@ fn setup(mut commands: Commands) {
         point: Vec3::ZERO,
         distance: DEFAULT_CAMERA_DISTANCE,
     });
-    commands.spawn_bundle(Camera3dBundle {
+    commands.spawn(Camera3dBundle {
         transform: Transform::from_xyz(0.0, DEFAULT_CAMERA_DISTANCE.into(), 0.0)
             .looking_at(Vec3::ZERO, -Vec3::Z),
         ..Default::default()
@@ -413,11 +415,12 @@ fn pivot_event(
     keys: Res<Input<KeyCode>>,
     mut mouse_event: EventReader<MouseMotion>,
 ) {
+    let delta = mouse_event.iter().fold(Vec2::ZERO, |sum, e| sum + e.delta);
+
     if !buttons.pressed(MouseButton::Middle) && !keys.pressed(KeyCode::LShift) {
         return;
     }
 
-    let delta = mouse_event.iter().fold(Vec2::ZERO, |sum, e| sum + e.delta);
     if delta == Vec2::ZERO {
         return;
     }

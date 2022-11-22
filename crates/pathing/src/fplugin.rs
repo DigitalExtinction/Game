@@ -85,7 +85,7 @@ pub(crate) enum FinderLabel {
 /// through non-accessible area.
 pub(crate) struct PathFinderUpdated;
 
-#[derive(Clone)]
+#[derive(Clone, Resource)]
 pub(crate) struct FinderRes(Arc<PathFinder>);
 
 impl FinderRes {
@@ -106,6 +106,7 @@ impl Deref for FinderRes {
     }
 }
 
+#[derive(Resource)]
 struct UpdateFinderState {
     invalid: bool,
     task: Option<Task<PathFinder>>,

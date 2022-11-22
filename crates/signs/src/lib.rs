@@ -13,7 +13,9 @@ const DISTANCE_FLAG_BIT: u32 = 0;
 pub struct SignsPluginGroup;
 
 impl PluginGroup for SignsPluginGroup {
-    fn build(&mut self, group: &mut PluginGroupBuilder) {
-        group.add(BarsPlugin).add(MarkersPlugin);
+    fn build(self) -> PluginGroupBuilder {
+        PluginGroupBuilder::start::<Self>()
+            .add(BarsPlugin)
+            .add(MarkersPlugin)
     }
 }

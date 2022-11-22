@@ -30,6 +30,7 @@ impl Plugin for MapLoaderPlugin {
     }
 }
 
+#[derive(Resource)]
 struct MapLoadingTask(Task<Result<Map, MapLoadingError>>);
 
 fn load_map_system(mut commands: Commands, game_config: Res<GameConfig>) {
@@ -93,10 +94,10 @@ fn spawn_map(
     }
 
     setup_light(&mut commands);
-    commands.spawn_bundle(TerrainBundle::flat(map.metadata().bounds()));
+    commands.spawn(TerrainBundle::flat(map.metadata().bounds()));
 
     for object in map.content().objects() {
-        let mut entity_commands = commands.spawn();
+        let mut entity_commands = commands.spawn_empty();
         let object_type = match object.inner() {
             InnerObject::Active(object) => {
                 entity_commands.insert(object.player());
@@ -104,7 +105,7 @@ fn spawn_map(
             }
             InnerObject::Inactive(object) => ObjectType::Inactive(object.object_type()),
         };
-        entity_commands.insert_bundle(SpawnBundle::new(
+        entity_commands.insert(SpawnBundle::new(
             object_type,
             object.placement().to_transform(),
         ));
@@ -120,9 +121,9 @@ fn setup_light(commands: &mut Commands) {
         brightness: 0.6,
     });
 
-    let mut transform = Transform::identity();
+    let mut transform = Transform::IDENTITY;
     transform.look_at(Vec3::new(1., -1., 0.), Vec3::new(1., 1., 0.));
-    commands.spawn_bundle(DirectionalLightBundle {
+    commands.spawn(DirectionalLightBundle {
         directional_light: DirectionalLight {
             color: Color::WHITE,
             illuminance: 30000.,

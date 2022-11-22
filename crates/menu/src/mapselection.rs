@@ -37,6 +37,7 @@ impl Plugin for MapSelectionPlugin {
     }
 }
 
+#[derive(Resource)]
 struct LoadingTask(Task<Result<Vec<MapEntry>, LoadingError>>);
 
 #[derive(Component)]
@@ -86,7 +87,7 @@ fn init_buttons(mut commands: Commands, text: Res<Text>, task: Option<ResMut<Loa
     commands.remove_resource::<LoadingTask>();
 
     let root_node = commands
-        .spawn_bundle(NodeBundle {
+        .spawn(NodeBundle {
             style: Style {
                 flex_direction: FlexDirection::Column,
                 size: Size::new(Val::Percent(25.), Val::Percent(100.)),
@@ -95,7 +96,6 @@ fn init_buttons(mut commands: Commands, text: Res<Text>, task: Option<ResMut<Loa
                 justify_content: JustifyContent::Center,
                 ..default()
             },
-            color: Color::rgba(0., 0., 0., 0.).into(),
             ..default()
         })
         .id();
@@ -157,13 +157,13 @@ async fn load_available_maps() -> Result<Vec<MapEntry>, LoadingError> {
         map_entries.push(MapEntry::new(path.into(), metadata));
     }
 
-    map_entries.sort_by(|a, b| b.metadata().name().cmp(a.metadata().name()));
+    map_entries.sort_by(|a, b| a.metadata().name().cmp(b.metadata().name()));
     Ok(map_entries)
 }
 
 fn map_button(commands: &mut Commands, text: &Text, map: MapEntry) -> Entity {
     commands
-        .spawn_bundle(ButtonBundle {
+        .spawn(ButtonBundle {
             style: Style {
                 size: Size::new(Val::Percent(100.), Val::Percent(8.)),
                 margin: UiRect::new(
@@ -179,7 +179,7 @@ fn map_button(commands: &mut Commands, text: &Text, map: MapEntry) -> Entity {
             ..default()
         })
         .with_children(|parent| {
-            parent.spawn_bundle(TextBundle::from_section(
+            parent.spawn(TextBundle::from_section(
                 map.metadata().name(),
                 text.button_text_style(),
             ));

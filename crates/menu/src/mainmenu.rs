@@ -16,7 +16,7 @@ impl Plugin for MainMenuPlugin {
 
 fn setup(mut commands: Commands, text: Res<Text>) {
     commands
-        .spawn_bundle(ButtonBundle {
+        .spawn(ButtonBundle {
             style: Style {
                 size: Size::new(Val::Percent(25.), Val::Percent(10.)),
                 margin: UiRect::all(Val::Auto),
@@ -27,7 +27,7 @@ fn setup(mut commands: Commands, text: Res<Text>) {
             ..default()
         })
         .with_children(|parent| {
-            parent.spawn_bundle(TextBundle::from_section(
+            parent.spawn(TextBundle::from_section(
                 "Start Game",
                 text.button_text_style(),
             ));

@@ -36,8 +36,8 @@ impl SpawnBundle {
             object_type,
             transform,
             global_transform: transform.into(),
-            visibility: Visibility::visible(),
-            computed_visibility: ComputedVisibility::not_visible(),
+            visibility: Visibility::VISIBLE,
+            computed_visibility: ComputedVisibility::INVISIBLE,
             spawn: Spawn,
         }
     }

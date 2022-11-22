@@ -27,7 +27,9 @@ pub use query::{PathQueryProps, PathTarget};
 pub struct PathingPluginGroup;
 
 impl PluginGroup for PathingPluginGroup {
-    fn build(&mut self, group: &mut PluginGroupBuilder) {
-        group.add(FinderPlugin).add(PathingPlugin);
+    fn build(self) -> PluginGroupBuilder {
+        PluginGroupBuilder::start::<Self>()
+            .add(FinderPlugin)
+            .add(PathingPlugin)
     }
 }

@@ -95,7 +95,7 @@ pub(crate) enum DragUpdateType {
     Released,
 }
 
-#[derive(Default)]
+#[derive(Default, Resource)]
 pub(crate) struct MousePosition(Option<Vec2>);
 
 impl MousePosition {
@@ -110,7 +110,7 @@ impl MousePosition {
     }
 }
 
-#[derive(Default)]
+#[derive(Default, Resource)]
 pub(crate) struct MouseDragStates(AHashMap<MouseButton, DragState>);
 
 impl MouseDragStates {

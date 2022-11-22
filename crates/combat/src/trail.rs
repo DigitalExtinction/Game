@@ -53,6 +53,7 @@ impl TrailEvent {
     }
 }
 
+#[derive(Resource)]
 struct MeshHandle(Handle<Mesh>);
 
 #[derive(Component, Default)]
@@ -109,7 +110,7 @@ fn spawn(
         let material = materials.add(TrailMaterial::default());
 
         commands
-            .spawn_bundle(MaterialMeshBundle::<TrailMaterial> {
+            .spawn(MaterialMeshBundle::<TrailMaterial> {
                 mesh: mesh.0.clone(),
                 material,
                 transform: Transform {

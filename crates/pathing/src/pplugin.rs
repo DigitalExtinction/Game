@@ -109,7 +109,7 @@ impl UpdateEntityPath {
     }
 }
 
-#[derive(Default)]
+#[derive(Default, Resource)]
 struct UpdatePathsState {
     tasks: AHashMap<Entity, UpdatePathTask>,
 }

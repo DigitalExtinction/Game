@@ -33,7 +33,7 @@ impl Plugin for CachePlugin {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Resource)]
 pub struct ObjectCache {
     inner: Arc<InnerCache>,
 }
@@ -89,6 +89,7 @@ impl CacheItem {
     }
 }
 
+#[derive(Resource)]
 struct CacheLoader {
     objects: EnumMap<ObjectType, ItemLoader>,
 }

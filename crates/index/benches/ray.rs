@@ -20,6 +20,7 @@ use parry3d::{
 
 const MAP_SIZE: f32 = 2000.;
 
+#[derive(Resource)]
 struct Rays {
     rays: Vec<Ray>,
     index: usize,
@@ -38,6 +39,7 @@ impl Rays {
     }
 }
 
+#[derive(Resource)]
 struct MaxDistance(f32);
 
 impl Iterator for Rays {

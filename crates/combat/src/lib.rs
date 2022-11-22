@@ -15,8 +15,11 @@ mod trail;
 pub struct CombatPluginGroup;
 
 impl PluginGroup for CombatPluginGroup {
-    fn build(&mut self, group: &mut PluginGroupBuilder) {
-        group.add(LaserPlugin).add(AttackPlugin).add(TrailPlugin);
+    fn build(self) -> PluginGroupBuilder {
+        PluginGroupBuilder::start::<Self>()
+            .add(LaserPlugin)
+            .add(AttackPlugin)
+            .add(TrailPlugin)
     }
 }
 

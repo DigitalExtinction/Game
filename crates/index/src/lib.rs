@@ -29,7 +29,7 @@ const TILE_SIZE: f32 = 10.;
 pub struct IndexPluginGroup;
 
 impl PluginGroup for IndexPluginGroup {
-    fn build(&mut self, group: &mut PluginGroupBuilder) {
-        group.add(IndexPlugin);
+    fn build(self) -> PluginGroupBuilder {
+        PluginGroupBuilder::start::<Self>().add(IndexPlugin)
     }
 }

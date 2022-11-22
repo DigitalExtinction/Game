@@ -14,7 +14,9 @@ pub use terrain::TerrainBundle;
 pub struct TerrainPluginGroup;
 
 impl PluginGroup for TerrainPluginGroup {
-    fn build(&mut self, group: &mut PluginGroupBuilder) {
-        group.add(TerrainPlugin).add(MarkerPlugin);
+    fn build(self) -> PluginGroupBuilder {
+        PluginGroupBuilder::start::<Self>()
+            .add(TerrainPlugin)
+            .add(MarkerPlugin)
     }
 }

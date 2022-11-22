@@ -1,7 +1,10 @@
 use std::path::{Path, PathBuf};
 
+use bevy::prelude::Resource;
+
 use crate::player::Player;
 
+#[derive(Resource)]
 pub struct GameConfig {
     map_path: PathBuf,
     player: Player,

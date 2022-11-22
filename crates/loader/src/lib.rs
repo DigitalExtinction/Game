@@ -6,7 +6,7 @@ mod map;
 pub struct LoaderPluginGroup;
 
 impl PluginGroup for LoaderPluginGroup {
-    fn build(&mut self, group: &mut PluginGroupBuilder) {
-        group.add(MapLoaderPlugin);
+    fn build(self) -> PluginGroupBuilder {
+        PluginGroupBuilder::start::<Self>().add(MapLoaderPlugin)
     }
 }

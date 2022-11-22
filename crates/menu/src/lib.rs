@@ -10,10 +10,10 @@ mod menu;
 pub struct MenuPluginGroup;
 
 impl PluginGroup for MenuPluginGroup {
-    fn build(&mut self, group: &mut PluginGroupBuilder) {
-        group
+    fn build(self) -> PluginGroupBuilder {
+        PluginGroupBuilder::start::<Self>()
             .add(MenuPlugin)
             .add(MainMenuPlugin)
-            .add(MapSelectionPlugin);
+            .add(MapSelectionPlugin)
     }
 }

@@ -7,7 +7,7 @@ pub use plugin::UpdateSelectionBoxEvent;
 pub struct UiPluginGroup;
 
 impl PluginGroup for UiPluginGroup {
-    fn build(&mut self, group: &mut PluginGroupBuilder) {
-        group.add(UiPlugin);
+    fn build(self) -> PluginGroupBuilder {
+        PluginGroupBuilder::start::<Self>().add(UiPlugin)
     }
 }
