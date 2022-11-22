@@ -157,7 +157,7 @@ async fn load_available_maps() -> Result<Vec<MapEntry>, LoadingError> {
         map_entries.push(MapEntry::new(path.into(), metadata));
     }
 
-    map_entries.sort_by(|a, b| b.metadata().name().cmp(a.metadata().name()));
+    map_entries.sort_by(|a, b| a.metadata().name().cmp(b.metadata().name()));
     Ok(map_entries)
 }
 
