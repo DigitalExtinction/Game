@@ -58,8 +58,8 @@ impl DraftBundle {
             object_type: ObjectType::Active(ActiveObjectType::Building(building_type)),
             transform,
             global_transform: transform.into(),
-            visibility: Visibility::visible(),
-            computed_visibility: ComputedVisibility::not_visible(),
+            visibility: Visibility::VISIBLE,
+            computed_visibility: ComputedVisibility::INVISIBLE,
             draft: Draft::default(),
         }
     }
@@ -90,7 +90,7 @@ fn new_draft(mut commands: Commands, drafts: NonReadyDrafts, cache: Res<ObjectCa
             .entity(entity)
             .insert(Ready)
             .with_children(|parent| {
-                parent.spawn_bundle(SceneBundle {
+                parent.spawn(SceneBundle {
                     scene: cache.get(*object_type).scene(),
                     ..Default::default()
                 });

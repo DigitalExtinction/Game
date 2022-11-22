@@ -11,6 +11,7 @@ impl Plugin for HealthPlugin {
 }
 
 /// Initial health of spawned objects.
+#[derive(Resource)]
 pub struct InitialHealths {
     healths: EnumMap<ActiveObjectType, Health>,
 }

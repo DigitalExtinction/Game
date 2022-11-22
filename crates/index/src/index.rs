@@ -6,10 +6,10 @@ use std::cmp::Ordering;
 use ahash::AHashMap;
 use bevy::{
     ecs::{
-        query::{Fetch, WorldQuery, WorldQueryGats},
+        query::{ReadOnlyWorldQuery, WorldQuery},
         system::SystemParam,
     },
-    prelude::{Entity, Query, Res},
+    prelude::*,
 };
 use parry3d::{
     bounding_volume::{Aabb, BoundingVolume},
@@ -22,6 +22,7 @@ use super::{collider::LocalCollider, grid::TileGrid, segment::SegmentCandidates}
 use crate::{aabb::AabbCandidates, collider::ColliderWithCache};
 
 /// 2D rectangular grid based spatial index of entities.
+#[derive(Resource)]
 pub struct EntityIndex {
     grid: TileGrid,
     world_bounds: Aabb,
@@ -111,7 +112,7 @@ impl Default for EntityIndex {
 pub struct SpatialQuery<'w, 's, Q, F = ()>
 where
     Q: WorldQuery + Sync + Send + 'static,
-    F: WorldQuery + Sync + Send + 'static,
+    F: ReadOnlyWorldQuery + Sync + Send + 'static,
 {
     index: Res<'w, EntityIndex>,
     entities: Query<'w, 's, Q, F>,
@@ -120,7 +121,7 @@ where
 impl<'w, 's, Q, F> SpatialQuery<'w, 's, Q, F>
 where
     Q: WorldQuery + Sync + Send + 'static,
-    F: WorldQuery + Sync + Send + 'static,
+    F: ReadOnlyWorldQuery + Sync + Send + 'static,
 {
     /// Returns closest entity whose shape, as indexed by systems registered by
     /// [`super::systems::IndexPlugin`], intersects a given ray.
@@ -140,11 +141,7 @@ where
         ray: &Ray,
         max_toi: f32,
         ignore: Option<Entity>,
-    ) -> Option<
-        RayEntityIntersection<
-            <<<Q as WorldQuery>::ReadOnly as WorldQueryGats<'_>>::Fetch as Fetch<'_>>::Item,
-        >,
-    > {
+    ) -> Option<RayEntityIntersection<<<Q as WorldQuery>::ReadOnly as WorldQuery>::Item<'_>>> {
         let candidate_sets = match self.index.cast_ray(ray, max_toi) {
             Some(candidates) => candidates,
             None => return None,
@@ -252,7 +249,7 @@ impl<T> Eq for RayEntityIntersection<T> {}
 pub struct AabbQueryResults<'w, 's, 'a, 'b, Q, F = ()>
 where
     Q: WorldQuery + Sync + Send + 'static,
-    F: WorldQuery + Sync + Send + 'static,
+    F: ReadOnlyWorldQuery + Sync + Send + 'static,
 {
     entities: &'a Query<'w, 's, Q, F>,
     index: &'a EntityIndex,
@@ -266,7 +263,7 @@ where
 impl<'w, 's, 'a, 'b, Q, F> AabbQueryResults<'w, 's, 'a, 'b, Q, F>
 where
     Q: WorldQuery + Sync + Send + 'static,
-    F: WorldQuery + Sync + Send + 'static,
+    F: ReadOnlyWorldQuery + Sync + Send + 'static,
 {
     fn new(
         entities: &'a Query<'w, 's, Q, F>,
@@ -291,10 +288,10 @@ where
 impl<'w, 's, 'a, 'b, Q, F> Iterator for AabbQueryResults<'w, 's, 'a, 'b, Q, F>
 where
     Q: WorldQuery + Sync + Send + 'static,
-    F: WorldQuery + Sync + Send + 'static,
+    F: ReadOnlyWorldQuery + Sync + Send + 'static,
     'a: 'w,
 {
-    type Item = <<<Q as WorldQuery>::ReadOnly as WorldQueryGats<'w>>::Fetch as Fetch<'w>>::Item;
+    type Item = <<Q as WorldQuery>::ReadOnly as WorldQuery>::Item<'a>;
 
     fn next(&mut self) -> Option<Self::Item> {
         'outer: loop {

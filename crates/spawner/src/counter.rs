@@ -20,7 +20,7 @@ impl Plugin for CounterPlugin {
 }
 
 /// Current count of buildings and units belonging to local player.
-#[derive(Default)]
+#[derive(Default, Resource)]
 pub struct ObjectCounter {
     building_count: usize,
     unit_count: usize,

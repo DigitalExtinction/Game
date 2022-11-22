@@ -16,6 +16,7 @@ impl Plugin for MenuPlugin {
 }
 
 /// A resource which for handling fonts withing menu.
+#[derive(Resource)]
 pub(crate) struct Text(Handle<Font>);
 
 impl Text {
@@ -35,7 +36,7 @@ impl Text {
 type ButtonInteractions<'w, 'q> = Query<
     'w,
     'q,
-    (&'static Interaction, &'static mut UiColor),
+    (&'static Interaction, &'static mut BackgroundColor),
     (Changed<Interaction>, With<Button>),
 >;
 
@@ -50,7 +51,7 @@ pub(crate) fn despawn_root_nodes(
 }
 
 fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
-    commands.spawn_bundle(Camera2dBundle::default());
+    commands.spawn(Camera2dBundle::default());
 
     let font = asset_server.load("fonts/Fira_Mono/FiraMono-Medium.ttf");
     commands.insert_resource(Text(font));

@@ -20,7 +20,9 @@ mod loader;
 pub struct ObjectsPluginGroup;
 
 impl PluginGroup for ObjectsPluginGroup {
-    fn build(&mut self, group: &mut PluginGroupBuilder) {
-        group.add(CachePlugin).add(HealthPlugin);
+    fn build(self) -> PluginGroupBuilder {
+        PluginGroupBuilder::start::<Self>()
+            .add(CachePlugin)
+            .add(HealthPlugin)
     }
 }

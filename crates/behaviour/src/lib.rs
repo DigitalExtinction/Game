@@ -9,7 +9,7 @@ mod chase;
 pub struct BehaviourPluginGroup;
 
 impl PluginGroup for BehaviourPluginGroup {
-    fn build(&mut self, group: &mut PluginGroupBuilder) {
-        group.add(ChasePlugin);
+    fn build(self) -> PluginGroupBuilder {
+        PluginGroupBuilder::start::<Self>().add(ChasePlugin)
     }
 }

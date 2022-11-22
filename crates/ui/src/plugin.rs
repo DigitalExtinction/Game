@@ -43,7 +43,7 @@ fn process_events(
                 let ui_size = Size::new(Val::Percent(50. * size.x), Val::Percent(50. * size.y));
                 let ui_rect = UiRect {
                     left: Val::Percent(50. * (rect.left() + 1.)),
-                    bottom: Val::Percent(50. * (rect.bottom() + 1.)),
+                    top: Val::Percent(50. * (1. - rect.top())),
                     ..Default::default()
                 };
 
@@ -56,17 +56,16 @@ fn process_events(
                         assert!(boxes.is_empty());
 
                         commands
-                            .spawn()
-                            .insert(SelectionBox)
-                            .insert_bundle(NodeBundle {
+                            .spawn(NodeBundle {
                                 style: Style {
                                     size: ui_size,
                                     position: ui_rect,
                                     ..Default::default()
                                 },
-                                color: UiColor(SELECTION_BOX_COLOR),
+                                background_color: BackgroundColor(SELECTION_BOX_COLOR),
                                 ..Default::default()
-                            });
+                            })
+                            .insert(SelectionBox);
                     }
                 }
             }

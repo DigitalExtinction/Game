@@ -38,7 +38,7 @@ pub(crate) enum PointerLabels {
     Update,
 }
 
-#[derive(Default)]
+#[derive(Default, Resource)]
 pub(crate) struct Pointer {
     entity: Option<Entity>,
     terrain: Option<Vec3>,

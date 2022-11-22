@@ -91,7 +91,7 @@ fn spawn(
         if draft.allowed() {
             commands.entity(entity).despawn_recursive();
             commands
-                .spawn_bundle(SpawnBundle::new(object_type, transform))
+                .spawn(SpawnBundle::new(object_type, transform))
                 .insert(game_config.player());
         }
     }
@@ -111,7 +111,7 @@ fn new_drafts(
         commands.entity(entity).despawn_recursive();
     }
 
-    commands.spawn_bundle(DraftBundle::new(
+    commands.spawn(DraftBundle::new(
         event.building_type(),
         Transform {
             translation: event.point(),

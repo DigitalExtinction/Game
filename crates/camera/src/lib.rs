@@ -10,7 +10,9 @@ mod distance;
 pub struct CameraPluginGroup;
 
 impl PluginGroup for CameraPluginGroup {
-    fn build(&mut self, group: &mut PluginGroupBuilder) {
-        group.add(CameraPlugin).add(DistancePlugin);
+    fn build(self) -> PluginGroupBuilder {
+        PluginGroupBuilder::start::<Self>()
+            .add(CameraPlugin)
+            .add(DistancePlugin)
     }
 }

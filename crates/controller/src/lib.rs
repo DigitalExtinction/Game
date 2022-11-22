@@ -25,14 +25,14 @@ const POINTER_BAR_ID: u32 = 1;
 pub struct ControllerPluginGroup;
 
 impl PluginGroup for ControllerPluginGroup {
-    fn build(&mut self, group: &mut PluginGroupBuilder) {
-        group
+    fn build(self) -> PluginGroupBuilder {
+        PluginGroupBuilder::start::<Self>()
             .add(DragSelectPlugin)
             .add(AreaSelectPlugin)
             .add(MousePlugin)
             .add(PointerPlugin)
             .add(CommandPlugin)
             .add(SelectionPlugin)
-            .add(DraftPlugin);
+            .add(DraftPlugin)
     }
 }

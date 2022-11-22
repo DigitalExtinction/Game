@@ -17,12 +17,12 @@ mod spawner;
 pub struct SpawnerPluginGroup;
 
 impl PluginGroup for SpawnerPluginGroup {
-    fn build(&mut self, group: &mut PluginGroupBuilder) {
-        group
+    fn build(self) -> PluginGroupBuilder {
+        PluginGroupBuilder::start::<Self>()
             .add(CounterPlugin)
             .add(SpawnerPlugin)
             .add(DraftPlugin)
-            .add(DestroyerPlugin);
+            .add(DestroyerPlugin)
     }
 }
 

@@ -32,6 +32,7 @@ impl Plugin for TerrainPlugin {
     }
 }
 
+#[derive(Resource)]
 struct Textures(Handle<Image>);
 
 fn load(mut commands: Commands, server: Res<AssetServer>) {
@@ -79,7 +80,7 @@ fn init(
     uninitialized: Query<(Entity, &Terrain, &Transform), Without<Handle<Mesh>>>,
 ) {
     for (entity, terrain, transform) in uninitialized.iter() {
-        commands.entity(entity).insert_bundle(MaterialMeshBundle {
+        commands.entity(entity).insert(MaterialMeshBundle {
             mesh: meshes.add(terrain.generate_mesh(transform.translation)),
             material: materials.add(TerrainMaterial::new(textures.0.clone())),
             transform: *transform,

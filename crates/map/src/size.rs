@@ -1,4 +1,4 @@
-use bevy::reflect::TypeUuid;
+use bevy::{prelude::Resource, reflect::TypeUuid};
 use glam::Vec2;
 use parry2d::bounding_volume::Aabb;
 use serde::{Deserialize, Serialize};
@@ -7,7 +7,7 @@ use thiserror::Error;
 /// Maximum size of a side of the map in meters.
 pub const MAX_MAP_SIZE: f32 = 8000.;
 
-#[derive(Clone, Copy, Debug, TypeUuid, Serialize, Deserialize, PartialEq)]
+#[derive(Clone, Copy, Debug, TypeUuid, Serialize, Deserialize, PartialEq, Resource)]
 #[uuid = "bbf80d94-c4de-4c7c-9bdc-552ef25aff4e"]
 pub struct MapBounds(Vec2);
 

@@ -20,10 +20,10 @@ pub mod visibility;
 pub struct CorePluginGroup;
 
 impl PluginGroup for CorePluginGroup {
-    fn build(&mut self, group: &mut PluginGroupBuilder) {
-        group
+    fn build(self) -> PluginGroupBuilder {
+        PluginGroupBuilder::start::<Self>()
             .add(ProgressPlugin::new(GameState::Loading).continue_to(GameState::Playing))
             .add(StagesPlugin)
-            .add(VisibilityPlugin);
+            .add(VisibilityPlugin)
     }
 }

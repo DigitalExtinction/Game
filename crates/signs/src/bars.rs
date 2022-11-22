@@ -117,6 +117,7 @@ impl UpdateBarVisibilityEvent {
     }
 }
 
+#[derive(Resource)]
 struct BarMesh(Handle<Mesh>);
 
 impl BarMesh {
@@ -180,7 +181,7 @@ fn spawn(
         let material = materials.add(BarMaterial::default());
 
         let bar_entity = commands
-            .spawn_bundle(MaterialMeshBundle::<BarMaterial> {
+            .spawn(MaterialMeshBundle::<BarMaterial> {
                 mesh: mesh.mesh(),
                 material,
                 transform,

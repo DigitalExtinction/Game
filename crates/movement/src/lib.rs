@@ -25,12 +25,12 @@ const MAX_ANGULAR_SPEED: f32 = PI;
 pub struct MovementPluginGroup;
 
 impl PluginGroup for MovementPluginGroup {
-    fn build(&mut self, group: &mut PluginGroupBuilder) {
-        group
+    fn build(self) -> PluginGroupBuilder {
+        PluginGroupBuilder::start::<Self>()
             .add(MovementPlugin)
             .add(PathingPlugin)
             .add(ObstaclesPlugin)
             .add(RepulsionPlugin)
-            .add(KinematicsPlugin);
+            .add(KinematicsPlugin)
     }
 }
