@@ -181,16 +181,18 @@ fn spawn(
         let material = materials.add(BarMaterial::default());
 
         let bar_entity = commands
-            .spawn(MaterialMeshBundle::<BarMaterial> {
-                mesh: mesh.mesh(),
-                material,
-                transform,
-                visibility: Visibility { is_visible: false },
-                ..Default::default()
-            })
-            .insert(NotShadowCaster)
-            .insert(NotShadowReceiver)
-            .insert(VisibilityFlags::default())
+            .spawn((
+                MaterialMeshBundle::<BarMaterial> {
+                    mesh: mesh.mesh(),
+                    material,
+                    transform,
+                    visibility: Visibility { is_visible: false },
+                    ..Default::default()
+                },
+                NotShadowCaster,
+                NotShadowReceiver,
+                VisibilityFlags::default(),
+            ))
             .id();
 
         commands

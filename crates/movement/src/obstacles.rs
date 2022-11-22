@@ -63,11 +63,11 @@ fn setup_discs(mut commands: Commands, cache: Res<ObjectCache>, objects: Uniniti
     for (entity, transform, &object_type) in objects.iter() {
         let center = transform.translation.to_flat();
         let radius = cache.get_ichnography(object_type).radius();
-        commands
-            .entity(entity)
-            .insert(Disc::new(center, radius))
-            .insert(DecayingCache::<StaticObstacles>::default())
-            .insert(DecayingCache::<MovableObstacles>::default());
+        commands.entity(entity).insert((
+            Disc::new(center, radius),
+            DecayingCache::<StaticObstacles>::default(),
+            DecayingCache::<MovableObstacles>::default(),
+        ));
     }
 }
 

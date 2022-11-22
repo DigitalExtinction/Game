@@ -55,8 +55,8 @@ fn process_events(
                     Err(_) => {
                         assert!(boxes.is_empty());
 
-                        commands
-                            .spawn(NodeBundle {
+                        commands.spawn((
+                            NodeBundle {
                                 style: Style {
                                     size: ui_size,
                                     position: ui_rect,
@@ -64,8 +64,9 @@ fn process_events(
                                 },
                                 background_color: BackgroundColor(SELECTION_BOX_COLOR),
                                 ..Default::default()
-                            })
-                            .insert(SelectionBox);
+                            },
+                            SelectionBox,
+                        ));
                     }
                 }
             }

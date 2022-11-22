@@ -90,9 +90,10 @@ fn spawn(
     for (entity, &transform, &object_type, draft) in drafts.iter() {
         if draft.allowed() {
             commands.entity(entity).despawn_recursive();
-            commands
-                .spawn(SpawnBundle::new(object_type, transform))
-                .insert(game_config.player());
+            commands.spawn((
+                SpawnBundle::new(object_type, transform),
+                game_config.player(),
+            ));
         }
     }
 }

@@ -115,8 +115,8 @@ fn spawn(
     for event in events.iter() {
         let material = materials.add(TrailMaterial::new(time.elapsed_seconds_wrapped()));
 
-        commands
-            .spawn(MaterialMeshBundle::<TrailMaterial> {
+        commands.spawn((
+            MaterialMeshBundle::<TrailMaterial> {
                 mesh: mesh.0.clone(),
                 material,
                 transform: Transform {
@@ -125,8 +125,9 @@ fn spawn(
                     scale: Vec3::new(event.ray().dir.norm(), 1., 1.),
                 },
                 ..Default::default()
-            })
-            .insert(Trail::default());
+            },
+            Trail::default(),
+        ));
     }
 }
 
