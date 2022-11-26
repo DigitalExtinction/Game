@@ -3,7 +3,7 @@ use std::marker::PhantomData;
 use bevy::prelude::*;
 use de_core::{
     objects::MovableSolid,
-    projection::{ToFlat, ToMsl},
+    projection::{ToAltitude, ToFlat},
     stages::GameStage,
     state::{AppState, GameState},
 };

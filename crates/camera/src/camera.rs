@@ -4,7 +4,9 @@ use bevy::{
     input::mouse::{MouseMotion, MouseScrollUnit, MouseWheel},
     prelude::*,
 };
-use de_core::{events::ResendEventPlugin, projection::ToMsl, stages::GameStage, state::GameState};
+use de_core::{
+    events::ResendEventPlugin, projection::ToAltitude, stages::GameStage, state::GameState,
+};
 use de_map::size::MapBounds;
 use de_terrain::TerrainCollider;
 use de_uom::{InverseLogicalPixel, InverseSecond, LogicalPixel, Metre, Quantity, Radian, Second};

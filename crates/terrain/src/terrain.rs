@@ -4,7 +4,7 @@ use bevy::{
     render::{mesh::Indices, render_resource::PrimitiveTopology},
     utils::FloatOrd,
 };
-use de_core::projection::{ToFlat, ToMsl};
+use de_core::projection::{ToAltitude, ToFlat};
 use de_map::size::MapBounds;
 use glam::{Vec2, Vec3};
 use parry3d::{

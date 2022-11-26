@@ -3,7 +3,7 @@ use std::f32::consts::{FRAC_PI_4, PI, TAU};
 use bevy::prelude::*;
 use de_core::{
     objects::MovableSolid,
-    projection::ToMsl,
+    projection::ToAltitude,
     stages::GameStage,
     state::{AppState, GameState},
 };
