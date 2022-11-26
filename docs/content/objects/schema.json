@@ -103,6 +103,26 @@
         "damage",
         "recharge_interval"
       ]
+    },
+    "flight": {
+      "type": "object",
+      "description": "Configuration of object flight capabilities. This property is not defined for object with no flight capability.",
+      "properties": {
+        "min_height": {
+          "type": "number",
+          "description": "Minimum flight height (vertical distance from the terrain).",
+          "exclusiveMinimum": 0
+        }
+        "max_height": {
+          "type": "number",
+          "description": "Maximum flight height (vertical distance from the terrain).",
+          "exclusiveMinimum": 0
+        }
+      },
+      "required": [
+        "min_height",
+        "max_height"
+      ]
     }
   },
   "required": [

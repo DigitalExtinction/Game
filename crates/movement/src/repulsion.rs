@@ -16,7 +16,7 @@ use crate::{
     movement::{add_desired_velocity, DesiredVelocity},
     obstacles::{MovableObstacles, ObstaclesLables, StaticObstacles},
     pathing::{PathVelocity, PathingLabels},
-    MAX_ACCELERATION, MAX_SPEED,
+    MAX_H_ACCELERATION, MAX_H_SPEED,
 };
 
 const MAX_REPULSION_DISTANCE: f32 = 4.0;
@@ -98,7 +98,7 @@ impl Repulsion {
     ///   until it reaches the point of minimum allowed distance. Note that
     ///   minimum allowed distance might be larger than zero.
     fn add(&mut self, direction: Vec2, room: f32) {
-        let mut max = REPULSION_FACTOR * (2. * MAX_ACCELERATION).sqrt();
+        let mut max = REPULSION_FACTOR * (2. * MAX_H_ACCELERATION).sqrt();
         if room > 0. {
             max *= room.sqrt();
         } else {
@@ -276,7 +276,7 @@ fn apply(
         512,
         |(mut repulsion, path_velocity, mut repulsion_velocity)| {
             let velocity = repulsion.apply(path_velocity.velocity());
-            repulsion_velocity.update(velocity.clamp_length_max(MAX_SPEED));
+            repulsion_velocity.update(velocity.clamp_length_max(MAX_H_SPEED));
             repulsion.clear();
         },
     );

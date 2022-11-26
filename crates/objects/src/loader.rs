@@ -13,6 +13,7 @@ pub(crate) struct ObjectInfo {
     footprint: Footprint,
     shape: TriMeshShape,
     cannon: Option<LaserCannonInfo>,
+    flight: Option<FlightInfo>,
 }
 
 impl ObjectInfo {
@@ -26,6 +27,10 @@ impl ObjectInfo {
 
     pub(crate) fn cannon(&self) -> Option<&LaserCannonInfo> {
         self.cannon.as_ref()
+    }
+
+    pub(crate) fn flight(&self) -> Option<&FlightInfo> {
+        self.flight.as_ref()
     }
 }
 
@@ -81,6 +86,22 @@ impl LaserCannonInfo {
     /// firing.
     pub(crate) fn recharge_interval(&self) -> f32 {
         self.recharge_interval
+    }
+}
+
+#[derive(Serialize, Deserialize)]
+pub(crate) struct FlightInfo {
+    min_height: f32,
+    max_height: f32,
+}
+
+impl FlightInfo {
+    pub(crate) fn min_height(&self) -> f32 {
+        self.min_height
+    }
+
+    pub(crate) fn max_height(&self) -> f32 {
+        self.max_height
     }
 }
 

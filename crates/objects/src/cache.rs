@@ -15,7 +15,7 @@ use iyes_progress::prelude::*;
 use crate::{
     ichnography::Ichnography,
     loader::{ObjectInfo, ObjectLoader},
-    LaserCannon, ObjectCollider,
+    Flight, LaserCannon, ObjectCollider,
 };
 
 pub(crate) struct CachePlugin;
@@ -69,6 +69,7 @@ pub struct CacheItem {
     ichnography: Ichnography,
     collider: ObjectCollider,
     cannon: Option<LaserCannon>,
+    flight: Option<Flight>,
 }
 
 impl CacheItem {
@@ -78,6 +79,12 @@ impl CacheItem {
 
     pub fn cannon(&self) -> Option<&LaserCannon> {
         self.cannon.as_ref()
+    }
+
+    /// Flight configuration configuration. It is None for objects which cannot
+    /// fly.
+    pub fn flight(&self) -> Option<&Flight> {
+        self.flight.as_ref()
     }
 
     pub(crate) fn ichnography(&self) -> &Ichnography {
@@ -114,7 +121,7 @@ impl CacheLoader {
         InnerCache {
             objects: self
                 .objects
-                .map(|_, loader| loader.into_cache_item(objects)),
+                .map(|object_type, loader| loader.into_cache_item(object_type, objects)),
         }
     }
 
@@ -148,13 +155,26 @@ impl ItemLoader {
         }
     }
 
-    fn into_cache_item(self, objects: &Assets<ObjectInfo>) -> CacheItem {
+    /// # Panics
+    ///
+    /// Panics if the object is wrongly configured.
+    fn into_cache_item(self, object_type: ObjectType, objects: &Assets<ObjectInfo>) -> CacheItem {
         let object_info = objects.get(&self.object_info).unwrap();
+
+        if object_info.flight().is_some() {
+            assert!(
+                matches!(object_type, ObjectType::Active(ActiveObjectType::Unit(_))),
+                "Flight info specified for non-movable object {}.",
+                object_type
+            );
+        }
+
         CacheItem {
             scene: self.scene,
             ichnography: Ichnography::from(object_info.footprint()),
             collider: ObjectCollider::from(object_info.shape()),
             cannon: object_info.cannon().map(LaserCannon::from),
+            flight: object_info.flight().map(Flight::from),
         }
     }
 

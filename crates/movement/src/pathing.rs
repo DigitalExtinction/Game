@@ -9,7 +9,7 @@ use iyes_loopless::prelude::*;
 
 use crate::{
     movement::{add_desired_velocity, DesiredVelocity},
-    MAX_ACCELERATION, MAX_SPEED,
+    MAX_H_ACCELERATION, MAX_H_SPEED,
 };
 
 const DESTINATION_ACCURACY: f32 = 0.1;
@@ -70,9 +70,9 @@ fn follow_path(
     objects.par_for_each_mut(512, |(transform, mut path, mut movement)| {
         let location = transform.translation.to_flat();
         let remaining = path.destination().distance(location);
-        let advancement = path.advance(location, MAX_SPEED * 0.5);
+        let advancement = path.advance(location, MAX_H_SPEED * 0.5);
         let direction = (advancement - location).normalize();
-        let desired_speed = MAX_SPEED.min((2. * remaining * MAX_ACCELERATION).sqrt());
+        let desired_speed = MAX_H_SPEED.min((2. * remaining * MAX_H_ACCELERATION).sqrt());
         movement.update(desired_speed * direction);
     });
 }

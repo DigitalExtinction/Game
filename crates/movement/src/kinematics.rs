@@ -10,9 +10,10 @@ use de_core::{
 use iyes_loopless::prelude::*;
 
 use crate::{
+    altitude::{AltitudeLabels, DesiredClimbing},
     movement::{DesiredVelocity, MovementLabels, ObjectVelocity},
     repulsion::{RepulsionLables, RepulsionVelocity},
-    MAX_ACCELERATION, MAX_ANGULAR_SPEED, MAX_SPEED,
+    G_ACCELERATION, MAX_ANGULAR_SPEED, MAX_H_SPEED, MAX_V_ACCELERATION, MAX_V_SPEED,
 };
 
 pub(crate) struct KinematicsPlugin;
@@ -30,7 +31,8 @@ impl Plugin for KinematicsPlugin {
                     .run_in_state(GameState::Playing)
                     .label(KinematicsLabels::Kinematics)
                     .before(MovementLabels::UpdateTransform)
-                    .after(RepulsionLables::Apply),
+                    .after(RepulsionLables::Apply)
+                    .after(AltitudeLabels::Update),
             ),
         );
     }
@@ -46,24 +48,35 @@ type Uninitialized<'w, 's> =
 
 #[derive(Component)]
 struct Kinematics {
-    /// Current speed in meters per second.
-    speed: f32,
+    /// Current horizontal speed in meters per second.
+    horizontal_speed: f32,
+    /// Current vertical speed in meters per second.
+    vertical_speed: f32,
     /// Current object heading in radians.
     heading: f32,
 }
 
 impl Kinematics {
-    fn speed(&self) -> f32 {
-        self.speed
+    fn horizontal_speed(&self) -> f32 {
+        self.horizontal_speed
+    }
+
+    fn vertical_speed(&self) -> f32 {
+        self.vertical_speed
     }
 
     fn heading(&self) -> f32 {
         self.heading
     }
 
-    fn update_speed(&mut self, delta: f32) {
+    fn update_horizontal_speed(&mut self, delta: f32) {
         debug_assert!(delta.is_finite());
-        self.speed = (self.speed + delta).clamp(0., MAX_SPEED);
+        self.horizontal_speed = (self.horizontal_speed + delta).clamp(0., MAX_H_SPEED);
+    }
+
+    fn update_vertical_speed(&mut self, delta: f32) {
+        debug_assert!(delta.is_finite());
+        self.vertical_speed = (self.vertical_speed + delta).clamp(-MAX_V_SPEED, MAX_V_SPEED);
     }
 
     fn update_heading(&mut self, delta: f32) {
@@ -73,14 +86,15 @@ impl Kinematics {
 
     fn compute_velocity(&self) -> Vec3 {
         let (sin, cos) = self.heading.sin_cos();
-        Vec2::new(self.speed * cos, self.speed * sin).to_msl()
+        (self.horizontal_speed * Vec2::new(cos, sin)).to_altitude(self.vertical_speed)
     }
 }
 
 impl From<&Transform> for Kinematics {
     fn from(transform: &Transform) -> Self {
         Self {
-            speed: 0.,
+            horizontal_speed: 0.,
+            vertical_speed: 0.,
             heading: normalize_angle(transform.rotation.to_euler(EulerRot::YXZ).0),
         }
     }
@@ -96,18 +110,19 @@ fn kinematics(
     time: Res<Time>,
     mut objects: Query<(
         &DesiredVelocity<RepulsionVelocity>,
+        &DesiredClimbing,
         &mut Kinematics,
         &mut ObjectVelocity,
     )>,
 ) {
     let time_delta = time.delta_seconds();
 
-    objects.par_for_each_mut(512, |(movement, mut kinematics, mut velocity)| {
-        let desired_velocity = movement.velocity();
-        let desired_heading = if desired_velocity == Vec2::ZERO {
+    objects.par_for_each_mut(512, |(movement, climbing, mut kinematics, mut velocity)| {
+        let desired_h_velocity = movement.velocity();
+        let desired_heading = if desired_h_velocity == Vec2::ZERO {
             kinematics.heading()
         } else {
-            desired_velocity.y.atan2(desired_velocity.x)
+            desired_h_velocity.y.atan2(desired_h_velocity.x)
         };
 
         let heading_diff = normalize_angle(desired_heading - kinematics.heading());
@@ -115,16 +130,22 @@ fn kinematics(
         let heading_delta = heading_diff.clamp(-max_heading_delta, max_heading_delta);
         kinematics.update_heading(heading_delta);
 
-        let max_speed_delta = MAX_ACCELERATION * time_delta;
-        let speed_delta = if (heading_diff - heading_delta).abs() > FRAC_PI_4 {
+        let max_h_speed_delta = MAX_H_SPEED * time_delta;
+        let h_speed_delta = if (heading_diff - heading_delta).abs() > FRAC_PI_4 {
             // Slow down if not going in roughly good direction.
-            -kinematics.speed()
+            -kinematics.horizontal_speed()
         } else {
-            desired_velocity.length() - kinematics.speed()
+            desired_h_velocity.length() - kinematics.horizontal_speed()
         }
-        .clamp(-max_speed_delta, max_speed_delta);
+        .clamp(-max_h_speed_delta, max_h_speed_delta);
+        kinematics.update_horizontal_speed(h_speed_delta);
 
-        kinematics.update_speed(speed_delta);
+        let v_speed_delta = (climbing.speed() - kinematics.vertical_speed()).clamp(
+            -time_delta * G_ACCELERATION,
+            time_delta * MAX_V_ACCELERATION,
+        );
+        kinematics.update_vertical_speed(v_speed_delta);
+
         velocity.update(kinematics.compute_velocity(), kinematics.heading());
     });
 }
