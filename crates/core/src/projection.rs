@@ -8,28 +8,36 @@ use parry2d::{bounding_volume::Aabb as Aabb2D, math::Point as Point2D};
 use parry3d::{bounding_volume::Aabb as Aabb3D, math::Point as Point3D};
 
 /// Trait for conversion of various geometrical objects to their 3D equivalents
-/// placed to mean sea level.
-pub trait ToMsl<Msl> {
-    fn to_msl(self) -> Msl;
-}
+/// placed to an altitude.
+pub trait ToAltitude<T> {
+    fn to_altitude(self, altitude: f32) -> T;
 
-impl ToMsl<Vec3> for Vec2 {
-    fn to_msl(self) -> Vec3 {
-        Vec3::new(self.x, 0., -self.y)
+    /// Converts / moves to object to mean sea level.
+    fn to_msl(self) -> T
+    where
+        Self: Sized,
+    {
+        self.to_altitude(0.)
     }
 }
 
-impl ToMsl<Vec3> for Vec3 {
-    fn to_msl(self) -> Vec3 {
-        Vec3::new(self.x, 0., self.z)
+impl ToAltitude<Vec3> for Vec2 {
+    fn to_altitude(self, altitude: f32) -> Vec3 {
+        Vec3::new(self.x, altitude, -self.y)
     }
 }
 
-impl ToMsl<Aabb3D> for Aabb2D {
-    fn to_msl(self) -> Aabb3D {
+impl ToAltitude<Vec3> for Vec3 {
+    fn to_altitude(self, altitude: f32) -> Vec3 {
+        Vec3::new(self.x, altitude, self.z)
+    }
+}
+
+impl ToAltitude<Aabb3D> for Aabb2D {
+    fn to_altitude(self, altitude: f32) -> Aabb3D {
         Aabb3D::new(
-            Point3D::new(self.mins.x, 0., -self.maxs.y),
-            Point3D::new(self.maxs.x, 0., -self.mins.y),
+            Point3D::new(self.mins.x, altitude, -self.maxs.y),
+            Point3D::new(self.maxs.x, altitude, -self.mins.y),
         )
     }
 }

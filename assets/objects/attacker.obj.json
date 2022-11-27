@@ -42,5 +42,9 @@
     "range": 50.0,
     "damage": 3.0,
     "recharge_interval": 2.5
+  },
+  "flight": {
+    "min_height": 2.0,
+    "max_height": 5.0
   }
 }

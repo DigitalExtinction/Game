@@ -81,27 +81,47 @@
           "minItems": 3,
           "maxItems": 3
         },
-          "range": {
-              "type": "number",
-              "description": "Maximum firing distance of the cannon.",
-              "exclusiveMinimum": 0
-          },
-          "damage": {
-              "type": "number",
-              "description": "Enemy damage when hit by the gun.",
-              "exclusiveMinimum": 0
-          },
-          "recharge_interval": {
-              "type": "number",
-              "description": "Minimum time between two gun shots.",
-              "exclusiveMinimum": 0
-          }
+        "range": {
+          "type": "number",
+          "description": "Maximum firing distance of the cannon.",
+          "exclusiveMinimum": 0
+        },
+        "damage": {
+          "type": "number",
+          "description": "Enemy damage when hit by the gun.",
+          "exclusiveMinimum": 0
+        },
+        "recharge_interval": {
+          "type": "number",
+          "description": "Minimum time between two gun shots.",
+          "exclusiveMinimum": 0
+        }
       },
       "required": [
         "muzzle",
         "range",
         "damage",
         "recharge_interval"
+      ]
+    },
+    "flight": {
+      "type": "object",
+      "description": "Configuration of object flight capabilities. This property is not defined for object with no flight capability.",
+      "properties": {
+        "min_height": {
+          "type": "number",
+          "description": "Minimum flight height (vertical distance from the terrain).",
+          "exclusiveMinimum": 0
+        }
+        "max_height": {
+          "type": "number",
+          "description": "Maximum flight height (vertical distance from the terrain).",
+          "exclusiveMinimum": 0
+        }
+      },
+      "required": [
+        "min_height",
+        "max_height"
       ]
     }
   },

@@ -3,13 +3,15 @@ use std::marker::PhantomData;
 use bevy::prelude::*;
 use de_core::{
     objects::MovableSolid,
-    projection::{ToFlat, ToMsl},
+    projection::ToAltitude,
     stages::GameStage,
     state::{AppState, GameState},
 };
 use de_map::size::MapBounds;
 use de_objects::EXCLUSION_OFFSET;
 use iyes_loopless::prelude::*;
+
+use crate::MAX_ALTITUDE;
 
 pub(crate) struct MovementPlugin;
 
@@ -149,8 +151,7 @@ fn update_transform(
 
 fn clamp(bounds: &MapBounds, translation: Vec3) -> Vec3 {
     let offset = Vec2::splat(EXCLUSION_OFFSET);
-    let min = bounds.min() + offset;
-    let max = bounds.max() - offset;
-    let clipped = translation.to_flat().clamp(min, max).to_msl();
-    Vec3::new(clipped.x, translation.y, clipped.z)
+    let a = (bounds.min() + offset).to_msl();
+    let b = (bounds.max() - offset).to_altitude(MAX_ALTITUDE);
+    translation.clamp(a.min(b), a.max(b))
 }
