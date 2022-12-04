@@ -1,0 +1,81 @@
+openapi: 3.1.0
+info:
+  title: Digital Extinction lobby server API
+  version: 0.1.0-dev
+
+paths:
+  /p/auth/sign-up:
+    post:
+      summary: Create a new user registration.
+      description: This endpoint creates a new user registration.
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                password:
+                  type: string
+                  description: >-
+                    A Unicode string with length between 6 and 30 bytes when
+                    encoded in UTF-8.
+                user:
+                  $ref: "#/components/schemas/user"
+      responses:
+        "200":
+          description: Registration was successful.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/token-response"
+        "409":
+          description: >-
+            Registration was not successful because the username is already
+            taken.
+
+  /p/auth/sign-in:
+    post:
+      summary: Retrieve a fresh JWT.
+      description: >-
+        This endpoint is used to retrieve a fresh JWT to be used for
+        authentication to other API endpoints.
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                username:
+                  type: string
+                password:
+                  type: string
+
+      responses:
+        "200":
+          description: The username exists and the password is correct.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/token-response"
+        "401":
+          description: >-
+            The username does not exist or the password is not correct.
+
+components:
+  schemas:
+    token-response:
+      type: object
+      properties:
+        token:
+          type: string
+          description: >-
+            A JWT token. The user uses the token to authenticate to the API.
+    user:
+      type: object
+      properties:
+        username:
+          type: string
+          description: >-
+            A unique user name. It is a non-empty Unicode string with maximum
+            length of 32 bytes when encoded in UTF-8. It does not start or end
+            with whitespace.

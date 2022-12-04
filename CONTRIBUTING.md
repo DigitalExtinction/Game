@@ -89,6 +89,8 @@ The intention is:
 
 Topologically sorted crates:
 
+* [de_server](/crates/server) – lobby server.
+
 * [de_uom](/crates/uom) – type safe units of measurements.
 
 * [core](/crates/core) – various simple core utilities, structs, and so on.

@@ -1,0 +1,28 @@
+[package]
+name = "de_server"
+readme = "README.md"
+description = "Digital Extinction lobby server."
+
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+repository.workspace = true
+keywords.workspace = true
+homepage.workspace = true
+license.workspace = true
+categories.workspace = true
+
+[dependencies]
+actix-web = "4.2.1"
+anyhow = "1.0.66"
+base64 = "0.13.1"
+env_logger = "0.10.0"
+jsonwebtoken = "8.1.1"
+log = "0.4.17"
+mime = "0.3.16"
+pbkdf2 = { version = "0.11.0", features = ["std"] }
+rand_core = { version = "0.6", features = ["std"] }
+serde = { version = "1.0", features = ["derive"] }
+sqlx = { version = "0.6.2", features = [ "runtime-actix-rustls" , "sqlite" ] }
+subtle = "2.4.1"
+thiserror = "1.0"
