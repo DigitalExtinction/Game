@@ -1,5 +1,3 @@
-use std::sync::Arc;
-
 use actix_web::{middleware::Logger, web, App, HttpServer};
 use anyhow::{Context, Result};
 use auth::Auth;
@@ -53,12 +51,11 @@ async fn main() -> std::io::Result<()> {
 }
 
 /// Loads DB configuration and setup SQLite DB pool.
-async fn db_pool() -> Result<Arc<Pool<Sqlite>>> {
+async fn db_pool() -> Result<&'static Pool<Sqlite>> {
     let db_url: String = conf::mandatory(DB_URL_VAR_NAME)?;
-    Ok(Arc::new(
-        SqlitePoolOptions::new()
-            .connect(db_url.as_str())
-            .await
-            .with_context(|| format!("Failed to connect to the SQLite DB with URL {}", db_url))?,
-    ))
+    let pool = SqlitePoolOptions::new()
+        .connect(db_url.as_str())
+        .await
+        .with_context(|| format!("Failed to connect to the SQLite DB with URL {}", db_url))?;
+    Ok(Box::leak(Box::new(pool)))
 }

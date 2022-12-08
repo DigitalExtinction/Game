@@ -1,5 +1,3 @@
-use std::sync::Arc;
-
 use actix_web::web;
 use anyhow::{ensure, Context, Result};
 use sqlx::{Pool, Sqlite};
@@ -30,7 +28,7 @@ impl Auth {
     ///
     /// The resulting object can be repeatedly used to configure an actix-web
     /// App.
-    pub async fn setup(pool: Arc<Pool<Sqlite>>) -> Result<Self> {
+    pub async fn setup(pool: &'static Pool<Sqlite>) -> Result<Self> {
         let jwt_secret: String = conf::mandatory(JWT_SECRET_VAR_NAME)?;
 
         ensure!(

@@ -1,5 +1,3 @@
-use std::sync::Arc;
-
 use anyhow::{Context, Result};
 use log::info;
 use sqlx::{query, sqlite::SqliteRow, Pool, Row, Sqlite};
@@ -15,21 +13,15 @@ const SQLITE_CONSTRAINT_PRIMARYKEY: &str = "1555";
 
 #[derive(Clone)]
 pub struct Users {
-    pool: Arc<Pool<Sqlite>>,
+    pool: &'static Pool<Sqlite>,
 }
 
 impl Users {
     /// This method initializes the database by creating required tables if
     /// they do not already exist.
-    pub(super) async fn init(pool: Arc<Pool<Sqlite>>) -> Result<Self> {
+    pub(super) async fn init(pool: &'static Pool<Sqlite>) -> Result<Self> {
         let init_query = format!(
-            r#"
-CREATE TABLE IF NOT EXISTS users (
-    username CHARACTER({username_len}) NOT NULL PRIMARY KEY,
-    pass_hash CHARACTER({pass_hash_len}) NOT NULL,
-    pass_salt CHARACTER({pass_salt_len}) NOT NULL
-);
-"#,
+            include_str!("init.sql"),
             username_len = MAX_USERNAME_LEN,
             pass_hash_len = MAX_PASS_HASH_LEN,
             pass_salt_len = MAX_PASS_SALT_LEN,
@@ -37,7 +29,7 @@ CREATE TABLE IF NOT EXISTS users (
 
         info!("Initializing users...");
         query(&init_query)
-            .execute(pool.as_ref())
+            .execute(pool)
             .await
             .context("DB initialization failed")?;
         Ok(Self { pool })
@@ -54,7 +46,7 @@ CREATE TABLE IF NOT EXISTS users (
             .bind(user.user().username())
             .bind(password.b64_encode_pwd_hash()?)
             .bind(password.salt_str())
-            .execute(self.pool.as_ref())
+            .execute(self.pool)
             .await;
 
         if let Err(sqlx::Error::Database(ref error)) = result {
@@ -76,7 +68,7 @@ CREATE TABLE IF NOT EXISTS users (
 
         let row = query("SELECT pass_hash, pass_salt FROM users WHERE username = ?;")
             .bind(user.username())
-            .fetch_optional(self.pool.as_ref())
+            .fetch_optional(self.pool)
             .await?;
         let Some(row) = row else { return Ok(false) };
         Ok(DbPassword::try_from(row)?.check(user.password()))
