@@ -2,10 +2,6 @@ name: Docs
 
 on: [push, pull_request]
 
-concurrency:
-  group: "pages"
-  cancel-in-progress: true
-
 env:
   CARGO_TERM_COLOR: always
 
@@ -48,6 +44,10 @@ jobs:
   deploy:
     name: Deploy
     if: github.ref == 'refs/heads/main'
+
+    concurrency:
+      group: "pages"
+      cancel-in-progress: true
 
     needs: build
     runs-on: ubuntu-latest
