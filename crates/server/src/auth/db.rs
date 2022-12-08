@@ -21,13 +21,7 @@ impl Users {
     /// they do not already exist.
     pub(super) async fn init(pool: &'static Pool<Sqlite>) -> Result<Self> {
         let init_query = format!(
-            r#"
-CREATE TABLE IF NOT EXISTS users (
-    username CHARACTER({username_len}) NOT NULL PRIMARY KEY,
-    pass_hash CHARACTER({pass_hash_len}) NOT NULL,
-    pass_salt CHARACTER({pass_salt_len}) NOT NULL
-);
-"#,
+            include_str!("init.sql"),
             username_len = MAX_USERNAME_LEN,
             pass_hash_len = MAX_PASS_HASH_LEN,
             pass_salt_len = MAX_PASS_SALT_LEN,
