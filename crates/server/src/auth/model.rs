@@ -5,7 +5,7 @@ use serde::{Deserialize, Serialize};
 
 const MIN_PASSWORD_LEN: usize = 6;
 const MAX_PASSWORD_LEN: usize = 30;
-pub(super) const MAX_USERNAME_LEN: usize = 32;
+pub const MAX_USERNAME_LEN: usize = 32;
 
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]

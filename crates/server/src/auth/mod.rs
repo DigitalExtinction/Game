@@ -7,7 +7,7 @@ use crate::conf;
 
 mod db;
 mod endpoints;
-mod model;
+pub mod model;
 mod passwd;
 mod token;
 

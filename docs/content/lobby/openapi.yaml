@@ -60,6 +60,29 @@ paths:
         "401":
           description: >-
             The username does not exist or the password is not correct.
+  /a/games:
+    post:
+      summary: Create and join a new game.
+      description: >-
+        This endpoint is used to crate a new game. The user automatically joins
+        the game. It is not possible to simultaneously be part of multiple
+        games.
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/game-config"
+      responses:
+        "200":
+          description: The game was successfully crated and the user joined it.
+        "400":
+          description: >-
+            The game cannot be created because the request is invalid. This
+            might be due to invalid game configuration.
+        "403":
+          description: The user is already part of another game.
+        "409":
+          description: A different game with the same name already exists.
 
 components:
   schemas:
@@ -79,3 +102,16 @@ components:
             A unique user name. It is a non-empty Unicode string with maximum
             length of 32 bytes when encoded in UTF-8. It does not start or end
             with whitespace.
+    game-config:
+      type: object
+      properties:
+        name:
+          type: string
+          description: A unique game name.
+        maxPlayers:
+          type: integer
+          minimum: 2
+          maximum: 4
+        map_name:
+          type: string
+          description: Name of the game map.
