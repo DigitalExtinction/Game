@@ -1,11 +1,14 @@
 use actix_web::{middleware::Logger, web, App, HttpServer};
 use anyhow::{Context, Result};
 use auth::Auth;
+use games::GamesService;
 use log::info;
 use sqlx::{sqlite::SqlitePoolOptions, Pool, Sqlite};
 
 mod auth;
 mod conf;
+mod db;
+mod games;
 
 const JSON_PAYLOAD_LIMIT: usize = 10 * 1024;
 const DB_URL_VAR_NAME: &str = "DE_DB_URL";
@@ -38,12 +41,14 @@ async fn main() -> std::io::Result<()> {
 
     let db_pool = handle_error!(db_pool().await);
     let auth = handle_error!(Auth::setup(db_pool).await);
+    let games = handle_error!(GamesService::setup(db_pool).await);
 
     HttpServer::new(move || {
         App::new()
             .wrap(Logger::default())
             .app_data(json_cfg.clone())
             .configure(|c| auth.configure(c))
+            .configure(|c| games.configure(c))
     })
     .bind(("0.0.0.0", http_port))?
     .run()

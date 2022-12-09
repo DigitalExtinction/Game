@@ -7,9 +7,7 @@ use super::{
     model::{User, UserWithPassword, UsernameAndPassword},
     passwd::{DbPassword, MAX_PASS_HASH_LEN, MAX_PASS_SALT_LEN},
 };
-use crate::auth::model::MAX_USERNAME_LEN;
-
-const SQLITE_CONSTRAINT_PRIMARYKEY: &str = "1555";
+use crate::{auth::model::MAX_USERNAME_LEN, db::SQLITE_CONSTRAINT_PRIMARYKEY, db_error};
 
 #[derive(Clone)]
 pub struct Users {
@@ -17,8 +15,8 @@ pub struct Users {
 }
 
 impl Users {
-    /// This method initializes the database by creating required tables if
-    /// they do not already exist.
+    /// This method sets up the database by creating required tables if they do
+    /// not already exist.
     pub(super) async fn init(pool: &'static Pool<Sqlite>) -> Result<Self> {
         let init_query = format!(
             include_str!("init.sql"),
@@ -49,14 +47,11 @@ impl Users {
             .execute(self.pool)
             .await;
 
-        if let Err(sqlx::Error::Database(ref error)) = result {
-            if let Some(code) = error.code() {
-                if code == SQLITE_CONSTRAINT_PRIMARYKEY {
-                    return Err(RegistrationError::UsernameTaken);
-                }
-            }
-        }
-
+        db_error!(
+            result,
+            RegistrationError::UsernameTaken,
+            SQLITE_CONSTRAINT_PRIMARYKEY
+        );
         result.map_err(RegistrationError::Database)?;
         Ok(())
     }
