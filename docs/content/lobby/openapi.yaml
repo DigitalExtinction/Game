@@ -61,12 +61,28 @@ paths:
           description: >-
             The username does not exist or the password is not correct.
   /a/games:
+    get:
+      summary: List games.
+      description: This endpoint returns list of all games on the server.
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Game listing.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/game-config"
     post:
       summary: Create and join a new game.
       description: >-
         This endpoint is used to crate a new game. The user automatically joins
         the game. It is not possible to simultaneously be part of multiple
         games.
+      security:
+        - bearerAuth: []
       requestBody:
         content:
           application/json:
@@ -84,21 +100,13 @@ paths:
         "409":
           description: A different game with the same name already exists.
 
-  /a/games:
-    get:
-      summary: List games.
-      description: This endpoint returns list of all games on the server.
-      responses:
-        "200":
-          description: Game listing.
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/game-config"
-
 components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
   schemas:
     token-response:
       type: object

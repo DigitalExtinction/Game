@@ -14,6 +14,7 @@ categories.workspace = true
 
 [dependencies]
 actix-web = "4.2.1"
+actix-web-httpauth = "0.8.0"
 anyhow = "1.0.66"
 base64 = "0.13.1"
 env_logger = "0.10.0"

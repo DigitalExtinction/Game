@@ -5,22 +5,26 @@ use super::{
     db::{AdditionError, CreationError, Games},
     model::{Game, GameConfig},
 };
+use crate::auth::Claims;
 
 /// Registers all authentication endpoints.
 pub(super) fn configure(cfg: &mut web::ServiceConfig) {
-    cfg.service(web::scope("/a/games").service(create).service(list));
+    cfg.service(web::scope("/games").service(create).service(list));
 }
 
 #[post("/")]
-async fn create(games: web::Data<Games>, game_config: web::Json<GameConfig>) -> impl Responder {
+async fn create(
+    claims: web::ReqData<Claims>,
+    games: web::Data<Games>,
+    game_config: web::Json<GameConfig>,
+) -> impl Responder {
     let game_config = game_config.into_inner();
     if let Err(error) = game_config.validate() {
         warn!("Invalid game configuration: {:?}", error);
         return HttpResponse::BadRequest().json(format!("{}", error));
     }
 
-    let game = Game::new(game_config, "Indy".to_owned());
-
+    let game = Game::new(game_config, claims.username().to_owned());
     match games.create(game).await {
         Ok(_) => HttpResponse::Ok().finish(),
         Err(CreationError::NameTaken) => {
