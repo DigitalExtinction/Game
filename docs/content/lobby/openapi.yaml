@@ -84,6 +84,20 @@ paths:
         "409":
           description: A different game with the same name already exists.
 
+  /a/games:
+    get:
+      summary: List games.
+      description: This endpoint returns list of all games on the server.
+      responses:
+        "200":
+          description: Game listing.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/game-config"
+
 components:
   schemas:
     token-response:
