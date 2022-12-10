@@ -7,7 +7,7 @@ use serde::{Deserialize, Serialize};
 const TOKEN_LIFETIME: u64 = 86400;
 
 /// Client authentication token claims.
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Claims {
     sub: String,
     exp: u64,
@@ -21,6 +21,10 @@ impl Claims {
             sub: username.into(),
             exp: get_current_timestamp() + TOKEN_LIFETIME,
         }
+    }
+
+    pub fn username(&self) -> &str {
+        self.sub.as_str()
     }
 }
 
@@ -65,7 +69,7 @@ mod tests {
         let token_a = tokens.encode(&Claims::standard("Indy")).unwrap();
         let token_b = tokens.encode(&Claims::standard("Indy2")).unwrap();
         assert_ne!(token_a, token_b);
-        assert_eq!(tokens.decode(&token_a).unwrap().sub, "Indy");
-        assert_eq!(tokens.decode(&token_b).unwrap().sub, "Indy2");
+        assert_eq!(tokens.decode(&token_a).unwrap().username(), "Indy");
+        assert_eq!(tokens.decode(&token_b).unwrap().username(), "Indy2");
     }
 }

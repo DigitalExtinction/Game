@@ -3,6 +3,7 @@ use anyhow::{ensure, Context, Result};
 use sqlx::{Pool, Sqlite};
 
 pub use self::middleware::AuthMiddlewareFactory;
+pub use self::token::Claims;
 use self::{db::Users, token::Tokens};
 use crate::conf;
 
