@@ -9,7 +9,7 @@ use super::{
 
 /// Registers all authentication endpoints.
 pub(super) fn configure(cfg: &mut web::ServiceConfig) {
-    cfg.service(web::scope("/p/auth").service(sign_up).service(sign_in));
+    cfg.service(web::scope("/auth").service(sign_up).service(sign_in));
 }
 
 #[post("/sign-up")]

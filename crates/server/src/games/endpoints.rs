@@ -8,7 +8,7 @@ use super::{
 
 /// Registers all authentication endpoints.
 pub(super) fn configure(cfg: &mut web::ServiceConfig) {
-    cfg.service(web::scope("/a/games").service(create).service(list));
+    cfg.service(web::scope("/games").service(create).service(list));
 }
 
 #[post("/")]

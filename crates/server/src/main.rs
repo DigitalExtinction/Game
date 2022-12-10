@@ -1,6 +1,6 @@
 use actix_web::{middleware::Logger, web, App, HttpServer};
 use anyhow::{Context, Result};
-use auth::Auth;
+use auth::{Auth, AuthMiddlewareFactory};
 use games::GamesService;
 use log::info;
 use sqlx::{sqlite::SqlitePoolOptions, Pool, Sqlite};
@@ -44,11 +44,17 @@ async fn main() -> std::io::Result<()> {
     let games = handle_error!(GamesService::setup(db_pool).await);
 
     HttpServer::new(move || {
+        let public_scope = web::scope("/p").configure(|c| auth.configure_public(c));
+        let authenticated_scope = web::scope("/a")
+            .wrap(AuthMiddlewareFactory)
+            .configure(|c| games.configure(c));
+
         App::new()
             .wrap(Logger::default())
             .app_data(json_cfg.clone())
-            .configure(|c| auth.configure(c))
-            .configure(|c| games.configure(c))
+            .configure(|c| auth.configure_root(c))
+            .service(public_scope)
+            .service(authenticated_scope)
     })
     .bind(("0.0.0.0", http_port))?
     .run()

@@ -64,6 +64,8 @@ paths:
     get:
       summary: List games.
       description: This endpoint returns list of all games on the server.
+      security:
+        - bearerAuth: []
       responses:
         "200":
           description: Game listing.
@@ -79,6 +81,8 @@ paths:
         This endpoint is used to crate a new game. The user automatically joins
         the game. It is not possible to simultaneously be part of multiple
         games.
+      security:
+        - bearerAuth: []
       requestBody:
         content:
           application/json:
@@ -97,6 +101,12 @@ paths:
           description: A different game with the same name already exists.
 
 components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
   schemas:
     token-response:
       type: object
