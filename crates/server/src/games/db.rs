@@ -1,9 +1,10 @@
 use anyhow::{Context, Result};
+use futures_util::TryStreamExt;
 use log::info;
-use sqlx::{query, Pool, Sqlite, SqliteExecutor};
+use sqlx::{query, sqlite::SqliteRow, Pool, Row, Sqlite, SqliteExecutor};
 use thiserror::Error;
 
-use super::model::Game;
+use super::model::{Game, GameConfig};
 use crate::{
     auth::model::MAX_USERNAME_LEN,
     db::{SQLITE_CONSTRAINT_PRIMARYKEY, SQLITE_CONSTRAINT_UNIQUE},
@@ -35,6 +36,21 @@ impl Games {
             .await
             .context("DB initialization failed")?;
         Ok(Self { pool })
+    }
+
+    /// This method creates a new game in the DB and places all users to it.
+    pub(super) async fn list(&self) -> Result<Vec<GameConfig>> {
+        let mut rows = query("SELECT * FROM games;").fetch(self.pool);
+        let mut games = Vec::with_capacity(rows.size_hint().0);
+        while let Some(row) = rows
+            .try_next()
+            .await
+            .context("Failed to retrieve a game from the DB")?
+        {
+            games.push(GameConfig::try_from(row)?);
+        }
+
+        Ok(games)
     }
 
     /// This method creates a new game in the DB and places all users to it.
@@ -116,4 +132,15 @@ pub(super) enum AdditionError {
     Database(#[source] sqlx::Error),
     #[error(transparent)]
     Other(#[from] anyhow::Error),
+}
+
+impl TryFrom<SqliteRow> for GameConfig {
+    type Error = anyhow::Error;
+
+    fn try_from(row: SqliteRow) -> Result<Self, Self::Error> {
+        let name: String = row.try_get("name")?;
+        let max_players: u8 = row.try_get("max_players")?;
+        let map_name: String = row.try_get("map_name")?;
+        Ok(Self::new(name, max_players, map_name))
+    }
 }

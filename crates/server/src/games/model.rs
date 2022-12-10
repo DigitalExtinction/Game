@@ -39,6 +39,14 @@ pub(super) struct GameConfig {
 }
 
 impl GameConfig {
+    pub(super) fn new(name: String, max_players: u8, map_name: String) -> Self {
+        Self {
+            name,
+            max_players,
+            map_name,
+        }
+    }
+
     pub(super) fn name(&self) -> &str {
         self.name.as_str()
     }

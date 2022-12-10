@@ -1,4 +1,4 @@
-use actix_web::{post, web, HttpResponse, Responder};
+use actix_web::{get, post, web, HttpResponse, Responder};
 use log::{error, warn};
 
 use super::{
@@ -8,7 +8,7 @@ use super::{
 
 /// Registers all authentication endpoints.
 pub(super) fn configure(cfg: &mut web::ServiceConfig) {
-    cfg.service(web::scope("/a/games").service(create));
+    cfg.service(web::scope("/a/games").service(create).service(list));
 }
 
 #[post("/")]
@@ -33,6 +33,17 @@ async fn create(games: web::Data<Games>, game_config: web::Json<GameConfig>) -> 
         }
         Err(error) => {
             error!("Game creation error: {:?}", error);
+            HttpResponse::InternalServerError().finish()
+        }
+    }
+}
+
+#[get("/")]
+async fn list(games: web::Data<Games>) -> impl Responder {
+    match games.list().await {
+        Ok(games) => HttpResponse::Ok().json(games),
+        Err(error) => {
+            error!("Game listing error: {:?}", error);
             HttpResponse::InternalServerError().finish()
         }
     }
