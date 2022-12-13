@@ -74,7 +74,15 @@ paths:
               schema:
                 type: array
                 items:
-                  $ref: "#/components/schemas/game-config"
+                  type: object
+                  properties:
+                    numPlayers:
+                      type: integer
+                      description: >-
+                        Number of players who already joined the game.
+                      minimum: 1
+                    config:
+                      $ref: "#/components/schemas/game-config"
     post:
       summary: Create and join a new game.
       description: >-
