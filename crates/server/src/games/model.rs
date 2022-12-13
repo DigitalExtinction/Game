@@ -30,6 +30,22 @@ impl Game {
     }
 }
 
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+pub(super) struct GamePartial {
+    config: GameConfig,
+    num_players: u8,
+}
+
+impl GamePartial {
+    pub(super) fn new(config: GameConfig, num_players: u8) -> Self {
+        Self {
+            config,
+            num_players,
+        }
+    }
+}
+
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub(super) struct GameConfig {
