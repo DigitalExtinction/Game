@@ -7,7 +7,7 @@ use thiserror::Error;
 use super::model::{Game, GameConfig};
 use crate::{
     auth::model::MAX_USERNAME_LEN,
-    db::{SQLITE_CONSTRAINT_PRIMARYKEY, SQLITE_CONSTRAINT_UNIQUE},
+    db::{SQLITE_CONSTRAINT_FOREIGNKEY, SQLITE_CONSTRAINT_PRIMARYKEY, SQLITE_CONSTRAINT_UNIQUE},
     db_error,
     games::model::{MAX_GAME_NAME_LEN, MAX_MAP_NAME_LEN},
 };
@@ -88,6 +88,10 @@ impl Games {
         Ok(())
     }
 
+    pub(super) async fn add_player(&self, username: &str, game: &str) -> Result<(), AdditionError> {
+        Self::add_player_inner(self.pool, false, username, game).await
+    }
+
     async fn add_player_inner<'c, E>(
         executor: E,
         author: bool,
@@ -104,6 +108,11 @@ impl Games {
             .execute(executor)
             .await;
 
+        db_error!(
+            result,
+            AdditionError::UserOrGameDoesNotExist,
+            SQLITE_CONSTRAINT_FOREIGNKEY
+        );
         db_error!(
             result,
             AdditionError::AlreadyInAGame,
@@ -206,6 +215,8 @@ pub(super) enum CreationError {
 pub(super) enum AdditionError {
     #[error("User is already in another game")]
     AlreadyInAGame,
+    #[error("The user or the game does not exist")]
+    UserOrGameDoesNotExist,
     #[error("A database error encountered")]
     Database(#[source] sqlx::Error),
     #[error(transparent)]

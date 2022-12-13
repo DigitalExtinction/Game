@@ -13,6 +13,7 @@ pub(super) fn configure(cfg: &mut web::ServiceConfig) {
         web::scope("/games")
             .service(create)
             .service(list)
+            .service(join)
             .service(leave),
     );
 }
@@ -53,6 +54,31 @@ async fn list(games: web::Data<Games>) -> impl Responder {
         Ok(games) => HttpResponse::Ok().json(games),
         Err(error) => {
             error!("Game listing error: {:?}", error);
+            HttpResponse::InternalServerError().finish()
+        }
+    }
+}
+
+#[put("/{name}/join")]
+async fn join(
+    claims: web::ReqData<Claims>,
+    games: web::Data<Games>,
+    path: web::Path<String>,
+) -> impl Responder {
+    let name = path.into_inner();
+
+    match games.add_player(claims.username(), name.as_str()).await {
+        Ok(_) => HttpResponse::Ok().finish(),
+        Err(AdditionError::AlreadyInAGame) => {
+            warn!("Game joining error: a user is already in a different game.");
+            HttpResponse::Forbidden().json("User is already in a different game.")
+        }
+        Err(AdditionError::UserOrGameDoesNotExist) => {
+            warn!("Game joining error: the game or the user does not exist");
+            HttpResponse::NotFound().json("Game not found.")
+        }
+        Err(error) => {
+            error!("Error while adding a player to a game: {:?}", error);
             HttpResponse::InternalServerError().finish()
         }
     }
