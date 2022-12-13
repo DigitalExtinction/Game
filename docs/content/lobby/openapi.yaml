@@ -100,6 +100,26 @@ paths:
         "409":
           description: A different game with the same name already exists.
 
+  /a/games/{name}/leave:
+    put:
+      summary: Leave or abandon a game.
+      description: >-
+        Leave the game. The client needs to be part of the game. The game is
+        abandoned / canceled when the author leaves the game.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: name
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: The user successfully left the game.
+        "403":
+          description: The user is not part of the game.
+
 components:
   securitySchemes:
     bearerAuth:

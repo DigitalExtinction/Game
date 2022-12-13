@@ -72,10 +72,12 @@ impl Games {
         );
         result.map_err(CreationError::Database)?;
 
+        let mut author = true;
         for username in game.players() {
-            Self::add_player_inner(&mut transaction, username, game_config.name())
+            Self::add_player_inner(&mut transaction, author, username, game_config.name())
                 .await
                 .map_err(CreationError::AdditionError)?;
+            author = false;
         }
 
         transaction
@@ -86,17 +88,18 @@ impl Games {
         Ok(())
     }
 
-    pub(super) async fn add_player_inner<'c, E>(
+    async fn add_player_inner<'c, E>(
         executor: E,
+        author: bool,
         username: &str,
         game: &str,
     ) -> Result<(), AdditionError>
     where
         E: SqliteExecutor<'c>,
     {
-        let result = query("INSERT INTO players (username, game) VALUES (?, ?);")
+        let result = query("INSERT INTO players (author, username, game) VALUES (?, ?, ?);")
+            .bind(author)
             .bind(username)
-            .bind(game)
             .bind(game)
             .execute(executor)
             .await;
@@ -110,6 +113,81 @@ impl Games {
 
         Ok(())
     }
+
+    /// Removes a player from a game. Deletes the game if the player was the
+    /// game author.
+    pub(super) async fn remove_player(
+        &self,
+        username: &str,
+        game: &str,
+    ) -> Result<(), RemovalError> {
+        let mut transaction = self.pool.begin().await.map_err(RemovalError::Database)?;
+
+        let mut rows = query("SELECT author FROM players WHERE username = ? AND game = ?;")
+            .bind(username)
+            .bind(game)
+            .fetch(self.pool);
+
+        let action = match rows.try_next().await.map_err(RemovalError::Database)? {
+            Some(row) => {
+                let author: bool = row.try_get("author").map_err(RemovalError::Database)?;
+                if author {
+                    RemovalAction::Abandoned
+                } else {
+                    RemovalAction::Removed
+                }
+            }
+            None => return Err(RemovalError::NotInTheGame),
+        };
+
+        match action {
+            RemovalAction::Abandoned => {
+                query("DELETE FROM games WHERE name = ?;")
+                    .bind(game)
+                    .execute(&mut transaction)
+                    .await
+                    .map_err(RemovalError::Database)?;
+            }
+            RemovalAction::Removed => {
+                Self::remove_player_inner(&mut transaction, username, game).await?;
+            }
+        }
+
+        transaction.commit().await.map_err(RemovalError::Database)?;
+        Ok(())
+    }
+
+    async fn remove_player_inner<'c, E>(
+        executor: E,
+        username: &str,
+        game: &str,
+    ) -> Result<(), RemovalError>
+    where
+        E: SqliteExecutor<'c>,
+    {
+        let query_result = query("DELETE FROM players WHERE username = ? AND game = ?;")
+            .bind(username)
+            .bind(game)
+            .execute(executor)
+            .await
+            .map_err(RemovalError::Database)?;
+
+        let rows_affected = query_result.rows_affected();
+        assert!(rows_affected <= 1);
+        if rows_affected == 0 {
+            return Err(RemovalError::NotInTheGame);
+        }
+
+        Ok(())
+    }
+}
+
+/// Action taken during removal of a player from a game.
+enum RemovalAction {
+    /// The game was abandoned and all players removed from the game.
+    Abandoned,
+    /// The player left the game without any further action taken.
+    Removed,
 }
 
 #[derive(Error, Debug)]
@@ -132,6 +210,14 @@ pub(super) enum AdditionError {
     Database(#[source] sqlx::Error),
     #[error(transparent)]
     Other(#[from] anyhow::Error),
+}
+
+#[derive(Error, Debug)]
+pub(super) enum RemovalError {
+    #[error("User is not in the game")]
+    NotInTheGame,
+    #[error("A database error encountered")]
+    Database(#[source] sqlx::Error),
 }
 
 impl TryFrom<SqliteRow> for GameConfig {

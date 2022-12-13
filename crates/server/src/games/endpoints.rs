@@ -1,15 +1,20 @@
-use actix_web::{get, post, web, HttpResponse, Responder};
+use actix_web::{get, post, put, web, HttpResponse, Responder};
 use log::{error, warn};
 
 use super::{
-    db::{AdditionError, CreationError, Games},
+    db::{AdditionError, CreationError, Games, RemovalError},
     model::{Game, GameConfig},
 };
 use crate::auth::Claims;
 
 /// Registers all authentication endpoints.
 pub(super) fn configure(cfg: &mut web::ServiceConfig) {
-    cfg.service(web::scope("/games").service(create).service(list));
+    cfg.service(
+        web::scope("/games")
+            .service(create)
+            .service(list)
+            .service(leave),
+    );
 }
 
 #[post("/")]
@@ -48,6 +53,27 @@ async fn list(games: web::Data<Games>) -> impl Responder {
         Ok(games) => HttpResponse::Ok().json(games),
         Err(error) => {
             error!("Game listing error: {:?}", error);
+            HttpResponse::InternalServerError().finish()
+        }
+    }
+}
+
+#[put("/{name}/leave")]
+async fn leave(
+    claims: web::ReqData<Claims>,
+    games: web::Data<Games>,
+    path: web::Path<String>,
+) -> impl Responder {
+    let name = path.into_inner();
+
+    match games.remove_player(claims.username(), name.as_str()).await {
+        Ok(_) => HttpResponse::Ok().finish(),
+        Err(RemovalError::NotInTheGame) => {
+            warn!("Game leaving error: the user is not in the game.");
+            HttpResponse::Forbidden().json("The user is not in the game.")
+        }
+        Err(error) => {
+            error!("Error while removing a player from a game: {:?}", error);
             HttpResponse::InternalServerError().finish()
         }
     }

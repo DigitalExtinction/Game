@@ -6,6 +6,7 @@ CREATE TABLE IF NOT EXISTS games (
 
 CREATE TABLE IF NOT EXISTS players (
     ordinal INTEGER PRIMARY KEY AUTOINCREMENT,
+    author BOOLEAN NOT NULL,
     username CHARACTER({username_len}) NOT NULL UNIQUE,
     game CHARACTER({game_name_len}) NOT NULL,
 
