@@ -86,7 +86,7 @@ impl Games {
         Ok(())
     }
 
-    pub(super) async fn add_player_inner<'c, E>(
+    async fn add_player_inner<'c, E>(
         executor: E,
         username: &str,
         game: &str,
