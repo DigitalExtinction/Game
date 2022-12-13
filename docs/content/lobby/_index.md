@@ -23,6 +23,9 @@ The server is configured via environment variables:
 * `DE_JWT_SECRET` (required) – A Base64 encoded secret used for signing and
   validation of JSON Web Tokens (JWT). The secret must have between 12 and 86
   characters.
+
+  Make sure to invalidate all JWT by changing the secret after any changes or
+  purges of the database.
 * `DE_HTTP_PORT` (optional) – HTTP server port number. Defaults to `8080`.
 * `RUST_LOG` (optional) – logging configuration, see [env_logger
   documentation](https://docs.rs/env_logger/latest/env_logger/#enabling-logging).
