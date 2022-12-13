@@ -89,7 +89,7 @@ The intention is:
 
 Topologically sorted crates:
 
-* [de_server](/crates/server) – lobby server.
+* [de_lobby](/crates/lobby) – lobby server.
 
 * [de_uom](/crates/uom) – type safe units of measurements.
 
