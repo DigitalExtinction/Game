@@ -97,7 +97,6 @@ impl Games {
         let result = query("INSERT INTO players (username, game) VALUES (?, ?);")
             .bind(username)
             .bind(game)
-            .bind(game)
             .execute(executor)
             .await;
 
