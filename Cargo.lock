@@ -2013,6 +2013,27 @@ dependencies = [
 ]
 
 [[package]]
+name = "de_lobby"
+version = "0.1.0-dev"
+dependencies = [
+ "actix-web",
+ "actix-web-httpauth",
+ "anyhow",
+ "base64 0.13.1",
+ "env_logger 0.10.0",
+ "futures-util",
+ "jsonwebtoken",
+ "log",
+ "mime",
+ "pbkdf2",
+ "rand_core",
+ "serde",
+ "sqlx",
+ "subtle",
+ "thiserror",
+]
+
+[[package]]
 name = "de_map"
 version = "0.1.0-dev"
 dependencies = [
@@ -2095,27 +2116,6 @@ dependencies = [
  "rstar",
  "spade",
  "tinyvec",
-]
-
-[[package]]
-name = "de_server"
-version = "0.1.0-dev"
-dependencies = [
- "actix-web",
- "actix-web-httpauth",
- "anyhow",
- "base64 0.13.1",
- "env_logger 0.10.0",
- "futures-util",
- "jsonwebtoken",
- "log",
- "mime",
- "pbkdf2",
- "rand_core",
- "serde",
- "sqlx",
- "subtle",
- "thiserror",
 ]
 
 [[package]]

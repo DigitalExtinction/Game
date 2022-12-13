@@ -1,5 +1,5 @@
 [package]
-name = "de_server"
+name = "de_lobby"
 readme = "README.md"
 description = "Digital Extinction lobby server."
 
