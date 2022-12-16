@@ -21,6 +21,10 @@ impl Token {
     pub fn new(token: String) -> Self {
         Self { token }
     }
+
+    pub fn token(&self) -> &str {
+        self.token.as_str()
+    }
 }
 
 /// Username & password to be used while signing in.
@@ -32,6 +36,10 @@ pub struct UsernameAndPassword {
 }
 
 impl UsernameAndPassword {
+    pub fn new(username: String, password: String) -> Self {
+        Self { username, password }
+    }
+
     pub fn username(&self) -> &str {
         self.username.as_str()
     }
@@ -50,6 +58,10 @@ pub struct UserWithPassword {
 }
 
 impl UserWithPassword {
+    pub fn new(password: String, user: User) -> Self {
+        Self { password, user }
+    }
+
     pub fn user(&self) -> &User {
         &self.user
     }

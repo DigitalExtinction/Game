@@ -14,6 +14,7 @@ use de_core::{
 };
 use de_index::IndexPluginGroup;
 use de_loader::LoaderPluginGroup;
+use de_lobby_client::LobbyClientPluginGroup;
 use de_menu::MenuPluginGroup;
 use de_movement::MovementPluginGroup;
 use de_objects::ObjectsPluginGroup;
@@ -42,6 +43,7 @@ fn main() {
         .add_plugin(FrameTimeDiagnosticsPlugin::default())
         .add_plugin(GamePlugin)
         .add_plugins(ConfigPluginGroup)
+        .add_plugins(LobbyClientPluginGroup)
         .add_plugins(MenuPluginGroup)
         .add_plugins(CorePluginGroup)
         .add_plugins(ObjectsPluginGroup)
