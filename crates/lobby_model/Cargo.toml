@@ -1,0 +1,19 @@
+[package]
+name = "de_lobby_model"
+description = "Digital Extinction Lobby API objects."
+
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+repository.workspace = true
+keywords.workspace = true
+homepage.workspace = true
+license.workspace = true
+categories.workspace = true
+
+[dependencies]
+# DE
+de_core.workspace = true
+
+# Other
+serde.workspace = true

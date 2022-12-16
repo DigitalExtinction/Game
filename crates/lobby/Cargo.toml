@@ -13,6 +13,10 @@ license.workspace = true
 categories.workspace = true
 
 [dependencies]
+# DE
+de_lobby_model.workspace = true
+
+# Other
 actix-web = "4.2.1"
 actix-web-httpauth = "0.8.0"
 anyhow = "1.0.66"

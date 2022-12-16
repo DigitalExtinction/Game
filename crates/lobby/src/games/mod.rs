@@ -6,7 +6,6 @@ use self::db::Games;
 
 mod db;
 mod endpoints;
-mod model;
 
 #[derive(Clone)]
 pub struct GamesService {

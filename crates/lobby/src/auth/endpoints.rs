@@ -1,9 +1,9 @@
 use actix_web::{post, web, HttpResponse, Responder};
+use de_lobby_model::{Token, UserWithPassword, UsernameAndPassword};
 use log::{error, info, warn};
 
 use super::{
     db::{RegistrationError, Users},
-    model::{TokenResponse, UserWithPassword, UsernameAndPassword},
     token::{Claims, Tokens},
 };
 
@@ -36,7 +36,7 @@ async fn sign_up(
                 "Registration of user {} was successful.",
                 user.user().username()
             );
-            HttpResponse::Ok().json(TokenResponse::new(token))
+            HttpResponse::Ok().json(Token::new(token))
         }
         Err(RegistrationError::UsernameTaken) => {
             warn!("Username {} is already taken.", user.user().username());
@@ -69,7 +69,7 @@ async fn sign_in(
                 }
             };
             info!("Signing in of user {} was successful.", user.username());
-            HttpResponse::Ok().json(TokenResponse::new(token))
+            HttpResponse::Ok().json(Token::new(token))
         }
         Err(error) => {
             error!("Sign-in error: {:?}", error);

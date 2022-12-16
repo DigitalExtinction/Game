@@ -71,6 +71,7 @@ de_controller = { path = "crates/controller", version = "0.1.0-dev" }
 de_core = { path = "crates/core", version = "0.1.0-dev" }
 de_index = { path = "crates/index", version = "0.1.0-dev" }
 de_loader = { path = "crates/loader", version = "0.1.0-dev" }
+de_lobby_model = { path = "crates/lobby_model", version = "0.1.0-dev" }
 de_map = { path = "crates/map", version = "0.1.0-dev" }
 de_menu = { path = "crates/menu", version = "0.1.0-dev" }
 de_movement = { path = "crates/movement", version = "0.1.0-dev" }

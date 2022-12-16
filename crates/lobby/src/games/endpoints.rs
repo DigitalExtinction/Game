@@ -1,10 +1,8 @@
 use actix_web::{get, post, put, web, HttpResponse, Responder};
+use de_lobby_model::{Game, GameConfig, Validatable};
 use log::{error, warn};
 
-use super::{
-    db::{AdditionError, CreationError, Games, RemovalError},
-    model::{Game, GameConfig},
-};
+use super::db::{AdditionError, CreationError, Games, RemovalError};
 use crate::auth::Claims;
 
 /// Registers all authentication endpoints.
