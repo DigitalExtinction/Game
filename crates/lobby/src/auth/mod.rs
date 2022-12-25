@@ -10,7 +10,6 @@ use crate::conf;
 mod db;
 mod endpoints;
 mod middleware;
-pub mod model;
 mod passwd;
 mod token;
 

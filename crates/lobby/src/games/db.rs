@@ -1,15 +1,19 @@
 use anyhow::{Context, Result};
+use de_lobby_model::{
+    Game, GameConfig, GameListing, GamePartial, MAX_GAME_NAME_LEN, MAX_MAP_NAME_LEN,
+    MAX_USERNAME_LEN,
+};
 use futures_util::TryStreamExt;
 use log::info;
 use sqlx::{query, sqlite::SqliteRow, Pool, Row, Sqlite, SqliteExecutor};
 use thiserror::Error;
 
-use super::model::{Game, GameConfig, GamePartial};
 use crate::{
-    auth::model::MAX_USERNAME_LEN,
-    db::{SQLITE_CONSTRAINT_FOREIGNKEY, SQLITE_CONSTRAINT_PRIMARYKEY, SQLITE_CONSTRAINT_UNIQUE},
+    db::{
+        FromRow, SQLITE_CONSTRAINT_FOREIGNKEY, SQLITE_CONSTRAINT_PRIMARYKEY,
+        SQLITE_CONSTRAINT_UNIQUE,
+    },
     db_error,
-    games::model::{MAX_GAME_NAME_LEN, MAX_MAP_NAME_LEN},
 };
 
 #[derive(Clone)]
@@ -39,7 +43,7 @@ impl Games {
     }
 
     /// This method creates a new game in the DB and places all users to it.
-    pub(super) async fn list(&self) -> Result<Vec<GamePartial>> {
+    pub(super) async fn list(&self) -> Result<GameListing> {
         let mut rows = query(
             "SELECT games.*, count(players.ordinal) as num_players \
              FROM games \
@@ -47,13 +51,13 @@ impl Games {
              GROUP BY games.name;",
         )
         .fetch(self.pool);
-        let mut games = Vec::with_capacity(rows.size_hint().0);
+        let mut games = GameListing::empty();
         while let Some(row) = rows
             .try_next()
             .await
             .context("Failed to retrieve a game from the DB")?
         {
-            games.push(GamePartial::try_from(row)?);
+            games.push(GamePartial::try_from_row(row)?);
         }
 
         Ok(games)
@@ -237,20 +241,20 @@ pub(super) enum RemovalError {
     Database(#[source] sqlx::Error),
 }
 
-impl TryFrom<SqliteRow> for GamePartial {
+impl FromRow for GamePartial {
     type Error = anyhow::Error;
 
-    fn try_from(row: SqliteRow) -> Result<Self, Self::Error> {
+    fn try_from_row(row: SqliteRow) -> Result<Self, Self::Error> {
         let num_players: u8 = row.try_get("num_players")?;
-        let config = GameConfig::try_from(row)?;
+        let config = GameConfig::try_from_row(row)?;
         Ok(Self::new(config, num_players))
     }
 }
 
-impl TryFrom<SqliteRow> for GameConfig {
+impl FromRow for GameConfig {
     type Error = anyhow::Error;
 
-    fn try_from(row: SqliteRow) -> Result<Self, Self::Error> {
+    fn try_from_row(row: SqliteRow) -> Result<Self, Self::Error> {
         let name: String = row.try_get("name")?;
         let max_players: u8 = row.try_get("max_players")?;
         let map_name: String = row.try_get("map_name")?;

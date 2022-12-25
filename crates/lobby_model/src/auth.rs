@@ -1,60 +1,64 @@
 //! Authentication and user management related API objects.
 
-use anyhow::{ensure, Result};
 use serde::{Deserialize, Serialize};
 
-const MIN_PASSWORD_LEN: usize = 6;
-const MAX_PASSWORD_LEN: usize = 30;
+use crate::{
+    ensure,
+    validation::{self, Validatable},
+};
+
+pub const MIN_PASSWORD_LEN: usize = 6;
+pub const MAX_PASSWORD_LEN: usize = 30;
 pub const MAX_USERNAME_LEN: usize = 32;
 
-#[derive(Serialize)]
+#[derive(Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub(super) struct TokenResponse {
+pub struct Token {
     token: String,
 }
 
-impl TokenResponse {
-    pub(super) fn new(token: String) -> Self {
+impl Token {
+    pub fn new(token: String) -> Self {
         Self { token }
     }
 }
 
 /// Username & password to be used while signing in.
-#[derive(Deserialize)]
+#[derive(Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub(super) struct UsernameAndPassword {
+pub struct UsernameAndPassword {
     username: String,
     password: String,
 }
 
 impl UsernameAndPassword {
-    pub(super) fn username(&self) -> &str {
+    pub fn username(&self) -> &str {
         self.username.as_str()
     }
 
-    pub(super) fn password(&self) -> &str {
+    pub fn password(&self) -> &str {
         self.password.as_str()
     }
 }
 
 /// User object combined with a password. To be used while signing up.
-#[derive(Deserialize)]
+#[derive(Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub(super) struct UserWithPassword {
+pub struct UserWithPassword {
     password: String,
     user: User,
 }
 
 impl UserWithPassword {
-    pub(super) fn user(&self) -> &User {
+    pub fn user(&self) -> &User {
         &self.user
     }
 
-    pub(super) fn password(&self) -> &str {
+    pub fn password(&self) -> &str {
         self.password.as_str()
     }
 
-    pub(super) fn validate(&self) -> Result<()> {
+    pub fn validate(&self) -> validation::Result {
         self.user.validate()?;
 
         ensure!(
@@ -81,15 +85,17 @@ pub struct User {
 }
 
 impl User {
-    pub(super) fn new(username: String) -> Self {
+    pub fn new(username: String) -> Self {
         Self { username }
     }
 
     pub fn username(&self) -> &str {
         self.username.as_str()
     }
+}
 
-    pub(super) fn validate(&self) -> Result<()> {
+impl Validatable for User {
+    fn validate(&self) -> validation::Result {
         ensure!(!self.username.is_empty(), "Empty username is not allowed.");
         ensure!(
             self.username.trim().len() == self.username.len(),

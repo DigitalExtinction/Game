@@ -1,13 +1,14 @@
 use anyhow::{Context, Result};
+use de_lobby_model::{User, UserWithPassword, UsernameAndPassword, MAX_USERNAME_LEN};
 use log::info;
 use sqlx::{query, sqlite::SqliteRow, Pool, Row, Sqlite};
 use thiserror::Error;
 
-use super::{
-    model::{User, UserWithPassword, UsernameAndPassword},
-    passwd::{DbPassword, MAX_PASS_HASH_LEN, MAX_PASS_SALT_LEN},
+use super::passwd::{DbPassword, MAX_PASS_HASH_LEN, MAX_PASS_SALT_LEN};
+use crate::{
+    db::{FromRow, SQLITE_CONSTRAINT_PRIMARYKEY},
+    db_error,
 };
-use crate::{auth::model::MAX_USERNAME_LEN, db::SQLITE_CONSTRAINT_PRIMARYKEY, db_error};
 
 #[derive(Clone)]
 pub struct Users {
@@ -94,10 +95,10 @@ impl TryFrom<SqliteRow> for DbPassword {
     }
 }
 
-impl TryFrom<SqliteRow> for User {
+impl FromRow for User {
     type Error = anyhow::Error;
 
-    fn try_from(row: SqliteRow) -> Result<Self, Self::Error> {
+    fn try_from_row(row: SqliteRow) -> Result<Self, Self::Error> {
         let username: String = row.try_get("username")?;
         Ok(Self::new(username))
     }

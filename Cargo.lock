@@ -2020,6 +2020,7 @@ dependencies = [
  "actix-web-httpauth",
  "anyhow",
  "base64 0.13.1",
+ "de_lobby_model",
  "env_logger 0.10.0",
  "futures-util",
  "jsonwebtoken",
@@ -2031,6 +2032,14 @@ dependencies = [
  "sqlx",
  "subtle",
  "thiserror",
+]
+
+[[package]]
+name = "de_lobby_model"
+version = "0.1.0-dev"
+dependencies = [
+ "de_core",
+ "serde",
 ]
 
 [[package]]
