@@ -6,6 +6,7 @@ use bevy::{
 use de_behaviour::BehaviourPluginGroup;
 use de_camera::CameraPluginGroup;
 use de_combat::CombatPluginGroup;
+use de_conf::ConfigPluginGroup;
 use de_controller::ControllerPluginGroup;
 use de_core::{
     state::{AppState, GameState, MenuState},
@@ -40,6 +41,7 @@ fn main() {
         .add_plugin(LogDiagnosticsPlugin::default())
         .add_plugin(FrameTimeDiagnosticsPlugin::default())
         .add_plugin(GamePlugin)
+        .add_plugins(ConfigPluginGroup)
         .add_plugins(MenuPluginGroup)
         .add_plugins(CorePluginGroup)
         .add_plugins(ObjectsPluginGroup)
@@ -70,7 +72,7 @@ struct GamePlugin;
 impl Plugin for GamePlugin {
     fn build(&self, app: &mut App) {
         app.add_loopless_state(AppState::InMenu)
-            .add_loopless_state(MenuState::MainMenu)
+            .add_loopless_state(MenuState::MLoading)
             .add_loopless_state(GameState::None);
     }
 }
