@@ -184,6 +184,6 @@ components:
           type: integer
           minimum: 2
           maximum: 4
-        map_name:
+        mapName:
           type: string
           description: Name of the game map.
