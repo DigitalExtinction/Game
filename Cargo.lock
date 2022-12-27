@@ -2091,7 +2091,6 @@ dependencies = [
 name = "de_lobby_model"
 version = "0.1.0-dev"
 dependencies = [
- "de_core",
  "serde",
 ]
 
