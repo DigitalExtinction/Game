@@ -1,0 +1,28 @@
+[package]
+name = "de_conf"
+description = "Configuration of Digital Extinction."
+
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+repository.workspace = true
+keywords.workspace = true
+homepage.workspace = true
+license.workspace = true
+categories.workspace = true
+
+[dependencies]
+# DE
+de_core.workspace = true
+
+# Other
+anyhow.workspace = true
+async-std.workspace = true
+bevy.workspace = true
+dirs.workspace = true
+futures-lite.workspace = true
+iyes_loopless.workspace = true
+iyes_progress.workspace = true
+serde.workspace = true
+serde_yaml.workspace = true
+url.workspace = true

@@ -31,6 +31,7 @@ opt-level = 3
 de_behaviour.workspace = true
 de_camera.workspace = true
 de_combat.workspace = true
+de_conf.workspace = true
 de_controller.workspace = true
 de_core.workspace = true
 de_index.workspace = true
@@ -67,6 +68,7 @@ categories = ["games"]
 de_behaviour = { path = "crates/behaviour", version = "0.1.0-dev" }
 de_camera = { path = "crates/camera", version = "0.1.0-dev" }
 de_combat = { path = "crates/combat", version = "0.1.0-dev" }
+de_conf = { path = "crates/conf", version = "0.1.0-dev" }
 de_controller = { path = "crates/controller", version = "0.1.0-dev" }
 de_core = { path = "crates/core", version = "0.1.0-dev" }
 de_index = { path = "crates/index", version = "0.1.0-dev" }
@@ -92,6 +94,7 @@ async-tar = "0.4.2"
 bevy = "0.9"
 clap = { version = "4.0", features = ["derive"] }
 criterion = "0.4"
+dirs = "4.0.0"
 enum-map = "2.3.0"
 futures-lite = "1.11"
 glam = "0.22"
@@ -109,6 +112,8 @@ parry3d = "0.11.0"
 rstar = { git = "https://github.com/georust/rstar", branch = "master" }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
+serde_yaml = "0.9"
 spade = "2.0.0"
 thiserror = "1.0"
 tinyvec = { version = "1.6.0", features = ["rustc_1_40", "alloc"] }
+url = { version = "2.3.1", features = ["serde"] }

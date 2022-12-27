@@ -7,6 +7,11 @@ pub enum AppState {
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum MenuState {
     None,
+    // It is necessary to avoid name collision with `GameState::Loading`. This
+    // is because Debug fmt is used by iyes_progress for a stage labeling.
+    //
+    // Alternatively, custom Debug implementation could have been be provided.
+    MLoading,
     MainMenu,
     MapSelection,
 }
