@@ -16,7 +16,7 @@ pub(super) fn configure(cfg: &mut web::ServiceConfig) {
     );
 }
 
-#[post("/")]
+#[post("")]
 async fn create(
     claims: web::ReqData<Claims>,
     games: web::Data<Games>,
@@ -46,7 +46,7 @@ async fn create(
     }
 }
 
-#[get("/")]
+#[get("")]
 async fn list(games: web::Data<Games>) -> impl Responder {
     match games.list().await {
         Ok(games) => HttpResponse::Ok().json(games),
