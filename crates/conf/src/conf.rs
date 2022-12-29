@@ -5,16 +5,16 @@ use anyhow::{bail, Context, Error, Result};
 use bevy::prelude::Resource;
 use url::Url;
 
-use crate::persisted;
+use crate::persisted::*;
 
 /// Top-level game configuration object.
 #[derive(Resource)]
 pub struct Configuration {
-    multiplayer: Multiplayer,
+    multiplayer: MultiplayerConf,
 }
 
 impl Configuration {
-    pub fn multiplayer(&self) -> &Multiplayer {
+    pub fn multiplayer(&self) -> &MultiplayerConf {
         &self.multiplayer
     }
 }
@@ -32,20 +32,20 @@ impl TryFrom<persisted::Configuration> for Configuration {
     }
 }
 
-pub struct Multiplayer {
+pub struct MultiplayerConf {
     server: Url,
 }
 
-impl Multiplayer {
+impl MultiplayerConf {
     pub fn server(&self) -> &Url {
         &self.server
     }
 }
 
-impl TryFrom<Option<persisted::Multiplayer>> for Multiplayer {
+impl TryFrom<Option<Multiplayer>> for MultiplayerConf {
     type Error = Error;
 
-    fn try_from(conf: Option<persisted::Multiplayer>) -> Result<Self> {
+    fn try_from(conf: Option<Multiplayer>) -> Result<Self> {
         let server = conf
             .and_then(|c| c.server)
             .unwrap_or_else(|| Url::parse("http://lobby.de-game.org").unwrap());
