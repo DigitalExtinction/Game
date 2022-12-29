@@ -4,12 +4,13 @@ use bevy::{
     input::mouse::{MouseMotion, MouseScrollUnit, MouseWheel},
     prelude::*,
 };
+use de_conf::{CameraConf, Configuration};
 use de_core::{
     events::ResendEventPlugin, projection::ToAltitude, stages::GameStage, state::GameState,
 };
 use de_map::size::MapBounds;
 use de_terrain::TerrainCollider;
-use de_uom::{InverseLogicalPixel, InverseSecond, LogicalPixel, Metre, Quantity, Radian, Second};
+use de_uom::{InverseSecond, LogicalPixel, Metre, Quantity, Radian, Second};
 use iyes_loopless::prelude::*;
 use parry3d::{
     na::{Unit, Vector3},
@@ -22,39 +23,23 @@ use parry3d::{
 const MOVE_MARGIN: LogicalPixel = Quantity::new_unchecked(40.);
 /// Camera moves horizontally at speed `distance * CAMERA_HORIZONTAL_SPEED`.
 const CAMERA_HORIZONTAL_SPEED: InverseSecond = Quantity::new_unchecked(2.0);
-/// Minimum camera distance from terrain achievable with zooming along.
-const MIN_CAMERA_DISTANCE: Metre = Quantity::new_unchecked(20.);
-/// Maximum camera distance from terrain achievable with zooming alone.
-const MAX_CAMERA_DISTANCE: Metre = Quantity::new_unchecked(300.);
-/// Maximum camera distance from terrain achievable with zooming alone.
-const DEFAULT_CAMERA_DISTANCE: Metre = Quantity::new_unchecked(
-    (MIN_CAMERA_DISTANCE.inner() + (MAX_CAMERA_DISTANCE.inner() - MIN_CAMERA_DISTANCE.inner()))
-        * 0.4,
-);
-/// Minimum temporary distance from terrain. Forward/backward camera motion is
-/// smooth within this range. Step adjustment is applied outside of this range.
-const HARD_MIN_CAMERA_DISTANCE: Metre = Quantity::new_unchecked(16.);
-/// Maximum temporary distance from terrain. Forward/backward camera motion is
-/// smooth within this range. Step adjustment is applied outside of this range.
-const HARD_MAX_CAMERA_DISTANCE: Metre = Quantity::new_unchecked(310.);
+/// Minimum camera distance multiplied by this gives minimum temporary distance
+/// from terrain. Forward/backward camera motion is smooth within this range.
+/// Step adjustment is applied outside of this range.
+const HARD_MIN_CAMERA_DISTANCE_FACTOR: f32 = 0.8;
+/// Maximum camera distance multiplied by this gives maximum temporary distance
+/// from terrain. Forward/backward camera motion is smooth within this range.
+/// Step adjustment is applied outside of this range.
+const HARD_MAX_CAMERA_DISTANCE_FACTOR: f32 = 1.1;
 /// Camera moves along forward axis (zooming) at speed `distance *
 /// CAMERA_VERTICAL_SPEED`.
 const CAMERA_VERTICAL_SPEED: InverseSecond = Quantity::new_unchecked(2.0);
 /// Do not zoom camera if it is within this distance of the desired distance.
 const DISTANCE_TOLERATION: Metre = Quantity::new_unchecked(0.001);
-/// Scale factor (i.e `distance * factor`) applied after single mouse wheel
-/// click.
-const WHEEL_ZOOM_FACTOR: f32 = 1.1;
-/// Scale factor (i.e. `distance * drag_size * factor`) applied after sliding
-/// on touch pad.
-const TOUCH_PAD_ZOOM_FACTOR: f32 = 1.01;
 /// Minimum camera tilt in radians.
 const MIN_OFF_NADIR: Radian = Quantity::new_unchecked(0.001);
 /// Maximum camera tilt in radians.
 const MAX_OFF_NADIR: Radian = Quantity::new_unchecked(0.7 * FRAC_PI_2);
-/// Mouse drag by `d` logical pixels will lead to rotation by `d *
-/// ROTATION_SENSITIVITY` radians.
-const ROTATION_SENSITIVITY: InverseLogicalPixel = Quantity::new_unchecked(0.008);
 /// Never move camera focus point closer than this to a map edge.
 const MAP_FOCUS_MARGIN: Metre = Quantity::new_unchecked(1.);
 
@@ -205,8 +190,8 @@ impl DesiredPoW {
         self.azimuth
     }
 
-    fn zoom_clamped(&mut self, factor: f32) {
-        self.distance = (self.distance * factor).clamp(MIN_CAMERA_DISTANCE, MAX_CAMERA_DISTANCE);
+    fn zoom_clamped(&mut self, conf: &CameraConf, factor: f32) {
+        self.distance = (self.distance * factor).clamp(conf.min_distance(), conf.max_distance());
     }
 
     fn tilt_clamped(&mut self, delta: Radian) {
@@ -218,20 +203,22 @@ impl DesiredPoW {
     }
 }
 
-fn setup(mut commands: Commands) {
+fn setup(mut commands: Commands, conf: Res<Configuration>) {
+    let conf = conf.camera();
+    let distance = 0.6 * conf.min_distance() + 0.4 * conf.max_distance();
+
     commands.insert_resource(HorizontalMovement::default());
     commands.insert_resource(DesiredPoW {
-        distance: DEFAULT_CAMERA_DISTANCE,
+        distance,
         off_nadir: Radian::ZERO,
         azimuth: Radian::ZERO,
     });
     commands.insert_resource(CameraFocus {
         point: Vec3::ZERO,
-        distance: DEFAULT_CAMERA_DISTANCE,
+        distance,
     });
     commands.spawn(Camera3dBundle {
-        transform: Transform::from_xyz(0.0, DEFAULT_CAMERA_DISTANCE.into(), 0.0)
-            .looking_at(Vec3::ZERO, -Vec3::Z),
+        transform: Transform::from_xyz(0.0, distance.into(), 0.0).looking_at(Vec3::ZERO, -Vec3::Z),
         ..Default::default()
     });
 }
@@ -284,6 +271,7 @@ fn process_move_focus_events(
 }
 
 fn move_horizontaly(
+    conf: Res<Configuration>,
     horizontal_movement: Res<HorizontalMovement>,
     focus: Res<CameraFocus>,
     map_bounds: Res<MapBounds>,
@@ -297,9 +285,10 @@ fn move_horizontaly(
     };
 
     let mut transform = camera_query.single_mut();
+    let conf = conf.camera();
     let distance_factor = focus
         .distance()
-        .clamp(MIN_CAMERA_DISTANCE, MAX_CAMERA_DISTANCE);
+        .clamp(conf.min_distance(), conf.max_distance());
     let time_delta = Second::try_from(time.delta().as_secs_f32()).unwrap();
     let delta_scalar: f32 = (time_delta * CAMERA_HORIZONTAL_SPEED * distance_factor).into();
     let delta_vec = match direction {
@@ -319,20 +308,25 @@ fn move_horizontaly(
 }
 
 fn zoom(
+    conf: Res<Configuration>,
     desired_pow: Res<DesiredPoW>,
     time: Res<Time>,
     mut focus: ResMut<CameraFocus>,
     mut camera_query: Query<&mut Transform, With<Camera3d>>,
 ) {
-    let mut delta_scalar = focus.distance() - HARD_MAX_CAMERA_DISTANCE;
+    let conf = conf.camera();
+    let hard_min_distance = conf.min_distance() * HARD_MIN_CAMERA_DISTANCE_FACTOR;
+    let hard_max_distance = conf.max_distance() * HARD_MAX_CAMERA_DISTANCE_FACTOR;
+
+    let mut delta_scalar = focus.distance() - hard_max_distance;
     if delta_scalar <= Metre::ZERO {
-        // Camera is not further than HARD_MAX_CAMERA_DISTANCE => zoom out to
-        // HARD_MIN_CAMERA_DISTANCE.
-        delta_scalar = (focus.distance() - HARD_MIN_CAMERA_DISTANCE).min(Metre::ZERO);
+        // Camera is not further than hard_max_distance => zoom out to
+        // hard_min_distance (if necessary).
+        delta_scalar = (focus.distance() - hard_min_distance).min(Metre::ZERO);
     }
     if delta_scalar == Metre::ZERO {
-        // Camera is within HARD_MIN_CAMERA_DISTANCE and
-        // HARD_MAX_CAMERA_DISTANCE => move smoothly to desired distance.
+        // Camera is within hard_min_distance and hard_max_distance => move
+        // smoothly to desired distance.
 
         let error = focus.distance() - desired_pow.distance();
         if error.abs() <= DISTANCE_TOLERATION {
@@ -402,15 +396,21 @@ fn move_horizontaly_event(
     }
 }
 
-fn zoom_event(mut desired_pow: ResMut<DesiredPoW>, mut events: EventReader<MouseWheel>) {
+fn zoom_event(
+    conf: Res<Configuration>,
+    mut desired_pow: ResMut<DesiredPoW>,
+    mut events: EventReader<MouseWheel>,
+) {
+    let conf = conf.camera();
     let factor = events.iter().fold(1.0, |factor, event| match event.unit {
-        MouseScrollUnit::Line => factor * WHEEL_ZOOM_FACTOR.powf(event.y),
-        MouseScrollUnit::Pixel => factor * TOUCH_PAD_ZOOM_FACTOR.powf(event.y),
+        MouseScrollUnit::Line => factor * conf.wheel_zoom_sensitivity().powf(event.y),
+        MouseScrollUnit::Pixel => factor * conf.touchpad_zoom_sensitivity().powf(event.y),
     });
-    desired_pow.zoom_clamped(factor);
+    desired_pow.zoom_clamped(conf, factor);
 }
 
 fn pivot_event(
+    conf: Res<Configuration>,
     mut desired_pow: ResMut<DesiredPoW>,
     mut pivot_event: EventWriter<PivotEvent>,
     buttons: Res<Input<MouseButton>>,
@@ -429,7 +429,8 @@ fn pivot_event(
 
     let delta_x = LogicalPixel::try_from(delta.x).unwrap();
     let delta_y = LogicalPixel::try_from(delta.y).unwrap();
-    desired_pow.rotate(Radian::ONE * (ROTATION_SENSITIVITY * delta_x));
-    desired_pow.tilt_clamped(-Radian::ONE * (ROTATION_SENSITIVITY * delta_y));
+    let conf = conf.camera();
+    desired_pow.rotate(Radian::ONE * (conf.rotation_sensitivity() * delta_x));
+    desired_pow.tilt_clamped(-Radian::ONE * (conf.rotation_sensitivity() * delta_y));
     pivot_event.send(PivotEvent);
 }

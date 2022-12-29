@@ -38,7 +38,7 @@ impl<const U: Unit> Quantity<U> {
     /// # Panics
     ///
     /// Panics if `value` is NaN.
-    pub(crate) fn new(value: f32) -> Self {
+    pub fn new(value: f32) -> Self {
         panic_on_invalid(value);
         Self(value)
     }

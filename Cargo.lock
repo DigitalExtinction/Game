@@ -1909,6 +1909,7 @@ name = "de_camera"
 version = "0.1.0-dev"
 dependencies = [
  "bevy",
+ "de_conf",
  "de_core",
  "de_map",
  "de_terrain",
@@ -1942,6 +1943,7 @@ dependencies = [
  "async-std",
  "bevy",
  "de_core",
+ "de_uom",
  "dirs",
  "futures-lite",
  "iyes_loopless",
