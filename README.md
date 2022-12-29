@@ -60,8 +60,12 @@ for fast compilation times while keeping performance reasonable.
 
 # Where to Get Help?
 
+* Consult [TUTORIAL.md](/TUTORIAL.md), [CONTRIBUTING.md](/CONTRIBUTING.md),
+  [DESIGN.md](/DESIGN.md) or [the online documentation at
+  docs.de-game.org](https://docs.de-game.org/).
 * Open a question in [the Q&A category of this repository's
   discussions](https://github.com/DigitalExtinction/Game/discussions/categories/q-a).
+* Reach out to the [community](#community).
 
 # Community
 
