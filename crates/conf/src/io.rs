@@ -37,6 +37,7 @@ async fn load_conf_text(path: &Path) -> Result<Option<String>> {
 #[cfg(test)]
 mod tests {
     use async_std::{path::PathBuf, task};
+    use de_uom::Metre;
 
     use super::*;
 
@@ -51,5 +52,7 @@ mod tests {
             conf.multiplayer().server().as_str(),
             "http://example.com/de/"
         );
+        assert_eq!(conf.camera().min_distance(), Metre::new(12.5));
+        assert_eq!(conf.camera().max_distance(), Metre::new(250.));
     }
 }

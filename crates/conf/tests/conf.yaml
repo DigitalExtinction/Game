@@ -1,2 +1,5 @@
 multiplayer: # test comment
   server: http://example.com/de/
+camera:
+  min_distance: 12.5
+  max_distance: 250

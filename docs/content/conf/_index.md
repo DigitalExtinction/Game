@@ -23,3 +23,26 @@ est as if all properties are missing.
 
 * `multiplayer` (object) – multiplayer and network configuration.
   * `server` (string; default: `http://lobby.de-game.org`) – lobby server base URL.
+* `camera` (object) – in-game camera configuration.
+  * `move_margin` (f32; default: `40.0`) – horizontal camera movement is
+    initiated if mouse is withing this distance in logical pixels to a window
+    edge. It must be a finite positive number.
+  * `min_distance` (f32; default: `20.0`) – minimum camera distance from the
+    terrain. It must be a finite number larger or equal to `10.0`.
+  * `max_distance` (f32; default: `80.0`) – maximum camera distance from the
+    terrain. It must be a finite number larger or equal to `min_distance` and
+    smaller or equal to `300.0`.
+  * `wheel_zoom_sensitivity` (f32; default: `1.1`) – camera to terrain distance
+    scale factor used during mouse wheel zooming. The distance is changed to
+    `current_distance * wheel_zoom_sensitivity` (zoom out) or `current_distance
+    / wheel_zoom_sensitivity` (zoom in) with each mouse wheel tick. It must be
+    a finite number larger than `1.0`.
+  * `touchpad_zoom_sensitivity` (f32; default: `1.01`) – camera to terrain
+    distance scale factor used during touchpad zooming. The distance is changed
+    to `current_distance * touchpad_zoom_sensitivity` (zoom out) or
+    `current_distance / touchpad_zoom_sensitivity` (zoom in) with each pixel
+    movement. It must be a finite number larger than `1.0`.
+  * `rotation_sensitivity` (f32; default: `0.008`) – multiplicative factor used
+    during camera tilting and rotation. Mouse drag by `delta` logical pixels
+    leads to the change of elevation and azimuth by `delta *
+    rotation_sensitivity` radians. It must be a positive finite number.
