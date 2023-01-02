@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 use de_core::{stages::GameStage, state::AppState};
-use de_ui::UpdateSelectionBoxEvent;
+use de_hud::UpdateSelectionBoxEvent;
 use iyes_loopless::prelude::*;
 
 use crate::{

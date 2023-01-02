@@ -34,6 +34,7 @@ de_combat.workspace = true
 de_conf.workspace = true
 de_controller.workspace = true
 de_core.workspace = true
+de_hud.workspace = true
 de_index.workspace = true
 de_loader.workspace = true
 de_lobby_client.workspace = true
@@ -44,7 +45,6 @@ de_pathing.workspace = true
 de_signs.workspace = true
 de_spawner.workspace = true
 de_terrain.workspace = true
-de_ui.workspace = true
 
 # Other
 bevy.workspace = true
@@ -72,6 +72,7 @@ de_combat = { path = "crates/combat", version = "0.1.0-dev" }
 de_conf = { path = "crates/conf", version = "0.1.0-dev" }
 de_controller = { path = "crates/controller", version = "0.1.0-dev" }
 de_core = { path = "crates/core", version = "0.1.0-dev" }
+de_hud = { path = "crates/hud", version = "0.1.0-dev" }
 de_index = { path = "crates/index", version = "0.1.0-dev" }
 de_loader = { path = "crates/loader", version = "0.1.0-dev" }
 de_lobby_client = { path = "crates/lobby_client", version = "0.1.0-dev" }
@@ -84,7 +85,6 @@ de_pathing = { path = "crates/pathing", version = "0.1.0-dev" }
 de_signs = { path = "crates/signs", version = "0.1.0-dev" }
 de_spawner = { path = "crates/spawner", version = "0.1.0-dev" }
 de_terrain = { path = "crates/terrain", version = "0.1.0-dev" }
-de_ui = { path = "crates/ui", version = "0.1.0-dev" }
 de_uom = { path = "crates/uom", version = "0.1.0-dev" }
 
 # Other

@@ -12,6 +12,7 @@ use de_core::{
     state::{AppState, GameState, MenuState},
     CorePluginGroup,
 };
+use de_hud::UiPluginGroup;
 use de_index::IndexPluginGroup;
 use de_loader::LoaderPluginGroup;
 use de_lobby_client::LobbyClientPluginGroup;
@@ -22,7 +23,6 @@ use de_pathing::PathingPluginGroup;
 use de_signs::SignsPluginGroup;
 use de_spawner::SpawnerPluginGroup;
 use de_terrain::TerrainPluginGroup;
-use de_ui::UiPluginGroup;
 use iyes_loopless::prelude::*;
 
 const CARGO_PKG_VERSION: &str = env!("CARGO_PKG_VERSION");
