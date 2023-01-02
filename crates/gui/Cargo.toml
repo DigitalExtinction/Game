@@ -1,6 +1,6 @@
 [package]
-name = "de_menu"
-description = "Digital Extinction menu."
+name = "de_gui"
+description = "Extensions on top of Bevy UI for Digital Extinction."
 
 version.workspace = true
 edition.workspace = true
@@ -12,14 +12,5 @@ license.workspace = true
 categories.workspace = true
 
 [dependencies]
-# DE
-de_core.workspace = true
-de_gui.workspace = true
-de_map.workspace = true
-
-# Other
-async-std.workspace = true
 bevy.workspace = true
-futures-lite.workspace = true
 iyes_loopless.workspace = true
-thiserror.workspace = true

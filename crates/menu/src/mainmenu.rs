@@ -1,8 +1,9 @@
 use bevy::prelude::*;
 use de_core::state::MenuState;
+use de_gui::{ButtonCommands, GuiCommands, OuterStyle};
 use iyes_loopless::prelude::*;
 
-use crate::menu::{despawn_root_nodes, Text};
+use crate::menu::despawn_root_nodes;
 
 pub(crate) struct MainMenuPlugin;
 
@@ -14,24 +15,14 @@ impl Plugin for MainMenuPlugin {
     }
 }
 
-fn setup(mut commands: Commands, text: Res<Text>) {
-    commands
-        .spawn(ButtonBundle {
-            style: Style {
-                size: Size::new(Val::Percent(25.), Val::Percent(10.)),
-                margin: UiRect::all(Val::Auto),
-                justify_content: JustifyContent::Center,
-                align_items: AlignItems::Center,
-                ..default()
-            },
-            ..default()
-        })
-        .with_children(|parent| {
-            parent.spawn(TextBundle::from_section(
-                "Start Game",
-                text.button_text_style(),
-            ));
-        });
+fn setup(mut commands: GuiCommands) {
+    commands.spawn_button(
+        OuterStyle {
+            size: Size::new(Val::Percent(25.), Val::Percent(10.)),
+            margin: UiRect::all(Val::Auto),
+        },
+        "Start Game",
+    );
 }
 
 fn button_system(

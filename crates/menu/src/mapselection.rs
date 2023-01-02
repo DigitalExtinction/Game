@@ -12,6 +12,7 @@ use de_core::{
     player::Player,
     state::{AppState, GameState, MenuState},
 };
+use de_gui::{ButtonCommands, GuiCommands, OuterStyle};
 use de_map::{
     io::{load_metadata, MapLoadingError, MAP_FILE_SUFFIX},
     meta::MapMetadata,
@@ -20,7 +21,7 @@ use futures_lite::future;
 use iyes_loopless::prelude::*;
 use thiserror::Error;
 
-use crate::menu::{despawn_root_nodes, Text};
+use crate::menu::despawn_root_nodes;
 
 pub(crate) struct MapSelectionPlugin;
 
@@ -70,7 +71,7 @@ fn setup(mut commands: Commands) {
     commands.insert_resource(LoadingTask(task));
 }
 
-fn init_buttons(mut commands: Commands, text: Res<Text>, task: Option<ResMut<LoadingTask>>) {
+fn init_buttons(mut commands: GuiCommands, task: Option<ResMut<LoadingTask>>) {
     let Some(mut task) = task else { return };
     let Some(result) = future::block_on(future::poll_once(&mut task.0)) else {
         return
@@ -101,7 +102,7 @@ fn init_buttons(mut commands: Commands, text: Res<Text>, task: Option<ResMut<Loa
         .id();
 
     for map in map_entries {
-        let button = map_button(&mut commands, text.as_ref(), map);
+        let button = map_button(&mut commands, map);
         commands.entity(root_node).add_child(button);
     }
 }
@@ -161,10 +162,10 @@ async fn load_available_maps() -> Result<Vec<MapEntry>, LoadingError> {
     Ok(map_entries)
 }
 
-fn map_button(commands: &mut Commands, text: &Text, map: MapEntry) -> Entity {
+fn map_button(commands: &mut GuiCommands, map: MapEntry) -> Entity {
     commands
-        .spawn(ButtonBundle {
-            style: Style {
+        .spawn_button(
+            OuterStyle {
                 size: Size::new(Val::Percent(100.), Val::Percent(8.)),
                 margin: UiRect::new(
                     Val::Percent(0.),
@@ -172,18 +173,9 @@ fn map_button(commands: &mut Commands, text: &Text, map: MapEntry) -> Entity {
                     Val::Percent(2.),
                     Val::Percent(2.),
                 ),
-                justify_content: JustifyContent::Center,
-                align_items: AlignItems::Center,
-                ..default()
             },
-            ..default()
-        })
-        .with_children(|parent| {
-            parent.spawn(TextBundle::from_section(
-                map.metadata().name(),
-                text.button_text_style(),
-            ));
-        })
+            map.metadata().name(),
+        )
         .insert(map)
         .id()
 }
