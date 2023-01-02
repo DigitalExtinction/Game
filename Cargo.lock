@@ -2001,6 +2001,7 @@ dependencies = [
  "de_conf",
  "de_controller",
  "de_core",
+ "de_gui",
  "de_hud",
  "de_index",
  "de_loader",
@@ -2012,6 +2013,14 @@ dependencies = [
  "de_signs",
  "de_spawner",
  "de_terrain",
+ "iyes_loopless",
+]
+
+[[package]]
+name = "de_gui"
+version = "0.1.0-dev"
+dependencies = [
+ "bevy",
  "iyes_loopless",
 ]
 
@@ -2129,6 +2138,7 @@ dependencies = [
  "async-std",
  "bevy",
  "de_core",
+ "de_gui",
  "de_map",
  "futures-lite",
  "iyes_loopless",

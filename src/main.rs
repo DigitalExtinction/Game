@@ -12,6 +12,7 @@ use de_core::{
     state::{AppState, GameState, MenuState},
     CorePluginGroup,
 };
+use de_gui::GuiPluginGroup;
 use de_hud::UiPluginGroup;
 use de_index::IndexPluginGroup;
 use de_loader::LoaderPluginGroup;
@@ -43,6 +44,7 @@ fn main() {
         .add_plugin(FrameTimeDiagnosticsPlugin::default())
         .add_plugin(GamePlugin)
         .add_plugins(ConfigPluginGroup)
+        .add_plugins(GuiPluginGroup)
         .add_plugins(LobbyClientPluginGroup)
         .add_plugins(MenuPluginGroup)
         .add_plugins(CorePluginGroup)
