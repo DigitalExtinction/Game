@@ -1,6 +1,6 @@
 [package]
-name = "de_ui"
-description = "2D game UI for Digital Extinction."
+name = "de_hud"
+description = "2D game UI / head-up display for Digital Extinction."
 
 version.workspace = true
 edition.workspace = true

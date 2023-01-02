@@ -1962,13 +1962,13 @@ dependencies = [
  "de_behaviour",
  "de_combat",
  "de_core",
+ "de_hud",
  "de_index",
  "de_objects",
  "de_pathing",
  "de_signs",
  "de_spawner",
  "de_terrain",
- "de_ui",
  "enum-map",
  "glam",
  "iyes_loopless",
@@ -2001,6 +2001,7 @@ dependencies = [
  "de_conf",
  "de_controller",
  "de_core",
+ "de_hud",
  "de_index",
  "de_loader",
  "de_lobby_client",
@@ -2011,7 +2012,15 @@ dependencies = [
  "de_signs",
  "de_spawner",
  "de_terrain",
- "de_ui",
+ "iyes_loopless",
+]
+
+[[package]]
+name = "de_hud"
+version = "0.1.0-dev"
+dependencies = [
+ "bevy",
+ "de_core",
  "iyes_loopless",
 ]
 
@@ -2233,15 +2242,6 @@ dependencies = [
  "glam",
  "gltf",
  "parry3d",
-]
-
-[[package]]
-name = "de_ui"
-version = "0.1.0-dev"
-dependencies = [
- "bevy",
- "de_core",
- "iyes_loopless",
 ]
 
 [[package]]
