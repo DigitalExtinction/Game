@@ -1,3 +1,7 @@
+//! This crate implements a plugin group and various events and system
+//! parameters used as building blocks for 2D in-game and menu UI across the
+//! game.
+
 use bevy::{app::PluginGroupBuilder, prelude::PluginGroup};
 pub use button::ButtonCommands;
 use button::ButtonPlugin;
