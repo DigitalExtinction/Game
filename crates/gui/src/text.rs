@@ -22,6 +22,22 @@ impl TextProps {
         }
     }
 
+    pub(crate) fn label_text_style(&self) -> TextStyle {
+        TextStyle {
+            font: self.font(),
+            font_size: 35.0,
+            color: Color::rgb(0.9, 0.9, 0.9),
+        }
+    }
+
+    pub(crate) fn input_text_style(&self) -> TextStyle {
+        TextStyle {
+            font: self.font(),
+            font_size: 30.0,
+            color: Color::BLACK,
+        }
+    }
+
     fn font(&self) -> Handle<Font> {
         self.0.clone()
     }

@@ -2139,6 +2139,8 @@ dependencies = [
  "bevy",
  "de_core",
  "de_gui",
+ "de_lobby_client",
+ "de_lobby_model",
  "de_map",
  "futures-lite",
  "iyes_loopless",
