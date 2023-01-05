@@ -15,6 +15,7 @@ pub enum MenuState {
     MainMenu,
     MapSelection,
     SignIn,
+    GameListing,
 }
 
 /// Phase of an already started game. The game might be still loading or
