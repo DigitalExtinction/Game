@@ -40,6 +40,10 @@ impl GameListing {
         Self(Vec::new())
     }
 
+    pub fn games(&self) -> &[GamePartial] {
+        self.0.as_slice()
+    }
+
     pub fn push(&mut self, game: GamePartial) {
         self.0.push(game)
     }
@@ -58,6 +62,14 @@ impl GamePartial {
             config,
             num_players,
         }
+    }
+
+    pub fn config(&self) -> &GameConfig {
+        &self.config
+    }
+
+    pub fn num_players(&self) -> u8 {
+        self.num_players
     }
 }
 
