@@ -1,9 +1,10 @@
-use std::time::Duration;
+use std::{marker::PhantomData, time::Duration};
 
 use anyhow::{anyhow, bail, Context, Result};
 use async_compat::Compat;
 use bevy::{
-    prelude::{info, Resource},
+    ecs::system::SystemParam,
+    prelude::*,
     tasks::{IoTaskPool, Task},
 };
 use reqwest::{header::HeaderValue, redirect::Policy, Client, Request};
@@ -13,11 +14,50 @@ use crate::requestable::Requestable;
 
 const USER_AGENT: &str = concat!("DigitalExtinction/", env!("CARGO_PKG_VERSION"));
 
+#[derive(SystemParam)]
+pub(super) struct AuthenticatedClient<'w, 's> {
+    auth: Res<'w, Authentication>,
+    client: Option<Res<'w, LobbyClient>>,
+    #[system_param(ignore)]
+    _marker: PhantomData<&'s ()>,
+}
+
+impl<'w, 's> AuthenticatedClient<'w, 's> {
+    pub(super) fn fire<T: Requestable>(
+        &self,
+        requestable: &T,
+    ) -> Result<Task<Result<T::Response>>> {
+        let Some(client) = self.client.as_ref() else { bail!("Client not yet set up.") };
+        let request = client.create(self.auth.token(), requestable)?;
+        Ok(client.fire::<T>(request))
+    }
+}
+
+/// Lobby client authentication object. It should be used to get current
+/// authentication state.
+#[derive(Resource, Default)]
+pub struct Authentication {
+    token: Option<String>,
+}
+
+impl Authentication {
+    pub fn is_authenticated(&self) -> bool {
+        self.token.is_some()
+    }
+
+    fn token(&self) -> Option<&str> {
+        self.token.as_deref()
+    }
+
+    pub(super) fn set_token(&mut self, token: String) {
+        self.token = Some(token)
+    }
+}
+
 #[derive(Resource)]
 pub(super) struct LobbyClient {
     server_url: Url,
     client: Client,
-    token: Option<String>,
 }
 
 impl LobbyClient {
@@ -29,25 +69,10 @@ impl LobbyClient {
             .build()
             .unwrap();
 
-        Self {
-            server_url,
-            client,
-            token: None,
-        }
+        Self { server_url, client }
     }
 
-    pub(super) fn set_token(&mut self, token: String) {
-        self.token = Some(token)
-    }
-
-    pub(super) fn make<T: Requestable>(
-        &self,
-        requestable: &T,
-    ) -> Result<Task<Result<T::Response>>> {
-        Ok(self.fire::<T>(self.create(requestable)?))
-    }
-
-    fn create<T: Requestable>(&self, requestable: &T) -> Result<Request> {
+    fn create<T: Requestable>(&self, token: Option<&str>, requestable: &T) -> Result<Request> {
         let path = requestable.path();
         let url = self
             .server_url
@@ -59,7 +84,7 @@ impl LobbyClient {
         // with /p per DE Lobby API design.
         let authenticated = path.starts_with("/a");
         if authenticated {
-            match self.token.as_ref() {
+            match token {
                 Some(token) => {
                     let mut value = HeaderValue::try_from(format!("Bearer {}", token))
                         .context("Failed crate Authorization header value from the JWT")?;
@@ -115,17 +140,18 @@ mod tests {
 
     #[test]
     fn test_create() {
-        let mut client = LobbyClient::build(Url::parse("https://example.com").unwrap());
+        let client = LobbyClient::build(Url::parse("https://example.com").unwrap());
 
         let sign_in = SignInRequest::new(UsernameAndPassword::new(
             "Indy".to_owned(),
             "123456".to_owned(),
         ));
-        let request = client.create(&sign_in).unwrap();
+        let request = client.create(None, &sign_in).unwrap();
         assert!(request.headers().get("Authorization").is_none());
 
-        client.set_token("some-token".to_owned());
-        let request = client.create(&ListGamesRequest).unwrap();
+        let request = client
+            .create(Some("some-token"), &ListGamesRequest)
+            .unwrap();
         assert_eq!(
             request
                 .headers()

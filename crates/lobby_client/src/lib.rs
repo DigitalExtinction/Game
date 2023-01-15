@@ -6,8 +6,12 @@
 //! The client is automatically authenticated when [`de_lobby_model::Token`]
 //! response is received from any endpoint, thus it is sufficient to send
 //! [`RequestEvent<SignInRequest>`] or [`RequestEvent<SignUpRequest>`].
+//!
+//! Use [`Authentication`] resource to obtain current authentication state and
+//! detect its changes.
 
 use bevy::{app::PluginGroupBuilder, prelude::PluginGroup};
+pub use client::Authentication;
 pub use endpoints::*;
 use plugin::EndpointPlugin;
 pub use plugin::{RequestEvent, ResponseEvent};

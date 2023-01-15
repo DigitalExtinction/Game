@@ -6,7 +6,7 @@ use bevy::prelude::*;
 use bevy::tasks::Task;
 use futures_lite::future;
 
-use crate::{client::LobbyClient, requestable::Requestable};
+use crate::{client::AuthenticatedClient, requestable::Requestable};
 
 pub(super) struct EndpointPlugin<T: Requestable> {
     _marker: PhantomData<fn() -> T>,
@@ -98,16 +98,13 @@ impl<T: Requestable> Default for PendingTasks<T> {
 }
 
 fn fire<T: Requestable>(
-    client: Option<Res<LobbyClient>>,
+    client: AuthenticatedClient,
     mut pending: ResMut<PendingTasks<T>>,
     mut requests: EventReader<RequestEvent<T>>,
     mut responses: EventWriter<ResponseEvent<T::Response>>,
 ) {
     for event in requests.iter() {
-        let result = client
-            .as_ref()
-            .expect("A request made before the client is setup.")
-            .make(event.request());
+        let result = client.fire(event.request());
 
         match result {
             Ok(task) => pending.register(event.id().to_owned(), task),

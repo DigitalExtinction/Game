@@ -4,7 +4,7 @@ use de_gui::{
     ButtonCommands, GuiCommands, LabelCommands, OuterStyle, SetFocusEvent, TextBoxCommands,
     TextBoxQuery,
 };
-use de_lobby_client::{RequestEvent, ResponseEvent, SignInRequest, SignUpRequest};
+use de_lobby_client::{Authentication, RequestEvent, ResponseEvent, SignInRequest, SignUpRequest};
 use de_lobby_model::{Token, User, UserWithPassword, UsernameAndPassword};
 use iyes_loopless::prelude::*;
 
@@ -23,7 +23,8 @@ impl Plugin for SignInPlugin {
                     .run_if_resource_exists::<Inputs>()
                     .run_in_state(MenuState::SignIn),
             )
-            .add_system(response_system.run_in_state(MenuState::SignIn));
+            .add_system(response_system.run_in_state(MenuState::SignIn))
+            .add_system(auth_system.run_in_state(MenuState::SignIn));
     }
 }
 
@@ -200,19 +201,19 @@ fn button_system(
     }
 }
 
-fn response_system(
-    mut commands: Commands,
-    counter: Res<Counter>,
-    mut responses: EventReader<ResponseEvent<Token>>,
-) {
+fn response_system(counter: Res<Counter>, mut responses: EventReader<ResponseEvent<Token>>) {
     for event in responses.iter() {
         if counter.compare(event.id()) {
-            match event.result() {
-                Ok(_) => {
-                    commands.insert_resource(NextState(MenuState::GameListing));
-                }
-                Err(error) => warn!("Error: {:?}", error),
+            if let Err(error) = event.result() {
+                warn!("Error: {:?}", error);
             }
         }
+    }
+}
+
+fn auth_system(mut commands: Commands, auth: Res<Authentication>) {
+    // fully consume the iterator
+    if auth.is_authenticated() {
+        commands.insert_resource(NextState(MenuState::GameListing));
     }
 }
