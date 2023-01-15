@@ -28,7 +28,7 @@ pub struct StaticSolid;
 #[derive(Component)]
 pub struct MovableSolid;
 
-#[derive(Enum, Component, Copy, Clone)]
+#[derive(Enum, Component, Copy, Clone, PartialEq, Eq)]
 pub enum ObjectType {
     Active(ActiveObjectType),
     Inactive(InactiveObjectType),

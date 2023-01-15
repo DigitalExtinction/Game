@@ -3,7 +3,7 @@ use de_behaviour::ChaseTarget;
 use de_combat::AttackEvent;
 use de_core::{
     gconfig::GameConfig,
-    objects::{BuildingType, MovableSolid, Playable, PLAYER_MAX_BUILDINGS},
+    objects::{BuildingType, MovableSolid, ObjectType, Playable, PLAYER_MAX_BUILDINGS},
     player::Player,
     projection::ToFlat,
     screengeom::ScreenRect,
@@ -19,7 +19,7 @@ use crate::{
     areaselect::{AreaSelectLabels, SelectInRectEvent},
     draft::{DiscardDraftsEvent, DraftLabels, NewDraftEvent, SpawnDraftsEvent},
     keyboard::KeyCondition,
-    mouse::{MouseClicked, MouseLabels},
+    mouse::{MouseClicked, MouseDoubleClicked, MouseLabels},
     pointer::{Pointer, PointerLabels},
     selection::{SelectEvent, Selected, SelectionLabels, SelectionMode},
 };
@@ -68,6 +68,15 @@ impl Plugin for CommandPlugin {
                         .after(MouseLabels::Buttons),
                 )
                 .with_system(
+                    double_click_handler
+                        .run_in_state(GameState::Playing)
+                        .run_if(on_double_click(MouseButton::Left))
+                        .before(SelectionLabels::Update)
+                        .before(DraftLabels::Spawn)
+                        .after(PointerLabels::Update)
+                        .after(MouseLabels::Buttons),
+                )
+                .with_system(
                     discard_drafts
                         .run_in_state(GameState::Playing)
                         .run_if(KeyCondition::single(KeyCode::Escape).build())
@@ -97,6 +106,14 @@ impl Plugin for CommandPlugin {
 
 fn on_click(button: MouseButton) -> impl Fn(EventReader<MouseClicked>) -> bool {
     move |mut events: EventReader<MouseClicked>| {
+        // It is desirable to exhaust the iterator, thus .filter().count() is
+        // used instead of .any()
+        events.iter().filter(|e| e.button() == button).count() > 0
+    }
+}
+
+fn on_double_click(button: MouseButton) -> impl Fn(EventReader<MouseDoubleClicked>) -> bool {
+    move |mut events: EventReader<MouseDoubleClicked>| {
         // It is desirable to exhaust the iterator, thus .filter().count() is
         // used instead of .any()
         events.iter().filter(|e| e.button() == button).count() > 0
@@ -144,6 +161,34 @@ fn right_click_handler(
             }
         }
     }
+}
+
+fn double_click_handler(
+    keys: Res<Input<KeyCode>>,
+    pointer: Res<Pointer>,
+    playable: Query<&ObjectType, With<Playable>>,
+    drafts: Query<(), With<Draft>>,
+    mut select_in_rect_events: EventWriter<SelectInRectEvent>,
+) {
+    if !drafts.is_empty() {
+        return;
+    }
+    let selection_mode = if keys.pressed(KeyCode::LControl) {
+        SelectionMode::Add
+    } else {
+        SelectionMode::Replace
+    };
+
+    let Some(targeted_entity_type) = pointer.entity().and_then(|entity| playable.get(entity).ok()) else {
+        return;
+    };
+
+    // Select all the units visible of the same type as the targeted entity
+    select_in_rect_events.send(SelectInRectEvent::new(
+        ScreenRect::full(),
+        selection_mode,
+        Some(*targeted_entity_type),
+    ));
 }
 
 fn left_click_handler(
@@ -206,5 +251,6 @@ fn select_all_visible(mut events: EventWriter<SelectInRectEvent>) {
     events.send(SelectInRectEvent::new(
         ScreenRect::full(),
         SelectionMode::Replace,
+        None,
     ));
 }

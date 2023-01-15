@@ -39,11 +39,20 @@ pub(crate) enum AreaSelectLabels {
 pub(crate) struct SelectInRectEvent {
     rect: ScreenRect,
     mode: SelectionMode,
+    filter_object_type: Option<ObjectType>,
 }
 
 impl SelectInRectEvent {
-    pub(crate) fn new(rect: ScreenRect, mode: SelectionMode) -> Self {
-        Self { rect, mode }
+    pub(crate) fn new(
+        rect: ScreenRect,
+        mode: SelectionMode,
+        filter_object_type: Option<ObjectType>,
+    ) -> Self {
+        Self {
+            rect,
+            mode,
+            filter_object_type,
+        }
     }
 
     fn rect(&self) -> ScreenRect {
@@ -52,6 +61,10 @@ impl SelectInRectEvent {
 
     fn mode(&self) -> SelectionMode {
         self.mode
+    }
+
+    fn filter_object_type(&self) -> Option<ObjectType> {
+        self.filter_object_type
     }
 }
 
@@ -66,6 +79,11 @@ fn select_in_area(
         let event_frustum = screen_frustum.rect(in_event.rect());
         let entities: Vec<Entity> = candidates
             .iter()
+            .filter(|(_, &object_type, _)| {
+                in_event
+                    .filter_object_type()
+                    .map_or(true, |filter| filter == object_type)
+            })
             .filter_map(|(entity, &object_type, &transform)| {
                 let aabb = cache.get_collider(object_type).aabb();
                 if frustum::intersects_parry(&event_frustum, transform, &aabb) {
