@@ -5,6 +5,7 @@ use bevy::{app::PluginGroupBuilder, prelude::*};
 use command::CommandPlugin;
 use draft::DraftPlugin;
 use dragselect::DragSelectPlugin;
+use hud::HudPlugin;
 use mouse::MousePlugin;
 use pointer::PointerPlugin;
 use selection::SelectionPlugin;
@@ -14,6 +15,7 @@ mod command;
 mod draft;
 mod dragselect;
 mod frustum;
+mod hud;
 mod keyboard;
 mod mouse;
 mod pointer;
@@ -34,5 +36,6 @@ impl PluginGroup for ControllerPluginGroup {
             .add(CommandPlugin)
             .add(SelectionPlugin)
             .add(DraftPlugin)
+            .add(HudPlugin)
     }
 }

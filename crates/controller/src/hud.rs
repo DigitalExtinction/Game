@@ -4,9 +4,9 @@ use iyes_loopless::prelude::*;
 
 const SELECTION_BOX_COLOR: Color = Color::rgba(0., 0.5, 0.8, 0.2);
 
-pub(crate) struct UiPlugin;
+pub(crate) struct HudPlugin;
 
-impl Plugin for UiPlugin {
+impl Plugin for HudPlugin {
     fn build(&self, app: &mut App) {
         app.add_event::<UpdateSelectionBoxEvent>()
             .add_system_set_to_stage(
