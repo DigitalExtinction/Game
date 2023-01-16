@@ -189,7 +189,8 @@ fn update_position(windows: Res<Windows>, mut mouse: ResMut<MousePosition>) {
     mouse.set_position(
         window
             .cursor_position()
-            .map(|position| position / Vec2::new(window.width(), window.height())),
+            .map(|position| position / Vec2::new(window.width(), window.height()))
+            .map(|normalised_position| normalised_position.clamp(Vec2::ZERO, Vec2::ONE)),
     );
 }
 
