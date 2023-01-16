@@ -143,30 +143,22 @@ struct FocusInvalidatedEvent;
 
 struct PivotEvent;
 
-#[derive(Copy, Clone)]
-enum HorizontalMovementDirection {
-    Up,
-    Down,
-    Left,
-    Right,
-}
-
 #[derive(Default, Resource)]
 struct HorizontalMovement {
-    movement: Option<HorizontalMovementDirection>,
+    movement: Vec2,
 }
 
 impl HorizontalMovement {
-    fn movement(&self) -> Option<HorizontalMovementDirection> {
+    fn movement(&self) -> Vec2 {
         self.movement
     }
 
-    fn start(&mut self, direction: HorizontalMovementDirection) {
-        self.movement = Some(direction);
+    fn start(&mut self, movement: Vec2) {
+        self.movement = movement;
     }
 
     fn stop(&mut self) {
-        self.movement = None;
+        self.movement = Vec2::ZERO;
     }
 }
 
@@ -279,10 +271,10 @@ fn move_horizontaly(
     mut camera_query: Query<&mut Transform, With<Camera3d>>,
     mut event: EventWriter<FocusInvalidatedEvent>,
 ) {
-    let direction = match horizontal_movement.movement() {
-        Some(direction) => direction,
-        None => return,
-    };
+    let direction = horizontal_movement.movement();
+    if direction == Vec2::ZERO {
+        return;
+    }
 
     let mut transform = camera_query.single_mut();
     let conf = conf.camera();
@@ -291,12 +283,7 @@ fn move_horizontaly(
         .clamp(conf.min_distance(), conf.max_distance());
     let time_delta = Second::try_from(time.delta().as_secs_f32()).unwrap();
     let delta_scalar: f32 = (time_delta * CAMERA_HORIZONTAL_SPEED * distance_factor).into();
-    let delta_vec = match direction {
-        HorizontalMovementDirection::Left => -transform.local_x() * delta_scalar,
-        HorizontalMovementDirection::Right => transform.local_x() * delta_scalar,
-        HorizontalMovementDirection::Up => -transform.local_y() * delta_scalar,
-        HorizontalMovementDirection::Down => transform.local_y() * delta_scalar,
-    };
+    let delta_vec = (transform.rotation * direction.extend(0.)) * delta_scalar;
 
     let margin = Vec3::new(MAP_FOCUS_MARGIN.into(), 0., MAP_FOCUS_MARGIN.into());
     let focus_msl: Vec3 = focus.point().to_msl();
@@ -367,6 +354,7 @@ fn pivot(
 fn move_horizontaly_event(
     mut horizontal_movement: ResMut<HorizontalMovement>,
     windows: Res<Windows>,
+    keys: Res<Input<KeyCode>>,
 ) {
     let window = windows.get_primary().unwrap();
     let (x, y) = match window.cursor_position() {
@@ -383,17 +371,18 @@ fn move_horizontaly_event(
     let width = LogicalPixel::try_from(window.width()).unwrap();
     let height = LogicalPixel::try_from(window.height()).unwrap();
 
-    if x < MOVE_MARGIN {
-        horizontal_movement.start(HorizontalMovementDirection::Left);
-    } else if x > (width - MOVE_MARGIN) {
-        horizontal_movement.start(HorizontalMovementDirection::Right);
-    } else if y < MOVE_MARGIN {
-        horizontal_movement.start(HorizontalMovementDirection::Up);
-    } else if y > (height - MOVE_MARGIN) {
-        horizontal_movement.start(HorizontalMovementDirection::Down);
-    } else {
-        horizontal_movement.stop();
+    let mut movement = Vec2::ZERO;
+    if x < MOVE_MARGIN || keys.pressed(KeyCode::Left) {
+        movement.x -= 1.;
+    } else if x > (width - MOVE_MARGIN) || keys.pressed(KeyCode::Right) {
+        movement.x += 1.;
     }
+    if y < MOVE_MARGIN || keys.pressed(KeyCode::Down) {
+        movement.y -= 1.;
+    } else if y > (height - MOVE_MARGIN) || keys.pressed(KeyCode::Up) {
+        movement.y += 1.;
+    }
+    horizontal_movement.start(movement);
 }
 
 fn zoom_event(

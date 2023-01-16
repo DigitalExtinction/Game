@@ -1,7 +1,7 @@
 # Camera Movement
 
 Move your mouse close to a screen edge to move the camera along the map surface
-(north, south, west, east).
+(north, south, west, east) or use the arrow keys.
 
 Use mouse wheel to zoom closer or further from the terrain.
 
