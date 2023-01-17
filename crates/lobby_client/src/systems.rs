@@ -5,18 +5,19 @@ use de_lobby_model::Token;
 use iyes_loopless::prelude::*;
 use iyes_progress::prelude::*;
 
-use crate::{client::LobbyClient, ResponseEvent};
+use crate::{client::LobbyClient, Authentication, ResponseEvent};
 
 pub(crate) struct LobbyPlugin;
 
 impl Plugin for LobbyPlugin {
     fn build(&self, app: &mut App) {
-        app.add_system(
-            setup_client
-                .track_progress()
-                .run_in_state(MenuState::MLoading),
-        )
-        .add_system(set_token);
+        app.init_resource::<Authentication>()
+            .add_system(
+                setup_client
+                    .track_progress()
+                    .run_in_state(MenuState::MLoading),
+            )
+            .add_system(set_token);
     }
 }
 
@@ -35,8 +36,8 @@ fn setup_client(
     false.into()
 }
 
-fn set_token(mut events: EventReader<ResponseEvent<Token>>, client: Option<ResMut<LobbyClient>>) {
+fn set_token(mut events: EventReader<ResponseEvent<Token>>, mut auth: ResMut<Authentication>) {
     let Some(event) = events.iter().last() else { return };
     let Ok(token) = event.result() else { return };
-    client.unwrap().set_token(token.token().to_owned());
+    auth.set_token(token.token().to_owned());
 }
