@@ -212,7 +212,6 @@ fn response_system(counter: Res<Counter>, mut responses: EventReader<ResponseEve
 }
 
 fn auth_system(mut commands: Commands, auth: Res<Authentication>) {
-    // fully consume the iterator
     if auth.is_authenticated() {
         commands.insert_resource(NextState(MenuState::GameListing));
     }
