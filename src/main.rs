@@ -13,7 +13,6 @@ use de_core::{
     CorePluginGroup,
 };
 use de_gui::GuiPluginGroup;
-use de_hud::UiPluginGroup;
 use de_index::IndexPluginGroup;
 use de_loader::LoaderPluginGroup;
 use de_lobby_client::LobbyClientPluginGroup;
@@ -59,8 +58,7 @@ fn main() {
         .add_plugins(ControllerPluginGroup)
         .add_plugins(CameraPluginGroup)
         .add_plugins(BehaviourPluginGroup)
-        .add_plugins(CombatPluginGroup)
-        .add_plugins(UiPluginGroup);
+        .add_plugins(CombatPluginGroup);
 
     // This has to be after LogPlugin is inserted.
     info!(

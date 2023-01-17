@@ -1,10 +1,10 @@
 use bevy::prelude::*;
 use de_core::{stages::GameStage, state::AppState};
-use de_hud::UpdateSelectionBoxEvent;
 use iyes_loopless::prelude::*;
 
 use crate::{
     areaselect::{AreaSelectLabels, SelectInRectEvent},
+    hud::UpdateSelectionBoxEvent,
     mouse::{DragUpdateType, MouseDragged, MouseLabels},
     selection::SelectionMode,
 };

@@ -1962,7 +1962,6 @@ dependencies = [
  "de_behaviour",
  "de_combat",
  "de_core",
- "de_hud",
  "de_index",
  "de_objects",
  "de_pathing",
@@ -2002,7 +2001,6 @@ dependencies = [
  "de_controller",
  "de_core",
  "de_gui",
- "de_hud",
  "de_index",
  "de_loader",
  "de_lobby_client",
@@ -2021,15 +2019,6 @@ name = "de_gui"
 version = "0.1.0-dev"
 dependencies = [
  "bevy",
- "iyes_loopless",
-]
-
-[[package]]
-name = "de_hud"
-version = "0.1.0-dev"
-dependencies = [
- "bevy",
- "de_core",
  "iyes_loopless",
 ]
 

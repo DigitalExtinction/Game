@@ -149,9 +149,8 @@ Topologically sorted crates:
 * [combat](/crates/combat) – attacking, projectile & laser simulation and
   similar.
 
-* [hud](/crates/hud) – head-up display with 2D in-game UI.
-
-* [controller](/crates/controller) – handling of user input.
+* [controller](/crates/controller) – handling of user input and containing
+  head-up display with 2D in-game UI.
 
 ### Repository Structure
 

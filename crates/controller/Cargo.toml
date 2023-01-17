@@ -21,7 +21,6 @@ de_pathing.workspace = true
 de_spawner.workspace = true
 de_behaviour.workspace = true
 de_combat.workspace = true
-de_hud.workspace = true
 de_signs.workspace = true
 
 # Other
