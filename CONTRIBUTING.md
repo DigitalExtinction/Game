@@ -70,6 +70,37 @@
   A lot of the ergonomy and performance gains unlocked by unsafe or complex
   code are already delivered by Bevy and its API.
 
+* Rustfmt configured by [rustfmt.toml](./rustfmt.toml) is used for Rust code
+  formatting. Note that nightly version of the tool is required.
+
+* Maximum line length of Markdown files is 79 characters.
+
+* Keep individual Bevy system complexity and the number of its parameters low.
+  When the complexity grows, split the system and use events for inter-system
+  communication.
+
+* Label struct names end with `Label` (for example `CameraLabel`). Event struct
+  names end with `Event` (for example `DoubleClickEvent`).
+
+### Crate Structure
+
+* Each crate is small (several thousand SLOC or less), simple and
+  self-contained.
+
+* The public API of each crate is small or empty.
+
+* Each "Bevy" based crate implements a
+  [PluginGroup](https://docs.rs/bevy/latest/bevy/app/trait.PluginGroup.html)
+  placed in `lib.rs`.
+
+* The crate is split into one or more individual
+  [Plugin](https://docs.rs/bevy/latest/bevy/app/trait.Plugin.html)s. Each is
+  placed to a separate module.
+
+* Systems are (usually) located alongside their respective plugins.
+
+* Inter-crate interaction leans heavily on the usage of Bevy events.
+
 ## Getting Oriented
 
 Rust documentation is automatically build and deployed from `main` branch to
@@ -77,15 +108,7 @@ Rust documentation is automatically build and deployed from `main` branch to
 
 The game is split into multiple [crates](/crates), each implementing part of
 the game logic. This repository contains a Cargo workspace which consists of
-all the sub-crates.
-
-The intention is:
-
-* each crate is small, simple and self contained,
-* the public API of each crate is small or empty,
-* most of the crates expose a Bevy PluginGroup – inter-crate interaction is
-  handled via Bevy's ECS & events,
-* the crate inter-dependencies form an orderly DAG.
+all the sub-crates. The crate inter-dependencies form an orderly DAG.
 
 Topologically sorted crates:
 
