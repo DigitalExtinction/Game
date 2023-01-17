@@ -13,6 +13,8 @@ pub use style::OuterStyle;
 use text::TextPlugin;
 use textbox::TextBoxPlugin;
 pub use textbox::{TextBoxCommands, TextBoxQuery};
+use toast::ToastPlugin;
+pub use toast::{ToastEvent, ToastLabel};
 
 mod button;
 mod commands;
@@ -21,6 +23,7 @@ mod label;
 mod style;
 mod text;
 mod textbox;
+mod toast;
 
 pub struct GuiPluginGroup;
 
@@ -31,5 +34,6 @@ impl PluginGroup for GuiPluginGroup {
             .add(TextPlugin)
             .add(ButtonPlugin)
             .add(TextBoxPlugin)
+            .add(ToastPlugin)
     }
 }

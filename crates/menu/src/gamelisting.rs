@@ -2,7 +2,7 @@ use std::time::Duration;
 
 use bevy::{prelude::*, time::Stopwatch};
 use de_core::state::MenuState;
-use de_gui::{ButtonCommands, GuiCommands, LabelCommands, OuterStyle};
+use de_gui::{ButtonCommands, GuiCommands, LabelCommands, OuterStyle, ToastEvent, ToastLabel};
 use de_lobby_client::{ListGamesRequest, RequestEvent, ResponseEvent};
 use de_lobby_model::{GameListing, GamePartial};
 use iyes_loopless::prelude::*;
@@ -19,7 +19,11 @@ impl Plugin for GameListingPlugin {
             .add_exit_system(MenuState::GameListing, despawn_root_nodes)
             .add_exit_system(MenuState::GameListing, cleanup)
             .add_system(refresh_system.run_in_state(MenuState::GameListing))
-            .add_system(list_games_system.run_in_state(MenuState::GameListing));
+            .add_system(
+                list_games_system
+                    .run_in_state(MenuState::GameListing)
+                    .before(ToastLabel::ProcessEvents),
+            );
     }
 }
 
@@ -115,6 +119,7 @@ fn list_games_system(
     mut commands: GuiCommands,
     table: Res<GamesTable>,
     mut events: EventReader<ResponseEvent<GameListing>>,
+    mut toasts: EventWriter<ToastEvent>,
 ) {
     let Some(event) = events.iter().last() else { return };
     commands.entity(table.0).despawn_descendants();
@@ -126,6 +131,9 @@ fn list_games_system(
                 commands.entity(table.0).add_child(row_id);
             }
         }
-        Err(error) => warn!("Error: {:?}", error),
+        Err(error) => {
+            warn!("Game listing error: {:?}", error);
+            toasts.send(ToastEvent::new(error));
+        }
     }
 }
