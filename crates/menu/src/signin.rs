@@ -2,7 +2,7 @@ use bevy::prelude::*;
 use de_core::state::MenuState;
 use de_gui::{
     ButtonCommands, GuiCommands, LabelCommands, OuterStyle, SetFocusEvent, TextBoxCommands,
-    TextBoxQuery,
+    TextBoxQuery, ToastEvent, ToastLabel,
 };
 use de_lobby_client::{Authentication, RequestEvent, ResponseEvent, SignInRequest, SignUpRequest};
 use de_lobby_model::{Token, User, UserWithPassword, UsernameAndPassword};
@@ -23,7 +23,11 @@ impl Plugin for SignInPlugin {
                     .run_if_resource_exists::<Inputs>()
                     .run_in_state(MenuState::SignIn),
             )
-            .add_system(response_system.run_in_state(MenuState::SignIn))
+            .add_system(
+                response_system
+                    .run_in_state(MenuState::SignIn)
+                    .before(ToastLabel::ProcessEvents),
+            )
             .add_system(auth_system.run_in_state(MenuState::SignIn));
     }
 }
@@ -201,18 +205,22 @@ fn button_system(
     }
 }
 
-fn response_system(counter: Res<Counter>, mut responses: EventReader<ResponseEvent<Token>>) {
+fn response_system(
+    counter: Res<Counter>,
+    mut responses: EventReader<ResponseEvent<Token>>,
+    mut toasts: EventWriter<ToastEvent>,
+) {
     for event in responses.iter() {
         if counter.compare(event.id()) {
             if let Err(error) = event.result() {
-                warn!("Error: {:?}", error);
+                warn!("Sign-in / sign-up error: {:?}", error);
+                toasts.send(ToastEvent::new(error));
             }
         }
     }
 }
 
 fn auth_system(mut commands: Commands, auth: Res<Authentication>) {
-    // fully consume the iterator
     if auth.is_authenticated() {
         commands.insert_resource(NextState(MenuState::GameListing));
     }
