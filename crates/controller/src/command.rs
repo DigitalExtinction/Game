@@ -62,6 +62,7 @@ impl Plugin for CommandPlugin {
                     left_click_handler
                         .run_in_state(GameState::Playing)
                         .run_if(on_click(MouseButton::Left))
+                        .label(CommandLabel::LeftClick)
                         .before(SelectionLabels::Update)
                         .before(DraftLabels::Spawn)
                         .after(PointerLabels::Update)
@@ -74,7 +75,8 @@ impl Plugin for CommandPlugin {
                         .before(SelectionLabels::Update)
                         .before(DraftLabels::Spawn)
                         .after(PointerLabels::Update)
-                        .after(MouseLabels::Buttons),
+                        .after(MouseLabels::Buttons)
+                        .after(CommandLabel::LeftClick),
                 )
                 .with_system(
                     discard_drafts
@@ -102,6 +104,11 @@ impl Plugin for CommandPlugin {
         )
         .add_system_set_to_stage(GameStage::Input, Self::place_draft_systems());
     }
+}
+
+#[derive(Copy, Clone, Hash, Debug, PartialEq, Eq, SystemLabel)]
+pub(crate) enum CommandLabel {
+    LeftClick,
 }
 
 fn on_click(button: MouseButton) -> impl Fn(EventReader<MouseClicked>) -> bool {
