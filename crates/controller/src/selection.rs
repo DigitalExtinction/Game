@@ -73,25 +73,58 @@ pub(crate) enum SelectionMode {
 }
 
 #[derive(SystemParam)]
-struct Selector<'w, 's> {
+struct SelectorBuilder<'w, 's> {
     commands: Commands<'w, 's>,
     selected: Query<'w, 's, Entity, With<Selected>>,
     markers: Query<'w, 's, &'static mut CircleMarker>,
     bars: EventWriter<'w, 's, UpdateBarVisibilityEvent>,
 }
 
-impl<'w, 's> Selector<'w, 's> {
-    fn select(&mut self, entities: &[Entity], mode: SelectionMode) {
+impl<'w, 's> SelectorBuilder<'w, 's> {
+    fn build(self) -> Selector<'w, 's> {
         let selected: AHashSet<Entity> = self.selected.iter().collect();
+        Selector {
+            commands: self.commands,
+            markers: self.markers,
+            bars: self.bars,
+            selected,
+            to_select: AHashSet::new(),
+            to_deselect: AHashSet::new(),
+        }
+    }
+}
+
+struct Selector<'w, 's> {
+    commands: Commands<'w, 's>,
+    markers: Query<'w, 's, &'static mut CircleMarker>,
+    bars: EventWriter<'w, 's, UpdateBarVisibilityEvent>,
+    selected: AHashSet<Entity>,
+    to_select: AHashSet<Entity>,
+    to_deselect: AHashSet<Entity>,
+}
+
+impl<'w, 's> Selector<'w, 's> {
+    fn update(&mut self, entities: &[Entity], mode: SelectionMode) {
         let updated: AHashSet<Entity> = entities.iter().cloned().collect();
 
-        let (select, deselect): (AHashSet<Entity>, AHashSet<Entity>) = match mode {
-            SelectionMode::Replace => (&updated - &selected, &selected - &updated),
-            SelectionMode::AddToggle => (&updated - &selected, &updated & &selected),
-            SelectionMode::Add => (&updated - &selected, AHashSet::new()),
-        };
+        match mode {
+            SelectionMode::Replace => {
+                self.to_select = &updated - &self.selected;
+                self.to_deselect = &self.selected - &updated;
+            }
+            SelectionMode::AddToggle => {
+                self.to_select = &(&updated - &self.to_select) - &self.selected;
+                self.to_deselect = &updated & &self.selected;
+            }
+            SelectionMode::Add => {
+                self.to_select.extend(&updated - &self.selected);
+                self.to_deselect = &self.to_deselect - &updated;
+            }
+        }
+    }
 
-        for entity in deselect {
+    fn execute(mut self) {
+        for entity in self.to_deselect {
             let mut entity_commands = self.commands.entity(entity);
             entity_commands.remove::<Selected>();
 
@@ -108,7 +141,7 @@ impl<'w, 's> Selector<'w, 's> {
             ));
         }
 
-        for entity in select {
+        for entity in self.to_select {
             let mut entity_commands = self.commands.entity(entity);
             entity_commands.insert(Selected);
 
@@ -127,8 +160,10 @@ impl<'w, 's> Selector<'w, 's> {
     }
 }
 
-fn update_selection(mut events: EventReader<SelectEvent>, mut selector: Selector) {
+fn update_selection(mut events: EventReader<SelectEvent>, selector_builder: SelectorBuilder) {
+    let mut selector = selector_builder.build();
     for event in events.iter() {
-        selector.select(event.entities(), event.mode());
+        selector.update(event.entities(), event.mode());
     }
+    selector.execute();
 }
