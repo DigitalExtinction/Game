@@ -44,7 +44,7 @@ fn update_drags(
                 } else {
                     SelectionMode::Replace
                 };
-                select_events.send(SelectInRectEvent::new(drag_event.rect(), mode));
+                select_events.send(SelectInRectEvent::new(drag_event.rect(), mode, None));
 
                 UpdateSelectionBoxEvent::none()
             }

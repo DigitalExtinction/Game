@@ -7,12 +7,14 @@ use de_core::{screengeom::ScreenRect, stages::GameStage, state::GameState};
 use iyes_loopless::prelude::*;
 
 const DRAGGING_THRESHOLD: f32 = 0.02;
+const DOUBLE_CLICK_TIME: f64 = 0.5;
 
 pub(crate) struct MousePlugin;
 
 impl Plugin for MousePlugin {
     fn build(&self, app: &mut App) {
         app.add_event::<MouseClicked>()
+            .add_event::<MouseDoubleClicked>()
             .add_event::<MouseDragged>()
             .init_resource::<MousePosition>()
             .init_resource::<MouseDragStates>()
@@ -33,8 +35,14 @@ impl Plugin for MousePlugin {
                     .with_system(
                         update_buttons
                             .run_in_state(GameState::Playing)
-                            .label(MouseLabels::Buttons)
+                            .label(MouseLabels::SingeButton)
                             .after(MouseLabels::Drags),
+                    )
+                    .with_system(
+                        check_double_click
+                            .run_in_state(GameState::Playing)
+                            .label(MouseLabels::Buttons)
+                            .after(MouseLabels::SingeButton),
                     ),
             );
     }
@@ -44,6 +52,7 @@ impl Plugin for MousePlugin {
 pub(crate) enum MouseLabels {
     Position,
     Drags,
+    SingeButton,
     Buttons,
 }
 
@@ -52,6 +61,20 @@ pub(crate) struct MouseClicked {
 }
 
 impl MouseClicked {
+    fn new(button: MouseButton) -> Self {
+        Self { button }
+    }
+
+    pub(crate) fn button(&self) -> MouseButton {
+        self.button
+    }
+}
+
+pub(crate) struct MouseDoubleClicked {
+    button: MouseButton,
+}
+
+impl MouseDoubleClicked {
     fn new(button: MouseButton) -> Self {
         Self { button }
     }
@@ -234,5 +257,21 @@ fn update_buttons(
                 mouse_state.set(event.button, mouse_position.ndc());
             }
         }
+    }
+}
+
+fn check_double_click(
+    mut clicks: EventReader<MouseClicked>,
+    mut double_clicks: EventWriter<MouseDoubleClicked>,
+    mut last_click_time: Local<f64>,
+    time: Res<Time>,
+) {
+    for mouse_clicked in clicks.iter() {
+        let current_time = time.elapsed_seconds_f64();
+        // Check if double click using timer
+        if (current_time - *last_click_time) < DOUBLE_CLICK_TIME {
+            double_clicks.send(MouseDoubleClicked::new(mouse_clicked.button()));
+        }
+        *last_click_time = time.elapsed_seconds_f64();
     }
 }
