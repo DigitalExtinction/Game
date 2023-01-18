@@ -58,15 +58,20 @@ pub(crate) enum MouseLabels {
 
 pub(crate) struct MouseClicked {
     button: MouseButton,
+    position: Vec2,
 }
 
 impl MouseClicked {
-    fn new(button: MouseButton) -> Self {
-        Self { button }
+    fn new(button: MouseButton, position: Vec2) -> Self {
+        Self { button, position }
     }
 
     pub(crate) fn button(&self) -> MouseButton {
         self.button
+    }
+
+    pub(crate) fn position(&self) -> Vec2 {
+        self.position
     }
 }
 
@@ -240,8 +245,8 @@ fn update_buttons(
             ButtonState::Released => {
                 if let Some(drag_resolution) = mouse_state.resolve(event.button) {
                     match drag_resolution {
-                        DragResolution::Point(_) => {
-                            clicks.send(MouseClicked::new(event.button));
+                        DragResolution::Point(position) => {
+                            clicks.send(MouseClicked::new(event.button, position));
                         }
                         DragResolution::Rect(rect) => {
                             drags.send(MouseDragged::new(
@@ -263,15 +268,23 @@ fn update_buttons(
 fn check_double_click(
     mut clicks: EventReader<MouseClicked>,
     mut double_clicks: EventWriter<MouseDoubleClicked>,
+    mut last_click_position: Local<Option<Vec2>>,
     mut last_click_time: Local<f64>,
     time: Res<Time>,
 ) {
     for mouse_clicked in clicks.iter() {
         let current_time = time.elapsed_seconds_f64();
-        // Check if double click using timer
-        if (current_time - *last_click_time) < DOUBLE_CLICK_TIME {
-            double_clicks.send(MouseDoubleClicked::new(mouse_clicked.button()));
+
+        if last_click_position.map_or(true, |p| {
+            p.distance(mouse_clicked.position()) < DRAGGING_THRESHOLD
+        }) {
+            // Check if double click using timer
+            if (current_time - *last_click_time) < DOUBLE_CLICK_TIME {
+                double_clicks.send(MouseDoubleClicked::new(mouse_clicked.button()));
+            }
         }
+
         *last_click_time = time.elapsed_seconds_f64();
+        *last_click_position = Some(mouse_clicked.position());
     }
 }
