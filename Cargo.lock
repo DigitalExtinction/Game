@@ -1962,6 +1962,7 @@ dependencies = [
  "de_behaviour",
  "de_combat",
  "de_core",
+ "de_gui",
  "de_index",
  "de_objects",
  "de_pathing",

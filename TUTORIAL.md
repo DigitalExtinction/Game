@@ -10,7 +10,7 @@ rotate the camera around its focus point on the terrain.
 
 # Hotkeys
 
-* Press `Esc` — cancel current action.
+* Press `Esc` — cancel current action or display menu.
 
 # Building Construction
 
