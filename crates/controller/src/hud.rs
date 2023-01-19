@@ -58,6 +58,7 @@ fn process_events(
                         commands.spawn((
                             NodeBundle {
                                 style: Style {
+                                    position_type: PositionType::Absolute,
                                     size: ui_size,
                                     position: ui_rect,
                                     ..Default::default()
