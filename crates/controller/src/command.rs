@@ -19,6 +19,7 @@ use crate::{
     areaselect::{AreaSelectLabels, SelectInRectEvent},
     draft::{DiscardDraftsEvent, DraftLabels, NewDraftEvent, SpawnDraftsEvent},
     keyboard::KeyCondition,
+    menu::{GameMenuLabel, ToggleGameMenu},
     mouse::{MouseClicked, MouseDoubleClicked, MouseLabels},
     pointer::{Pointer, PointerLabels},
     selection::{SelectEvent, Selected, SelectionLabels, SelectionMode},
@@ -79,9 +80,10 @@ impl Plugin for CommandPlugin {
                         .after(CommandLabel::LeftClick),
                 )
                 .with_system(
-                    discard_drafts
+                    handle_escape
                         .run_in_state(GameState::Playing)
                         .run_if(KeyCondition::single(KeyCode::Escape).build())
+                        .before(GameMenuLabel::Toggle)
                         .before(DraftLabels::Discard),
                 )
                 .with_system(
@@ -223,8 +225,16 @@ fn left_click_handler(
     }
 }
 
-fn discard_drafts(mut events: EventWriter<DiscardDraftsEvent>) {
-    events.send(DiscardDraftsEvent);
+fn handle_escape(
+    mut toggle_menu_events: EventWriter<ToggleGameMenu>,
+    mut discard_events: EventWriter<DiscardDraftsEvent>,
+    drafts: Query<(), With<Draft>>,
+) {
+    if drafts.is_empty() {
+        toggle_menu_events.send(ToggleGameMenu);
+    } else {
+        discard_events.send(DiscardDraftsEvent);
+    }
 }
 
 fn place_draft(
