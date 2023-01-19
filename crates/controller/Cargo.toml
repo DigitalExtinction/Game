@@ -13,20 +13,20 @@ categories.workspace = true
 
 [dependencies]
 # DE
-de_core.workspace = true
-de_objects.workspace = true
-de_index.workspace = true
-de_terrain.workspace = true
-de_pathing.workspace = true
-de_spawner.workspace = true
 de_behaviour.workspace = true
 de_combat.workspace = true
+de_core.workspace = true
+de_index.workspace = true
+de_objects.workspace = true
+de_pathing.workspace = true
 de_signs.workspace = true
+de_spawner.workspace = true
+de_terrain.workspace = true
 
 # Other
-bevy.workspace = true
-iyes_loopless.workspace = true
-glam.workspace = true
-parry3d.workspace = true
-enum-map.workspace = true
 ahash.workspace = true
+bevy.workspace = true
+enum-map.workspace = true
+glam.workspace = true
+iyes_loopless.workspace = true
+parry3d.workspace = true
