@@ -1,4 +1,4 @@
-use bevy::prelude::*;
+use bevy::{app::AppExit, prelude::*};
 use de_core::state::MenuState;
 use de_gui::{ButtonCommands, GuiCommands, OuterStyle};
 use iyes_loopless::prelude::*;
@@ -16,7 +16,10 @@ impl Plugin for MainMenuPlugin {
 }
 
 #[derive(Component, Clone, Copy)]
-struct ButtonAction(MenuState);
+enum ButtonAction {
+    SwithState(MenuState),
+    Quit,
+}
 
 fn setup(mut commands: GuiCommands) {
     let root_node = commands
@@ -36,15 +39,16 @@ fn setup(mut commands: GuiCommands) {
     button(
         &mut commands,
         root_node,
-        ButtonAction(MenuState::MapSelection),
+        ButtonAction::SwithState(MenuState::MapSelection),
         "Singleplayer",
     );
     button(
         &mut commands,
         root_node,
-        ButtonAction(MenuState::SignIn),
+        ButtonAction::SwithState(MenuState::SignIn),
         "Multiplayer",
     );
+    button(&mut commands, root_node, ButtonAction::Quit, "Quit Game");
 }
 
 fn button(commands: &mut GuiCommands, parent: Entity, action: ButtonAction, caption: &str) {
@@ -68,11 +72,15 @@ fn button(commands: &mut GuiCommands, parent: Entity, action: ButtonAction, capt
 
 fn button_system(
     mut commands: Commands,
+    mut exit: EventWriter<AppExit>,
     interactions: Query<(&Interaction, &ButtonAction), Changed<Interaction>>,
 ) {
     for (&interaction, &action) in interactions.iter() {
         if let Interaction::Clicked = interaction {
-            commands.insert_resource(NextState(action.0));
+            match action {
+                ButtonAction::SwithState(state) => commands.insert_resource(NextState(state)),
+                ButtonAction::Quit => exit.send(AppExit),
+            };
         }
     }
 }
