@@ -3,8 +3,8 @@
 //! game.
 
 use bevy::{app::PluginGroupBuilder, prelude::PluginGroup};
-pub use button::ButtonCommands;
 use button::ButtonPlugin;
+pub use button::{ButtonCommands, ButtonOps};
 pub use commands::GuiCommands;
 use focus::FocusPlugin;
 pub use focus::SetFocusEvent;

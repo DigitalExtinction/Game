@@ -46,16 +46,22 @@ pub(crate) struct SelectMapEvent;
 /// switched to a next state.
 pub(crate) struct MapSelectedEvent {
     path: PathBuf,
+    metadata: MapMetadata,
 }
 
 impl MapSelectedEvent {
-    fn new(path: PathBuf) -> Self {
-        Self { path }
+    fn new(path: PathBuf, metadata: MapMetadata) -> Self {
+        Self { path, metadata }
     }
 
     /// Path to the map on the local file system.
     pub(crate) fn path(&self) -> &Path {
         self.path.as_path()
+    }
+
+    /// Selected map metadata.
+    pub(crate) fn metadata(&self) -> &MapMetadata {
+        &self.metadata
     }
 }
 
@@ -165,7 +171,10 @@ fn button_system(
     for (&interaction, map) in interactions.iter() {
         if let Interaction::Clicked = interaction {
             commands.insert_resource(NextState(MapState::Off));
-            events.send(MapSelectedEvent::new(map.path().into()));
+            events.send(MapSelectedEvent::new(
+                map.path().into(),
+                map.metadata().clone(),
+            ));
         }
     }
 }
