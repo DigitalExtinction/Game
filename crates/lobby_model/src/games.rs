@@ -131,7 +131,7 @@ impl validation::Validatable for GameConfig {
     }
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct GameMap {
     hash: String,

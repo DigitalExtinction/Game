@@ -52,6 +52,7 @@ pub(crate) enum MenuState {
     SignIn,
     GameListing,
     GameCreation,
+    MultiPlayerGame,
 }
 
 fn menu_entered_system(mut commands: Commands) {
