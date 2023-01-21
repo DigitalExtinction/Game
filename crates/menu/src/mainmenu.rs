@@ -3,14 +3,13 @@ use de_core::state::MenuState;
 use de_gui::{ButtonCommands, GuiCommands, OuterStyle};
 use iyes_loopless::prelude::*;
 
-use crate::menu::despawn_root_nodes;
+use crate::menu::Menu;
 
 pub(crate) struct MainMenuPlugin;
 
 impl Plugin for MainMenuPlugin {
     fn build(&self, app: &mut App) {
         app.add_enter_system(MenuState::MainMenu, setup)
-            .add_exit_system(MenuState::MainMenu, despawn_root_nodes)
             .add_system(button_system.run_in_state(MenuState::MainMenu));
     }
 }
@@ -21,8 +20,8 @@ enum ButtonAction {
     Quit,
 }
 
-fn setup(mut commands: GuiCommands) {
-    let root_node = commands
+fn setup(mut commands: GuiCommands, menu: Res<Menu>) {
+    let column_node = commands
         .spawn(NodeBundle {
             style: Style {
                 flex_direction: FlexDirection::Column,
@@ -35,20 +34,21 @@ fn setup(mut commands: GuiCommands) {
             ..default()
         })
         .id();
+    commands.entity(menu.root_node()).add_child(column_node);
 
     button(
         &mut commands,
-        root_node,
+        column_node,
         ButtonAction::SwithState(MenuState::MapSelection),
         "Singleplayer",
     );
     button(
         &mut commands,
-        root_node,
+        column_node,
         ButtonAction::SwithState(MenuState::SignIn),
         "Multiplayer",
     );
-    button(&mut commands, root_node, ButtonAction::Quit, "Quit Game");
+    button(&mut commands, column_node, ButtonAction::Quit, "Quit Game");
 }
 
 fn button(commands: &mut GuiCommands, parent: Entity, action: ButtonAction, caption: &str) {

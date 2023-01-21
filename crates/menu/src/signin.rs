@@ -8,7 +8,7 @@ use de_lobby_client::{Authentication, RequestEvent, ResponseEvent, SignInRequest
 use de_lobby_model::{Token, User, UserWithPassword, UsernameAndPassword};
 use iyes_loopless::prelude::*;
 
-use crate::menu::despawn_root_nodes;
+use crate::menu::Menu;
 
 pub(crate) struct SignInPlugin;
 
@@ -16,7 +16,6 @@ impl Plugin for SignInPlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<Counter>()
             .add_enter_system(MenuState::SignIn, setup)
-            .add_exit_system(MenuState::SignIn, despawn_root_nodes)
             .add_exit_system(MenuState::SignIn, cleanup)
             .add_system(
                 button_system
@@ -60,17 +59,18 @@ enum Action {
     SignUp,
 }
 
-fn setup(mut commands: GuiCommands, mut focus: EventWriter<SetFocusEvent>) {
-    let root = root_column(&mut commands);
+fn setup(mut commands: GuiCommands, menu: Res<Menu>, mut focus: EventWriter<SetFocusEvent>) {
+    let column = root_column(&mut commands);
+    commands.entity(menu.root_node()).add_child(column);
 
-    let username_row = row(&mut commands, root);
+    let username_row = row(&mut commands, column);
     let input_text_box = input(&mut commands, username_row, "Username:", false);
     focus.send(SetFocusEvent::some(input_text_box));
 
-    let password_row = row(&mut commands, root);
+    let password_row = row(&mut commands, column);
     let password_text_box = input(&mut commands, password_row, "Password:", true);
 
-    let buttons_row = row(&mut commands, root);
+    let buttons_row = row(&mut commands, column);
     buttons(&mut commands, buttons_row);
 
     commands.insert_resource(Inputs {

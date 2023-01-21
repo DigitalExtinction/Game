@@ -21,7 +21,7 @@ use futures_lite::future;
 use iyes_loopless::prelude::*;
 use thiserror::Error;
 
-use crate::menu::despawn_root_nodes;
+use crate::menu::Menu;
 
 pub(crate) struct MapSelectionPlugin;
 
@@ -29,7 +29,6 @@ impl Plugin for MapSelectionPlugin {
     fn build(&self, app: &mut App) {
         app.add_enter_system(MenuState::MapSelection, setup)
             .add_exit_system(MenuState::MapSelection, cleanup)
-            .add_exit_system(MenuState::MapSelection, despawn_root_nodes)
             .add_system_set(
                 SystemSet::new()
                     .with_system(init_buttons.run_in_state(MenuState::MapSelection))
@@ -71,7 +70,7 @@ fn setup(mut commands: Commands) {
     commands.insert_resource(LoadingTask(task));
 }
 
-fn init_buttons(mut commands: GuiCommands, task: Option<ResMut<LoadingTask>>) {
+fn init_buttons(mut commands: GuiCommands, menu: Res<Menu>, task: Option<ResMut<LoadingTask>>) {
     let Some(mut task) = task else { return };
     let Some(result) = future::block_on(future::poll_once(&mut task.0)) else {
         return
@@ -87,7 +86,7 @@ fn init_buttons(mut commands: GuiCommands, task: Option<ResMut<LoadingTask>>) {
 
     commands.remove_resource::<LoadingTask>();
 
-    let root_node = commands
+    let column_node = commands
         .spawn(NodeBundle {
             style: Style {
                 flex_direction: FlexDirection::Column,
@@ -100,10 +99,11 @@ fn init_buttons(mut commands: GuiCommands, task: Option<ResMut<LoadingTask>>) {
             ..default()
         })
         .id();
+    commands.entity(menu.root_node()).add_child(column_node);
 
     for map in map_entries {
         let button = map_button(&mut commands, map);
-        commands.entity(root_node).add_child(button);
+        commands.entity(column_node).add_child(button);
     }
 }
 

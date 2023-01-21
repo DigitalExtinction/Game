@@ -7,7 +7,7 @@ use de_lobby_client::{ListGamesRequest, RequestEvent, ResponseEvent};
 use de_lobby_model::{GameListing, GamePartial};
 use iyes_loopless::prelude::*;
 
-use crate::menu::despawn_root_nodes;
+use crate::menu::Menu;
 
 const REFRESH_INTERVAL: Duration = Duration::from_secs(10);
 
@@ -16,7 +16,6 @@ pub(crate) struct GameListingPlugin;
 impl Plugin for GameListingPlugin {
     fn build(&self, app: &mut App) {
         app.add_enter_system(MenuState::GameListing, setup)
-            .add_exit_system(MenuState::GameListing, despawn_root_nodes)
             .add_exit_system(MenuState::GameListing, cleanup)
             .add_system(refresh_system.run_in_state(MenuState::GameListing))
             .add_system(
@@ -30,8 +29,12 @@ impl Plugin for GameListingPlugin {
 #[derive(Resource)]
 struct GamesTable(Entity);
 
-fn setup(mut commands: GuiCommands, mut requests: EventWriter<RequestEvent<ListGamesRequest>>) {
-    let table_id = table(&mut commands);
+fn setup(
+    mut commands: GuiCommands,
+    menu: Res<Menu>,
+    mut requests: EventWriter<RequestEvent<ListGamesRequest>>,
+) {
+    let table_id = table(&mut commands, menu.root_node());
     commands.insert_resource(GamesTable(table_id));
     requests.send(RequestEvent::new("list-games", ListGamesRequest));
 }
@@ -40,8 +43,8 @@ fn cleanup(mut commands: Commands) {
     commands.remove_resource::<GamesTable>();
 }
 
-fn table(commands: &mut GuiCommands) -> Entity {
-    commands
+fn table(commands: &mut GuiCommands, root_node: Entity) -> Entity {
+    let table_id = commands
         .spawn(NodeBundle {
             style: Style {
                 flex_direction: FlexDirection::Column,
@@ -53,7 +56,9 @@ fn table(commands: &mut GuiCommands) -> Entity {
             },
             ..default()
         })
-        .id()
+        .id();
+    commands.entity(root_node).add_child(table_id);
+    table_id
 }
 
 fn row(commands: &mut GuiCommands, game: &GamePartial) -> Entity {
