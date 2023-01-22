@@ -20,10 +20,12 @@ ahash.workspace = true
 async-std = { workspace = true, features = ["default", "unstable", "attributes"] }
 async-tar.workspace = true
 bevy.workspace = true
+enum-map.workspace = true
 glam.workspace = true
 parry2d.workspace = true
 serde.workspace = true
 serde_json.workspace = true
+sha3.workspace = true
 thiserror.workspace = true
 
 [dev-dependencies]
