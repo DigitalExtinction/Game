@@ -5,6 +5,7 @@
 //! visualized by the plugin.
 
 use bevy::prelude::*;
+use bevy::scene::SceneInstance;
 use de_core::{
     objects::{ActiveObjectType, BuildingType, MovableSolid, ObjectType, StaticSolid},
     projection::ToFlat,
@@ -24,6 +25,9 @@ use parry3d::math::Isometry;
 const MAP_PADDING: f32 = 2. * EXCLUSION_OFFSET + 0.1;
 const MAP_OFFSET: Vector<f32> = Vector::new(MAP_PADDING, MAP_PADDING);
 
+const VALID_PLACEMENT: Color = Color::rgba(0.2, 0.8, 0.2, 0.7);
+const INVALID_PLACEMENT: Color = Color::rgba(0.86, 0.08, 0.24, 0.7);
+
 pub(crate) struct DraftPlugin;
 
 impl Plugin for DraftPlugin {
@@ -37,7 +41,20 @@ impl Plugin for DraftPlugin {
             update_draft
                 .run_in_state(GameState::Playing)
                 .after(IndexLabel::Index),
-        );
+        )
+        .add_system_to_stage(
+            GameStage::PostUpdate,
+            check_draft_loaded
+                .run_in_state(GameState::Playing)
+                .after(IndexLabel::Index),
+        )
+        .add_system_to_stage(
+            GameStage::PostUpdate,
+            update_draft_colour
+                .run_in_state(GameState::Playing)
+                .after(IndexLabel::Index),
+        )
+        .add_startup_system(insert_materials);
     }
 }
 
@@ -123,6 +140,74 @@ fn update_draft(
             // Access the component mutably only when really needed for optimal
             // Bevy change detection.
             draft.allowed = allowed
+        }
+    }
+}
+
+/// Materials for the invalid and valid placing states
+#[derive(Clone, Resource)]
+struct DraftMaterials {
+    valid_placement: Handle<StandardMaterial>,
+    invalid_placement: Handle<StandardMaterial>,
+}
+
+fn insert_materials(mut commands: Commands, mut materials: ResMut<Assets<StandardMaterial>>) {
+    commands.insert_resource(DraftMaterials {
+        valid_placement: materials.add(VALID_PLACEMENT.into()),
+        invalid_placement: materials.add(INVALID_PLACEMENT.into()),
+    });
+}
+
+// Assign the appropriate allowed to all entities in the spawned glb scene
+fn update_object_material(
+    allowed: bool,
+    entities: impl Iterator<Item = Entity>,
+    standard_materials: &mut Query<&mut Handle<StandardMaterial>>,
+    draft_materials: &DraftMaterials,
+) {
+    for entity in entities {
+        let Ok(mut material_handle) = standard_materials.get_mut(entity) else {
+            continue;
+        };
+        if allowed {
+            *material_handle = draft_materials.valid_placement.clone();
+        } else {
+            *material_handle = draft_materials.invalid_placement.clone();
+        }
+    }
+}
+
+/// Set the draft as changed when the scene is loaded in order to update the colour
+fn check_draft_loaded(
+    new_instances_query: Query<&Parent, Added<SceneInstance>>,
+    mut draft_query: Query<&mut Draft>,
+) {
+    for parent in &new_instances_query {
+        if let Ok(mut draft) = draft_query.get_mut(parent.get()) {
+            draft.set_changed();
+        }
+    }
+}
+
+fn update_draft_colour(
+    mut draft_query: Query<(&Draft, &Children), Changed<Draft>>,
+    scene_instances_query: Query<&SceneInstance>,
+    mut standard_materials: Query<&mut Handle<StandardMaterial>>,
+    scene_spawner: Res<SceneSpawner>,
+    draft_materials: Res<DraftMaterials>,
+) {
+    for (draft, children) in &mut draft_query {
+        let allowed = draft.allowed();
+
+        for &child in children.into_iter() {
+            // Find the scene instance which represents the draft object's model
+            let Ok(scene_instance) = scene_instances_query.get(child) else {
+                continue;
+            };
+
+            let entities = scene_spawner.iter_instance_entities(**scene_instance);
+
+            update_object_material(allowed, entities, &mut standard_materials, &draft_materials);
         }
     }
 }
