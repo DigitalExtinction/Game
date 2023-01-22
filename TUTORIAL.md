@@ -10,7 +10,7 @@ rotate the camera around its focus point on the terrain.
 
 # Hotkeys
 
-* Press `Esc` — cancel current action or display menu.
+* <kbd>Escape</kbd> — cancel current action or display menu.
 
 # Building Construction
 
@@ -20,23 +20,24 @@ construction by left clicking the mouse.
 
 ## Building Keys
 
-* Key `B` — Base
-* Key `P` — Power Hub
+* <kbd>B</kbd> — Base
+* <kbd>P</kbd> — Power Hub
 
 # Building and Unit Selection
 
-Left click on any of your units or buildings to select it. Press and hold CTRL
-before left clicking on buildings and units to (de)select more entities.
+Left click on any of your units or buildings to select it. Press and hold
+<kbd>Ctrl</kbd> before left clicking on buildings and units to (de)select more
+entities.
 
-Drag mouse to select all entities inside a rectangle. Press on hold CTRL extend
-current selections instead of replacing it.
+Drag mouse to select all entities inside a rectangle. Press and hold
+<kbd>Ctrl</kbd> extend current selections instead of replacing it.
 
-Double click on a unit to select all visible units of that type. Holding CTRL adds to
-the existing selection.
+Double click on a unit to select all visible units of that type. Holding
+<kbd>Ctrl</kbd> adds to the existing selection.
 
-Press CTRL+A to select all entities.
+Press <kbd>Ctrl</kbd>+<kbd>A</kbd> to select all entities.
 
-Press CTRL+SHIFT+A to select all visible entities.
+Press <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>A</kbd> to select all visible entities.
 
 # Commanding Units and Buildings
 
