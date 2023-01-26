@@ -6,7 +6,7 @@ use glam::{Quat, Vec2};
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
-use crate::size::MapBounds;
+use crate::{hash::MapHasher, size::MapBounds};
 
 #[derive(Clone, Copy, Serialize, Deserialize)]
 pub struct Placement {
@@ -17,6 +17,11 @@ pub struct Placement {
 impl Placement {
     pub(crate) fn new(position: Vec2, heading: f32) -> Self {
         Self { position, heading }
+    }
+
+    pub(crate) fn update_hash(&self, hasher: &mut MapHasher) {
+        hasher.update_vec2(self.position);
+        hasher.update_f32(self.heading);
     }
 
     pub fn position(&self) -> Vec2 {

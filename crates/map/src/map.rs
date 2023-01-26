@@ -3,6 +3,7 @@ use thiserror::Error;
 
 use crate::{
     content::{MapContent, MapContentValidationError, Object},
+    hash::{MapHash, MapHasher},
     meta::{MapMetadata, MapMetadataValidationError},
     placement::Placement,
 };
@@ -20,6 +21,14 @@ impl Map {
 
     pub(crate) fn new(metadata: MapMetadata, content: MapContent) -> Self {
         Self { metadata, content }
+    }
+
+    /// Compute deterministic hash of the map.
+    pub fn compute_hash(&self) -> MapHash {
+        let mut hasher = MapHasher::new();
+        self.metadata.update_hash(&mut hasher);
+        self.content.update_hash(&mut hasher);
+        hasher.finalize()
     }
 
     pub fn metadata(&self) -> &MapMetadata {
@@ -87,14 +96,14 @@ mod test {
     use std::error::Error;
 
     use de_core::{
-        objects::{ActiveObjectType, UnitType},
+        objects::{ActiveObjectType, InactiveObjectType, UnitType},
         player::Player,
     };
     use glam::Vec2;
 
     use super::*;
     use crate::{
-        content::{ActiveObject, InnerObject},
+        content::{ActiveObject, InactiveObject, InnerObject},
         placement::Placement,
         size::MapBounds,
     };
@@ -169,5 +178,37 @@ mod test {
                 assert_eq!(chain[3], "position (100, 0) is out of map bounds");
             }
         }
+    }
+
+    #[test]
+    fn test_map_hash() {
+        let mut map = Map::empty(MapMetadata::new(
+            "Test Map".into(),
+            MapBounds::new(Vec2::new(1000., 1000.)),
+            Player::Player3,
+        ));
+        let object_a = Object::new(
+            map.new_placement(Vec2::new(20., 25.), 0.),
+            InnerObject::Active(ActiveObject::new(
+                ActiveObjectType::Unit(UnitType::Attacker),
+                Player::Player1,
+            )),
+        );
+        let object_b = Object::new(
+            map.new_placement(Vec2::new(40.1, 25.), 0.),
+            InnerObject::Inactive(InactiveObject::new(InactiveObjectType::Tree)),
+        );
+
+        map.insert_object(object_a);
+        let hash_a = map.compute_hash();
+        map.insert_object(object_b);
+        let hash_b = map.compute_hash();
+
+        assert_eq!(
+            hash_a,
+            MapHash::from_hex("f06b6879c4dfe01324de5e91cdf17ab7c33a8e3a9acc936f439e5013da73713c")
+                .unwrap()
+        );
+        assert_ne!(hash_a, hash_b);
     }
 }

@@ -2,7 +2,10 @@ use de_core::player::Player;
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
-use crate::size::{MapBounds, MapBoundsValidationError};
+use crate::{
+    hash::MapHasher,
+    size::{MapBounds, MapBoundsValidationError},
+};
 
 pub const MAX_MAP_NAME_LEN: usize = 16;
 
@@ -39,6 +42,13 @@ impl MapMetadata {
         };
         map.validate().unwrap();
         map
+    }
+
+    pub(crate) fn update_hash(&self, hasher: &mut MapHasher) {
+        hasher.update_str(&self.name);
+        hasher.update_vec2(self.bounds.min());
+        hasher.update_vec2(self.bounds.max());
+        hasher.update_u8(self.max_player.to_num());
     }
 
     pub fn name(&self) -> &str {

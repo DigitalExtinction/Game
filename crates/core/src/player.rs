@@ -13,7 +13,7 @@ pub enum Player {
 }
 
 impl Player {
-    fn to_num(self) -> u8 {
+    pub fn to_num(self) -> u8 {
         match self {
             Self::Player1 => 1,
             Self::Player2 => 2,

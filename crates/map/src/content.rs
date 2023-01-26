@@ -3,10 +3,12 @@ use de_core::{
     objects::{ActiveObjectType, InactiveObjectType, PLAYER_MAX_BUILDINGS, PLAYER_MAX_UNITS},
     player::Player,
 };
+use enum_map::Enum;
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
 use crate::{
+    hash::MapHasher,
     meta::MapMetadata,
     placement::{Placement, PlacementValidationError},
     size::MapBounds,
@@ -29,6 +31,12 @@ impl MapContent {
     pub(crate) fn empty() -> Self {
         Self {
             objects: Vec::new(),
+        }
+    }
+
+    pub(crate) fn update_hash(&self, hasher: &mut MapHasher) {
+        for object in &self.objects {
+            object.update_hash(hasher);
         }
     }
 
@@ -121,6 +129,11 @@ impl Object {
         Self { placement, inner }
     }
 
+    fn update_hash(&self, hasher: &mut MapHasher) {
+        self.placement.update_hash(hasher);
+        self.inner.update_hash(hasher);
+    }
+
     /// Object placement on the map.
     pub fn placement(&self) -> Placement {
         self.placement
@@ -166,6 +179,15 @@ pub enum InnerObject {
     Inactive(InactiveObject),
 }
 
+impl InnerObject {
+    fn update_hash(&self, hasher: &mut MapHasher) {
+        match self {
+            Self::Active(object) => object.update_hash(hasher),
+            Self::Inactive(object) => object.update_hash(hasher),
+        }
+    }
+}
+
 #[derive(Clone, Serialize, Deserialize)]
 pub struct ActiveObject {
     object_type: ActiveObjectType,
@@ -178,6 +200,11 @@ impl ActiveObject {
             object_type,
             player,
         }
+    }
+
+    fn update_hash(&self, hasher: &mut MapHasher) {
+        hasher.update_usize(self.object_type.into_usize());
+        hasher.update_u8(self.player.to_num());
     }
 
     pub fn object_type(&self) -> ActiveObjectType {
@@ -213,6 +240,10 @@ pub struct InactiveObject {
 impl InactiveObject {
     pub fn new(object_type: InactiveObjectType) -> Self {
         Self { object_type }
+    }
+
+    fn update_hash(&self, hasher: &mut MapHasher) {
+        hasher.update_usize(self.object_type.into_usize());
     }
 
     pub fn object_type(&self) -> InactiveObjectType {
