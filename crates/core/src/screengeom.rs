@@ -34,22 +34,15 @@ impl ScreenRect {
     pub fn new(bottom_left: Vec2, top_right: Vec2) -> Self {
         if bottom_left.cmpgt(top_right).any() {
             panic!(
-                "Bottom left corner is greater than top right corner: {:?} > {:?}",
-                bottom_left, top_right
+                "Bottom left corner is greater than top right corner: {bottom_left:?} > {top_right:?}"
             );
         }
 
         if bottom_left.abs().cmpgt(Vec2::ONE).any() {
-            panic!(
-                "Bottom left corner is not within screen range: {:?}",
-                bottom_left
-            );
+            panic!("Bottom left corner is not within screen range: {bottom_left:?}");
         }
         if top_right.abs().cmpgt(Vec2::ONE).any() {
-            panic!(
-                "Top right corner is not within screen range: {:?}",
-                top_right
-            );
+            panic!("Top right corner is not within screen range: {top_right:?}");
         }
         Self(bottom_left, top_right)
     }

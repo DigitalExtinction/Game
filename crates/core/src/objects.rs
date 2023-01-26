@@ -37,8 +37,8 @@ pub enum ObjectType {
 impl fmt::Display for ObjectType {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
-            Self::Active(active) => write!(f, "Active -> {}", active),
-            Self::Inactive(inactive) => write!(f, "Inactive -> {}", inactive),
+            Self::Active(active) => write!(f, "Active -> {active}"),
+            Self::Inactive(inactive) => write!(f, "Inactive -> {inactive}"),
         }
     }
 }
@@ -65,8 +65,8 @@ pub enum ActiveObjectType {
 impl fmt::Display for ActiveObjectType {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
-            Self::Building(building) => write!(f, "Building -> {}", building),
-            Self::Unit(unit) => write!(f, "Unit -> {}", unit),
+            Self::Building(building) => write!(f, "Building -> {building}"),
+            Self::Unit(unit) => write!(f, "Unit -> {unit}"),
         }
     }
 }

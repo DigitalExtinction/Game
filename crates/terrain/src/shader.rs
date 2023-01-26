@@ -56,13 +56,13 @@ impl Circle {
     /// * If radius is non finite or is smaller or equal to zero.
     pub(crate) fn new(center: Vec2, radius: f32) -> Self {
         if !center.is_finite() {
-            panic!("Circle center is not finite: {:?}", center);
+            panic!("Circle center is not finite: {center:?}");
         }
         if !radius.is_finite() {
-            panic!("Circle radius is not finite: {:?}", radius);
+            panic!("Circle radius is not finite: {radius:?}");
         }
         if radius <= 0. {
-            panic!("Circle radius is smaller or equal to 0: {:?}", radius);
+            panic!("Circle radius is smaller or equal to 0: {radius:?}");
         }
 
         Self { center, radius }

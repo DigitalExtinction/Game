@@ -61,8 +61,7 @@ pub async fn load_metadata<P: AsRef<Path>>(path: P) -> LoadingResult<MapMetadata
     }
 
     Err(MapLoadingError::ArchiveContent(format!(
-        "{} entry is not present",
-        METADATA_JSON_ENTRY
+        "{METADATA_JSON_ENTRY} entry is not present"
     )))
 }
 
@@ -117,8 +116,7 @@ fn unwrap<T>(entry_name: &str, wrapped: Option<T>) -> LoadingResult<T> {
     match wrapped {
         Some(wrapped) => Ok(wrapped),
         None => Err(MapLoadingError::ArchiveContent(format!(
-            "{} entry is not present",
-            entry_name
+            "{entry_name} entry is not present"
         ))),
     }
 }

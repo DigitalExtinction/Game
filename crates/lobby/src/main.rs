@@ -67,6 +67,6 @@ async fn db_pool() -> Result<&'static Pool<Sqlite>> {
     let pool = SqlitePoolOptions::new()
         .connect(db_url.as_str())
         .await
-        .with_context(|| format!("Failed to connect to the SQLite DB with URL {}", db_url))?;
+        .with_context(|| format!("Failed to connect to the SQLite DB with URL {db_url}"))?;
     Ok(Box::leak(Box::new(pool)))
 }

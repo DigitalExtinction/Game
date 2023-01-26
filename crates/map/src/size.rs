@@ -118,7 +118,7 @@ mod test {
                 }
 
                 assert_eq!(
-                    format!("{}", error),
+                    format!("{error}"),
                     "map half-size has to be a positive and finite: got (-2.5, 3)"
                 );
             }
@@ -137,7 +137,7 @@ mod test {
                 }
 
                 assert_eq!(
-                    format!("{}", error),
+                    format!("{error}"),
                     "map half-size (10, 99999) is larger than maximum (4000, 4000)"
                 );
             }

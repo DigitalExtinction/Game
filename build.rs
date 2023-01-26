@@ -7,5 +7,5 @@ fn main() {
         .map_or(String::from("unknown"), |output| {
             String::from(String::from_utf8_lossy(&output.stdout))
         });
-    println!("cargo:rustc-env=GIT_SHA={}", git_sha);
+    println!("cargo:rustc-env=GIT_SHA={git_sha}");
 }

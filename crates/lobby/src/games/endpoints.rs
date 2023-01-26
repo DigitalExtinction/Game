@@ -25,7 +25,7 @@ async fn create(
     let game_config = game_config.into_inner();
     if let Err(error) = game_config.validate() {
         warn!("Invalid game configuration: {:?}", error);
-        return HttpResponse::BadRequest().json(format!("{}", error));
+        return HttpResponse::BadRequest().json(format!("{error}"));
     }
 
     let game = Game::new(game_config, claims.username().to_owned());
