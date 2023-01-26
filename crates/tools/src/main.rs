@@ -35,6 +35,8 @@ struct MapHash {
         help = "Path of a Digital Extinction map file."
     )]
     path: PathBuf,
+    #[clap(short, long, help = "Check validity of the file name.")]
+    check: bool,
 }
 
 fn main() {
@@ -42,6 +44,6 @@ fn main() {
 
     match cli.command {
         Command::Bounds(args) => bounds::execute(args.path.as_path()),
-        Command::MapHash(args) => map::execute(args.path.as_path()),
+        Command::MapHash(args) => map::execute(args.path.as_path(), args.check),
     }
 }
