@@ -1,7 +1,7 @@
 use bevy::{
     diagnostic::{FrameTimeDiagnosticsPlugin, LogDiagnosticsPlugin},
     prelude::*,
-    window::WindowMode,
+    window::{CursorGrabMode, WindowMode},
 };
 use de_behaviour::BehaviourPluginGroup;
 use de_camera::CameraPluginGroup;
@@ -75,6 +75,12 @@ impl Plugin for GamePlugin {
     fn build(&self, app: &mut App) {
         app.add_loopless_state(AppState::InMenu)
             .add_loopless_state(MenuState::MLoading)
-            .add_loopless_state(GameState::None);
+            .add_loopless_state(GameState::None)
+            .add_enter_system(MenuState::MLoading, cursor_grab_system);
     }
+}
+
+fn cursor_grab_system(mut windows: ResMut<Windows>) {
+    let window = windows.get_primary_mut().unwrap();
+    window.set_cursor_grab_mode(CursorGrabMode::Confined);
 }
