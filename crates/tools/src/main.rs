@@ -41,7 +41,7 @@ fn main() {
 
     let (document, buffers, _images) = match gltf::import(args.path.as_path()) {
         Ok(loaded) => loaded,
-        Err(err) => panic!("GLTF loading error: {:?}", err),
+        Err(err) => panic!("GLTF loading error: {err:?}"),
     };
     let get_buffer_data = |buffer: gltf::Buffer| buffers.get(buffer.index()).map(|x| &*x.0);
 
@@ -75,6 +75,6 @@ fn main() {
         Point::new(max.x, max.y, max.z),
     )
     .to_trimesh();
-    println!("Positions: {:?}", positions);
-    println!("Indices: {:?}", indices);
+    println!("Positions: {positions:?}");
+    println!("Indices: {indices:?}");
 }

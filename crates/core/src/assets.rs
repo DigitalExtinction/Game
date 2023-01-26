@@ -16,7 +16,7 @@ use std::{
 /// Panics if `path` is not relative.
 pub fn asset_path<P: AsRef<Path>>(path: P) -> PathBuf {
     let path = path.as_ref();
-    assert!(path.is_relative(), "Asset path is not relative: {:?}", path);
+    assert!(path.is_relative(), "Asset path is not relative: {path:?}");
     let mut new_path = match env::var("CARGO_MANIFEST_DIR") {
         Ok(path) => PathBuf::from(path),
         Err(_) => {

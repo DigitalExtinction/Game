@@ -47,7 +47,7 @@ impl IchnographyCache for &IchnographyCacheMock {
 fn load_points(number: u32) -> Vec<Vec2> {
     let mut points_path: PathBuf = env!("CARGO_MANIFEST_DIR").into();
     points_path.push("test_data");
-    points_path.push(format!("{}-points.txt", number));
+    points_path.push(format!("{number}-points.txt"));
     let reader = BufReader::new(File::open(points_path).unwrap());
 
     let mut points = Vec::with_capacity(number as usize);

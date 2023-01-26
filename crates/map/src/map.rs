@@ -158,7 +158,7 @@ mod test {
 
                 let mut error: Option<&(dyn Error)> = Some(&error);
                 while let Some(inner) = error {
-                    chain.push(format!("{}", inner));
+                    chain.push(format!("{inner}"));
                     error = inner.source();
                 }
 

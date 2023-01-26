@@ -60,7 +60,7 @@ impl Iterator for Rays {
 fn load_points(number: u32) -> Vec<Vec2> {
     let mut points_path: PathBuf = env!("CARGO_MANIFEST_DIR").into();
     points_path.push("test_data");
-    points_path.push(format!("{}-points.txt", number));
+    points_path.push(format!("{number}-points.txt"));
     let reader = BufReader::new(File::open(points_path).unwrap());
 
     let mut points = Vec::with_capacity(number as usize);
@@ -118,8 +118,7 @@ fn cast_ray(mut rays: ResMut<Rays>, max_distance: Res<MaxDistance>, index: Spati
 fn ray_cast_benchmark(c: &mut Criterion) {
     for max_distance in [0.1, 1., 10., 100., f32::INFINITY] {
         let mut group = c.benchmark_group(format!(
-            "Ray Cast - Small Entities - Max Distance {}m",
-            max_distance
+            "Ray Cast - Small Entities - Max Distance {max_distance}m"
         ));
 
         let plot_config = PlotConfiguration::default().summary_scale(AxisScale::Logarithmic);

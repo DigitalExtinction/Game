@@ -86,7 +86,7 @@ impl LobbyClient {
         if authenticated {
             match token {
                 Some(token) => {
-                    let mut value = HeaderValue::try_from(format!("Bearer {}", token))
+                    let mut value = HeaderValue::try_from(format!("Bearer {token}"))
                         .context("Failed crate Authorization header value from the JWT")?;
                     value.set_sensitive(true);
                     request.headers_mut().insert("Authorization", value);

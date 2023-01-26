@@ -50,17 +50,16 @@ where
 {
     match env::var(name) {
         Ok(value) => T::from_str(value.as_str())
-            .with_context(|| format!("Failed to parse environment variable \"{}\"", name)),
+            .with_context(|| format!("Failed to parse environment variable \"{name}\"")),
         Err(VarError::NotPresent) => match default {
             Some(value) => Ok(value),
             None => Err(anyhow!(format!(
-                "Mandatory environment variable \"{}\" is not set.",
-                name
+                "Mandatory environment variable \"{name}\" is not set."
             ))),
         },
         Err(error) => {
             Err(Error::new(error)
-                .context(format!("Failed to load environment variable \"{}\"", name)))
+                .context(format!("Failed to load environment variable \"{name}\"")))
         }
     }
 }

@@ -143,11 +143,11 @@ impl ItemLoader {
     fn from_name(server: &AssetServer, name: &str) -> Self {
         let mut model_path = PathBuf::new();
         model_path.push("models");
-        model_path.push(format!("{}.glb", name));
+        model_path.push(format!("{name}.glb"));
 
         let mut object_info_path = PathBuf::new();
         object_info_path.push("objects");
-        object_info_path.push(format!("{}.obj.json", name));
+        object_info_path.push(format!("{name}.obj.json"));
 
         Self {
             scene: server.load(AssetPath::new(model_path, Some("Scene0".to_owned()))),
@@ -164,8 +164,7 @@ impl ItemLoader {
         if object_info.flight().is_some() {
             assert!(
                 matches!(object_type, ObjectType::Active(ActiveObjectType::Unit(_))),
-                "Flight info specified for non-movable object {}.",
-                object_type
+                "Flight info specified for non-movable object {object_type}."
             );
         }
 

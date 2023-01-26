@@ -50,7 +50,7 @@ impl Funnel {
         let (left, right) = match side {
             Side::Left => (a, b),
             Side::Right => (b, a),
-            _ => panic!("Only Left and Right sides are accepted, got: {:?}", side),
+            _ => panic!("Only Left and Right sides are accepted, got: {side:?}"),
         };
         Self { tail, left, right }
     }
@@ -145,7 +145,7 @@ impl Funnel {
         match side {
             Side::Left => (&self.left, &self.right),
             Side::Right => (&self.right, &self.left),
-            _ => panic!("Only Left and Right sides are accepted, got: {:?}", side),
+            _ => panic!("Only Left and Right sides are accepted, got: {side:?}"),
         }
     }
 }

@@ -60,8 +60,7 @@ where
                     warn!("JWT decoding error: {:?}", error);
                     return Box::pin(async move {
                         Err(ErrorUnauthorized(format!(
-                            "Invalid Bearer token provided: {}",
-                            error
+                            "Invalid Bearer token provided: {error}"
                         )))
                     });
                 }
