@@ -1,0 +1,61 @@
+name: Maps
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+    types:
+      - opened
+      - reopened
+      - synchronize
+      - ready_for_review
+
+jobs:
+  names:
+    name: Check Map File Names
+    if: github.event.pull_request.draft == false
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Create LFS file list
+        run: git lfs ls-files -l | cut -d' ' -f1 | sort > .lfs-assets-id
+      - name: Restore LFS cache
+        uses: actions/cache@v3
+        with:
+          path: .git/lfs
+          key: lfs-${{ runner.os }}-${{ hashFiles('.lfs-assets-id') }}-v1
+      - name: Git LFS Pull
+        run: git lfs pull
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - name: Rust Cache
+        uses: actions/cache@v3
+        id: rust-cache
+        with:
+          path:  |
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            target/
+          key: tests-${{ runner.os }}-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            maps-${{ runner.os }}-
+
+      - name: Install Linux Dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install --no-install-recommends -y libasound2-dev libudev-dev
+
+      - name: Check File Name
+        shell: bash
+        run: |
+          for filename in ./assets/maps/*; do
+               cargo run --manifest-path crates/tools/Cargo.toml -- \
+                 map-hash -p "$filename" --check
+          done
