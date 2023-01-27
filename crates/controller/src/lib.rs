@@ -18,7 +18,7 @@ mod dragselect;
 mod frustum;
 mod hud;
 mod hud_components;
-mod interaction;
+mod hud_interaction;
 mod keyboard;
 mod menu;
 mod mouse;

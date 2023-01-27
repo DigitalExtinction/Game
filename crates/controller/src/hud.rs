@@ -1,33 +1,36 @@
 use bevy::prelude::*;
-use bevy::prelude::{BuildChildren, Color, Commands, default, NodeBundle};
-use bevy::ui::{AlignItems, BackgroundColor, FlexDirection, JustifyContent, PositionType, Size, Style, UiRect, Val};
 use iyes_loopless::prelude::*;
 
-use de_core::{screengeom::ScreenRect, stages::GameStage, state::AppState};
-use de_core::state::GameState;
+use de_core::{
+    screengeom::ScreenRect,
+    stages::GameStage,
+    state::{AppState, GameState},
+};
 use de_gui::TextProps;
 
 use crate::{
-    hud_components::{spawn_action_bar, spawn_details, spawn_map},
-    interaction::{handle_item_click, HudInteraction},
+    hud_components,
+    hud_interaction::hud_button_system,
 };
 
 const SELECTION_BOX_COLOR: Color = Color::rgba(0., 0.5, 0.8, 0.2);
 
 pub(crate) struct HudPlugin;
 
+impl HudPlugin {
+    fn place_draft_systems() -> SystemSet {
+        SystemSet::new()
+            .with_system(
+                hud_button_system
+                    .run_in_state(GameState::Playing),
+            )
+    }
+}
+
 impl Plugin for HudPlugin {
     fn build(&self, app: &mut App) {
-        app.add_enter_system(GameState::Playing, spawn_hud);
-        app.add_system_set_to_stage(
-            GameStage::Input,
-            SystemSet::new()
-                .with_system(
-                    handle_item_click
-                        .run_in_state(GameState::Playing)
-                        .label(HudInteraction::Click),
-                ),
-        );
+        app.add_enter_system(GameState::Playing, spawn_hud)
+            .add_system_set_to_stage(GameStage::Input, Self::place_draft_systems());
         app.add_event::<UpdateSelectionBoxEvent>()
             .add_system_set_to_stage(
                 GameStage::PostUpdate,
@@ -123,8 +126,8 @@ pub fn spawn_hud(
         }
     )
         .with_children(|commands| {
-            spawn_details(commands, font);
-            spawn_action_bar(commands, font);
-            spawn_map(commands, font);
+            hud_components::spawn_details(commands, font);
+            hud_components::spawn_action_bar(commands, font);
+            hud_components::spawn_map(commands, font);
         });
 }

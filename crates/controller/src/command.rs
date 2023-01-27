@@ -237,23 +237,32 @@ fn handle_escape(
     }
 }
 
-pub(crate) fn place_draft(
+fn place_draft(
     building_type: BuildingType,
 ) -> impl Fn(Res<ObjectCounter>, Res<Pointer>, EventWriter<NewDraftEvent>) {
     move |counter: Res<ObjectCounter>,
           pointer: Res<Pointer>,
-          mut events: EventWriter<NewDraftEvent>| {
-        if counter.building_count() >= PLAYER_MAX_BUILDINGS {
-            warn!("Maximum number of buildings reached.");
-            return;
-        }
-
-        let point = match pointer.terrain_point() {
-            Some(point) => point,
-            None => return,
-        };
-        events.send(NewDraftEvent::new(point, building_type));
+          events: EventWriter<NewDraftEvent>| {
+        place_draft_system(building_type, counter, pointer, events);
     }
+}
+
+pub(crate) fn place_draft_system(
+    building_type: BuildingType,
+    counter: Res<ObjectCounter>,
+    pointer: Res<Pointer>,
+    mut events: EventWriter<NewDraftEvent>,
+) {
+    if counter.building_count() >= PLAYER_MAX_BUILDINGS {
+        warn!("Maximum number of buildings reached.");
+        return;
+    }
+
+    let point = match pointer.terrain_point() {
+        Some(point) => point,
+        None => return,
+    };
+    events.send(NewDraftEvent::new(point, building_type));
 }
 
 fn select_all(

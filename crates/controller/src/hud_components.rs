@@ -1,12 +1,9 @@
 use bevy::asset::Handle;
-use bevy::prelude::{BuildChildren, ButtonBundle, ChildBuilder, Color, default, NodeBundle, TextBundle};
-use bevy::text::{Font, HorizontalAlign, Text, TextAlignment, TextStyle, VerticalAlign};
-use bevy::ui::{AlignItems, AlignSelf, BackgroundColor, FlexDirection, JustifyContent, Size, Style, UiRect, Val};
+use bevy::prelude::*;
 
 use de_core::objects::BuildingType;
 use de_gui::TextProps;
-
-use crate::interaction::BuildBuildingButton::BuildBuilding;
+use crate::hud_interaction::HudButtonAction;
 
 pub(crate) fn spawn_details(
     commands: &mut ChildBuilder,
@@ -71,7 +68,7 @@ pub(crate) fn spawn_action_bar(
                                 },
                                 ..ButtonBundle::default()
                             },
-                            BuildBuilding(building_type.clone()),
+                            HudButtonAction::Build(building_type.clone()),
                         ))
                         .with_children(|parent| {
                             parent.spawn(
