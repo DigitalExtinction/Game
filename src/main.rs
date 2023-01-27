@@ -1,7 +1,9 @@
+#[cfg(not(target_os = "macos"))]
+use bevy::window::CursorGrabMode;
 use bevy::{
     diagnostic::{FrameTimeDiagnosticsPlugin, LogDiagnosticsPlugin},
     prelude::*,
-    window::{CursorGrabMode, WindowMode},
+    window::WindowMode,
 };
 use de_behaviour::BehaviourPluginGroup;
 use de_camera::CameraPluginGroup;
@@ -75,11 +77,16 @@ impl Plugin for GamePlugin {
     fn build(&self, app: &mut App) {
         app.add_loopless_state(AppState::InMenu)
             .add_loopless_state(MenuState::MLoading)
-            .add_loopless_state(GameState::None)
-            .add_enter_system(MenuState::MLoading, cursor_grab_system);
+            .add_loopless_state(GameState::None);
+
+        #[cfg(not(target_os = "macos"))]
+        {
+            app.add_enter_system(MenuState::MLoading, cursor_grab_system);
+        }
     }
 }
 
+#[cfg(not(target_os = "macos"))]
 fn cursor_grab_system(mut windows: ResMut<Windows>) {
     let window = windows.get_primary_mut().unwrap();
     window.set_cursor_grab_mode(CursorGrabMode::Confined);
