@@ -1,7 +1,7 @@
 use anyhow::{Context, Result};
 use de_lobby_model::{
-    Game, GameConfig, GameListing, GamePartial, MAX_GAME_NAME_LEN, MAX_MAP_NAME_LEN,
-    MAX_USERNAME_LEN,
+    Game, GameConfig, GameListing, GameMap, GamePartial, MAP_HASH_LEN, MAX_GAME_NAME_LEN,
+    MAX_MAP_NAME_LEN, MAX_USERNAME_LEN,
 };
 use futures_util::TryStreamExt;
 use log::info;
@@ -32,6 +32,7 @@ impl Games {
             username_len = MAX_USERNAME_LEN,
             game_name_len = MAX_GAME_NAME_LEN,
             map_name_lenght = MAX_MAP_NAME_LEN,
+            map_hash_lenght = MAP_HASH_LEN,
         );
 
         info!("Initializing games...");
@@ -69,12 +70,14 @@ impl Games {
 
         let mut transaction = self.pool.begin().await.map_err(CreationError::Database)?;
 
-        let result = query("INSERT INTO games (name, max_players, map_name) VALUES(?, ?, ?);")
-            .bind(game_config.name())
-            .bind(game_config.max_players())
-            .bind(game_config.map_name())
-            .execute(&mut transaction)
-            .await;
+        let result =
+            query("INSERT INTO games (name, max_players, map_hash, map_name) VALUES(?, ?, ?, ?);")
+                .bind(game_config.name())
+                .bind(game_config.max_players())
+                .bind(game_config.map().hash())
+                .bind(game_config.map().name())
+                .execute(&mut transaction)
+                .await;
         db_error!(
             result,
             CreationError::NameTaken,
@@ -257,7 +260,17 @@ impl FromRow for GameConfig {
     fn try_from_row(row: SqliteRow) -> Result<Self, Self::Error> {
         let name: String = row.try_get("name")?;
         let max_players: u8 = row.try_get("max_players")?;
-        let map_name: String = row.try_get("map_name")?;
-        Ok(Self::new(name, max_players, map_name))
+        let map = GameMap::try_from_row(row)?;
+        Ok(Self::new(name, max_players, map))
+    }
+}
+
+impl FromRow for GameMap {
+    type Error = anyhow::Error;
+
+    fn try_from_row(row: SqliteRow) -> Result<Self, Self::Error> {
+        let hash: String = row.try_get("map_hash")?;
+        let name: String = row.try_get("map_name")?;
+        Ok(Self::new(hash, name))
     }
 }

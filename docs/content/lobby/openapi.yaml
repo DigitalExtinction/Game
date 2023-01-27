@@ -184,6 +184,14 @@ components:
           type: integer
           minimum: 2
           maximum: 4
-        mapName:
-          type: string
-          description: Name of the game map.
+        map:
+          type: object
+          properties:
+            hash:
+              type: string
+              description: >-
+                Map hash used for precise map identification. It is a 64
+                character long hex string.
+            name:
+              type: string
+              description: Name of the game map.
