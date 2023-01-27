@@ -146,7 +146,7 @@ fn encode(parts: &[&str]) -> Cow<'static, str> {
 
 #[cfg(test)]
 mod tests {
-    use de_lobby_model::User;
+    use de_lobby_model::{GameMap, User};
 
     use super::*;
 
@@ -195,7 +195,10 @@ mod tests {
         let request = CreateGameRequest::new(GameConfig::new(
             "Druhá Hra".to_owned(),
             2,
-            "custom".to_owned(),
+            GameMap::new(
+                "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef".to_owned(),
+                "custom".to_owned(),
+            ),
         ));
         assert_eq!(request.path().as_ref(), "/a/games");
 
@@ -204,7 +207,12 @@ mod tests {
         assert_eq!(request.url().as_str(), "http://example.com/a/games");
 
         let body = String::from_utf8(request.body().unwrap().as_bytes().unwrap().to_vec()).unwrap();
-        let expected_body = r#"{"name":"Druhá Hra","maxPlayers":2,"mapName":"custom"}"#;
+        let expected_body = concat!(
+            r#"{"name":"Druhá Hra","maxPlayers":2,"map":{"hash":"#,
+            r#""0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef","#,
+            r#""name":"custom"}}"#
+        );
+
         assert_eq!(body, expected_body);
     }
 

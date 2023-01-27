@@ -4,6 +4,7 @@ use crate::{ensure, validation};
 
 pub const MAX_GAME_NAME_LEN: usize = 32;
 pub const MAX_MAP_NAME_LEN: usize = 32;
+pub const MAP_HASH_LEN: usize = 64;
 const MAX_PLAYERS: u8 = 4;
 
 #[derive(Serialize, Deserialize)]
@@ -78,15 +79,15 @@ impl GamePartial {
 pub struct GameConfig {
     name: String,
     max_players: u8,
-    map_name: String,
+    map: GameMap,
 }
 
 impl GameConfig {
-    pub fn new(name: String, max_players: u8, map_name: String) -> Self {
+    pub fn new(name: String, max_players: u8, map: GameMap) -> Self {
         Self {
             name,
             max_players,
-            map_name,
+            map,
         }
     }
 
@@ -98,8 +99,8 @@ impl GameConfig {
         self.max_players
     }
 
-    pub fn map_name(&self) -> &str {
-        self.map_name.as_str()
+    pub fn map(&self) -> &GameMap {
+        &self.map
     }
 }
 
@@ -126,11 +127,51 @@ impl validation::Validatable for GameConfig {
             "Maximum number of players must be at most {}.",
             MAX_PLAYERS
         );
+        self.map.validate()
+    }
+}
 
+#[derive(Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct GameMap {
+    hash: String,
+    name: String,
+}
+
+impl GameMap {
+    pub fn new(hash: String, name: String) -> Self {
+        Self { hash, name }
+    }
+
+    pub fn hash(&self) -> &str {
+        self.hash.as_str()
+    }
+
+    pub fn name(&self) -> &str {
+        self.name.as_str()
+    }
+}
+
+impl validation::Validatable for GameMap {
+    fn validate(&self) -> validation::Result {
         ensure!(
-            self.map_name.len() <= MAX_MAP_NAME_LEN,
+            self.hash.len() == MAP_HASH_LEN,
+            "Map hash must have {} characters, got {} UTF-8 bytes.",
+            MAP_HASH_LEN,
+            self.hash.len()
+        );
+        for byte in self.hash.bytes() {
+            ensure!(
+                (b'0'..=b'9').contains(&byte) || (b'a'..=b'f').contains(&byte),
+                "Map has must consist solely of hexadecimal characters [0-9a-f]."
+            );
+        }
+
+        ensure!(!self.name.is_empty(), "Empty map name is not allowed.",);
+        ensure!(
+            self.name.len() <= MAX_MAP_NAME_LEN,
             "Map name is too long: {} > {}",
-            self.map_name.len(),
+            self.name.len(),
             MAX_MAP_NAME_LEN
         );
 
