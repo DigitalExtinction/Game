@@ -237,7 +237,7 @@ fn handle_escape(
     }
 }
 
-fn place_draft(
+pub(crate) fn place_draft(
     building_type: BuildingType,
 ) -> impl Fn(Res<ObjectCounter>, Res<Pointer>, EventWriter<NewDraftEvent>) {
     move |counter: Res<ObjectCounter>,

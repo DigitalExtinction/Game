@@ -46,7 +46,7 @@ impl TextProps {
         }
     }
 
-    fn font(&self) -> Handle<Font> {
+    pub fn font(&self) -> Handle<Font> {
         self.0.clone()
     }
 }

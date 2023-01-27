@@ -27,6 +27,8 @@ mod toast;
 
 pub struct GuiPluginGroup;
 
+pub use text::TextProps;
+
 impl PluginGroup for GuiPluginGroup {
     fn build(self) -> PluginGroupBuilder {
         PluginGroupBuilder::start::<Self>()

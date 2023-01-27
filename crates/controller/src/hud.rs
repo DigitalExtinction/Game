@@ -1,6 +1,16 @@
 use bevy::prelude::*;
-use de_core::{screengeom::ScreenRect, stages::GameStage, state::AppState};
+use bevy::prelude::{BuildChildren, Color, Commands, default, NodeBundle};
+use bevy::ui::{AlignItems, BackgroundColor, FlexDirection, JustifyContent, PositionType, Size, Style, UiRect, Val};
 use iyes_loopless::prelude::*;
+
+use de_core::{screengeom::ScreenRect, stages::GameStage, state::AppState};
+use de_core::state::GameState;
+use de_gui::TextProps;
+
+use crate::{
+    hud_components::{spawn_action_bar, spawn_details, spawn_map},
+    interaction::{handle_item_click, HudInteraction},
+};
 
 const SELECTION_BOX_COLOR: Color = Color::rgba(0., 0.5, 0.8, 0.2);
 
@@ -8,6 +18,16 @@ pub(crate) struct HudPlugin;
 
 impl Plugin for HudPlugin {
     fn build(&self, app: &mut App) {
+        app.add_enter_system(GameState::Playing, spawn_hud);
+        app.add_system_set_to_stage(
+            GameStage::Input,
+            SystemSet::new()
+                .with_system(
+                    handle_item_click
+                        .run_in_state(GameState::Playing)
+                        .label(HudInteraction::Click),
+                ),
+        );
         app.add_event::<UpdateSelectionBoxEvent>()
             .add_system_set_to_stage(
                 GameStage::PostUpdate,
@@ -78,4 +98,33 @@ fn process_events(
             }
         }
     }
+}
+
+pub fn spawn_hud(
+    mut commands: Commands,
+    text_props: Res<TextProps>,
+) {
+    let font = text_props.as_ref();
+    commands.spawn(
+        NodeBundle {
+            style: Style {
+                justify_content: JustifyContent::SpaceBetween,
+                flex_direction: FlexDirection::Row,
+                align_items: AlignItems::FlexEnd,
+                position_type: PositionType::Absolute,
+                size: Size {
+                    width: Val::Percent(100.0),
+                    height: Val::Percent(100.0),
+                },
+                ..Style::default()
+            },
+            background_color: BackgroundColor::from(Color::NONE),
+            ..default()
+        }
+    )
+        .with_children(|commands| {
+            spawn_details(commands, font);
+            spawn_action_bar(commands, font);
+            spawn_map(commands, font);
+        });
 }
