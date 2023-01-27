@@ -1,6 +1,7 @@
 use std::{
     fmt::{self, Debug, Write},
     num::ParseIntError,
+    path::Path as StdPath,
 };
 
 use async_std::path::{Path, PathBuf};
@@ -84,6 +85,15 @@ impl TryFrom<&Path> for MapHash {
                 "File name does not end with proper suffix.",
             ))
         }
+    }
+}
+
+impl TryFrom<&StdPath> for MapHash {
+    type Error = PathError;
+
+    fn try_from(path: &StdPath) -> Result<Self, Self::Error> {
+        let path: &Path = path.into();
+        Self::try_from(path)
     }
 }
 

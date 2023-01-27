@@ -2248,7 +2248,9 @@ dependencies = [
 name = "de_tools"
 version = "0.1.0-dev"
 dependencies = [
+ "async-std",
  "clap 4.1.1",
+ "de_map",
  "glam",
  "gltf",
  "parry3d",

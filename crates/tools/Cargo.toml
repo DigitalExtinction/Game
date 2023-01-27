@@ -12,7 +12,12 @@ license.workspace = true
 categories.workspace = true
 
 [dependencies]
+# DE
+de_map.workspace = true
+
+# Other
+async-std.workspace = true
+clap.workspace = true
 glam.workspace = true
 gltf.workspace = true
 parry3d.workspace = true
-clap.workspace = true
