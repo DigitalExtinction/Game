@@ -1,5 +1,9 @@
 # Digital Extinction
 
+[![GPLv3](https://img.shields.io/badge/license-GPLv3-088F8F.svg)](https://github.com/DigitalExtinction/Game#license)
+[![CI](https://github.com/DigitalExtinction/Game/actions/workflows/rust.yml/badge.svg)](https://github.com/DigitalExtinction/Game/actions)
+[![Discord](https://img.shields.io/badge/Discord-blue.svg?logo=discord&logoColor=white)](https://discord.gg/vHMFuCWGSX)
+
 Digital Extinction is a 3D real-time strategy (RTS) game. It is set in the near
 future when humans and AI fight over their existence.
 
