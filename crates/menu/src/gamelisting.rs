@@ -136,9 +136,6 @@ fn list_games_system(
                 commands.entity(table.0).add_child(row_id);
             }
         }
-        Err(error) => {
-            warn!("Game listing error: {:?}", error);
-            toasts.send(ToastEvent::new(error));
-        }
+        Err(error) => toasts.send(ToastEvent::new(error)),
     }
 }
