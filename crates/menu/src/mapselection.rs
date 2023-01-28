@@ -7,10 +7,8 @@ use bevy::{
 };
 use de_core::{
     assets::asset_path,
-    gconfig::GameConfig,
     log_full_error,
-    player::Player,
-    state::{AppState, GameState, MenuState},
+    state::{AppState, MenuState},
 };
 use de_gui::{ButtonCommands, GuiCommands, OuterStyle};
 use de_map::{
@@ -27,15 +25,57 @@ pub(crate) struct MapSelectionPlugin;
 
 impl Plugin for MapSelectionPlugin {
     fn build(&self, app: &mut App) {
-        app.add_enter_system(MenuState::MapSelection, setup)
+        app.add_event::<SelectMapEvent>()
+            .add_event::<MapSelectedEvent>()
+            .add_enter_system(MenuState::MapSelection, setup)
             .add_exit_system(MenuState::MapSelection, cleanup)
             .add_system_set(
                 SystemSet::new()
                     .with_system(init_buttons.run_in_state(MenuState::MapSelection))
-                    .with_system(button_system.run_in_state(MenuState::MapSelection)),
+                    .with_system(button_system.run_in_state(MenuState::MapSelection))
+                    .with_system(select_map_system.run_in_state(AppState::InMenu)),
             );
     }
 }
+
+/// When this event is received, menu state is set to map selection.
+pub(crate) struct SelectMapEvent {
+    next_state: MenuState,
+}
+
+impl SelectMapEvent {
+    /// # Arguments
+    ///
+    /// * `next_state` - after a map is selected, menu state is switched to
+    ///   this state.
+    pub(crate) fn new(next_state: MenuState) -> Self {
+        Self { next_state }
+    }
+
+    fn next_state(&self) -> MenuState {
+        self.next_state
+    }
+}
+
+/// This event is sent after a map is selected, just before menu state is
+/// switched to a next state.
+pub(crate) struct MapSelectedEvent {
+    path: PathBuf,
+}
+
+impl MapSelectedEvent {
+    fn new(path: PathBuf) -> Self {
+        Self { path }
+    }
+
+    /// Path to the map on the local file system.
+    pub(crate) fn path(&self) -> &Path {
+        self.path.as_path()
+    }
+}
+
+#[derive(Resource)]
+struct AfterSelectionState(MenuState);
 
 #[derive(Resource)]
 struct LoadingTask(Task<Result<Vec<MapEntry>, LoadingError>>);
@@ -109,18 +149,19 @@ fn init_buttons(mut commands: GuiCommands, menu: Res<Menu>, task: Option<ResMut<
 
 fn cleanup(mut commands: Commands) {
     commands.remove_resource::<LoadingTask>();
+    commands.remove_resource::<AfterSelectionState>();
 }
 
 fn button_system(
     mut commands: Commands,
     interactions: Query<(&Interaction, &MapEntry), Changed<Interaction>>,
+    next_state: Res<AfterSelectionState>,
+    mut events: EventWriter<MapSelectedEvent>,
 ) {
     for (&interaction, map) in interactions.iter() {
         if let Interaction::Clicked = interaction {
-            commands.insert_resource(GameConfig::new(map.path(), Player::Player1));
-            commands.insert_resource(NextState(MenuState::None));
-            commands.insert_resource(NextState(AppState::InGame));
-            commands.insert_resource(NextState(GameState::Loading));
+            commands.insert_resource(NextState(next_state.0));
+            events.send(MapSelectedEvent::new(map.path().into()));
         }
     }
 }
@@ -178,4 +219,10 @@ fn map_button(commands: &mut GuiCommands, map: MapEntry) -> Entity {
         )
         .insert(map)
         .id()
+}
+
+fn select_map_system(mut commands: Commands, mut events: EventReader<SelectMapEvent>) {
+    let Some(event) = events.iter().last() else { return };
+    commands.insert_resource(AfterSelectionState(event.next_state()));
+    commands.insert_resource(NextState(MenuState::MapSelection));
 }

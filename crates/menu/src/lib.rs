@@ -4,12 +4,14 @@ use mainmenu::MainMenuPlugin;
 use mapselection::MapSelectionPlugin;
 use menu::MenuPlugin;
 use signin::SignInPlugin;
+use singleplayer::SinglePlayerPlugin;
 
 mod gamelisting;
 mod mainmenu;
 mod mapselection;
 mod menu;
 mod signin;
+mod singleplayer;
 
 pub struct MenuPluginGroup;
 
@@ -21,5 +23,6 @@ impl PluginGroup for MenuPluginGroup {
             .add(MapSelectionPlugin)
             .add(SignInPlugin)
             .add(GameListingPlugin)
+            .add(SinglePlayerPlugin)
     }
 }
