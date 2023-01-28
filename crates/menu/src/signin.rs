@@ -213,7 +213,6 @@ fn response_system(
     for event in responses.iter() {
         if counter.compare(event.id()) {
             if let Err(error) = event.result() {
-                warn!("Sign-in / sign-up error: {:?}", error);
                 toasts.send(ToastEvent::new(error));
             }
         }

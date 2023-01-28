@@ -22,29 +22,26 @@ impl Plugin for GameListingPlugin {
                 list_games_system
                     .run_in_state(MenuState::GameListing)
                     .before(ToastLabel::ProcessEvents),
-            );
+            )
+            .add_system(button_system.run_in_state(MenuState::GameListing));
     }
 }
 
 #[derive(Resource)]
 struct GamesTable(Entity);
 
+#[derive(Component)]
+enum ButtonAction {
+    Create,
+    Join,
+}
+
 fn setup(
     mut commands: GuiCommands,
     menu: Res<Menu>,
     mut requests: EventWriter<RequestEvent<ListGamesRequest>>,
 ) {
-    let table_id = table(&mut commands, menu.root_node());
-    commands.insert_resource(GamesTable(table_id));
-    requests.send(RequestEvent::new("list-games", ListGamesRequest));
-}
-
-fn cleanup(mut commands: Commands) {
-    commands.remove_resource::<GamesTable>();
-}
-
-fn table(commands: &mut GuiCommands, root_node: Entity) -> Entity {
-    let table_id = commands
+    let column_id = commands
         .spawn(NodeBundle {
             style: Style {
                 flex_direction: FlexDirection::Column,
@@ -57,7 +54,47 @@ fn table(commands: &mut GuiCommands, root_node: Entity) -> Entity {
             ..default()
         })
         .id();
-    commands.entity(root_node).add_child(table_id);
+    commands.entity(menu.root_node()).add_child(column_id);
+
+    create_game_button(&mut commands, column_id);
+    let table_id = table(&mut commands, column_id);
+    commands.insert_resource(GamesTable(table_id));
+    requests.send(RequestEvent::new("list-games", ListGamesRequest));
+}
+
+fn cleanup(mut commands: Commands) {
+    commands.remove_resource::<GamesTable>();
+}
+
+fn create_game_button(commands: &mut GuiCommands, parent_node: Entity) {
+    let button_id = commands
+        .spawn_button(
+            OuterStyle {
+                size: Size::new(Val::Percent(100.), Val::Percent(8.)),
+                margin: UiRect::bottom(Val::Percent(1.)),
+            },
+            "Create Game",
+        )
+        .insert(ButtonAction::Create)
+        .id();
+    commands.entity(parent_node).add_child(button_id);
+}
+
+fn table(commands: &mut GuiCommands, parent_node: Entity) -> Entity {
+    let table_id = commands
+        .spawn(NodeBundle {
+            style: Style {
+                flex_direction: FlexDirection::Column,
+                size: Size::new(Val::Percent(100.), Val::Percent(91.)),
+                margin: UiRect::all(Val::Auto),
+                align_items: AlignItems::Center,
+                justify_content: JustifyContent::FlexStart,
+                ..default()
+            },
+            ..default()
+        })
+        .id();
+    commands.entity(parent_node).add_child(table_id);
     table_id
 }
 
@@ -101,6 +138,7 @@ fn row(commands: &mut GuiCommands, game: &GamePartial) -> Entity {
                 },
                 "Join",
             )
+            .insert(ButtonAction::Join)
             .id();
         commands.entity(row_id).add_child(button_id);
     }
@@ -136,9 +174,24 @@ fn list_games_system(
                 commands.entity(table.0).add_child(row_id);
             }
         }
-        Err(error) => {
-            warn!("Game listing error: {:?}", error);
-            toasts.send(ToastEvent::new(error));
+        Err(error) => toasts.send(ToastEvent::new(error)),
+    }
+}
+
+fn button_system(
+    interactions: Query<(&Interaction, &ButtonAction), Changed<Interaction>>,
+    mut toasts: EventWriter<ToastEvent>,
+) {
+    for (&interaction, action) in interactions.iter() {
+        if let Interaction::Clicked = interaction {
+            match action {
+                ButtonAction::Create => {
+                    toasts.send(ToastEvent::new("Not yet implemented (issue #326)."))
+                }
+                ButtonAction::Join => {
+                    toasts.send(ToastEvent::new("Not yet implemented (issue #301)."))
+                }
+            }
         }
     }
 }
