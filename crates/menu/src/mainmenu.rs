@@ -39,7 +39,7 @@ fn setup(mut commands: GuiCommands, menu: Res<Menu>) {
     button(
         &mut commands,
         column_node,
-        ButtonAction::SwithState(MenuState::MapSelection),
+        ButtonAction::SwithState(MenuState::SinglePlayerGame),
         "Singleplayer",
     );
     button(

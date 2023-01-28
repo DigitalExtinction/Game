@@ -13,6 +13,7 @@ pub enum MenuState {
     // Alternatively, custom Debug implementation could have been be provided.
     MLoading,
     MainMenu,
+    SinglePlayerGame,
     MapSelection,
     SignIn,
     GameListing,
