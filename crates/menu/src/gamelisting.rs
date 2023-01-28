@@ -22,7 +22,8 @@ impl Plugin for GameListingPlugin {
                 list_games_system
                     .run_in_state(MenuState::GameListing)
                     .before(ToastLabel::ProcessEvents),
-            );
+            )
+            .add_system(button_system.run_in_state(MenuState::GameListing));
     }
 }
 
@@ -137,5 +138,16 @@ fn list_games_system(
             }
         }
         Err(error) => toasts.send(ToastEvent::new(error)),
+    }
+}
+
+fn button_system(
+    interactions: Query<&Interaction, Changed<Interaction>>,
+    mut toasts: EventWriter<ToastEvent>,
+) {
+    for &interaction in interactions.iter() {
+        if let Interaction::Clicked = interaction {
+            toasts.send(ToastEvent::new("Not yet implemented (issue #301)."));
+        }
     }
 }
