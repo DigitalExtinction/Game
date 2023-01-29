@@ -30,7 +30,7 @@ async fn create(
 
     let game = Game::new(game_config, claims.username().to_owned());
     match games.create(game).await {
-        Ok(_) => HttpResponse::Ok().finish(),
+        Ok(_) => HttpResponse::Ok().json(()),
         Err(CreationError::NameTaken) => {
             warn!("Game creation error: game name is already taken.");
             HttpResponse::Conflict().json("Game name is already taken.")
@@ -66,7 +66,7 @@ async fn join(
     let name = path.into_inner();
 
     match games.add_player(claims.username(), name.as_str()).await {
-        Ok(_) => HttpResponse::Ok().finish(),
+        Ok(_) => HttpResponse::Ok().json(()),
         Err(AdditionError::AlreadyInAGame) => {
             warn!("Game joining error: a user is already in a different game.");
             HttpResponse::Forbidden().json("User is already in a different game.")
@@ -91,7 +91,7 @@ async fn leave(
     let name = path.into_inner();
 
     match games.remove_player(claims.username(), name.as_str()).await {
-        Ok(_) => HttpResponse::Ok().finish(),
+        Ok(_) => HttpResponse::Ok().json(()),
         Err(RemovalError::NotInTheGame) => {
             warn!("Game leaving error: the user is not in the game.");
             HttpResponse::Forbidden().json("The user is not in the game.")

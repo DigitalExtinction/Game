@@ -37,7 +37,7 @@ impl MapHash {
     }
 
     /// Converts the map hash into a hexadecimal string.
-    fn to_hex(&self) -> String {
+    pub fn to_hex(&self) -> String {
         let mut hex = String::with_capacity(64);
         for &byte in self.0.iter() {
             write!(&mut hex, "{byte:02x}").unwrap();

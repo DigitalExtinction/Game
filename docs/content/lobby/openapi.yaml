@@ -99,6 +99,10 @@ paths:
       responses:
         "200":
           description: The game was successfully crated and the user joined it.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/empty"
         "400":
           description: >-
             The game cannot be created because the request is invalid. This
@@ -125,6 +129,10 @@ paths:
       responses:
         "200":
           description: The user successfully joined the game.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/empty"
         "403":
           description: The user is already part of a game.
         "404":
@@ -147,6 +155,10 @@ paths:
       responses:
         "200":
           description: The user successfully left the game.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/empty"
         "403":
           description: The user is not part of the game.
 
@@ -158,6 +170,9 @@ components:
       bearerFormat: JWT
 
   schemas:
+    empty:
+      type: object
+      properties: {}
     token-response:
       type: object
       properties:

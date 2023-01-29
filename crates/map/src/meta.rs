@@ -11,7 +11,7 @@ pub const MAX_MAP_NAME_LEN: usize = 16;
 
 /// General information about a map. It does not hold full content of the map
 /// (i.e. location of objects on the map).
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Clone)]
 pub struct MapMetadata {
     name: String,
     bounds: MapBounds,

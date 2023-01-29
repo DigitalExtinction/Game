@@ -178,6 +178,7 @@ fn list_games_system(
 }
 
 fn button_system(
+    mut commands: Commands,
     interactions: Query<(&Interaction, &ButtonAction), Changed<Interaction>>,
     mut toasts: EventWriter<ToastEvent>,
 ) {
@@ -185,7 +186,7 @@ fn button_system(
         if let Interaction::Clicked = interaction {
             match action {
                 ButtonAction::Create => {
-                    toasts.send(ToastEvent::new("Not yet implemented (issue #326)."))
+                    commands.insert_resource(NextState(MenuState::GameCreation))
                 }
                 ButtonAction::Join => {
                     toasts.send(ToastEvent::new("Not yet implemented (issue #301)."))

@@ -1,4 +1,5 @@
 use bevy::{app::PluginGroupBuilder, prelude::*};
+use create::CreateGamePlugin;
 use de_core::state::AppState;
 use gamelisting::GameListingPlugin;
 use iyes_loopless::prelude::*;
@@ -9,6 +10,7 @@ use menu::MenuPlugin;
 use signin::SignInPlugin;
 use singleplayer::SinglePlayerPlugin;
 
+mod create;
 mod gamelisting;
 mod mainmenu;
 mod mapselection;
@@ -28,6 +30,7 @@ impl PluginGroup for MenuPluginGroup {
             .add(SignInPlugin)
             .add(GameListingPlugin)
             .add(SinglePlayerPlugin)
+            .add(CreateGamePlugin)
     }
 }
 
@@ -47,6 +50,7 @@ pub(crate) enum MenuState {
     SinglePlayerGame,
     SignIn,
     GameListing,
+    GameCreation,
 }
 
 fn menu_entered_system(mut commands: Commands) {

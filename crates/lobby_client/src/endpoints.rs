@@ -74,7 +74,7 @@ impl LobbyRequestCreator for CreateGameRequest {
 
     fn create(&self, url: Url) -> Request {
         let mut request = Request::new(Method::POST, url);
-        *request.body_mut() = Some(serde_json::to_string(&self.0).unwrap().into());
+        json(&mut request, &self.0);
         request
     }
 }

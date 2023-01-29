@@ -1,4 +1,7 @@
-use bevy::{ecs::system::EntityCommands, prelude::*};
+use bevy::{
+    ecs::system::{EntityCommands, SystemParam},
+    prelude::*,
+};
 
 use crate::{GuiCommands, OuterStyle};
 
@@ -45,6 +48,33 @@ impl<'w, 's> ButtonCommands<'w, 's> for GuiCommands<'w, 's> {
         });
 
         commands
+    }
+}
+
+#[derive(SystemParam)]
+pub struct ButtonOps<'w, 's> {
+    button_query: Query<'w, 's, &'static Children, With<Button>>,
+    text_query: Query<'w, 's, &'static mut Text>,
+}
+
+impl<'w, 's> ButtonOps<'w, 's> {
+    /// This method changes text (e.g. caption) of a UI button.
+    ///
+    /// The entity must have [`Button`] component and at least one child with
+    /// [`Text`] component. The text must consist of a single section. If such
+    /// a child is found, its text is changed.
+    pub fn set_text(&mut self, entity: Entity, text: String) -> Result<(), &'static str> {
+        let Ok(children) = self.button_query.get(entity) else { return Err("Button does not exist.") };
+        for &child in children.iter() {
+            if let Ok(mut text_component) = self.text_query.get_mut(child) {
+                if text_component.sections.len() == 1 {
+                    text_component.sections[0].value = text;
+                    return Ok(());
+                }
+            }
+        }
+
+        Err("Button does not have a child with a single-section text..")
     }
 }
 
