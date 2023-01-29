@@ -5,7 +5,7 @@ use iyes_loopless::prelude::*;
 
 use crate::text::TextProps;
 
-const TOAST_DURATION: Duration = Duration::from_secs(4);
+const TOAST_DURATION: Duration = Duration::from_secs(2);
 
 pub(crate) struct ToastPlugin;
 
