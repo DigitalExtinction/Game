@@ -45,7 +45,6 @@ pub(crate) enum MenuState {
     None,
     MainMenu,
     SinglePlayerGame,
-    MapSelection,
     SignIn,
     GameListing,
 }
