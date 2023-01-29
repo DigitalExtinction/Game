@@ -110,9 +110,7 @@ fn button_system(
                         toasts.send(ToastEvent::new("No map selected."));
                     }
                 },
-                ButtonAction::SelectMap => {
-                    map_events.send(SelectMapEvent::new(MenuState::SinglePlayerGame))
-                }
+                ButtonAction::SelectMap => map_events.send(SelectMapEvent),
             };
         }
     }

@@ -15,43 +15,32 @@ use futures_lite::future;
 use iyes_loopless::prelude::*;
 use thiserror::Error;
 
-use crate::{menu::Menu, MenuState};
-
 pub(crate) struct MapSelectionPlugin;
 
 impl Plugin for MapSelectionPlugin {
     fn build(&self, app: &mut App) {
-        app.add_event::<SelectMapEvent>()
+        app.add_loopless_state(MapState::Off)
+            .add_event::<SelectMapEvent>()
             .add_event::<MapSelectedEvent>()
-            .add_enter_system(MenuState::MapSelection, setup)
-            .add_exit_system(MenuState::MapSelection, cleanup)
+            .add_enter_system(MapState::On, setup)
+            .add_exit_system(MapState::On, cleanup)
             .add_system_set(
                 SystemSet::new()
-                    .with_system(init_buttons.run_in_state(MenuState::MapSelection))
-                    .with_system(button_system.run_in_state(MenuState::MapSelection))
+                    .with_system(init_buttons.run_in_state(MapState::On))
+                    .with_system(button_system.run_in_state(MapState::On))
                     .with_system(select_map_system.run_in_state(AppState::InMenu)),
             );
     }
 }
 
-/// When this event is received, menu state is set to map selection.
-pub(crate) struct SelectMapEvent {
-    next_state: MenuState,
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+enum MapState {
+    On,
+    Off,
 }
 
-impl SelectMapEvent {
-    /// # Arguments
-    ///
-    /// * `next_state` - after a map is selected, menu state is switched to
-    ///   this state.
-    pub(crate) fn new(next_state: MenuState) -> Self {
-        Self { next_state }
-    }
-
-    fn next_state(&self) -> MenuState {
-        self.next_state
-    }
-}
+/// Send this event to display map selection on top of current UI.
+pub(crate) struct SelectMapEvent;
 
 /// This event is sent after a map is selected, just before menu state is
 /// switched to a next state.
@@ -71,7 +60,7 @@ impl MapSelectedEvent {
 }
 
 #[derive(Resource)]
-struct AfterSelectionState(MenuState);
+struct PopUpNode(Entity);
 
 #[derive(Resource)]
 struct LoadingTask(Task<Result<Vec<MapEntry>, LoadingError>>);
@@ -104,9 +93,28 @@ pub enum LoadingError {
 fn setup(mut commands: Commands) {
     let task = IoTaskPool::get().spawn(load_available_maps());
     commands.insert_resource(LoadingTask(task));
+
+    let node_id = commands
+        .spawn(NodeBundle {
+            style: Style {
+                position_type: PositionType::Absolute,
+                position: UiRect::all(Val::Percent(0.)),
+                size: Size::new(Val::Percent(100.), Val::Percent(100.)),
+                ..default()
+            },
+            background_color: Color::GRAY.into(),
+            z_index: ZIndex::Local(10),
+            ..default()
+        })
+        .id();
+    commands.insert_resource(PopUpNode(node_id));
 }
 
-fn init_buttons(mut commands: GuiCommands, menu: Res<Menu>, task: Option<ResMut<LoadingTask>>) {
+fn init_buttons(
+    mut commands: GuiCommands,
+    node: Res<PopUpNode>,
+    task: Option<ResMut<LoadingTask>>,
+) {
     let Some(mut task) = task else { return };
     let Some(result) = future::block_on(future::poll_once(&mut task.0)) else {
         return
@@ -135,7 +143,8 @@ fn init_buttons(mut commands: GuiCommands, menu: Res<Menu>, task: Option<ResMut<
             ..default()
         })
         .id();
-    commands.entity(menu.root_node()).add_child(column_node);
+
+    commands.entity(node.0).add_child(column_node);
 
     for map in map_entries {
         let button = map_button(&mut commands, map);
@@ -143,20 +152,19 @@ fn init_buttons(mut commands: GuiCommands, menu: Res<Menu>, task: Option<ResMut<
     }
 }
 
-fn cleanup(mut commands: Commands) {
+fn cleanup(mut commands: Commands, node: Res<PopUpNode>) {
     commands.remove_resource::<LoadingTask>();
-    commands.remove_resource::<AfterSelectionState>();
+    commands.entity(node.0).despawn_recursive();
 }
 
 fn button_system(
     mut commands: Commands,
     interactions: Query<(&Interaction, &MapEntry), Changed<Interaction>>,
-    next_state: Res<AfterSelectionState>,
     mut events: EventWriter<MapSelectedEvent>,
 ) {
     for (&interaction, map) in interactions.iter() {
         if let Interaction::Clicked = interaction {
-            commands.insert_resource(NextState(next_state.0));
+            commands.insert_resource(NextState(MapState::Off));
             events.send(MapSelectedEvent::new(map.path().into()));
         }
     }
@@ -218,7 +226,9 @@ fn map_button(commands: &mut GuiCommands, map: MapEntry) -> Entity {
 }
 
 fn select_map_system(mut commands: Commands, mut events: EventReader<SelectMapEvent>) {
-    let Some(event) = events.iter().last() else { return };
-    commands.insert_resource(AfterSelectionState(event.next_state()));
-    commands.insert_resource(NextState(MenuState::MapSelection));
+    // Exhaust the iterator.
+    if events.iter().count() == 0 {
+        return;
+    }
+    commands.insert_resource(NextState(MapState::On));
 }
