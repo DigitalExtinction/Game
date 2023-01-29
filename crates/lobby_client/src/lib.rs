@@ -15,6 +15,7 @@ pub use client::Authentication;
 pub use endpoints::*;
 use plugin::EndpointPlugin;
 pub use plugin::{RequestEvent, ResponseEvent};
+pub use requestable::LobbyRequest;
 use systems::LobbyPlugin;
 
 mod client;

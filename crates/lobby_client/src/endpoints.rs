@@ -5,7 +5,7 @@ use reqwest::{header::HeaderValue, Method, Request};
 use serde::Serialize;
 use url::Url;
 
-use crate::requestable::Requestable;
+use crate::requestable::{LobbyRequest, LobbyRequestCreator};
 
 pub struct SignUpRequest(UserWithPassword);
 
@@ -15,9 +15,11 @@ impl SignUpRequest {
     }
 }
 
-impl Requestable for SignUpRequest {
+impl LobbyRequest for SignUpRequest {
     type Response = Token;
+}
 
+impl LobbyRequestCreator for SignUpRequest {
     fn path(&self) -> Cow<str> {
         "/p/auth/sign-up".into()
     }
@@ -37,9 +39,11 @@ impl SignInRequest {
     }
 }
 
-impl Requestable for SignInRequest {
+impl LobbyRequest for SignInRequest {
     type Response = Token;
+}
 
+impl LobbyRequestCreator for SignInRequest {
     fn path(&self) -> Cow<str> {
         "/p/auth/sign-in".into()
     }
@@ -59,9 +63,11 @@ impl CreateGameRequest {
     }
 }
 
-impl Requestable for CreateGameRequest {
+impl LobbyRequest for CreateGameRequest {
     type Response = ();
+}
 
+impl LobbyRequestCreator for CreateGameRequest {
     fn path(&self) -> Cow<str> {
         "/a/games".into()
     }
@@ -75,9 +81,11 @@ impl Requestable for CreateGameRequest {
 
 pub struct ListGamesRequest;
 
-impl Requestable for ListGamesRequest {
+impl LobbyRequest for ListGamesRequest {
     type Response = GameListing;
+}
 
+impl LobbyRequestCreator for ListGamesRequest {
     fn path(&self) -> Cow<str> {
         "/a/games".into()
     }
@@ -95,9 +103,11 @@ impl JoinGameRequest {
     }
 }
 
-impl Requestable for JoinGameRequest {
+impl LobbyRequest for JoinGameRequest {
     type Response = ();
+}
 
+impl LobbyRequestCreator for JoinGameRequest {
     fn path(&self) -> Cow<str> {
         encode(&["a", "games", self.0.as_str(), "join"])
     }
@@ -115,9 +125,11 @@ impl LeaveGameRequest {
     }
 }
 
-impl Requestable for LeaveGameRequest {
+impl LobbyRequest for LeaveGameRequest {
     type Response = ();
+}
 
+impl LobbyRequestCreator for LeaveGameRequest {
     fn path(&self) -> Cow<str> {
         encode(&["a", "games", self.0.as_str(), "leave"])
     }
