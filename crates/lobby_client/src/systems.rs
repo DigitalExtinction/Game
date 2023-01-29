@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 use de_conf::Configuration;
-use de_core::state::MenuState;
+use de_core::state::AppState;
 use de_lobby_model::Token;
 use iyes_loopless::prelude::*;
 use iyes_progress::prelude::*;
@@ -15,7 +15,7 @@ impl Plugin for LobbyPlugin {
             .add_system(
                 setup_client
                     .track_progress()
-                    .run_in_state(MenuState::MLoading),
+                    .run_in_state(AppState::AppLoading),
             )
             .add_system(set_token);
     }

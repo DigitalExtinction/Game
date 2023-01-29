@@ -11,7 +11,7 @@ use de_combat::CombatPluginGroup;
 use de_conf::ConfigPluginGroup;
 use de_controller::ControllerPluginGroup;
 use de_core::{
-    state::{AppState, GameState, MenuState},
+    state::{AppState, GameState},
     CorePluginGroup,
 };
 use de_gui::GuiPluginGroup;
@@ -75,13 +75,12 @@ struct GamePlugin;
 
 impl Plugin for GamePlugin {
     fn build(&self, app: &mut App) {
-        app.add_loopless_state(AppState::InMenu)
-            .add_loopless_state(MenuState::MLoading)
+        app.add_loopless_state(AppState::AppLoading)
             .add_loopless_state(GameState::None);
 
         #[cfg(not(target_os = "macos"))]
         {
-            app.add_enter_system(MenuState::MLoading, cursor_grab_system);
+            app.add_enter_system(AppState::AppLoading, cursor_grab_system);
         }
     }
 }

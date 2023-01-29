@@ -1,5 +1,4 @@
 use bevy::prelude::*;
-use de_core::state::MenuState;
 use de_gui::{
     ButtonCommands, GuiCommands, LabelCommands, OuterStyle, SetFocusEvent, TextBoxCommands,
     TextBoxQuery, ToastEvent, ToastLabel,
@@ -8,7 +7,7 @@ use de_lobby_client::{Authentication, RequestEvent, ResponseEvent, SignInRequest
 use de_lobby_model::{Token, User, UserWithPassword, UsernameAndPassword};
 use iyes_loopless::prelude::*;
 
-use crate::menu::Menu;
+use crate::{menu::Menu, MenuState};
 
 pub(crate) struct SignInPlugin;
 

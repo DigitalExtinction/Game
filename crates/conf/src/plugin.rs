@@ -4,7 +4,7 @@ use bevy::{
     prelude::*,
     tasks::{IoTaskPool, Task},
 };
-use de_core::{log_full_error, state::MenuState};
+use de_core::{log_full_error, state::AppState};
 use futures_lite::future;
 use iyes_loopless::prelude::*;
 use iyes_progress::prelude::*;
@@ -15,8 +15,12 @@ pub(super) struct ConfPlugin;
 
 impl Plugin for ConfPlugin {
     fn build(&self, app: &mut App) {
-        app.add_enter_system(MenuState::MLoading, start_loading)
-            .add_system(poll_conf.track_progress().run_in_state(MenuState::MLoading));
+        app.add_enter_system(AppState::AppLoading, start_loading)
+            .add_system(
+                poll_conf
+                    .track_progress()
+                    .run_in_state(AppState::AppLoading),
+            );
     }
 }
 

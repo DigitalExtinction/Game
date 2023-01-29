@@ -1,13 +1,12 @@
 use std::time::Duration;
 
 use bevy::{prelude::*, time::Stopwatch};
-use de_core::state::MenuState;
 use de_gui::{ButtonCommands, GuiCommands, LabelCommands, OuterStyle, ToastEvent, ToastLabel};
 use de_lobby_client::{ListGamesRequest, RequestEvent, ResponseEvent};
 use de_lobby_model::{GameListing, GamePartial};
 use iyes_loopless::prelude::*;
 
-use crate::menu::Menu;
+use crate::{menu::Menu, MenuState};
 
 const REFRESH_INTERVAL: Duration = Duration::from_secs(10);
 
