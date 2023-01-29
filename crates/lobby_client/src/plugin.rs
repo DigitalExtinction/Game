@@ -6,23 +6,26 @@ use bevy::prelude::*;
 use bevy::tasks::Task;
 use futures_lite::future;
 
-use crate::{client::AuthenticatedClient, requestable::Requestable};
+use crate::{
+    client::AuthenticatedClient,
+    requestable::{LobbyRequest, LobbyRequestCreator},
+};
 
-pub(super) struct EndpointPlugin<T: Requestable> {
+pub(super) struct EndpointPlugin<T: LobbyRequestCreator> {
     _marker: PhantomData<fn() -> T>,
 }
 
-impl<T: Requestable> Plugin for EndpointPlugin<T> {
+impl<T: LobbyRequestCreator> Plugin for EndpointPlugin<T> {
     fn build(&self, app: &mut App) {
         app.add_event::<RequestEvent<T>>()
-            .add_event::<ResponseEvent<T::Response>>()
+            .add_event::<ResponseEvent<T>>()
             .init_resource::<PendingTasks<T>>()
             .add_system(fire::<T>)
             .add_system(poll::<T>);
     }
 }
 
-impl<T: Requestable> Default for EndpointPlugin<T> {
+impl<T: LobbyRequestCreator> Default for EndpointPlugin<T> {
     fn default() -> Self {
         Self {
             _marker: PhantomData,
@@ -63,13 +66,19 @@ impl<T> RequestEvent<T> {
 
 /// Event corresponding to a finished Lobby API request which might have failed
 /// or succeeded.
-pub struct ResponseEvent<R> {
+pub struct ResponseEvent<T>
+where
+    T: LobbyRequest,
+{
     id: String,
-    result: Result<R>,
+    result: Result<T::Response>,
 }
 
-impl<R> ResponseEvent<R> {
-    fn new(id: String, result: Result<R>) -> Self {
+impl<T> ResponseEvent<T>
+where
+    T: LobbyRequest,
+{
+    fn new(id: String, result: Result<T::Response>) -> Self {
         Self { id, result }
     }
 
@@ -77,31 +86,31 @@ impl<R> ResponseEvent<R> {
         self.id.as_str()
     }
 
-    pub fn result(&self) -> &Result<R> {
+    pub fn result(&self) -> &Result<T::Response> {
         &self.result
     }
 }
 
 #[derive(Resource)]
-struct PendingTasks<T: Requestable>(AHashMap<String, Task<Result<T::Response>>>);
+struct PendingTasks<T: LobbyRequest>(AHashMap<String, Task<Result<T::Response>>>);
 
-impl<T: Requestable> PendingTasks<T> {
+impl<T: LobbyRequest> PendingTasks<T> {
     fn register(&mut self, id: String, task: Task<Result<T::Response>>) {
         self.0.insert(id, task);
     }
 }
 
-impl<T: Requestable> Default for PendingTasks<T> {
+impl<T: LobbyRequest> Default for PendingTasks<T> {
     fn default() -> Self {
         Self(AHashMap::new())
     }
 }
 
-fn fire<T: Requestable>(
+fn fire<T: LobbyRequestCreator>(
     client: AuthenticatedClient,
     mut pending: ResMut<PendingTasks<T>>,
     mut requests: EventReader<RequestEvent<T>>,
-    mut responses: EventWriter<ResponseEvent<T::Response>>,
+    mut responses: EventWriter<ResponseEvent<T>>,
 ) {
     for event in requests.iter() {
         let result = client.fire(event.request());
@@ -113,9 +122,9 @@ fn fire<T: Requestable>(
     }
 }
 
-fn poll<T: Requestable>(
+fn poll<T: LobbyRequest>(
     mut pending: ResMut<PendingTasks<T>>,
-    mut events: EventWriter<ResponseEvent<T::Response>>,
+    mut events: EventWriter<ResponseEvent<T>>,
 ) {
     let mut results = Vec::new();
 

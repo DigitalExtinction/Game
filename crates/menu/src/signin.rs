@@ -3,8 +3,10 @@ use de_gui::{
     ButtonCommands, GuiCommands, LabelCommands, OuterStyle, SetFocusEvent, TextBoxCommands,
     TextBoxQuery, ToastEvent, ToastLabel,
 };
-use de_lobby_client::{Authentication, RequestEvent, ResponseEvent, SignInRequest, SignUpRequest};
-use de_lobby_model::{Token, User, UserWithPassword, UsernameAndPassword};
+use de_lobby_client::{
+    Authentication, LobbyRequest, RequestEvent, ResponseEvent, SignInRequest, SignUpRequest,
+};
+use de_lobby_model::{User, UserWithPassword, UsernameAndPassword};
 use iyes_loopless::prelude::*;
 
 use crate::{menu::Menu, MenuState};
@@ -22,7 +24,12 @@ impl Plugin for SignInPlugin {
                     .run_in_state(MenuState::SignIn),
             )
             .add_system(
-                response_system
+                response_system::<SignInRequest>
+                    .run_in_state(MenuState::SignIn)
+                    .before(ToastLabel::ProcessEvents),
+            )
+            .add_system(
+                response_system::<SignUpRequest>
                     .run_in_state(MenuState::SignIn)
                     .before(ToastLabel::ProcessEvents),
             )
@@ -204,11 +211,13 @@ fn button_system(
     }
 }
 
-fn response_system(
+fn response_system<T>(
     counter: Res<Counter>,
-    mut responses: EventReader<ResponseEvent<Token>>,
+    mut responses: EventReader<ResponseEvent<T>>,
     mut toasts: EventWriter<ToastEvent>,
-) {
+) where
+    T: 'static + LobbyRequest,
+{
     for event in responses.iter() {
         if counter.compare(event.id()) {
             if let Err(error) = event.result() {

@@ -3,7 +3,7 @@ use std::time::Duration;
 use bevy::{prelude::*, time::Stopwatch};
 use de_gui::{ButtonCommands, GuiCommands, LabelCommands, OuterStyle, ToastEvent, ToastLabel};
 use de_lobby_client::{ListGamesRequest, RequestEvent, ResponseEvent};
-use de_lobby_model::{GameListing, GamePartial};
+use de_lobby_model::GamePartial;
 use iyes_loopless::prelude::*;
 
 use crate::{menu::Menu, MenuState};
@@ -160,7 +160,7 @@ fn refresh_system(
 fn list_games_system(
     mut commands: GuiCommands,
     table: Res<GamesTable>,
-    mut events: EventReader<ResponseEvent<GameListing>>,
+    mut events: EventReader<ResponseEvent<ListGamesRequest>>,
     mut toasts: EventWriter<ToastEvent>,
 ) {
     let Some(event) = events.iter().last() else { return };

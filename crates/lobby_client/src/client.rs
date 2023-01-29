@@ -10,7 +10,7 @@ use bevy::{
 use reqwest::{header::HeaderValue, redirect::Policy, Client, Request};
 use url::Url;
 
-use crate::requestable::Requestable;
+use crate::requestable::LobbyRequestCreator;
 
 const USER_AGENT: &str = concat!("DigitalExtinction/", env!("CARGO_PKG_VERSION"));
 
@@ -23,7 +23,7 @@ pub(super) struct AuthenticatedClient<'w, 's> {
 }
 
 impl<'w, 's> AuthenticatedClient<'w, 's> {
-    pub(super) fn fire<T: Requestable>(
+    pub(super) fn fire<T: LobbyRequestCreator>(
         &self,
         requestable: &T,
     ) -> Result<Task<Result<T::Response>>> {
@@ -72,7 +72,11 @@ impl LobbyClient {
         Self { server_url, client }
     }
 
-    fn create<T: Requestable>(&self, token: Option<&str>, requestable: &T) -> Result<Request> {
+    fn create<T: LobbyRequestCreator>(
+        &self,
+        token: Option<&str>,
+        requestable: &T,
+    ) -> Result<Request> {
         let path = requestable.path();
         let url = self
             .server_url
@@ -98,7 +102,7 @@ impl LobbyClient {
         Ok(request)
     }
 
-    fn fire<T: Requestable>(&self, request: Request) -> Task<Result<T::Response>> {
+    fn fire<T: LobbyRequestCreator>(&self, request: Request) -> Task<Result<T::Response>> {
         info!("Requesting {}", request.url());
         let client = self.client.clone();
 
