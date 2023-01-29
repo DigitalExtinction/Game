@@ -6,6 +6,8 @@ use bevy::{
 use de_core::{screengeom::ScreenRect, stages::GameStage, state::GameState};
 use iyes_loopless::prelude::*;
 
+use crate::hud::HudNodes;
+
 const DRAGGING_THRESHOLD: f32 = 0.02;
 const DOUBLE_CLICK_TIME: f64 = 0.5;
 
@@ -212,11 +214,12 @@ enum DragResolution {
     Rect(ScreenRect),
 }
 
-fn update_position(windows: Res<Windows>, mut mouse: ResMut<MousePosition>) {
+fn update_position(windows: Res<Windows>, mut hud: HudNodes, mut mouse: ResMut<MousePosition>) {
     let window = windows.get_primary().unwrap();
     mouse.set_position(
         window
             .cursor_position()
+            .filter(|position| !hud.contains_point(position))
             .map(|position| position / Vec2::new(window.width(), window.height()))
             .map(|normalised_position| normalised_position.clamp(Vec2::ZERO, Vec2::ONE)),
     );
