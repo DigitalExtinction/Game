@@ -5,11 +5,7 @@ use bevy::{
     prelude::*,
     tasks::{IoTaskPool, Task},
 };
-use de_core::{
-    assets::asset_path,
-    log_full_error,
-    state::{AppState, MenuState},
-};
+use de_core::{assets::asset_path, log_full_error, state::AppState};
 use de_gui::{ButtonCommands, GuiCommands, OuterStyle};
 use de_map::{
     io::{load_metadata, MapLoadingError, MAP_FILE_SUFFIX},
@@ -19,7 +15,7 @@ use futures_lite::future;
 use iyes_loopless::prelude::*;
 use thiserror::Error;
 
-use crate::menu::Menu;
+use crate::{menu::Menu, MenuState};
 
 pub(crate) struct MapSelectionPlugin;
 

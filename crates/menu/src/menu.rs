@@ -1,6 +1,8 @@
 use bevy::prelude::*;
-use de_core::state::{AppState, MenuState};
+use de_core::state::AppState;
 use iyes_loopless::{prelude::*, state::StateTransitionStageLabel};
+
+use crate::MenuState;
 
 pub(crate) struct MenuPlugin;
 

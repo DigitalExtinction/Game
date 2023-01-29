@@ -1,9 +1,8 @@
 use bevy::{app::AppExit, prelude::*};
-use de_core::state::MenuState;
 use de_gui::{ButtonCommands, GuiCommands, OuterStyle};
 use iyes_loopless::prelude::*;
 
-use crate::menu::Menu;
+use crate::{menu::Menu, MenuState};
 
 pub(crate) struct MainMenuPlugin;
 

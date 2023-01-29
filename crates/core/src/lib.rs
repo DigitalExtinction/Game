@@ -1,7 +1,7 @@
 use bevy::{app::PluginGroupBuilder, prelude::PluginGroup};
 use iyes_progress::prelude::*;
 use stages::StagesPlugin;
-use state::{GameState, MenuState};
+use state::{AppState, GameState};
 use visibility::VisibilityPlugin;
 
 pub mod assets;
@@ -22,7 +22,7 @@ pub struct CorePluginGroup;
 impl PluginGroup for CorePluginGroup {
     fn build(self) -> PluginGroupBuilder {
         PluginGroupBuilder::start::<Self>()
-            .add(ProgressPlugin::new(MenuState::MLoading).continue_to(MenuState::MainMenu))
+            .add(ProgressPlugin::new(AppState::AppLoading).continue_to(AppState::InMenu))
             .add(ProgressPlugin::new(GameState::Loading).continue_to(GameState::Playing))
             .add(StagesPlugin)
             .add(VisibilityPlugin)

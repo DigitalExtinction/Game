@@ -3,7 +3,7 @@ use bevy::prelude::*;
 use de_core::{
     gconfig::GameConfig,
     player::Player,
-    state::{AppState, GameState, MenuState},
+    state::{AppState, GameState},
 };
 use de_gui::{ButtonCommands, GuiCommands, OuterStyle, ToastEvent};
 use iyes_loopless::prelude::*;
@@ -11,6 +11,7 @@ use iyes_loopless::prelude::*;
 use crate::{
     mapselection::{MapSelectedEvent, SelectMapEvent},
     menu::Menu,
+    MenuState,
 };
 
 pub(crate) struct SinglePlayerPlugin;
