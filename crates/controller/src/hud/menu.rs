@@ -62,6 +62,7 @@ fn setup(mut commands: GuiCommands) {
                 ..default()
             },
             visibility: Visibility::INVISIBLE,
+            z_index: ZIndex::Local(1000),
             ..default()
         })
         .insert((PopUpMenu, InteractionBlocker))
