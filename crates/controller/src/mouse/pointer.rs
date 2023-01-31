@@ -12,7 +12,7 @@ use crate::{
     POINTER_BAR_ID,
 };
 
-pub(crate) struct PointerPlugin;
+pub(super) struct PointerPlugin;
 
 impl Plugin for PointerPlugin {
     fn build(&self, app: &mut App) {

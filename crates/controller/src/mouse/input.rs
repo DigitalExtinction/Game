@@ -11,9 +11,9 @@ use crate::hud::HudNodes;
 const DRAGGING_THRESHOLD: f32 = 0.02;
 const DOUBLE_CLICK_TIME: f64 = 0.5;
 
-pub(crate) struct MousePlugin;
+pub(super) struct InputPlugin;
 
-impl Plugin for MousePlugin {
+impl Plugin for InputPlugin {
     fn build(&self, app: &mut App) {
         app.add_event::<MouseClicked>()
             .add_event::<MouseDoubleClicked>()

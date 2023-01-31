@@ -20,8 +20,7 @@ use crate::{
     draft::{DiscardDraftsEvent, DraftLabels, NewDraftEvent, SpawnDraftsEvent},
     hud::{GameMenuLabel, ToggleGameMenu},
     keyboard::KeyCondition,
-    mouse::{MouseClicked, MouseDoubleClicked, MouseLabels},
-    pointer::{Pointer, PointerLabels},
+    mouse::{MouseClicked, MouseDoubleClicked, MouseLabels, Pointer, PointerLabels},
     selection::{SelectEvent, Selected, SelectionLabels, SelectionMode},
 };
 

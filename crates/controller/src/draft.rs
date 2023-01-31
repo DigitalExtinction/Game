@@ -8,7 +8,7 @@ use de_core::{
 use de_spawner::{Draft, DraftBundle, SpawnBundle};
 use iyes_loopless::prelude::*;
 
-use crate::pointer::{Pointer, PointerLabels};
+use crate::mouse::{Pointer, PointerLabels};
 
 pub(crate) struct DraftPlugin;
 

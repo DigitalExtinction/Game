@@ -7,7 +7,6 @@ use draft::DraftPlugin;
 use dragselect::DragSelectPlugin;
 use hud::HudPlugin;
 use mouse::MousePlugin;
-use pointer::PointerPlugin;
 use selection::SelectionPlugin;
 
 mod areaselect;
@@ -18,7 +17,6 @@ mod frustum;
 mod hud;
 mod keyboard;
 mod mouse;
-mod pointer;
 mod selection;
 
 const SELECTION_BAR_ID: u32 = 0;
@@ -32,7 +30,6 @@ impl PluginGroup for ControllerPluginGroup {
             .add(DragSelectPlugin)
             .add(AreaSelectPlugin)
             .add(MousePlugin)
-            .add(PointerPlugin)
             .add(CommandPlugin)
             .add(SelectionPlugin)
             .add(DraftPlugin)
