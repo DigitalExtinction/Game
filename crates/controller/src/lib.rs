@@ -6,7 +6,6 @@ use command::CommandPlugin;
 use draft::DraftPlugin;
 use dragselect::DragSelectPlugin;
 use hud::HudPlugin;
-use menu::MenuPlugin;
 use mouse::MousePlugin;
 use pointer::PointerPlugin;
 use selection::SelectionPlugin;
@@ -17,9 +16,7 @@ mod draft;
 mod dragselect;
 mod frustum;
 mod hud;
-mod hud_components;
 mod keyboard;
-mod menu;
 mod mouse;
 mod pointer;
 mod selection;
@@ -40,6 +37,5 @@ impl PluginGroup for ControllerPluginGroup {
             .add(SelectionPlugin)
             .add(DraftPlugin)
             .add(HudPlugin)
-            .add(MenuPlugin)
     }
 }
