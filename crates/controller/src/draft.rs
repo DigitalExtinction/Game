@@ -135,11 +135,16 @@ fn discard_drafts(
 }
 
 fn move_drafts(pointer: Res<Pointer>, mut drafts: Query<&mut Transform, With<Draft>>) {
+    let pointer_changed = pointer.is_changed();
+
     let point = match pointer.terrain_point() {
         Some(point) => point,
         None => return,
     };
+
     for mut transform in drafts.iter_mut() {
-        transform.translation = point;
+        if transform.is_added() || pointer_changed {
+            transform.translation = point;
+        }
     }
 }
