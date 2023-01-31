@@ -1,3 +1,6 @@
+//! This module implements user input / user command handling, for example
+//! keyboard shortcuts, mouse actions events, and so on.
+
 use bevy::prelude::*;
 use de_behaviour::ChaseTarget;
 use de_combat::AttackEvent;
@@ -15,18 +18,18 @@ use de_spawner::{Draft, ObjectCounter};
 use enum_map::enum_map;
 use iyes_loopless::prelude::*;
 
+use super::keyboard::KeyCondition;
 use crate::{
     areaselect::{AreaSelectLabels, SelectInRectEvent},
     draft::{DiscardDraftsEvent, DraftLabels, NewDraftEvent, SpawnDraftsEvent},
     hud::{GameMenuLabel, ToggleGameMenu},
-    keyboard::KeyCondition,
     mouse::{MouseClicked, MouseDoubleClicked, MouseLabels, Pointer, PointerLabels},
     selection::{SelectEvent, Selected, SelectionLabels, SelectionMode},
 };
 
-pub(crate) struct CommandPlugin;
+pub(super) struct HandlersPlugin;
 
-impl CommandPlugin {
+impl HandlersPlugin {
     fn place_draft_systems() -> SystemSet {
         let key_map = enum_map! {
             BuildingType::Base => KeyCode::B,
@@ -46,7 +49,7 @@ impl CommandPlugin {
     }
 }
 
-impl Plugin for CommandPlugin {
+impl Plugin for HandlersPlugin {
     fn build(&self, app: &mut App) {
         app.add_system_set_to_stage(
             GameStage::Input,

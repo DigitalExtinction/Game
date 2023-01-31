@@ -2,7 +2,7 @@
 
 use areaselect::AreaSelectPlugin;
 use bevy::{app::PluginGroupBuilder, prelude::*};
-use command::CommandPlugin;
+use commands::CommandsPlugin;
 use draft::DraftPlugin;
 use dragselect::DragSelectPlugin;
 use hud::HudPlugin;
@@ -10,12 +10,11 @@ use mouse::MousePlugin;
 use selection::SelectionPlugin;
 
 mod areaselect;
-mod command;
+mod commands;
 mod draft;
 mod dragselect;
 mod frustum;
 mod hud;
-mod keyboard;
 mod mouse;
 mod selection;
 
@@ -30,7 +29,7 @@ impl PluginGroup for ControllerPluginGroup {
             .add(DragSelectPlugin)
             .add(AreaSelectPlugin)
             .add(MousePlugin)
-            .add(CommandPlugin)
+            .add(CommandsPlugin)
             .add(SelectionPlugin)
             .add(DraftPlugin)
             .add(HudPlugin)
