@@ -19,7 +19,7 @@ impl Plugin for PointerPlugin {
         app.init_resource::<Pointer>()
             .add_system_to_stage(
                 GameStage::Input,
-                mouse_move_handler
+                pointer_update_system
                     .run_in_state(GameState::Playing)
                     .label(PointerLabels::Update)
                     .after(MouseLabels::Position),
@@ -89,7 +89,7 @@ impl<'w, 's> ScreenRay<'w, 's> {
     }
 }
 
-fn mouse_move_handler(
+fn pointer_update_system(
     mut resource: ResMut<Pointer>,
     mouse: Res<MousePosition>,
     screen_ray: ScreenRay,
