@@ -20,14 +20,15 @@ use iyes_loopless::prelude::*;
 
 use super::keyboard::KeyCondition;
 use crate::{
-    areaselect::{AreaSelectLabels, SelectInRectEvent},
     draft::{DiscardDraftsEvent, DraftLabels, NewDraftEvent, SpawnDraftsEvent},
     hud::{GameMenuLabel, ToggleGameMenu, UpdateSelectionBoxEvent},
     mouse::{
         DragUpdateType, MouseClicked, MouseDoubleClicked, MouseDragged, MouseLabels, Pointer,
         PointerLabels,
     },
-    selection::{SelectEvent, Selected, SelectionLabels, SelectionMode},
+    selection::{
+        AreaSelectLabels, SelectEvent, SelectInRectEvent, Selected, SelectionLabels, SelectionMode,
+    },
 };
 
 pub(super) struct HandlersPlugin;

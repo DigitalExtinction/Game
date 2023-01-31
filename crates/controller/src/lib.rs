@@ -1,6 +1,5 @@
 //! This crate implements handling of user input.
 
-use areaselect::AreaSelectPlugin;
 use bevy::{app::PluginGroupBuilder, prelude::*};
 use commands::CommandsPlugin;
 use draft::DraftPlugin;
@@ -8,7 +7,6 @@ use hud::HudPlugin;
 use mouse::MousePlugin;
 use selection::SelectionPlugin;
 
-mod areaselect;
 mod commands;
 mod draft;
 mod frustum;
@@ -24,7 +22,6 @@ pub struct ControllerPluginGroup;
 impl PluginGroup for ControllerPluginGroup {
     fn build(self) -> PluginGroupBuilder {
         PluginGroupBuilder::start::<Self>()
-            .add(AreaSelectPlugin)
             .add(MousePlugin)
             .add(CommandsPlugin)
             .add(SelectionPlugin)
