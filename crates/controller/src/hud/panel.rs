@@ -1,5 +1,6 @@
 use bevy::prelude::*;
 use de_core::state::GameState;
+use de_gui::{GuiCommands, LabelCommands, OuterStyle};
 use iyes_loopless::prelude::*;
 
 use super::interaction::InteractionBlocker;
@@ -16,28 +17,55 @@ impl Plugin for PanelPlugin {
     }
 }
 
-fn spawn_details(mut commands: Commands) {
-    commands.spawn((
-        NodeBundle {
-            style: Style {
-                size: Size {
-                    width: Val::Percent(20.),
-                    height: Val::Percent(30.),
+fn spawn_details(mut commands: GuiCommands) {
+    let parent = commands
+        .spawn((
+            NodeBundle {
+                style: Style {
+                    size: Size {
+                        width: Val::Percent(20.),
+                        height: Val::Percent(30.),
+                    },
+                    position_type: PositionType::Absolute,
+                    position: UiRect::new(
+                        Val::Percent(0.),
+                        Val::Percent(20.),
+                        Val::Percent(70.),
+                        Val::Percent(100.),
+                    ),
+                    padding: UiRect::all(Val::Percent(1.)),
+                    flex_direction: FlexDirection::Column,
+                    ..default()
                 },
-                position_type: PositionType::Absolute,
-                position: UiRect::new(
-                    Val::Percent(0.),
-                    Val::Percent(20.),
-                    Val::Percent(70.),
-                    Val::Percent(100.),
-                ),
+                background_color: HUD_COLOR.into(),
                 ..default()
             },
-            background_color: HUD_COLOR.into(),
+            InteractionBlocker,
+        ))
+        .id();
+    let caption = commands
+        .spawn_label(
+            OuterStyle {
+                size: Size::new(Val::Percent(100.), Val::Percent(20.)),
+                ..default()
+            },
+            format!("Object Detail"),
+        )
+        .id();
+    commands.entity(parent).add_child(caption);
+    let details = commands
+        .spawn(NodeBundle {
+            style: Style {
+                position: UiRect::all(Val::Percent(0.)),
+                size: Size::new(Val::Percent(100.), Val::Percent(80.)),
+                border: UiRect::all(Val::Px(2.)),
+                ..default()
+            },
+            background_color: Color::DARK_GRAY.into(),
             ..default()
-        },
-        InteractionBlocker,
-    ));
+        })
+        .id();
+    commands.entity(parent).add_child(details);
 }
 
 fn spawn_action_bar(mut commands: Commands) {
