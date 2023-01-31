@@ -3,19 +3,22 @@ use de_gui::{
     ButtonCommands, GuiCommands, LabelCommands, OuterStyle, SetFocusEvent, TextBoxCommands,
     TextBoxQuery, ToastEvent, ToastLabel,
 };
-use de_lobby_client::{
-    Authentication, LobbyRequest, RequestEvent, ResponseEvent, SignInRequest, SignUpRequest,
-};
+use de_lobby_client::{Authentication, LobbyRequest, SignInRequest, SignUpRequest};
 use de_lobby_model::{User, UserWithPassword, UsernameAndPassword};
 use iyes_loopless::prelude::*;
 
-use crate::{menu::Menu, MenuState};
+use crate::{
+    menu::Menu,
+    requests::{Receiver, RequestsPlugin, Sender},
+    MenuState,
+};
 
 pub(crate) struct SignInPlugin;
 
 impl Plugin for SignInPlugin {
     fn build(&self, app: &mut App) {
-        app.init_resource::<Counter>()
+        app.add_plugin(RequestsPlugin::<SignInRequest>::new())
+            .add_plugin(RequestsPlugin::<SignUpRequest>::new())
             .add_enter_system(MenuState::SignIn, setup)
             .add_exit_system(MenuState::SignIn, cleanup)
             .add_system(
@@ -34,22 +37,6 @@ impl Plugin for SignInPlugin {
                     .before(ToastLabel::ProcessEvents),
             )
             .add_system(auth_system.run_in_state(MenuState::SignIn));
-    }
-}
-
-#[derive(Resource, Default)]
-pub(crate) struct Counter {
-    counter: u64,
-}
-
-impl Counter {
-    fn increment(&mut self) -> u64 {
-        self.counter = self.counter.wrapping_add(1);
-        self.counter
-    }
-
-    fn compare(&self, id: &str) -> bool {
-        self.counter.to_string() == id
     }
 }
 
@@ -179,30 +166,27 @@ fn button(commands: &mut GuiCommands, parent: Entity, action: Action) {
 
 fn button_system(
     inputs: Res<Inputs>,
-    mut counter: ResMut<Counter>,
     texts: TextBoxQuery,
     interactions: Query<(&Interaction, &Action), Changed<Interaction>>,
-    mut sign_in_requests: EventWriter<RequestEvent<SignInRequest>>,
-    mut sign_up_requests: EventWriter<RequestEvent<SignUpRequest>>,
+    mut sign_in_sender: Sender<SignInRequest>,
+    mut sign_up_sender: Sender<SignUpRequest>,
 ) {
     for (&interaction, &action) in interactions.iter() {
         if let Interaction::Clicked = interaction {
             let username = texts.text(inputs.username).unwrap().to_string();
             let password = texts.text(inputs.password).unwrap().to_string();
-            let request_id = counter.increment();
 
             match action {
                 Action::SignIn => {
-                    sign_in_requests.send(RequestEvent::new(
-                        request_id,
-                        SignInRequest::new(UsernameAndPassword::new(username, password)),
-                    ));
+                    sign_in_sender.send(SignInRequest::new(UsernameAndPassword::new(
+                        username, password,
+                    )));
                 }
                 Action::SignUp => {
-                    sign_up_requests.send(RequestEvent::new(
-                        request_id,
-                        SignUpRequest::new(UserWithPassword::new(password, User::new(username))),
-                    ));
+                    sign_up_sender.send(SignUpRequest::new(UserWithPassword::new(
+                        password,
+                        User::new(username),
+                    )));
                 }
             }
 
@@ -211,19 +195,12 @@ fn button_system(
     }
 }
 
-fn response_system<T>(
-    counter: Res<Counter>,
-    mut responses: EventReader<ResponseEvent<T>>,
-    mut toasts: EventWriter<ToastEvent>,
-) where
-    T: 'static + LobbyRequest,
+fn response_system<T>(mut receiver: Receiver<T>, mut toasts: EventWriter<ToastEvent>)
+where
+    T: LobbyRequest,
 {
-    for event in responses.iter() {
-        if counter.compare(event.id()) {
-            if let Err(error) = event.result() {
-                toasts.send(ToastEvent::new(error));
-            }
-        }
+    if let Some(Err(error)) = receiver.receive() {
+        toasts.send(ToastEvent::new(error));
     }
 }
 

@@ -14,7 +14,7 @@ use bevy::{app::PluginGroupBuilder, prelude::PluginGroup};
 pub use client::Authentication;
 pub use endpoints::*;
 use plugin::EndpointPlugin;
-pub use plugin::{RequestEvent, ResponseEvent};
+pub use plugin::{RequestEvent, ResponseEvent, Result};
 pub use requestable::LobbyRequest;
 use systems::LobbyPlugin;
 

@@ -15,6 +15,7 @@ mod gamelisting;
 mod mainmenu;
 mod mapselection;
 mod menu;
+mod requests;
 mod signin;
 mod singleplayer;
 
