@@ -296,14 +296,20 @@ fn update_drags(
         }
 
         let ui_event = match drag_event.update_type() {
-            DragUpdateType::Moved => UpdateSelectionBoxEvent::from_rect(drag_event.rect()),
+            DragUpdateType::Moved => match drag_event.rect() {
+                Some(rect) => UpdateSelectionBoxEvent::from_rect(rect),
+                None => UpdateSelectionBoxEvent::none(),
+            },
             DragUpdateType::Released => {
-                let mode = if keys.pressed(KeyCode::LControl) || keys.pressed(KeyCode::RControl) {
-                    SelectionMode::Add
-                } else {
-                    SelectionMode::Replace
-                };
-                select_events.send(SelectInRectEvent::new(drag_event.rect(), mode, None));
+                if let Some(rect) = drag_event.rect() {
+                    let mode = if keys.pressed(KeyCode::LControl) || keys.pressed(KeyCode::RControl)
+                    {
+                        SelectionMode::Add
+                    } else {
+                        SelectionMode::Replace
+                    };
+                    select_events.send(SelectInRectEvent::new(rect, mode, None));
+                }
 
                 UpdateSelectionBoxEvent::none()
             }
