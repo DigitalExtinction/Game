@@ -102,12 +102,20 @@ fn pointer_update_system(
         .as_ref()
         .and_then(|ray| entities.cast_ray(ray, f32::INFINITY, None))
         .map(|intersection| intersection.entity());
-    resource.set_entity(entity);
+
+    // Do not unnecessarily trigger change detection.
+    if resource.entity() != entity {
+        resource.set_entity(entity);
+    }
 
     let terrain_point = ray
         .and_then(|ray| terrain.cast_ray(&ray, f32::INFINITY))
         .map(|intersection| ray.unwrap().point_at(intersection.toi).into());
-    resource.set_terrain_point(terrain_point);
+
+    // Do not unnecessarily trigger change detection.
+    if resource.terrain_point() != terrain_point {
+        resource.set_terrain_point(terrain_point);
+    }
 }
 
 fn update_bar_visibility(
