@@ -2,7 +2,7 @@ use bevy::prelude::*;
 use de_core::state::GameState;
 use iyes_loopless::prelude::*;
 
-use super::interaction::HudTopVisibleNode;
+use super::interaction::InteractionBlocker;
 
 const HUD_COLOR: Color = Color::BLACK;
 
@@ -36,7 +36,7 @@ fn spawn_details(mut commands: Commands) {
             background_color: HUD_COLOR.into(),
             ..default()
         },
-        HudTopVisibleNode,
+        InteractionBlocker,
     ));
 }
 
@@ -60,7 +60,7 @@ fn spawn_action_bar(mut commands: Commands) {
             background_color: HUD_COLOR.into(),
             ..default()
         },
-        HudTopVisibleNode,
+        InteractionBlocker,
     ));
 }
 
@@ -84,6 +84,6 @@ fn spawn_map(mut commands: Commands) {
             background_color: HUD_COLOR.into(),
             ..default()
         },
-        HudTopVisibleNode,
+        InteractionBlocker,
     ));
 }
