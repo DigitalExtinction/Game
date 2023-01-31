@@ -135,6 +135,10 @@ impl MousePosition {
         self.0.map(|p| 2. * p - Vec2::ONE)
     }
 
+    fn position(&self) -> Option<Vec2> {
+        self.0
+    }
+
     fn set_position(&mut self, position: Option<Vec2>) {
         self.0 = position;
     }
@@ -216,13 +220,16 @@ enum DragResolution {
 
 fn update_position(windows: Res<Windows>, mut hud: HudNodes, mut mouse: ResMut<MousePosition>) {
     let window = windows.get_primary().unwrap();
-    mouse.set_position(
-        window
-            .cursor_position()
-            .filter(|position| !hud.contains_point(position))
-            .map(|position| position / Vec2::new(window.width(), window.height()))
-            .map(|normalised_position| normalised_position.clamp(Vec2::ZERO, Vec2::ONE)),
-    );
+    let position = window
+        .cursor_position()
+        .filter(|position| !hud.contains_point(position))
+        .map(|position| position / Vec2::new(window.width(), window.height()))
+        .map(|normalised_position| normalised_position.clamp(Vec2::ZERO, Vec2::ONE));
+
+    // Avoid unnecessary change detection.
+    if mouse.position() != position {
+        mouse.set_position(position)
+    }
 }
 
 fn update_drags(
@@ -230,9 +237,11 @@ fn update_drags(
     mut mouse_state: ResMut<MouseDragStates>,
     mut drags: EventWriter<MouseDragged>,
 ) {
-    let resolutions = mouse_state.update(mouse_position.ndc());
-    for (&button, &rect) in resolutions.iter() {
-        drags.send(MouseDragged::new(button, rect, DragUpdateType::Moved));
+    if mouse_position.is_changed() {
+        let resolutions = mouse_state.update(mouse_position.ndc());
+        for (&button, &rect) in resolutions.iter() {
+            drags.send(MouseDragged::new(button, rect, DragUpdateType::Moved));
+        }
     }
 }
 
