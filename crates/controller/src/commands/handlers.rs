@@ -22,8 +22,11 @@ use super::keyboard::KeyCondition;
 use crate::{
     areaselect::{AreaSelectLabels, SelectInRectEvent},
     draft::{DiscardDraftsEvent, DraftLabels, NewDraftEvent, SpawnDraftsEvent},
-    hud::{GameMenuLabel, ToggleGameMenu},
-    mouse::{MouseClicked, MouseDoubleClicked, MouseLabels, Pointer, PointerLabels},
+    hud::{GameMenuLabel, ToggleGameMenu, UpdateSelectionBoxEvent},
+    mouse::{
+        DragUpdateType, MouseClicked, MouseDoubleClicked, MouseDragged, MouseLabels, Pointer,
+        PointerLabels,
+    },
     selection::{SelectEvent, Selected, SelectionLabels, SelectionMode},
 };
 
@@ -104,6 +107,12 @@ impl Plugin for HandlersPlugin {
                                 .build(),
                         )
                         .before(AreaSelectLabels::SelectInArea),
+                )
+                .with_system(
+                    update_drags
+                        .run_in_state(GameState::Playing)
+                        .before(AreaSelectLabels::SelectInArea)
+                        .after(MouseLabels::Buttons),
                 ),
         )
         .add_system_set_to_stage(GameStage::Input, Self::place_draft_systems());
@@ -272,4 +281,33 @@ fn select_all_visible(mut events: EventWriter<SelectInRectEvent>) {
         SelectionMode::Replace,
         None,
     ));
+}
+
+fn update_drags(
+    keys: Res<Input<KeyCode>>,
+    mut drag_events: EventReader<MouseDragged>,
+    mut ui_events: EventWriter<UpdateSelectionBoxEvent>,
+    mut select_events: EventWriter<SelectInRectEvent>,
+) {
+    for drag_event in drag_events.iter() {
+        if drag_event.button() != MouseButton::Left {
+            continue;
+        }
+
+        let ui_event = match drag_event.update_type() {
+            DragUpdateType::Moved => UpdateSelectionBoxEvent::from_rect(drag_event.rect()),
+            DragUpdateType::Released => {
+                let mode = if keys.pressed(KeyCode::LControl) || keys.pressed(KeyCode::RControl) {
+                    SelectionMode::Add
+                } else {
+                    SelectionMode::Replace
+                };
+                select_events.send(SelectInRectEvent::new(drag_event.rect(), mode, None));
+
+                UpdateSelectionBoxEvent::none()
+            }
+        };
+
+        ui_events.send(ui_event)
+    }
 }
