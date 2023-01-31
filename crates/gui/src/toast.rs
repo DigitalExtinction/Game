@@ -140,6 +140,7 @@ fn spawn(commands: &mut Commands, text_props: &TextProps, text: String) -> Entit
             ..default()
         },
         background_color: Color::RED.into(),
+        z_index: ZIndex::Local(10000),
         ..default()
     });
 

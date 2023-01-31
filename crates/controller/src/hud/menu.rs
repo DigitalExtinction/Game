@@ -5,6 +5,8 @@ use de_core::{stages::GameStage, state::GameState};
 use de_gui::{ButtonCommands, GuiCommands, OuterStyle};
 use iyes_loopless::prelude::*;
 
+use super::interaction::InteractionBlocker;
+
 pub(crate) struct MenuPlugin;
 
 impl Plugin for MenuPlugin {
@@ -54,15 +56,16 @@ fn setup(mut commands: GuiCommands) {
             style: Style {
                 position_type: PositionType::Absolute,
                 flex_direction: FlexDirection::Column,
-                size: Size::new(Val::Percent(100.), Val::Percent(100.)),
+                position: UiRect::all(Val::Percent(0.)),
                 align_items: AlignItems::Center,
                 justify_content: JustifyContent::Center,
                 ..default()
             },
             visibility: Visibility::INVISIBLE,
+            z_index: ZIndex::Local(1000),
             ..default()
         })
-        .insert(PopUpMenu)
+        .insert((PopUpMenu, InteractionBlocker))
         .id();
 
     let menu_node = commands

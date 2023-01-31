@@ -18,8 +18,8 @@ use iyes_loopless::prelude::*;
 use crate::{
     areaselect::{AreaSelectLabels, SelectInRectEvent},
     draft::{DiscardDraftsEvent, DraftLabels, NewDraftEvent, SpawnDraftsEvent},
+    hud::{GameMenuLabel, ToggleGameMenu},
     keyboard::KeyCondition,
-    menu::{GameMenuLabel, ToggleGameMenu},
     mouse::{MouseClicked, MouseDoubleClicked, MouseLabels},
     pointer::{Pointer, PointerLabels},
     selection::{SelectEvent, Selected, SelectionLabels, SelectionMode},

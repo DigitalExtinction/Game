@@ -1,10 +1,22 @@
 use bevy::prelude::*;
+use de_core::state::GameState;
+use iyes_loopless::prelude::*;
 
-use crate::hud::HudTopVisibleNode;
+use super::interaction::InteractionBlocker;
 
 const HUD_COLOR: Color = Color::BLACK;
 
-pub(crate) fn spawn_details(commands: &mut Commands) {
+pub(crate) struct PanelPlugin;
+
+impl Plugin for PanelPlugin {
+    fn build(&self, app: &mut App) {
+        app.add_enter_system(GameState::Playing, spawn_details)
+            .add_enter_system(GameState::Playing, spawn_action_bar)
+            .add_enter_system(GameState::Playing, spawn_map);
+    }
+}
+
+fn spawn_details(mut commands: Commands) {
     commands.spawn((
         NodeBundle {
             style: Style {
@@ -24,11 +36,11 @@ pub(crate) fn spawn_details(commands: &mut Commands) {
             background_color: HUD_COLOR.into(),
             ..default()
         },
-        HudTopVisibleNode,
+        InteractionBlocker,
     ));
 }
 
-pub(crate) fn spawn_action_bar(commands: &mut Commands) {
+fn spawn_action_bar(mut commands: Commands) {
     commands.spawn((
         NodeBundle {
             style: Style {
@@ -48,11 +60,11 @@ pub(crate) fn spawn_action_bar(commands: &mut Commands) {
             background_color: HUD_COLOR.into(),
             ..default()
         },
-        HudTopVisibleNode,
+        InteractionBlocker,
     ));
 }
 
-pub(crate) fn spawn_map(commands: &mut Commands) {
+fn spawn_map(mut commands: Commands) {
     commands.spawn((
         NodeBundle {
             style: Style {
@@ -72,6 +84,6 @@ pub(crate) fn spawn_map(commands: &mut Commands) {
             background_color: HUD_COLOR.into(),
             ..default()
         },
-        HudTopVisibleNode,
+        InteractionBlocker,
     ));
 }
