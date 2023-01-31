@@ -12,14 +12,14 @@ use crate::{
     POINTER_BAR_ID,
 };
 
-pub(crate) struct PointerPlugin;
+pub(super) struct PointerPlugin;
 
 impl Plugin for PointerPlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<Pointer>()
             .add_system_to_stage(
                 GameStage::Input,
-                mouse_move_handler
+                pointer_update_system
                     .run_in_state(GameState::Playing)
                     .label(PointerLabels::Update)
                     .after(MouseLabels::Position),
@@ -89,7 +89,7 @@ impl<'w, 's> ScreenRay<'w, 's> {
     }
 }
 
-fn mouse_move_handler(
+fn pointer_update_system(
     mut resource: ResMut<Pointer>,
     mouse: Res<MousePosition>,
     screen_ray: ScreenRay,
@@ -102,12 +102,20 @@ fn mouse_move_handler(
         .as_ref()
         .and_then(|ray| entities.cast_ray(ray, f32::INFINITY, None))
         .map(|intersection| intersection.entity());
-    resource.set_entity(entity);
+
+    // Do not unnecessarily trigger change detection.
+    if resource.entity() != entity {
+        resource.set_entity(entity);
+    }
 
     let terrain_point = ray
         .and_then(|ray| terrain.cast_ray(&ray, f32::INFINITY))
         .map(|intersection| ray.unwrap().point_at(intersection.toi).into());
-    resource.set_terrain_point(terrain_point);
+
+    // Do not unnecessarily trigger change detection.
+    if resource.terrain_point() != terrain_point {
+        resource.set_terrain_point(terrain_point);
+    }
 }
 
 fn update_bar_visibility(

@@ -14,9 +14,9 @@ use crate::{
     selection::{SelectEvent, SelectionLabels, SelectionMode},
 };
 
-pub(crate) struct AreaSelectPlugin;
+pub(super) struct AreaPlugin;
 
-impl Plugin for AreaSelectPlugin {
+impl Plugin for AreaPlugin {
     fn build(&self, app: &mut App) {
         app.add_event::<SelectInRectEvent>()
             .add_system_set_to_stage(

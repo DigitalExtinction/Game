@@ -11,9 +11,9 @@ use crate::hud::HudNodes;
 const DRAGGING_THRESHOLD: f32 = 0.02;
 const DOUBLE_CLICK_TIME: f64 = 0.5;
 
-pub(crate) struct MousePlugin;
+pub(super) struct InputPlugin;
 
-impl Plugin for MousePlugin {
+impl Plugin for InputPlugin {
     fn build(&self, app: &mut App) {
         app.add_event::<MouseClicked>()
             .add_event::<MouseDoubleClicked>()
@@ -93,12 +93,12 @@ impl MouseDoubleClicked {
 
 pub(crate) struct MouseDragged {
     button: MouseButton,
-    rect: ScreenRect,
+    rect: Option<ScreenRect>,
     update_type: DragUpdateType,
 }
 
 impl MouseDragged {
-    fn new(button: MouseButton, rect: ScreenRect, update_type: DragUpdateType) -> Self {
+    fn new(button: MouseButton, rect: Option<ScreenRect>, update_type: DragUpdateType) -> Self {
         Self {
             button,
             rect,
@@ -110,7 +110,10 @@ impl MouseDragged {
         self.button
     }
 
-    pub(crate) fn rect(&self) -> ScreenRect {
+    /// Screen rectangle corresponding to the drag (i.e. its starting and
+    /// ending points). It is None if the starting or ending point is not over
+    /// the 3D world.
+    pub(crate) fn rect(&self) -> Option<ScreenRect> {
         self.rect
     }
 
@@ -135,13 +138,17 @@ impl MousePosition {
         self.0.map(|p| 2. * p - Vec2::ONE)
     }
 
+    fn position(&self) -> Option<Vec2> {
+        self.0
+    }
+
     fn set_position(&mut self, position: Option<Vec2>) {
         self.0 = position;
     }
 }
 
 #[derive(Default, Resource)]
-pub(crate) struct MouseDragStates(AHashMap<MouseButton, DragState>);
+struct MouseDragStates(AHashMap<MouseButton, DragState>);
 
 impl MouseDragStates {
     fn set(&mut self, button: MouseButton, position: Option<Vec2>) {
@@ -152,7 +159,12 @@ impl MouseDragStates {
         self.0.remove(&button).and_then(DragState::resolve)
     }
 
-    fn update(&mut self, position: Option<Vec2>) -> AHashMap<MouseButton, ScreenRect> {
+    /// Updates the end position of all opened drags. A map of mouse buttons to
+    /// updated screen rectangle is returned for all changed drags.
+    ///
+    /// None means that the drag is (temporarily) canceled, Some means that the
+    /// drag has been updated to this new rectangle.
+    fn update(&mut self, position: Option<Vec2>) -> AHashMap<MouseButton, Option<ScreenRect>> {
         let mut updates = AHashMap::new();
         for (&button, drag) in self.0.iter_mut() {
             if let Some(update) = drag.update(position) {
@@ -179,29 +191,34 @@ impl DragState {
     }
 
     fn resolve(self) -> Option<DragResolution> {
-        if let Some(start) = self.start {
-            if let Some(stop) = self.stop {
-                if self.active {
-                    return Some(DragResolution::Rect(ScreenRect::from_points(start, stop)));
-                } else {
-                    return Some(DragResolution::Point(stop));
-                }
-            }
+        match self.start {
+            Some(start) => match (self.active, self.stop) {
+                (true, Some(stop)) => Some(DragResolution::Rect(Some(ScreenRect::from_points(
+                    start, stop,
+                )))),
+                (true, None) => Some(DragResolution::Rect(None)),
+                (false, Some(stop)) => Some(DragResolution::Point(stop)),
+                (false, None) => None,
+            },
+            None => None,
         }
-        None
     }
 
-    fn update(&mut self, position: Option<Vec2>) -> Option<ScreenRect> {
+    fn update(&mut self, position: Option<Vec2>) -> Option<Option<ScreenRect>> {
         let changed = self.stop != position;
         self.stop = position;
 
         if let Some(start) = self.start {
-            if let Some(stop) = position {
-                self.active |= start.distance(stop) >= DRAGGING_THRESHOLD;
-
-                if self.active && changed {
-                    return Some(ScreenRect::from_points(start, stop));
+            let rect = match self.stop {
+                Some(stop) => {
+                    self.active |= start.distance(stop) >= DRAGGING_THRESHOLD;
+                    Some(ScreenRect::from_points(start, stop))
                 }
+                None => None,
+            };
+
+            if self.active && changed {
+                return Some(rect);
             }
         }
 
@@ -211,18 +228,21 @@ impl DragState {
 
 enum DragResolution {
     Point(Vec2),
-    Rect(ScreenRect),
+    Rect(Option<ScreenRect>),
 }
 
 fn update_position(windows: Res<Windows>, mut hud: HudNodes, mut mouse: ResMut<MousePosition>) {
     let window = windows.get_primary().unwrap();
-    mouse.set_position(
-        window
-            .cursor_position()
-            .filter(|position| !hud.contains_point(position))
-            .map(|position| position / Vec2::new(window.width(), window.height()))
-            .map(|normalised_position| normalised_position.clamp(Vec2::ZERO, Vec2::ONE)),
-    );
+    let position = window
+        .cursor_position()
+        .filter(|position| !hud.contains_point(position))
+        .map(|position| position / Vec2::new(window.width(), window.height()))
+        .map(|normalised_position| normalised_position.clamp(Vec2::ZERO, Vec2::ONE));
+
+    // Avoid unnecessary change detection.
+    if mouse.position() != position {
+        mouse.set_position(position)
+    }
 }
 
 fn update_drags(
@@ -230,9 +250,11 @@ fn update_drags(
     mut mouse_state: ResMut<MouseDragStates>,
     mut drags: EventWriter<MouseDragged>,
 ) {
-    let resolutions = mouse_state.update(mouse_position.ndc());
-    for (&button, &rect) in resolutions.iter() {
-        drags.send(MouseDragged::new(button, rect, DragUpdateType::Moved));
+    if mouse_position.is_changed() {
+        let resolutions = mouse_state.update(mouse_position.ndc());
+        for (&button, &rect) in resolutions.iter() {
+            drags.send(MouseDragged::new(button, rect, DragUpdateType::Moved));
+        }
     }
 }
 

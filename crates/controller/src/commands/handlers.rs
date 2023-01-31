@@ -1,3 +1,6 @@
+//! This module implements user input / user command handling, for example
+//! keyboard shortcuts, mouse actions events, and so on.
+
 use bevy::prelude::*;
 use de_behaviour::ChaseTarget;
 use de_combat::AttackEvent;
@@ -15,19 +18,22 @@ use de_spawner::{Draft, ObjectCounter};
 use enum_map::enum_map;
 use iyes_loopless::prelude::*;
 
+use super::keyboard::KeyCondition;
 use crate::{
-    areaselect::{AreaSelectLabels, SelectInRectEvent},
     draft::{DiscardDraftsEvent, DraftLabels, NewDraftEvent, SpawnDraftsEvent},
-    hud::{GameMenuLabel, ToggleGameMenu},
-    keyboard::KeyCondition,
-    mouse::{MouseClicked, MouseDoubleClicked, MouseLabels},
-    pointer::{Pointer, PointerLabels},
-    selection::{SelectEvent, Selected, SelectionLabels, SelectionMode},
+    hud::{GameMenuLabel, ToggleGameMenu, UpdateSelectionBoxEvent},
+    mouse::{
+        DragUpdateType, MouseClicked, MouseDoubleClicked, MouseDragged, MouseLabels, Pointer,
+        PointerLabels,
+    },
+    selection::{
+        AreaSelectLabels, SelectEvent, SelectInRectEvent, Selected, SelectionLabels, SelectionMode,
+    },
 };
 
-pub(crate) struct CommandPlugin;
+pub(super) struct HandlersPlugin;
 
-impl CommandPlugin {
+impl HandlersPlugin {
     fn place_draft_systems() -> SystemSet {
         let key_map = enum_map! {
             BuildingType::Base => KeyCode::B,
@@ -47,7 +53,7 @@ impl CommandPlugin {
     }
 }
 
-impl Plugin for CommandPlugin {
+impl Plugin for HandlersPlugin {
     fn build(&self, app: &mut App) {
         app.add_system_set_to_stage(
             GameStage::Input,
@@ -102,6 +108,12 @@ impl Plugin for CommandPlugin {
                                 .build(),
                         )
                         .before(AreaSelectLabels::SelectInArea),
+                )
+                .with_system(
+                    update_drags
+                        .run_in_state(GameState::Playing)
+                        .before(AreaSelectLabels::SelectInArea)
+                        .after(MouseLabels::Buttons),
                 ),
         )
         .add_system_set_to_stage(GameStage::Input, Self::place_draft_systems());
@@ -270,4 +282,39 @@ fn select_all_visible(mut events: EventWriter<SelectInRectEvent>) {
         SelectionMode::Replace,
         None,
     ));
+}
+
+fn update_drags(
+    keys: Res<Input<KeyCode>>,
+    mut drag_events: EventReader<MouseDragged>,
+    mut ui_events: EventWriter<UpdateSelectionBoxEvent>,
+    mut select_events: EventWriter<SelectInRectEvent>,
+) {
+    for drag_event in drag_events.iter() {
+        if drag_event.button() != MouseButton::Left {
+            continue;
+        }
+
+        let ui_event = match drag_event.update_type() {
+            DragUpdateType::Moved => match drag_event.rect() {
+                Some(rect) => UpdateSelectionBoxEvent::from_rect(rect),
+                None => UpdateSelectionBoxEvent::none(),
+            },
+            DragUpdateType::Released => {
+                if let Some(rect) = drag_event.rect() {
+                    let mode = if keys.pressed(KeyCode::LControl) || keys.pressed(KeyCode::RControl)
+                    {
+                        SelectionMode::Add
+                    } else {
+                        SelectionMode::Replace
+                    };
+                    select_events.send(SelectInRectEvent::new(rect, mode, None));
+                }
+
+                UpdateSelectionBoxEvent::none()
+            }
+        };
+
+        ui_events.send(ui_event)
+    }
 }

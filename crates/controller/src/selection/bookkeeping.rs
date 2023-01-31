@@ -7,9 +7,9 @@ use iyes_loopless::prelude::*;
 
 use crate::SELECTION_BAR_ID;
 
-pub(crate) struct SelectionPlugin;
+pub(super) struct BookkeepingPlugin;
 
-impl Plugin for SelectionPlugin {
+impl Plugin for BookkeepingPlugin {
     fn build(&self, app: &mut App) {
         app.add_event::<SelectEvent>().add_system_to_stage(
             GameStage::Input,
