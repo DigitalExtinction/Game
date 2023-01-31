@@ -141,7 +141,7 @@ impl MousePosition {
 }
 
 #[derive(Default, Resource)]
-pub(crate) struct MouseDragStates(AHashMap<MouseButton, DragState>);
+struct MouseDragStates(AHashMap<MouseButton, DragState>);
 
 impl MouseDragStates {
     fn set(&mut self, button: MouseButton, position: Option<Vec2>) {
