@@ -65,8 +65,8 @@ fn spawn_action_bar(mut commands: Commands) {
 }
 
 fn spawn_map(mut commands: Commands) {
-    commands.spawn((
-        NodeBundle {
+    commands
+        .spawn(NodeBundle {
             style: Style {
                 size: Size {
                     width: Val::Percent(20.),
@@ -79,11 +79,22 @@ fn spawn_map(mut commands: Commands) {
                     Val::Percent(70.),
                     Val::Percent(100.),
                 ),
+                padding: UiRect::all(Val::Percent(1.)),
                 ..default()
             },
             background_color: HUD_COLOR.into(),
             ..default()
-        },
-        InteractionBlocker,
-    ));
+        })
+        .insert(InteractionBlocker)
+        .with_children(|parent| {
+            parent.spawn(NodeBundle {
+                style: Style {
+                    position: UiRect::all(Val::Percent(0.)),
+                    size: Size::new(Val::Percent(100.), Val::Percent(100.)),
+                    ..default()
+                },
+                background_color: Color::BISQUE.into(),
+                ..default()
+            });
+        });
 }
