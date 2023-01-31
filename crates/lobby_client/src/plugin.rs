@@ -1,7 +1,7 @@
 use std::marker::PhantomData;
 
 use ahash::AHashMap;
-use anyhow::Result;
+pub use anyhow::Result;
 use bevy::prelude::*;
 use bevy::tasks::Task;
 use futures_lite::future;

@@ -1,14 +1,17 @@
 use bevy::prelude::*;
 use de_gui::{
-    ButtonCommands, ButtonOps, GuiCommands, LabelCommands, OuterStyle, TextBoxCommands, ToastEvent,
+    ButtonCommands, ButtonOps, GuiCommands, LabelCommands, OuterStyle, TextBoxCommands,
+    TextBoxQuery, ToastEvent,
 };
-use de_lobby_model::GameMap;
+use de_lobby_client::CreateGameRequest;
+use de_lobby_model::{GameConfig, GameMap, Validatable};
 use de_map::hash::MapHash;
 use iyes_loopless::prelude::*;
 
 use crate::{
     mapselection::{MapSelectedEvent, SelectMapEvent},
     menu::Menu,
+    requests::{Receiver, RequestsPlugin, Sender},
     MenuState,
 };
 
@@ -16,7 +19,8 @@ pub(crate) struct CreateGamePlugin;
 
 impl Plugin for CreateGamePlugin {
     fn build(&self, app: &mut App) {
-        app.add_event::<CreateGameEvent>()
+        app.add_plugin(RequestsPlugin::<CreateGameRequest>::new())
+            .add_event::<CreateGameEvent>()
             .add_enter_system(MenuState::GameCreation, setup)
             .add_exit_system(MenuState::GameCreation, cleanup)
             .add_system(
@@ -34,7 +38,8 @@ impl Plugin for CreateGamePlugin {
                     .run_in_state(MenuState::GameCreation)
                     .after(CreateLabel::Buttons)
                     .after(CreateLabel::MapSelected),
-            );
+            )
+            .add_system(response_system.run_in_state(MenuState::GameCreation));
     }
 }
 
@@ -52,6 +57,8 @@ enum ButtonAction {
 
 #[derive(Resource)]
 struct Inputs {
+    name: Entity,
+    max_players: Entity,
     map: Entity,
 }
 
@@ -64,15 +71,20 @@ fn setup(mut commands: GuiCommands, menu: Res<Menu>) {
     let column_id = column(&mut commands, menu.root_node());
 
     let name_row_id = row(&mut commands, column_id);
-    text_input(&mut commands, name_row_id, "Name");
+
+    let name_id = text_input(&mut commands, name_row_id, "Name");
 
     let max_players_row_id = row(&mut commands, column_id);
-    text_input(&mut commands, max_players_row_id, "Max Players");
+    let max_players_id = text_input(&mut commands, max_players_row_id, "Max Players");
 
     let map_row_id = row(&mut commands, column_id);
     let map_id = map_button(&mut commands, map_row_id);
 
-    commands.insert_resource(Inputs { map: map_id });
+    commands.insert_resource(Inputs {
+        name: name_id,
+        max_players: max_players_id,
+        map: map_id,
+    });
 
     let buttons_row_id = row(&mut commands, column_id);
     let create_id = commands
@@ -222,12 +234,49 @@ fn map_selected_system(
 
 fn create_game_system(
     mut events: EventReader<CreateGameEvent>,
+    inputs: Res<Inputs>,
+    texts: TextBoxQuery,
+    selected_map: Option<Res<SelectedMap>>,
     mut toasts: EventWriter<ToastEvent>,
+    mut sender: Sender<CreateGameRequest>,
 ) {
     // Always exhaust the iterator
     if events.iter().count() == 0 {
         return;
     }
 
-    toasts.send(ToastEvent::new("Not yet implemented."));
+    let Some(selected_map) = selected_map else {
+        toasts.send(ToastEvent::new("No map selected."));
+        return;
+    };
+
+    let name = texts.text(inputs.name).unwrap().to_string();
+    let max_players: u8 = match texts.text(inputs.max_players).unwrap().parse() {
+        Ok(value) => value,
+        Err(error) => {
+            toasts.send(ToastEvent::new(format!("Invalid max players: {error}")));
+            return;
+        }
+    };
+
+    let game_config = GameConfig::new(name, max_players, selected_map.0.clone());
+    if let Err(error) = game_config.validate() {
+        toasts.send(ToastEvent::new(format!("{error}")));
+        return;
+    }
+
+    sender.send(CreateGameRequest::new(game_config));
+}
+
+fn response_system(
+    mut commands: Commands,
+    mut receiver: Receiver<CreateGameRequest>,
+    mut toasts: EventWriter<ToastEvent>,
+) {
+    if let Some(result) = receiver.receive() {
+        match result {
+            Ok(_) => commands.insert_resource(NextState(MenuState::MultiPlayerGame)),
+            Err(error) => toasts.send(ToastEvent::new(error)),
+        }
+    }
 }

@@ -15,6 +15,7 @@ mod gamelisting;
 mod mainmenu;
 mod mapselection;
 mod menu;
+mod requests;
 mod signin;
 mod singleplayer;
 
@@ -51,6 +52,7 @@ pub(crate) enum MenuState {
     SignIn,
     GameListing,
     GameCreation,
+    MultiPlayerGame,
 }
 
 fn menu_entered_system(mut commands: Commands) {
