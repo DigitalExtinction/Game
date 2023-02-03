@@ -123,3 +123,4 @@ thiserror = "1.0"
 tinyvec = { version = "1.6.0", features = ["rustc_1_40", "alloc"] }
 url = { version = "2.3.1", features = ["serde"] }
 urlencoding = "2.1.2"
+wgpu-types = "0.14.1"
