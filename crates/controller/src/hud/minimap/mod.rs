@@ -1,14 +1,16 @@
 use bevy::prelude::*;
 
-use self::nodes::NodesPlugin;
+use self::{fill::FillPlugin, nodes::NodesPlugin};
 
+mod draw;
+mod fill;
 mod nodes;
 
 pub(crate) struct MinimapPlugin;
 
 impl Plugin for MinimapPlugin {
     fn build(&self, app: &mut App) {
-        app.add_plugin(NodesPlugin);
+        app.add_plugin(NodesPlugin).add_plugin(FillPlugin);
     }
 }
 
