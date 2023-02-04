@@ -13,6 +13,9 @@ impl Plugin for NodesPlugin {
     }
 }
 
+#[derive(Component)]
+pub(super) struct MinimapNode;
+
 fn setup(mut commands: Commands, windows: Res<Windows>, mut images: ResMut<Assets<Image>>) {
     // Multiple of screen size
     let node_size = Vec2::new(0.2, 0.3);
@@ -66,15 +69,17 @@ fn setup(mut commands: Commands, windows: Res<Windows>, mut images: ResMut<Asset
         })
         .insert(InteractionBlocker)
         .with_children(|parent| {
-            parent.spawn(ImageBundle {
-                style: Style {
-                    position: UiRect::all(Val::Percent(0.)),
-                    size: Size::new(Val::Percent(100.), Val::Percent(100.)),
+            parent
+                .spawn(ImageBundle {
+                    style: Style {
+                        position: UiRect::all(Val::Percent(0.)),
+                        size: Size::new(Val::Percent(100.), Val::Percent(100.)),
+                        ..default()
+                    },
+                    background_color: Color::WHITE.into(),
+                    image: handle.into(),
                     ..default()
-                },
-                background_color: Color::WHITE.into(),
-                image: handle.into(),
-                ..default()
-            });
+                })
+                .insert(MinimapNode);
         });
 }

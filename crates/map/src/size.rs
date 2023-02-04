@@ -50,6 +50,16 @@ impl MapBounds {
         self.0.cmpge(point.abs()).all()
     }
 
+    /// Projects a point from relative space to the map flat coordinates.
+    ///
+    /// # Arguments
+    ///
+    /// * `point` - relative point on the map between (0, 0) and (1, 1). Point
+    ///   (0, 0) corresponds to the south-west corner.
+    pub fn rel_to_abs(&self, point: Vec2) -> Vec2 {
+        self.min() + point * self.size()
+    }
+
     pub(crate) fn validate(&self) -> Result<(), MapBoundsValidationError> {
         if !self.0.is_finite() || self.0.cmple(Vec2::ZERO).any() {
             return Err(MapBoundsValidationError::Invalid(self.0));
