@@ -47,7 +47,24 @@ impl<'a> Drawing<'a> {
     }
 
     /// Fill a rectangle with a color.
+    pub(super) fn line(&mut self, start: Vec2, end: Vec2, color: Color) {
+        panic_bounds("start", start);
+        panic_bounds("end", end);
+
+        let start = self.rel_pos_to_px(start);
+        let end = self.rel_pos_to_px(end);
+        self.line_px(start, end, color);
+    }
+
+    /// Fill a rectangle with a color.
+    ///
+    /// # Panics
+    ///
+    /// * If `center` is not contained by rectangle (0, 0) -> (1, 1).
+    ///
+    /// * If `size` has a non-positive coordinate.
     pub(super) fn rect(&mut self, center: Vec2, size: Vec2, color: Color) {
+        panic_bounds("center", center);
         if size.cmple(Vec2::ZERO).any() {
             panic!("Both dimensions of size must be positive, got: {size:?}");
         }
@@ -82,6 +99,44 @@ impl<'a> Drawing<'a> {
         self.rect_px(top_left, bottom_right, color);
     }
 
+    fn line_px(&mut self, start: IVec2, end: IVec2, color: Color) {
+        let bytes = Self::color_to_bytes(color);
+
+        // Bresenham's line algorithm
+        let mut x = start.x;
+        let mut y = start.y;
+
+        let dx = (end.x - x).abs();
+        let dy = -(end.y - y).abs();
+        let mut error = dx + dy;
+        let sx = if start.x < end.x { 1 } else { -1 };
+        let sy = if start.y < end.y { 1 } else { -1 };
+
+        loop {
+            self.set_pixel_bytes(x as u32, y as u32, bytes);
+
+            if x == end.x && y == end.y {
+                break;
+            }
+
+            let e2 = 2 * error;
+            if e2 >= dy {
+                if x == end.x {
+                    break;
+                }
+                error += dy;
+                x += sx;
+            }
+            if e2 <= dx {
+                if y == end.y {
+                    break;
+                }
+                error += dx;
+                y += sy;
+            }
+        }
+    }
+
     fn rect_px(&mut self, top_left: UVec2, bottom_right: UVec2, color: Color) {
         let bytes = Self::color_to_bytes(color);
         for y in top_left.y..bottom_right.y {
@@ -93,9 +148,6 @@ impl<'a> Drawing<'a> {
 
     /// Converts relative coordinates to pixel coordinates.
     fn rel_pos_to_px(&self, point: Vec2) -> IVec2 {
-        if point.cmplt(Vec2::ZERO).any() || point.cmpgt(Vec2::ONE).any() {
-            panic!("Coordinates are outside of image bounds.");
-        }
         (point * (self.size.as_ivec2() - IVec2::ONE).as_vec2())
             .round()
             .as_ivec2()
@@ -110,6 +162,12 @@ impl<'a> Drawing<'a> {
     #[inline]
     fn color_to_bytes(color: Color) -> [u8; 4] {
         color.as_rgba_u32().to_le_bytes()
+    }
+}
+
+fn panic_bounds(name: &str, point: Vec2) {
+    if point.cmplt(Vec2::ZERO).any() || point.cmpgt(Vec2::ONE).any() {
+        panic!("Coordinates of `{name}` are outside of image bounds.");
     }
 }
 

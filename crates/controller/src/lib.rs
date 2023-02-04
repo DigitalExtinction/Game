@@ -12,6 +12,7 @@ mod draft;
 mod frustum;
 mod hud;
 mod mouse;
+mod ray;
 mod selection;
 
 const SELECTION_BAR_ID: u32 = 0;
