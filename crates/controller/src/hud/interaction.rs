@@ -1,4 +1,7 @@
-use bevy::{ecs::system::SystemParam, prelude::*};
+use bevy::{
+    ecs::{query::ReadOnlyWorldQuery, system::SystemParam},
+    prelude::*,
+};
 use glam::Vec3Swizzles;
 
 /// Top-level non-transparent or otherwise interaction blocking Node. All such
@@ -11,7 +14,10 @@ use glam::Vec3Swizzles;
 pub(crate) struct InteractionBlocker;
 
 #[derive(SystemParam)]
-pub(crate) struct HudNodes<'w, 's> {
+pub(crate) struct HudNodes<'w, 's, F = With<InteractionBlocker>>
+where
+    F: ReadOnlyWorldQuery + Sync + Send + 'static,
+{
     hud: Query<
         'w,
         's,
@@ -20,30 +26,48 @@ pub(crate) struct HudNodes<'w, 's> {
             &'static ComputedVisibility,
             &'static Node,
         ),
-        With<InteractionBlocker>,
+        F,
     >,
     windows: Res<'w, Windows>,
 }
 
-impl<'w, 's> HudNodes<'w, 's> {
-    pub(crate) fn contains_point(&mut self, point: &Vec2) -> bool {
+impl<'w, 's, F> HudNodes<'w, 's, F>
+where
+    F: ReadOnlyWorldQuery + Sync + Send + 'static,
+{
+    pub(crate) fn contains_point(&self, point: Vec2) -> bool {
+        self.relative_position(point).is_some()
+    }
+
+    /// Returns relative position of `point` to the fist Node which contains
+    /// the point.
+    ///
+    /// The returned point is between (0, 0) (top-left corner) and (1, 1)
+    /// (bottom-right corner).
+    pub(crate) fn relative_position(&self, point: Vec2) -> Option<Vec2> {
         let window = self.windows.get_primary().unwrap();
-        let win_size = Vec2::new(window.width(), window.height());
-        self.hud.iter().any(|(box_transform, visibility, node)| {
-            if !visibility.is_visible() {
-                return false;
-            }
+        // This is because screen y starts on bottom, GlobalTransform on top.
+        let point = Vec2::new(point.x, window.height() - point.y);
 
-            // WARNING: This is because mouse y starts on bottom, GlobalTransform on top
-            let mouse_position = Vec2::new(point.x, win_size.y - point.y);
+        self.hud
+            .iter()
+            .filter_map(|(box_transform, visibility, node)| {
+                if !visibility.is_visible() {
+                    return None;
+                }
 
-            let box_size = node.size();
-            let box_transform: Vec3 = box_transform.translation();
-            // WARNING: This is because GlobalTransform is centered, width/2 to left and to right, same on vertical
-            let box_position = box_transform.xy() - box_size / 2.;
-
-            mouse_position.cmpge(box_position).all()
-                && mouse_position.cmple(box_position + box_size).all()
-        })
+                let box_size = node.size();
+                let box_transform: Vec3 = box_transform.translation();
+                // GlobalTransform is centered, width/2 to left and to right,
+                // same on vertical.
+                let box_position = box_transform.xy() - box_size / 2.;
+                let relative = (point - box_position) / box_size;
+                if relative.cmpge(Vec2::ZERO).all() && relative.cmple(Vec2::ONE).all() {
+                    Some(relative)
+                } else {
+                    None
+                }
+            })
+            .next()
     }
 }

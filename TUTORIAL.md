@@ -3,6 +3,8 @@
 Move your mouse close to a screen edge to move the camera along the map surface
 (north, south, west, east) or use the arrow keys.
 
+Alternatively, left click on the minimap to move the camera.
+
 Use mouse wheel to zoom closer or further from the terrain.
 
 Press and hold shift or the mouse wheel and then move your mouse to tilt and/or

@@ -1966,6 +1966,7 @@ dependencies = [
  "ahash",
  "bevy",
  "de_behaviour",
+ "de_camera",
  "de_combat",
  "de_core",
  "de_gui",
