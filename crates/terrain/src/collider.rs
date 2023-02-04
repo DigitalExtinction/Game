@@ -4,7 +4,9 @@ use bevy::{
 };
 use parry3d::{
     math::Isometry,
-    query::{Ray, RayIntersection},
+    na::{Unit, Vector3},
+    query::{Ray, RayCast, RayIntersection},
+    shape::HalfSpace,
 };
 
 use crate::terrain::Terrain;
@@ -33,6 +35,26 @@ impl<'w, 's> TerrainCollider<'w, 's> {
             })
     }
 
+    /// Returns the bidirectional intersection of a given ray with the terrain
+    /// if it exists. Otherwise it returns the bidirectional intersection of
+    /// the ray with the MSL plane.
+    ///
+    /// Bidirectional intersection may return a point with negative TOI. In
+    /// case of multiple intersections, positive TOI has the priority.
+    pub fn cast_ray_bidir_msl(&self, ray: &Ray, max_toi: f32) -> Option<RayIntersection> {
+        self.cast_ray_bidir(ray, max_toi)
+            .or_else(|| ray_msl_intersection(ray, max_toi))
+            .or_else(|| {
+                ray_msl_intersection(&Ray::new(ray.origin, -ray.dir), max_toi).map(|intersection| {
+                    RayIntersection::new(
+                        -intersection.toi,
+                        -intersection.normal,
+                        intersection.feature,
+                    )
+                })
+            })
+    }
+
     pub fn cast_ray_bidir(&self, ray: &Ray, max_toi: f32) -> Option<RayIntersection> {
         self.cast_ray(ray, max_toi)
             .or_else(|| self.cast_ray_negdir(ray, max_toi))
@@ -48,6 +70,12 @@ impl<'w, 's> TerrainCollider<'w, 's> {
                 )
             })
     }
+}
+
+fn ray_msl_intersection(ray: &Ray, max_toi: f32) -> Option<RayIntersection> {
+    let msl_normal = Vector3::new(0., -ray.origin.y.signum(), 0.);
+    let msl_half_space = HalfSpace::new(Unit::new_unchecked(msl_normal));
+    msl_half_space.cast_local_ray_and_get_normal(ray, max_toi, false)
 }
 
 #[cfg(test)]

@@ -12,11 +12,7 @@ use de_map::size::MapBounds;
 use de_terrain::TerrainCollider;
 use de_uom::{InverseSecond, LogicalPixel, Metre, Quantity, Radian, Second};
 use iyes_loopless::prelude::*;
-use parry3d::{
-    na::{Unit, Vector3},
-    query::{Ray, RayCast},
-    shape::HalfSpace,
-};
+use parry3d::query::Ray;
 
 /// Horizontal camera movement is initiated if mouse cursor is within this
 /// distance to window edge.
@@ -232,11 +228,7 @@ fn update_focus(
     );
 
     let intersection = terrain
-        .cast_ray_bidir(&ray, f32::INFINITY)
-        .or_else(|| {
-            let below_msl = HalfSpace::new(Unit::new_unchecked(Vector3::new(0., -1., 0.)));
-            below_msl.cast_local_ray_and_get_normal(&ray, f32::INFINITY, false)
-        })
+        .cast_ray_bidir_msl(&ray, f32::INFINITY)
         .expect("Camera ray does not intersect MSL plane.");
     focus.update(
         ray.point_at(intersection.toi),
