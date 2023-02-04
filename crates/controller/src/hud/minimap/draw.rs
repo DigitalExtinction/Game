@@ -47,7 +47,14 @@ impl<'a> Drawing<'a> {
     }
 
     /// Fill a rectangle with a color.
+    ///
+    /// # Panics
+    ///
+    /// * If `center` is not contained by rectangle (0, 0) -> (1, 1).
+    ///
+    /// * If `size` has a non-positive coordinate.
     pub(super) fn rect(&mut self, center: Vec2, size: Vec2, color: Color) {
+        panic_bounds("center", center);
         if size.cmple(Vec2::ZERO).any() {
             panic!("Both dimensions of size must be positive, got: {size:?}");
         }
@@ -93,9 +100,6 @@ impl<'a> Drawing<'a> {
 
     /// Converts relative coordinates to pixel coordinates.
     fn rel_pos_to_px(&self, point: Vec2) -> IVec2 {
-        if point.cmplt(Vec2::ZERO).any() || point.cmpgt(Vec2::ONE).any() {
-            panic!("Coordinates are outside of image bounds.");
-        }
         (point * (self.size.as_ivec2() - IVec2::ONE).as_vec2())
             .round()
             .as_ivec2()
@@ -110,6 +114,12 @@ impl<'a> Drawing<'a> {
     #[inline]
     fn color_to_bytes(color: Color) -> [u8; 4] {
         color.as_rgba_u32().to_le_bytes()
+    }
+}
+
+fn panic_bounds(name: &str, point: Vec2) {
+    if point.cmplt(Vec2::ZERO).any() || point.cmpgt(Vec2::ONE).any() {
+        panic!("Coordinates of `{name}` are outside of image bounds.");
     }
 }
 
