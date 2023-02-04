@@ -17,6 +17,13 @@ pub struct TerrainCollider<'w, 's> {
 }
 
 impl<'w, 's> TerrainCollider<'w, 's> {
+    /// Returns the intersection of a given ray with the terrain if it exists.
+    /// Otherwise it returns the intersection of the ray with the MSL plane.
+    pub fn cast_ray_msl(&self, ray: &Ray, max_toi: f32) -> Option<RayIntersection> {
+        self.cast_ray(ray, max_toi)
+            .or_else(|| ray_msl_intersection(ray, max_toi))
+    }
+
     pub fn cast_ray(&self, ray: &Ray, max_toi: f32) -> Option<RayIntersection> {
         self.terrains
             .iter()

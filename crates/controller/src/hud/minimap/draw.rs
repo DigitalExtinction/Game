@@ -47,6 +47,16 @@ impl<'a> Drawing<'a> {
     }
 
     /// Fill a rectangle with a color.
+    pub(super) fn line(&mut self, start: Vec2, end: Vec2, color: Color) {
+        panic_bounds("start", start);
+        panic_bounds("end", end);
+
+        let start = self.rel_pos_to_px(start);
+        let end = self.rel_pos_to_px(end);
+        self.line_px(start, end, color);
+    }
+
+    /// Fill a rectangle with a color.
     ///
     /// # Panics
     ///
@@ -87,6 +97,44 @@ impl<'a> Drawing<'a> {
             .min(self.size - UVec2::ONE);
 
         self.rect_px(top_left, bottom_right, color);
+    }
+
+    fn line_px(&mut self, start: IVec2, end: IVec2, color: Color) {
+        let bytes = Self::color_to_bytes(color);
+
+        // Bresenham's line algorithm
+        let mut x = start.x;
+        let mut y = start.y;
+
+        let dx = (end.x - x).abs();
+        let dy = -(end.y - y).abs();
+        let mut error = dx + dy;
+        let sx = if start.x < end.x { 1 } else { -1 };
+        let sy = if start.y < end.y { 1 } else { -1 };
+
+        loop {
+            self.set_pixel_bytes(x as u32, y as u32, bytes);
+
+            if x == end.x && y == end.y {
+                break;
+            }
+
+            let e2 = 2 * error;
+            if e2 >= dy {
+                if x == end.x {
+                    break;
+                }
+                error += dy;
+                x += sx;
+            }
+            if e2 <= dx {
+                if y == end.y {
+                    break;
+                }
+                error += dx;
+                y += sy;
+            }
+        }
     }
 
     fn rect_px(&mut self, top_left: UVec2, bottom_right: UVec2, color: Color) {

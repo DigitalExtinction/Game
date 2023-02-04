@@ -31,5 +31,6 @@ bevy.workspace = true
 enum-map.workspace = true
 glam.workspace = true
 iyes_loopless.workspace = true
+parry2d.workspace = true
 parry3d.workspace = true
 wgpu-types.workspace = true
