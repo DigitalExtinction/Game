@@ -231,11 +231,11 @@ enum DragResolution {
     Rect(Option<ScreenRect>),
 }
 
-fn update_position(windows: Res<Windows>, mut hud: HudNodes, mut mouse: ResMut<MousePosition>) {
+fn update_position(windows: Res<Windows>, hud: HudNodes, mut mouse: ResMut<MousePosition>) {
     let window = windows.get_primary().unwrap();
     let position = window
         .cursor_position()
-        .filter(|position| !hud.contains_point(position))
+        .filter(|&position| !hud.contains_point(position))
         .map(|position| position / Vec2::new(window.width(), window.height()))
         .map(|normalised_position| normalised_position.clamp(Vec2::ZERO, Vec2::ONE));
 
