@@ -52,7 +52,7 @@ impl Plugin for CameraPlugin {
                 GameStage::PreMovement,
                 update_focus
                     .run_in_state(GameState::Playing)
-                    .label("update_focus"),
+                    .label(InternalCameraLabel::UpdateFocus),
             )
             .add_system_to_stage(
                 GameStage::Input,
@@ -70,15 +70,18 @@ impl Plugin for CameraPlugin {
                 GameStage::PreMovement,
                 process_move_focus_events
                     .run_in_state(GameState::Playing)
-                    .after("update_focus"),
+                    .after(InternalCameraLabel::UpdateFocus),
             )
             .add_system_to_stage(
                 GameStage::Movement,
-                zoom.run_in_state(GameState::Playing).label("zoom"),
+                zoom.run_in_state(GameState::Playing)
+                    .label(InternalCameraLabel::Zoom),
             )
             .add_system_to_stage(
                 GameStage::Movement,
-                pivot.run_in_state(GameState::Playing).label("pivot"),
+                pivot
+                    .run_in_state(GameState::Playing)
+                    .label(InternalCameraLabel::Pivot),
             )
             .add_system_to_stage(
                 GameStage::Movement,
@@ -86,10 +89,17 @@ impl Plugin for CameraPlugin {
                     .run_in_state(GameState::Playing)
                     // Zooming changes camera focus point so do it
                     // after other types of camera movement.
-                    .after("zoom")
-                    .after("pivot"),
+                    .after(InternalCameraLabel::Zoom)
+                    .after(InternalCameraLabel::Pivot),
             );
     }
+}
+
+#[derive(Copy, Clone, Hash, Debug, PartialEq, Eq, SystemLabel)]
+enum InternalCameraLabel {
+    UpdateFocus,
+    Zoom,
+    Pivot,
 }
 
 pub struct MoveFocusEvent {
