@@ -169,35 +169,41 @@ impl HorizontalMovement {
 }
 
 #[derive(Resource)]
-struct DesiredPoW {
-    distance: Metre,
-    off_nadir: Radian,
-    azimuth: Radian,
-}
+struct DesiredDistance(Metre);
 
-impl DesiredPoW {
+impl DesiredDistance {
     fn distance(&self) -> Metre {
-        self.distance
-    }
-
-    fn off_nadir(&self) -> Radian {
-        self.off_nadir
-    }
-
-    fn azimuth(&self) -> Radian {
-        self.azimuth
+        self.0
     }
 
     fn zoom_clamped(&mut self, conf: &CameraConf, factor: f32) {
-        self.distance = (self.distance * factor).clamp(conf.min_distance(), conf.max_distance());
+        self.0 = (self.0 * factor).clamp(conf.min_distance(), conf.max_distance());
+    }
+}
+
+#[derive(Resource)]
+struct DesiredOffNadir(Radian);
+
+impl DesiredOffNadir {
+    fn off_nadir(&self) -> Radian {
+        self.0
     }
 
     fn tilt_clamped(&mut self, delta: Radian) {
-        self.off_nadir = (self.off_nadir + delta).clamp(MIN_OFF_NADIR, MAX_OFF_NADIR);
+        self.0 = (self.0 + delta).clamp(MIN_OFF_NADIR, MAX_OFF_NADIR);
+    }
+}
+
+#[derive(Resource)]
+struct DesiredAzimuth(Radian);
+
+impl DesiredAzimuth {
+    fn azimuth(&self) -> Radian {
+        self.0
     }
 
     fn rotate(&mut self, delta: Radian) {
-        self.azimuth = (self.azimuth + delta).normalized();
+        self.0 = (self.0 + delta).normalized();
     }
 }
 
@@ -206,11 +212,9 @@ fn setup(mut commands: Commands, conf: Res<Configuration>) {
     let distance = 0.6 * conf.min_distance() + 0.4 * conf.max_distance();
 
     commands.insert_resource(HorizontalMovement::default());
-    commands.insert_resource(DesiredPoW {
-        distance,
-        off_nadir: Radian::ZERO,
-        azimuth: Radian::ZERO,
-    });
+    commands.insert_resource(DesiredDistance(distance));
+    commands.insert_resource(DesiredOffNadir(Radian::ZERO));
+    commands.insert_resource(DesiredAzimuth(Radian::ZERO));
     commands.insert_resource(CameraFocus {
         point: Vec3::ZERO,
         distance,
@@ -298,7 +302,7 @@ fn move_horizontaly(
 
 fn zoom(
     conf: Res<Configuration>,
-    desired_pow: Res<DesiredPoW>,
+    desired_distance: Res<DesiredDistance>,
     time: Res<Time>,
     mut focus: ResMut<CameraFocus>,
     mut camera_query: Query<&mut Transform, With<Camera3d>>,
@@ -317,7 +321,7 @@ fn zoom(
         // Camera is within hard_min_distance and hard_max_distance => move
         // smoothly to desired distance.
 
-        let error = focus.distance() - desired_pow.distance();
+        let error = focus.distance() - desired_distance.distance();
         if error.abs() <= DISTANCE_TOLERATION {
             return;
         }
@@ -335,7 +339,8 @@ fn zoom(
 
 fn pivot(
     mut event: EventReader<PivotEvent>,
-    desired_pow: Res<DesiredPoW>,
+    desired_off_nadir: Res<DesiredOffNadir>,
+    desired_azimuth: Res<DesiredAzimuth>,
     focus: Res<CameraFocus>,
     mut camera_query: Query<&mut Transform, With<Camera3d>>,
 ) {
@@ -346,8 +351,8 @@ fn pivot(
     let mut transform = camera_query.single_mut();
     transform.rotation = Quat::from_euler(
         EulerRot::YXZ,
-        (-desired_pow.azimuth()).into(),
-        (desired_pow.off_nadir() - Radian::FRAC_PI_2).into(),
+        (-desired_azimuth.azimuth()).into(),
+        (desired_off_nadir.off_nadir() - Radian::FRAC_PI_2).into(),
         0.,
     );
     transform.translation = focus.point() - f32::from(focus.distance()) * transform.forward();
@@ -389,7 +394,7 @@ fn move_horizontaly_event(
 
 fn zoom_event(
     conf: Res<Configuration>,
-    mut desired_pow: ResMut<DesiredPoW>,
+    mut desired_distance: ResMut<DesiredDistance>,
     mut events: EventReader<MouseWheel>,
 ) {
     let conf = conf.camera();
@@ -397,12 +402,13 @@ fn zoom_event(
         MouseScrollUnit::Line => factor * conf.wheel_zoom_sensitivity().powf(event.y),
         MouseScrollUnit::Pixel => factor * conf.touchpad_zoom_sensitivity().powf(event.y),
     });
-    desired_pow.zoom_clamped(conf, factor);
+    desired_distance.zoom_clamped(conf, factor);
 }
 
 fn pivot_event(
     conf: Res<Configuration>,
-    mut desired_pow: ResMut<DesiredPoW>,
+    mut desired_off_nadir: ResMut<DesiredOffNadir>,
+    mut desired_azimuth: ResMut<DesiredAzimuth>,
     mut pivot_event: EventWriter<PivotEvent>,
     buttons: Res<Input<MouseButton>>,
     keys: Res<Input<KeyCode>>,
@@ -421,7 +427,7 @@ fn pivot_event(
     let delta_x = LogicalPixel::try_from(delta.x).unwrap();
     let delta_y = LogicalPixel::try_from(delta.y).unwrap();
     let conf = conf.camera();
-    desired_pow.rotate(Radian::ONE * (conf.rotation_sensitivity() * delta_x));
-    desired_pow.tilt_clamped(-Radian::ONE * (conf.rotation_sensitivity() * delta_y));
+    desired_azimuth.rotate(Radian::ONE * (conf.rotation_sensitivity() * delta_x));
+    desired_off_nadir.tilt_clamped(-Radian::ONE * (conf.rotation_sensitivity() * delta_y));
     pivot_event.send(PivotEvent);
 }
