@@ -1,51 +1,27 @@
 use bevy::{prelude::*, render::texture::TextureFormatPixelInfo};
-use de_core::state::GameState;
+use de_core::{stages::GameStage, state::GameState};
 use iyes_loopless::prelude::*;
 use wgpu_types::{Extent3d, TextureDimension, TextureFormat};
 
-use crate::hud::{interaction::InteractionBlocker, minimap::MapImageHandle, HUD_COLOR};
+use crate::hud::{interaction::InteractionBlocker, HUD_COLOR};
 
 pub(super) struct NodesPlugin;
 
 impl Plugin for NodesPlugin {
     fn build(&self, app: &mut App) {
-        app.add_enter_system(GameState::Playing, setup);
+        app.add_enter_system(GameState::Playing, setup)
+            .add_system_to_stage(
+                GameStage::PreMovement,
+                update_resolution.run_in_state(GameState::Playing),
+            );
     }
 }
 
 #[derive(Component)]
 pub(super) struct MinimapNode;
 
-fn setup(mut commands: Commands, windows: Res<Windows>, mut images: ResMut<Assets<Image>>) {
-    // Multiple of screen size
-    let node_size = Vec2::new(0.2, 0.3);
-    let padding = 0.01;
-
-    let window = windows.get_primary().unwrap();
-    let win_size = Vec2::new(window.width(), window.height());
-    let minimap_resolution = ((node_size - Vec2::splat(2. * padding)) * win_size)
-        .round()
-        .as_uvec2();
-
-    info!("Setting minimap resolution to {minimap_resolution:?}");
-
-    let format = TextureFormat::Rgba8UnormSrgb;
-    assert_eq!(format.pixel_size(), 4);
-    let num_bytes = (minimap_resolution.x * minimap_resolution.y) as usize * 4;
-    let data = vec![255; num_bytes];
-    let image = Image::new(
-        Extent3d {
-            width: minimap_resolution.x,
-            height: minimap_resolution.y,
-            depth_or_array_layers: 1,
-        },
-        TextureDimension::D2,
-        data,
-        format,
-    );
-
-    let handle = images.add(image);
-    commands.insert_resource(MapImageHandle::from(handle.clone()));
+fn setup(mut commands: Commands, mut images: ResMut<Assets<Image>>) {
+    let handle = images.add(new_image(UVec2::splat(128)));
 
     commands
         .spawn(NodeBundle {
@@ -56,12 +32,12 @@ fn setup(mut commands: Commands, windows: Res<Windows>, mut images: ResMut<Asset
                 },
                 position_type: PositionType::Absolute,
                 position: UiRect::new(
-                    Val::Percent(100. - 100. * node_size.x),
+                    Val::Percent(80.),
                     Val::Percent(100.),
-                    Val::Percent(100. - 100. * node_size.y),
+                    Val::Percent(70.),
                     Val::Percent(100.),
                 ),
-                padding: UiRect::all(Val::Percent(100. * padding)),
+                padding: UiRect::all(Val::Percent(1.)),
                 ..default()
             },
             background_color: HUD_COLOR.into(),
@@ -82,4 +58,45 @@ fn setup(mut commands: Commands, windows: Res<Windows>, mut images: ResMut<Asset
                 })
                 .insert(MinimapNode);
         });
+}
+
+type ChangedMinimap = (Changed<Node>, With<MinimapNode>);
+
+fn update_resolution(
+    mut commands: Commands,
+    mut images: ResMut<Assets<Image>>,
+    query: Query<(Entity, &Node), ChangedMinimap>,
+) {
+    if query.is_empty() {
+        return;
+    }
+
+    let (entity, node) = query.single();
+    let resolution = node.size().round().as_uvec2();
+    if resolution == UVec2::ZERO {
+        return;
+    }
+
+    let image = images.add(new_image(resolution));
+    commands.entity(entity).insert(UiImage(image));
+}
+
+/// Creates a new minimap image.
+fn new_image(resolution: UVec2) -> Image {
+    info!("Creating new minimap image with resolution {resolution:?}");
+
+    let format = TextureFormat::Rgba8UnormSrgb;
+    assert_eq!(format.pixel_size(), 4);
+    let num_bytes = resolution.x as usize * resolution.y as usize * 4;
+    let data = vec![255; num_bytes];
+    Image::new(
+        Extent3d {
+            width: resolution.x,
+            height: resolution.y,
+            depth_or_array_layers: 1,
+        },
+        TextureDimension::D2,
+        data,
+        format,
+    )
 }

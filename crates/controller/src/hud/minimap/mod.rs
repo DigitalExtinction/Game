@@ -16,12 +16,3 @@ impl Plugin for MinimapPlugin {
             .add_plugin(InteractionPlugin);
     }
 }
-
-#[derive(Resource)]
-struct MapImageHandle(Handle<Image>);
-
-impl From<Handle<Image>> for MapImageHandle {
-    fn from(handle: Handle<Image>) -> Self {
-        Self(handle)
-    }
-}

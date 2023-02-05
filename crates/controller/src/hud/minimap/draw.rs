@@ -1,23 +1,19 @@
-use std::marker::PhantomData;
-
 use bevy::{ecs::system::SystemParam, prelude::*};
 use glam::UVec2;
 
-use super::MapImageHandle;
+use super::nodes::MinimapNode;
 
 /// This system parameter is capable of construction of [`Drawing`] whose
 /// target is the game minimap.
 #[derive(SystemParam)]
 pub(super) struct DrawingParam<'w, 's> {
-    handle: Res<'w, MapImageHandle>,
+    query: Query<'w, 's, &'static UiImage, With<MinimapNode>>,
     images: ResMut<'w, Assets<Image>>,
-    #[system_param(ignore)]
-    marker: PhantomData<&'s ()>,
 }
 
 impl<'w, 's> DrawingParam<'w, 's> {
     pub(super) fn drawing(&mut self) -> Drawing {
-        let image = self.images.get_mut(&self.handle.0).unwrap();
+        let image = self.images.get_mut(&self.query.single().0).unwrap();
         let size = UVec2::new(
             image.texture_descriptor.size.width,
             image.texture_descriptor.size.height,
