@@ -10,7 +10,10 @@ use de_map::size::MapBounds;
 use iyes_loopless::prelude::*;
 
 use super::nodes::MinimapNode;
-use crate::hud::HudNodes;
+use crate::{
+    commands::{CommandsLabel, SendSelectedEvent},
+    hud::HudNodes,
+};
 
 pub(super) struct InteractionPlugin;
 
@@ -29,6 +32,12 @@ impl Plugin for InteractionPlugin {
                         move_camera_system
                             .run_in_state(GameState::Playing)
                             .after(InteractionLabel::ClickHandler),
+                    )
+                    .with_system(
+                        send_units_system
+                            .run_in_state(GameState::Playing)
+                            .after(InteractionLabel::ClickHandler)
+                            .before(CommandsLabel::SendSelected),
                     ),
             );
     }
@@ -97,5 +106,17 @@ fn move_camera_system(
             continue;
         }
         camera_events.send(MoveFocusEvent::new(click.position()));
+    }
+}
+
+fn send_units_system(
+    mut click_events: EventReader<MinimapClickEvent>,
+    mut send_events: EventWriter<SendSelectedEvent>,
+) {
+    for click in click_events.iter() {
+        if click.button() != MouseButton::Right {
+            continue;
+        }
+        send_events.send(SendSelectedEvent::new(click.position()));
     }
 }
