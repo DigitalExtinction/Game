@@ -2,23 +2,20 @@
 //! keyboard shortcuts, mouse actions events, and so on.
 
 use bevy::prelude::*;
-use de_behaviour::ChaseTarget;
-use de_combat::AttackEvent;
 use de_core::{
     gconfig::GameConfig,
-    objects::{BuildingType, MovableSolid, ObjectType, Playable, PLAYER_MAX_BUILDINGS},
+    objects::{BuildingType, ObjectType, Playable, PLAYER_MAX_BUILDINGS},
     player::Player,
     projection::ToFlat,
     screengeom::ScreenRect,
     stages::GameStage,
     state::GameState,
 };
-use de_pathing::{PathQueryProps, PathTarget, UpdateEntityPath};
 use de_spawner::{Draft, ObjectCounter};
 use enum_map::enum_map;
 use iyes_loopless::prelude::*;
 
-use super::keyboard::KeyCondition;
+use super::{keyboard::KeyCondition, CommandsLabel, GroupAttackEvent, SendSelectedEvent};
 use crate::{
     draft::{DiscardDraftsEvent, DraftLabels, NewDraftEvent, SpawnDraftsEvent},
     hud::{GameMenuLabel, ToggleGameMenu, UpdateSelectionBoxEvent},
@@ -63,13 +60,15 @@ impl Plugin for HandlersPlugin {
                         .run_in_state(GameState::Playing)
                         .run_if(on_click(MouseButton::Right))
                         .after(PointerLabels::Update)
-                        .after(MouseLabels::Buttons),
+                        .after(MouseLabels::Buttons)
+                        .before(CommandsLabel::SendSelected)
+                        .before(CommandsLabel::Attack),
                 )
                 .with_system(
                     left_click_handler
                         .run_in_state(GameState::Playing)
                         .run_if(on_click(MouseButton::Left))
-                        .label(CommandLabel::LeftClick)
+                        .label(HandlersLabel::LeftClick)
                         .before(SelectionLabels::Update)
                         .before(DraftLabels::Spawn)
                         .after(PointerLabels::Update)
@@ -83,7 +82,7 @@ impl Plugin for HandlersPlugin {
                         .before(DraftLabels::Spawn)
                         .after(PointerLabels::Update)
                         .after(MouseLabels::Buttons)
-                        .after(CommandLabel::LeftClick),
+                        .after(HandlersLabel::LeftClick),
                 )
                 .with_system(
                     handle_escape
@@ -121,7 +120,7 @@ impl Plugin for HandlersPlugin {
 }
 
 #[derive(Copy, Clone, Hash, Debug, PartialEq, Eq, SystemLabel)]
-pub(crate) enum CommandLabel {
+pub(crate) enum HandlersLabel {
     LeftClick,
 }
 
@@ -141,15 +140,10 @@ fn on_double_click(button: MouseButton) -> impl Fn(EventReader<MouseDoubleClicke
     }
 }
 
-type SelectedQuery<'w, 's> =
-    Query<'w, 's, (Entity, Option<&'static ChaseTarget>), (With<Selected>, With<MovableSolid>)>;
-
 fn right_click_handler(
-    mut commands: Commands,
     config: Res<GameConfig>,
-    mut path_events: EventWriter<UpdateEntityPath>,
-    mut attack_events: EventWriter<AttackEvent>,
-    selected: SelectedQuery,
+    mut send_events: EventWriter<SendSelectedEvent>,
+    mut attack_events: EventWriter<GroupAttackEvent>,
     targets: Query<&Player>,
     pointer: Res<Pointer>,
 ) {
@@ -159,27 +153,10 @@ fn right_click_handler(
             .map(|&player| !config.is_local_player(player))
             .unwrap_or(false)
     }) {
-        Some(enemy) => {
-            for (attacker, _) in selected.iter() {
-                attack_events.send(AttackEvent::new(attacker, enemy));
-            }
-        }
+        Some(enemy) => attack_events.send(GroupAttackEvent::new(enemy)),
         None => {
-            let target = match pointer.terrain_point() {
-                Some(point) => point.to_flat(),
-                None => return,
-            };
-
-            for (entity, chase) in selected.iter() {
-                if chase.is_some() {
-                    commands.entity(entity).remove::<ChaseTarget>();
-                }
-
-                path_events.send(UpdateEntityPath::new(
-                    entity,
-                    PathTarget::new(target, PathQueryProps::exact(), false),
-                ));
-            }
+            let Some(target) = pointer.terrain_point().map(|p| p.to_flat()) else { return };
+            send_events.send(SendSelectedEvent::new(target));
         }
     }
 }
