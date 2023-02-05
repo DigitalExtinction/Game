@@ -69,7 +69,7 @@ impl Plugin for HandlersPlugin {
                     left_click_handler
                         .run_in_state(GameState::Playing)
                         .run_if(on_click(MouseButton::Left))
-                        .label(CommandLabel::LeftClick)
+                        .label(HandlersLabel::LeftClick)
                         .before(SelectionLabels::Update)
                         .before(DraftLabels::Spawn)
                         .after(PointerLabels::Update)
@@ -83,7 +83,7 @@ impl Plugin for HandlersPlugin {
                         .before(DraftLabels::Spawn)
                         .after(PointerLabels::Update)
                         .after(MouseLabels::Buttons)
-                        .after(CommandLabel::LeftClick),
+                        .after(HandlersLabel::LeftClick),
                 )
                 .with_system(
                     handle_escape
@@ -121,7 +121,7 @@ impl Plugin for HandlersPlugin {
 }
 
 #[derive(Copy, Clone, Hash, Debug, PartialEq, Eq, SystemLabel)]
-pub(crate) enum CommandLabel {
+pub(crate) enum HandlersLabel {
     LeftClick,
 }
 
