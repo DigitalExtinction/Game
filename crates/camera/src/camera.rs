@@ -7,13 +7,10 @@ use de_core::{
 };
 use de_map::size::MapBounds;
 use de_terrain::TerrainCollider;
-use de_uom::{InverseSecond, LogicalPixel, Metre, Quantity, Radian, Second};
+use de_uom::{InverseSecond, Metre, Quantity, Radian, Second};
 use iyes_loopless::prelude::*;
 use parry3d::query::Ray;
 
-/// Horizontal camera movement is initiated if mouse cursor is within this
-/// distance to window edge.
-const MOVE_MARGIN: LogicalPixel = Quantity::new_unchecked(40.);
 /// Camera moves horizontally at speed `distance * CAMERA_HORIZONTAL_SPEED`.
 const CAMERA_HORIZONTAL_SPEED: InverseSecond = Quantity::new_unchecked(2.0);
 /// Minimum camera distance multiplied by this gives minimum temporary distance
@@ -41,6 +38,7 @@ pub(crate) struct CameraPlugin;
 impl Plugin for CameraPlugin {
     fn build(&self, app: &mut App) {
         app.add_event::<MoveFocusEvent>()
+            .add_event::<MoveCameraHorizontallyEvent>()
             .add_event::<ZoomCameraEvent>()
             .add_event::<RotateCameraEvent>()
             .add_event::<TiltCameraEvent>()
@@ -52,6 +50,12 @@ impl Plugin for CameraPlugin {
                 update_focus
                     .run_in_state(GameState::Playing)
                     .label(InternalCameraLabel::UpdateFocus),
+            )
+            .add_system_to_stage(
+                GameStage::Input,
+                handle_horizontal_events
+                    .run_in_state(GameState::Playing)
+                    .label(CameraLabel::MoveHorizontallEvent),
             )
             .add_system_to_stage(
                 GameStage::Input,
@@ -70,10 +74,6 @@ impl Plugin for CameraPlugin {
                 handle_tilt_events
                     .run_in_state(GameState::Playing)
                     .label(CameraLabel::TiltEvent),
-            )
-            .add_system_to_stage(
-                GameStage::Input,
-                move_horizontaly_event.run_in_state(GameState::Playing),
             )
             .add_system_to_stage(
                 GameStage::PreMovement,
@@ -106,6 +106,7 @@ impl Plugin for CameraPlugin {
 
 #[derive(Copy, Clone, Hash, Debug, PartialEq, Eq, SystemLabel)]
 pub enum CameraLabel {
+    MoveHorizontallEvent,
     RotateEvent,
     TiltEvent,
     ZoomEvent,
@@ -129,6 +130,24 @@ impl MoveFocusEvent {
 
     fn point(&self) -> Vec2 {
         self.point
+    }
+}
+
+/// Send this event to (re)set camera horizontal movement.
+pub struct MoveCameraHorizontallyEvent(Vec2);
+
+impl MoveCameraHorizontallyEvent {
+    /// # Arguments
+    ///
+    /// * `direction` - camera will move along the XZ plane in this direction.
+    ///   This can be any vector, the longer the vector, the faster the
+    ///   movement. Vector coordinates should preferably be -1, 0, or 1.
+    pub fn new(direction: Vec2) -> Self {
+        Self(direction)
+    }
+
+    fn direction(&self) -> Vec2 {
+        self.0
     }
 }
 
@@ -222,12 +241,8 @@ impl HorizontalMovement {
         self.movement
     }
 
-    fn start(&mut self, movement: Vec2) {
+    fn set(&mut self, movement: Vec2) {
         self.movement = movement;
-    }
-
-    fn stop(&mut self) {
-        self.movement = Vec2::ZERO;
     }
 }
 
@@ -420,38 +435,13 @@ fn pivot(
     transform.translation = focus.point() - f32::from(focus.distance()) * transform.forward();
 }
 
-fn move_horizontaly_event(
-    mut horizontal_movement: ResMut<HorizontalMovement>,
-    windows: Res<Windows>,
-    keys: Res<Input<KeyCode>>,
+fn handle_horizontal_events(
+    mut movement: ResMut<HorizontalMovement>,
+    mut events: EventReader<MoveCameraHorizontallyEvent>,
 ) {
-    let window = windows.get_primary().unwrap();
-    let (x, y) = match window.cursor_position() {
-        Some(position) => (
-            LogicalPixel::try_from(position.x).unwrap(),
-            LogicalPixel::try_from(position.y).unwrap(),
-        ),
-        None => {
-            horizontal_movement.stop();
-            return;
-        }
-    };
-
-    let width = LogicalPixel::try_from(window.width()).unwrap();
-    let height = LogicalPixel::try_from(window.height()).unwrap();
-
-    let mut movement = Vec2::ZERO;
-    if x < MOVE_MARGIN || keys.pressed(KeyCode::Left) {
-        movement.x -= 1.;
-    } else if x > (width - MOVE_MARGIN) || keys.pressed(KeyCode::Right) {
-        movement.x += 1.;
+    if let Some(event) = events.iter().last() {
+        movement.set(event.direction());
     }
-    if y < MOVE_MARGIN || keys.pressed(KeyCode::Down) {
-        movement.y -= 1.;
-    } else if y > (height - MOVE_MARGIN) || keys.pressed(KeyCode::Up) {
-        movement.y += 1.;
-    }
-    horizontal_movement.start(movement);
 }
 
 fn handle_zoom_events(

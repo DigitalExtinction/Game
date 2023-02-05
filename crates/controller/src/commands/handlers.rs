@@ -2,10 +2,16 @@
 //! keyboard shortcuts, mouse actions events, and so on.
 
 use bevy::{
-    input::mouse::{MouseMotion, MouseScrollUnit, MouseWheel},
+    input::{
+        keyboard::KeyboardInput,
+        mouse::{MouseMotion, MouseScrollUnit, MouseWheel},
+        ButtonState,
+    },
     prelude::*,
 };
-use de_camera::{CameraLabel, RotateCameraEvent, TiltCameraEvent, ZoomCameraEvent};
+use de_camera::{
+    CameraLabel, MoveCameraHorizontallyEvent, RotateCameraEvent, TiltCameraEvent, ZoomCameraEvent,
+};
 use de_conf::Configuration;
 use de_core::{
     gconfig::GameConfig,
@@ -32,6 +38,10 @@ use crate::{
         AreaSelectLabels, SelectEvent, SelectInRectEvent, Selected, SelectionLabels, SelectionMode,
     },
 };
+
+/// Horizontal camera movement is initiated if mouse cursor is within this
+/// distance to window edge.
+const MOVE_MARGIN: f32 = 40.;
 
 pub(super) struct HandlersPlugin;
 
@@ -88,6 +98,16 @@ impl Plugin for HandlersPlugin {
                         .after(PointerLabels::Update)
                         .after(MouseLabels::Buttons)
                         .after(HandlersLabel::LeftClick),
+                )
+                .with_system(
+                    move_camera_arrows_system
+                        .run_in_state(GameState::Playing)
+                        .before(CameraLabel::MoveHorizontallEvent),
+                )
+                .with_system(
+                    move_camera_mouse_system
+                        .run_in_state(GameState::Playing)
+                        .before(CameraLabel::MoveHorizontallEvent),
                 )
                 .with_system(
                     zoom_camera
@@ -203,6 +223,68 @@ fn double_click_handler(
         selection_mode,
         Some(*targeted_entity_type),
     ));
+}
+
+fn move_camera_arrows_system(
+    mut key_events: EventReader<KeyboardInput>,
+    mut move_events: EventWriter<MoveCameraHorizontallyEvent>,
+) {
+    for key_event in key_events.iter() {
+        let Some(key_code) = key_event.key_code else { continue };
+
+        let mut direction = Vec2::ZERO;
+        if key_code == KeyCode::Left {
+            direction = Vec2::new(-1., 0.);
+        } else if key_code == KeyCode::Right {
+            direction = Vec2::new(1., 0.);
+        } else if key_code == KeyCode::Down {
+            direction = Vec2::new(0., -1.);
+        } else if key_code == KeyCode::Up {
+            direction = Vec2::new(0., 1.);
+        }
+
+        if direction == Vec2::ZERO {
+            continue;
+        }
+        if key_event.state == ButtonState::Released {
+            direction = Vec2::ZERO;
+        }
+
+        move_events.send(MoveCameraHorizontallyEvent::new(direction));
+    }
+}
+
+fn move_camera_mouse_system(
+    windows: Res<Windows>,
+    mut was_moving: Local<bool>,
+    mut move_events: EventWriter<MoveCameraHorizontallyEvent>,
+) {
+    let window = windows.get_primary().unwrap();
+    let Some(cursor) = window.cursor_position() else {
+        if *was_moving {
+            *was_moving = false;
+            move_events.send(MoveCameraHorizontallyEvent::new(Vec2::ZERO));
+        }
+        return;
+    };
+
+    let mut movement = Vec2::ZERO;
+    if cursor.x < MOVE_MARGIN {
+        movement.x -= 1.;
+    } else if cursor.x > (window.width() - MOVE_MARGIN) {
+        movement.x += 1.;
+    }
+    if cursor.y < MOVE_MARGIN {
+        movement.y -= 1.;
+    } else if cursor.y > (window.height() - MOVE_MARGIN) {
+        movement.y += 1.;
+    }
+
+    if (movement != Vec2::ZERO) == *was_moving {
+        return;
+    }
+    *was_moving = movement != Vec2::ZERO;
+    move_events.send(MoveCameraHorizontallyEvent::new(movement));
 }
 
 fn zoom_camera(
