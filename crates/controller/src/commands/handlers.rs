@@ -1,7 +1,9 @@
 //! This module implements user input / user command handling, for example
 //! keyboard shortcuts, mouse actions events, and so on.
 
-use bevy::prelude::*;
+use bevy::{input::mouse::MouseMotion, prelude::*};
+use de_camera::{CameraLabel, RotateCameraEvent, TiltCameraEvent};
+use de_conf::Configuration;
 use de_core::{
     gconfig::GameConfig,
     objects::{BuildingType, ObjectType, Playable, PLAYER_MAX_BUILDINGS},
@@ -83,6 +85,12 @@ impl Plugin for HandlersPlugin {
                         .after(PointerLabels::Update)
                         .after(MouseLabels::Buttons)
                         .after(HandlersLabel::LeftClick),
+                )
+                .with_system(
+                    pivot_camera
+                        .run_in_state(GameState::Playing)
+                        .before(CameraLabel::RotateEvent)
+                        .before(CameraLabel::TiltEvent),
                 )
                 .with_system(
                     handle_escape
@@ -187,6 +195,28 @@ fn double_click_handler(
         selection_mode,
         Some(*targeted_entity_type),
     ));
+}
+
+fn pivot_camera(
+    conf: Res<Configuration>,
+    buttons: Res<Input<MouseButton>>,
+    keys: Res<Input<KeyCode>>,
+    mut mouse_event: EventReader<MouseMotion>,
+    mut rotate_event: EventWriter<RotateCameraEvent>,
+    mut tilt_event: EventWriter<TiltCameraEvent>,
+) {
+    if !buttons.pressed(MouseButton::Middle) && !keys.pressed(KeyCode::LShift) {
+        return;
+    }
+
+    let delta = mouse_event.iter().fold(Vec2::ZERO, |sum, e| sum + e.delta);
+    let sensitivity = conf.camera().rotation_sensitivity();
+    if delta.x != 0. {
+        rotate_event.send(RotateCameraEvent::new(sensitivity * delta.x));
+    }
+    if delta.y != 0. {
+        tilt_event.send(TiltCameraEvent::new(-sensitivity * delta.y));
+    }
 }
 
 fn left_click_handler(

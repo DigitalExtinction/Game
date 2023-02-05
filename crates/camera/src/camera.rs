@@ -1,7 +1,7 @@
 use std::f32::consts::FRAC_PI_2;
 
 use bevy::{
-    input::mouse::{MouseMotion, MouseScrollUnit, MouseWheel},
+    input::mouse::{MouseScrollUnit, MouseWheel},
     prelude::*,
 };
 use de_conf::{CameraConf, Configuration};
@@ -44,6 +44,8 @@ pub(crate) struct CameraPlugin;
 impl Plugin for CameraPlugin {
     fn build(&self, app: &mut App) {
         app.add_event::<MoveFocusEvent>()
+            .add_event::<RotateCameraEvent>()
+            .add_event::<TiltCameraEvent>()
             .add_plugin(ResendEventPlugin::<MoveFocusEvent>::default())
             .add_event::<FocusInvalidatedEvent>()
             .add_enter_system(GameState::Loading, setup)
@@ -59,7 +61,15 @@ impl Plugin for CameraPlugin {
             )
             .add_system_to_stage(
                 GameStage::Input,
-                pivot_event.run_in_state(GameState::Playing),
+                handle_rotate_events
+                    .run_in_state(GameState::Playing)
+                    .label(CameraLabel::RotateEvent),
+            )
+            .add_system_to_stage(
+                GameStage::Input,
+                handle_tilt_events
+                    .run_in_state(GameState::Playing)
+                    .label(CameraLabel::TiltEvent),
             )
             .add_system_to_stage(
                 GameStage::Input,
@@ -95,6 +105,12 @@ impl Plugin for CameraPlugin {
 }
 
 #[derive(Copy, Clone, Hash, Debug, PartialEq, Eq, SystemLabel)]
+pub enum CameraLabel {
+    RotateEvent,
+    TiltEvent,
+}
+
+#[derive(Copy, Clone, Hash, Debug, PartialEq, Eq, SystemLabel)]
 enum InternalCameraLabel {
     UpdateFocus,
     Zoom,
@@ -112,6 +128,38 @@ impl MoveFocusEvent {
 
     fn point(&self) -> Vec2 {
         self.point
+    }
+}
+
+/// Send this event to rotate camera around the vertical (Y) axis.
+pub struct RotateCameraEvent(f32);
+
+impl RotateCameraEvent {
+    /// # Arguments
+    ///
+    /// * `delta` - this value will be added to the camera azimuth angle.
+    pub fn new(delta: f32) -> Self {
+        Self(delta)
+    }
+
+    fn delta(&self) -> f32 {
+        self.0
+    }
+}
+
+/// Send this event to tilt the camera, i.e. to change elevation / off nadir.
+pub struct TiltCameraEvent(f32);
+
+impl TiltCameraEvent {
+    /// # Arguments
+    ///
+    /// * `delta` - this value will be added to the camera off-nadir angle.
+    pub fn new(delta: f32) -> Self {
+        Self(delta)
+    }
+
+    fn delta(&self) -> f32 {
+        self.0
     }
 }
 
@@ -401,27 +449,20 @@ fn zoom_event(
     desired_distance.zoom_clamped(conf, factor);
 }
 
-fn pivot_event(
-    conf: Res<Configuration>,
-    mut desired_off_nadir: ResMut<DesiredOffNadir>,
-    mut desired_azimuth: ResMut<DesiredAzimuth>,
-    buttons: Res<Input<MouseButton>>,
-    keys: Res<Input<KeyCode>>,
-    mut mouse_event: EventReader<MouseMotion>,
+fn handle_tilt_events(
+    mut events: EventReader<TiltCameraEvent>,
+    mut desired: ResMut<DesiredOffNadir>,
 ) {
-    let delta = mouse_event.iter().fold(Vec2::ZERO, |sum, e| sum + e.delta);
-
-    if !buttons.pressed(MouseButton::Middle) && !keys.pressed(KeyCode::LShift) {
-        return;
+    for event in events.iter() {
+        desired.tilt_clamped(Radian::ONE * event.delta());
     }
+}
 
-    if delta == Vec2::ZERO {
-        return;
+fn handle_rotate_events(
+    mut events: EventReader<RotateCameraEvent>,
+    mut desired: ResMut<DesiredAzimuth>,
+) {
+    for event in events.iter() {
+        desired.rotate(Radian::ONE * event.delta());
     }
-
-    let delta_x = LogicalPixel::try_from(delta.x).unwrap();
-    let delta_y = LogicalPixel::try_from(delta.y).unwrap();
-    let conf = conf.camera();
-    desired_azimuth.rotate(Radian::ONE * (conf.rotation_sensitivity() * delta_x));
-    desired_off_nadir.tilt_clamped(-Radian::ONE * (conf.rotation_sensitivity() * delta_y));
 }

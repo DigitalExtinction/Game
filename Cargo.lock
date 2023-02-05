@@ -1968,6 +1968,7 @@ dependencies = [
  "de_behaviour",
  "de_camera",
  "de_combat",
+ "de_conf",
  "de_core",
  "de_gui",
  "de_index",
