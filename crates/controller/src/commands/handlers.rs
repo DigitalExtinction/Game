@@ -41,7 +41,7 @@ use crate::{
 
 /// Horizontal camera movement is initiated if mouse cursor is within this
 /// distance to window edge.
-const MOVE_MARGIN: f32 = 40.;
+const MOVE_MARGIN: f32 = 2.;
 
 pub(super) struct HandlersPlugin;
 
