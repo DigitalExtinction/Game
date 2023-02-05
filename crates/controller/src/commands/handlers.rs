@@ -1,8 +1,11 @@
 //! This module implements user input / user command handling, for example
 //! keyboard shortcuts, mouse actions events, and so on.
 
-use bevy::{input::mouse::MouseMotion, prelude::*};
-use de_camera::{CameraLabel, RotateCameraEvent, TiltCameraEvent};
+use bevy::{
+    input::mouse::{MouseMotion, MouseScrollUnit, MouseWheel},
+    prelude::*,
+};
+use de_camera::{CameraLabel, RotateCameraEvent, TiltCameraEvent, ZoomCameraEvent};
 use de_conf::Configuration;
 use de_core::{
     gconfig::GameConfig,
@@ -85,6 +88,11 @@ impl Plugin for HandlersPlugin {
                         .after(PointerLabels::Update)
                         .after(MouseLabels::Buttons)
                         .after(HandlersLabel::LeftClick),
+                )
+                .with_system(
+                    zoom_camera
+                        .run_in_state(GameState::Playing)
+                        .before(CameraLabel::ZoomEvent),
                 )
                 .with_system(
                     pivot_camera
@@ -195,6 +203,21 @@ fn double_click_handler(
         selection_mode,
         Some(*targeted_entity_type),
     ));
+}
+
+fn zoom_camera(
+    conf: Res<Configuration>,
+    mut wheel_events: EventReader<MouseWheel>,
+    mut zoom_events: EventWriter<ZoomCameraEvent>,
+) {
+    let conf = conf.camera();
+    let factor = wheel_events
+        .iter()
+        .fold(1.0, |factor, event| match event.unit {
+            MouseScrollUnit::Line => factor * conf.wheel_zoom_sensitivity().powf(event.y),
+            MouseScrollUnit::Pixel => factor * conf.touchpad_zoom_sensitivity().powf(event.y),
+        });
+    zoom_events.send(ZoomCameraEvent::new(factor));
 }
 
 fn pivot_camera(

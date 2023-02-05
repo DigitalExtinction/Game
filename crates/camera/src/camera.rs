@@ -1,9 +1,6 @@
 use std::f32::consts::FRAC_PI_2;
 
-use bevy::{
-    input::mouse::{MouseScrollUnit, MouseWheel},
-    prelude::*,
-};
+use bevy::prelude::*;
 use de_conf::{CameraConf, Configuration};
 use de_core::{
     events::ResendEventPlugin, projection::ToAltitude, stages::GameStage, state::GameState,
@@ -44,6 +41,7 @@ pub(crate) struct CameraPlugin;
 impl Plugin for CameraPlugin {
     fn build(&self, app: &mut App) {
         app.add_event::<MoveFocusEvent>()
+            .add_event::<ZoomCameraEvent>()
             .add_event::<RotateCameraEvent>()
             .add_event::<TiltCameraEvent>()
             .add_plugin(ResendEventPlugin::<MoveFocusEvent>::default())
@@ -57,7 +55,9 @@ impl Plugin for CameraPlugin {
             )
             .add_system_to_stage(
                 GameStage::Input,
-                zoom_event.run_in_state(GameState::Playing),
+                handle_zoom_events
+                    .run_in_state(GameState::Playing)
+                    .label(CameraLabel::ZoomEvent),
             )
             .add_system_to_stage(
                 GameStage::Input,
@@ -108,6 +108,7 @@ impl Plugin for CameraPlugin {
 pub enum CameraLabel {
     RotateEvent,
     TiltEvent,
+    ZoomEvent,
 }
 
 #[derive(Copy, Clone, Hash, Debug, PartialEq, Eq, SystemLabel)]
@@ -159,6 +160,23 @@ impl TiltCameraEvent {
     }
 
     fn delta(&self) -> f32 {
+        self.0
+    }
+}
+
+/// Send this event to zoom the camera.
+pub struct ZoomCameraEvent(f32);
+
+impl ZoomCameraEvent {
+    /// # Arguments
+    ///
+    /// * `factor` - desired camera to terrain distance will be multiplied with
+    ///   this factor.
+    pub fn new(factor: f32) -> Self {
+        Self(factor)
+    }
+
+    fn factor(&self) -> f32 {
         self.0
     }
 }
@@ -436,17 +454,14 @@ fn move_horizontaly_event(
     horizontal_movement.start(movement);
 }
 
-fn zoom_event(
+fn handle_zoom_events(
     conf: Res<Configuration>,
-    mut desired_distance: ResMut<DesiredDistance>,
-    mut events: EventReader<MouseWheel>,
+    mut events: EventReader<ZoomCameraEvent>,
+    mut desired: ResMut<DesiredDistance>,
 ) {
-    let conf = conf.camera();
-    let factor = events.iter().fold(1.0, |factor, event| match event.unit {
-        MouseScrollUnit::Line => factor * conf.wheel_zoom_sensitivity().powf(event.y),
-        MouseScrollUnit::Pixel => factor * conf.touchpad_zoom_sensitivity().powf(event.y),
-    });
-    desired_distance.zoom_clamped(conf, factor);
+    for event in events.iter() {
+        desired.zoom_clamped(conf.camera(), event.factor());
+    }
 }
 
 fn handle_tilt_events(
