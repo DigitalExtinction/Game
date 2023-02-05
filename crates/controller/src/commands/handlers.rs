@@ -1,7 +1,18 @@
 //! This module implements user input / user command handling, for example
 //! keyboard shortcuts, mouse actions events, and so on.
 
-use bevy::prelude::*;
+use bevy::{
+    input::{
+        keyboard::KeyboardInput,
+        mouse::{MouseMotion, MouseScrollUnit, MouseWheel},
+        ButtonState,
+    },
+    prelude::*,
+};
+use de_camera::{
+    CameraLabel, MoveCameraHorizontallyEvent, RotateCameraEvent, TiltCameraEvent, ZoomCameraEvent,
+};
+use de_conf::Configuration;
 use de_core::{
     gconfig::GameConfig,
     objects::{BuildingType, ObjectType, Playable, PLAYER_MAX_BUILDINGS},
@@ -27,6 +38,10 @@ use crate::{
         AreaSelectLabels, SelectEvent, SelectInRectEvent, Selected, SelectionLabels, SelectionMode,
     },
 };
+
+/// Horizontal camera movement is initiated if mouse cursor is within this
+/// distance to window edge.
+const MOVE_MARGIN: f32 = 2.;
 
 pub(super) struct HandlersPlugin;
 
@@ -83,6 +98,27 @@ impl Plugin for HandlersPlugin {
                         .after(PointerLabels::Update)
                         .after(MouseLabels::Buttons)
                         .after(HandlersLabel::LeftClick),
+                )
+                .with_system(
+                    move_camera_arrows_system
+                        .run_in_state(GameState::Playing)
+                        .before(CameraLabel::MoveHorizontallEvent),
+                )
+                .with_system(
+                    move_camera_mouse_system
+                        .run_in_state(GameState::Playing)
+                        .before(CameraLabel::MoveHorizontallEvent),
+                )
+                .with_system(
+                    zoom_camera
+                        .run_in_state(GameState::Playing)
+                        .before(CameraLabel::ZoomEvent),
+                )
+                .with_system(
+                    pivot_camera
+                        .run_in_state(GameState::Playing)
+                        .before(CameraLabel::RotateEvent)
+                        .before(CameraLabel::TiltEvent),
                 )
                 .with_system(
                     handle_escape
@@ -187,6 +223,105 @@ fn double_click_handler(
         selection_mode,
         Some(*targeted_entity_type),
     ));
+}
+
+fn move_camera_arrows_system(
+    mut key_events: EventReader<KeyboardInput>,
+    mut move_events: EventWriter<MoveCameraHorizontallyEvent>,
+) {
+    for key_event in key_events.iter() {
+        let Some(key_code) = key_event.key_code else { continue };
+
+        let mut direction = Vec2::ZERO;
+        if key_code == KeyCode::Left {
+            direction = Vec2::new(-1., 0.);
+        } else if key_code == KeyCode::Right {
+            direction = Vec2::new(1., 0.);
+        } else if key_code == KeyCode::Down {
+            direction = Vec2::new(0., -1.);
+        } else if key_code == KeyCode::Up {
+            direction = Vec2::new(0., 1.);
+        }
+
+        if direction == Vec2::ZERO {
+            continue;
+        }
+        if key_event.state == ButtonState::Released {
+            direction = Vec2::ZERO;
+        }
+
+        move_events.send(MoveCameraHorizontallyEvent::new(direction));
+    }
+}
+
+fn move_camera_mouse_system(
+    windows: Res<Windows>,
+    mut was_moving: Local<bool>,
+    mut move_events: EventWriter<MoveCameraHorizontallyEvent>,
+) {
+    let window = windows.get_primary().unwrap();
+    let Some(cursor) = window.cursor_position() else {
+        if *was_moving {
+            *was_moving = false;
+            move_events.send(MoveCameraHorizontallyEvent::new(Vec2::ZERO));
+        }
+        return;
+    };
+
+    let mut movement = Vec2::ZERO;
+    if cursor.x < MOVE_MARGIN {
+        movement.x -= 1.;
+    } else if cursor.x > (window.width() - MOVE_MARGIN) {
+        movement.x += 1.;
+    }
+    if cursor.y < MOVE_MARGIN {
+        movement.y -= 1.;
+    } else if cursor.y > (window.height() - MOVE_MARGIN) {
+        movement.y += 1.;
+    }
+
+    if (movement != Vec2::ZERO) == *was_moving {
+        return;
+    }
+    *was_moving = movement != Vec2::ZERO;
+    move_events.send(MoveCameraHorizontallyEvent::new(movement));
+}
+
+fn zoom_camera(
+    conf: Res<Configuration>,
+    mut wheel_events: EventReader<MouseWheel>,
+    mut zoom_events: EventWriter<ZoomCameraEvent>,
+) {
+    let conf = conf.camera();
+    let factor = wheel_events
+        .iter()
+        .fold(1.0, |factor, event| match event.unit {
+            MouseScrollUnit::Line => factor * conf.wheel_zoom_sensitivity().powf(event.y),
+            MouseScrollUnit::Pixel => factor * conf.touchpad_zoom_sensitivity().powf(event.y),
+        });
+    zoom_events.send(ZoomCameraEvent::new(factor));
+}
+
+fn pivot_camera(
+    conf: Res<Configuration>,
+    buttons: Res<Input<MouseButton>>,
+    keys: Res<Input<KeyCode>>,
+    mut mouse_event: EventReader<MouseMotion>,
+    mut rotate_event: EventWriter<RotateCameraEvent>,
+    mut tilt_event: EventWriter<TiltCameraEvent>,
+) {
+    if !buttons.pressed(MouseButton::Middle) && !keys.pressed(KeyCode::LShift) {
+        return;
+    }
+
+    let delta = mouse_event.iter().fold(Vec2::ZERO, |sum, e| sum + e.delta);
+    let sensitivity = conf.camera().rotation_sensitivity();
+    if delta.x != 0. {
+        rotate_event.send(RotateCameraEvent::new(sensitivity * delta.x));
+    }
+    if delta.y != 0. {
+        tilt_event.send(TiltCameraEvent::new(-sensitivity * delta.y));
+    }
 }
 
 fn left_click_handler(

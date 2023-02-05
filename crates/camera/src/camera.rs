@@ -1,22 +1,16 @@
 use std::f32::consts::FRAC_PI_2;
 
-use bevy::{
-    input::mouse::{MouseMotion, MouseScrollUnit, MouseWheel},
-    prelude::*,
-};
+use bevy::prelude::*;
 use de_conf::{CameraConf, Configuration};
 use de_core::{
     events::ResendEventPlugin, projection::ToAltitude, stages::GameStage, state::GameState,
 };
 use de_map::size::MapBounds;
 use de_terrain::TerrainCollider;
-use de_uom::{InverseSecond, LogicalPixel, Metre, Quantity, Radian, Second};
+use de_uom::{InverseSecond, Metre, Quantity, Radian, Second};
 use iyes_loopless::prelude::*;
 use parry3d::query::Ray;
 
-/// Horizontal camera movement is initiated if mouse cursor is within this
-/// distance to window edge.
-const MOVE_MARGIN: LogicalPixel = Quantity::new_unchecked(40.);
 /// Camera moves horizontally at speed `distance * CAMERA_HORIZONTAL_SPEED`.
 const CAMERA_HORIZONTAL_SPEED: InverseSecond = Quantity::new_unchecked(2.0);
 /// Minimum camera distance multiplied by this gives minimum temporary distance
@@ -44,41 +38,59 @@ pub(crate) struct CameraPlugin;
 impl Plugin for CameraPlugin {
     fn build(&self, app: &mut App) {
         app.add_event::<MoveFocusEvent>()
+            .add_event::<MoveCameraHorizontallyEvent>()
+            .add_event::<ZoomCameraEvent>()
+            .add_event::<RotateCameraEvent>()
+            .add_event::<TiltCameraEvent>()
             .add_plugin(ResendEventPlugin::<MoveFocusEvent>::default())
             .add_event::<FocusInvalidatedEvent>()
-            .add_event::<PivotEvent>()
             .add_enter_system(GameState::Loading, setup)
             .add_system_to_stage(
                 GameStage::PreMovement,
                 update_focus
                     .run_in_state(GameState::Playing)
-                    .label("update_focus"),
+                    .label(InternalCameraLabel::UpdateFocus),
             )
             .add_system_to_stage(
                 GameStage::Input,
-                zoom_event.run_in_state(GameState::Playing),
+                handle_horizontal_events
+                    .run_in_state(GameState::Playing)
+                    .label(CameraLabel::MoveHorizontallEvent),
             )
             .add_system_to_stage(
                 GameStage::Input,
-                pivot_event.run_in_state(GameState::Playing),
+                handle_zoom_events
+                    .run_in_state(GameState::Playing)
+                    .label(CameraLabel::ZoomEvent),
             )
             .add_system_to_stage(
                 GameStage::Input,
-                move_horizontaly_event.run_in_state(GameState::Playing),
+                handle_rotate_events
+                    .run_in_state(GameState::Playing)
+                    .label(CameraLabel::RotateEvent),
+            )
+            .add_system_to_stage(
+                GameStage::Input,
+                handle_tilt_events
+                    .run_in_state(GameState::Playing)
+                    .label(CameraLabel::TiltEvent),
             )
             .add_system_to_stage(
                 GameStage::PreMovement,
                 process_move_focus_events
                     .run_in_state(GameState::Playing)
-                    .after("update_focus"),
+                    .after(InternalCameraLabel::UpdateFocus),
             )
             .add_system_to_stage(
                 GameStage::Movement,
-                zoom.run_in_state(GameState::Playing).label("zoom"),
+                zoom.run_in_state(GameState::Playing)
+                    .label(InternalCameraLabel::Zoom),
             )
             .add_system_to_stage(
                 GameStage::Movement,
-                pivot.run_in_state(GameState::Playing).label("pivot"),
+                pivot
+                    .run_in_state(GameState::Playing)
+                    .label(InternalCameraLabel::Pivot),
             )
             .add_system_to_stage(
                 GameStage::Movement,
@@ -86,10 +98,25 @@ impl Plugin for CameraPlugin {
                     .run_in_state(GameState::Playing)
                     // Zooming changes camera focus point so do it
                     // after other types of camera movement.
-                    .after("zoom")
-                    .after("pivot"),
+                    .after(InternalCameraLabel::Zoom)
+                    .after(InternalCameraLabel::Pivot),
             );
     }
+}
+
+#[derive(Copy, Clone, Hash, Debug, PartialEq, Eq, SystemLabel)]
+pub enum CameraLabel {
+    MoveHorizontallEvent,
+    RotateEvent,
+    TiltEvent,
+    ZoomEvent,
+}
+
+#[derive(Copy, Clone, Hash, Debug, PartialEq, Eq, SystemLabel)]
+enum InternalCameraLabel {
+    UpdateFocus,
+    Zoom,
+    Pivot,
 }
 
 pub struct MoveFocusEvent {
@@ -103,6 +130,73 @@ impl MoveFocusEvent {
 
     fn point(&self) -> Vec2 {
         self.point
+    }
+}
+
+/// Send this event to (re)set camera horizontal movement.
+pub struct MoveCameraHorizontallyEvent(Vec2);
+
+impl MoveCameraHorizontallyEvent {
+    /// # Arguments
+    ///
+    /// * `direction` - camera will move along the XZ plane in this direction.
+    ///   This can be any vector, the longer the vector, the faster the
+    ///   movement. Vector coordinates should preferably be -1, 0, or 1.
+    pub fn new(direction: Vec2) -> Self {
+        Self(direction)
+    }
+
+    fn direction(&self) -> Vec2 {
+        self.0
+    }
+}
+
+/// Send this event to rotate camera around the vertical (Y) axis.
+pub struct RotateCameraEvent(f32);
+
+impl RotateCameraEvent {
+    /// # Arguments
+    ///
+    /// * `delta` - this value will be added to the camera azimuth angle.
+    pub fn new(delta: f32) -> Self {
+        Self(delta)
+    }
+
+    fn delta(&self) -> f32 {
+        self.0
+    }
+}
+
+/// Send this event to tilt the camera, i.e. to change elevation / off nadir.
+pub struct TiltCameraEvent(f32);
+
+impl TiltCameraEvent {
+    /// # Arguments
+    ///
+    /// * `delta` - this value will be added to the camera off-nadir angle.
+    pub fn new(delta: f32) -> Self {
+        Self(delta)
+    }
+
+    fn delta(&self) -> f32 {
+        self.0
+    }
+}
+
+/// Send this event to zoom the camera.
+pub struct ZoomCameraEvent(f32);
+
+impl ZoomCameraEvent {
+    /// # Arguments
+    ///
+    /// * `factor` - desired camera to terrain distance will be multiplied with
+    ///   this factor.
+    pub fn new(factor: f32) -> Self {
+        Self(factor)
+    }
+
+    fn factor(&self) -> f32 {
+        self.0
     }
 }
 
@@ -137,8 +231,6 @@ impl CameraFocus {
 
 struct FocusInvalidatedEvent;
 
-struct PivotEvent;
-
 #[derive(Default, Resource)]
 struct HorizontalMovement {
     movement: Vec2,
@@ -149,45 +241,47 @@ impl HorizontalMovement {
         self.movement
     }
 
-    fn start(&mut self, movement: Vec2) {
+    fn set(&mut self, movement: Vec2) {
         self.movement = movement;
-    }
-
-    fn stop(&mut self) {
-        self.movement = Vec2::ZERO;
     }
 }
 
 #[derive(Resource)]
-struct DesiredPoW {
-    distance: Metre,
-    off_nadir: Radian,
-    azimuth: Radian,
-}
+struct DesiredDistance(Metre);
 
-impl DesiredPoW {
+impl DesiredDistance {
     fn distance(&self) -> Metre {
-        self.distance
-    }
-
-    fn off_nadir(&self) -> Radian {
-        self.off_nadir
-    }
-
-    fn azimuth(&self) -> Radian {
-        self.azimuth
+        self.0
     }
 
     fn zoom_clamped(&mut self, conf: &CameraConf, factor: f32) {
-        self.distance = (self.distance * factor).clamp(conf.min_distance(), conf.max_distance());
+        self.0 = (self.0 * factor).clamp(conf.min_distance(), conf.max_distance());
+    }
+}
+
+#[derive(Resource)]
+struct DesiredOffNadir(Radian);
+
+impl DesiredOffNadir {
+    fn off_nadir(&self) -> Radian {
+        self.0
     }
 
     fn tilt_clamped(&mut self, delta: Radian) {
-        self.off_nadir = (self.off_nadir + delta).clamp(MIN_OFF_NADIR, MAX_OFF_NADIR);
+        self.0 = (self.0 + delta).clamp(MIN_OFF_NADIR, MAX_OFF_NADIR);
+    }
+}
+
+#[derive(Resource)]
+struct DesiredAzimuth(Radian);
+
+impl DesiredAzimuth {
+    fn azimuth(&self) -> Radian {
+        self.0
     }
 
     fn rotate(&mut self, delta: Radian) {
-        self.azimuth = (self.azimuth + delta).normalized();
+        self.0 = (self.0 + delta).normalized();
     }
 }
 
@@ -196,11 +290,9 @@ fn setup(mut commands: Commands, conf: Res<Configuration>) {
     let distance = 0.6 * conf.min_distance() + 0.4 * conf.max_distance();
 
     commands.insert_resource(HorizontalMovement::default());
-    commands.insert_resource(DesiredPoW {
-        distance,
-        off_nadir: Radian::ZERO,
-        azimuth: Radian::ZERO,
-    });
+    commands.insert_resource(DesiredDistance(distance));
+    commands.insert_resource(DesiredOffNadir(Radian::ZERO));
+    commands.insert_resource(DesiredAzimuth(Radian::ZERO));
     commands.insert_resource(CameraFocus {
         point: Vec3::ZERO,
         distance,
@@ -288,7 +380,7 @@ fn move_horizontaly(
 
 fn zoom(
     conf: Res<Configuration>,
-    desired_pow: Res<DesiredPoW>,
+    desired_distance: Res<DesiredDistance>,
     time: Res<Time>,
     mut focus: ResMut<CameraFocus>,
     mut camera_query: Query<&mut Transform, With<Camera3d>>,
@@ -307,7 +399,7 @@ fn zoom(
         // Camera is within hard_min_distance and hard_max_distance => move
         // smoothly to desired distance.
 
-        let error = focus.distance() - desired_pow.distance();
+        let error = focus.distance() - desired_distance.distance();
         if error.abs() <= DISTANCE_TOLERATION {
             return;
         }
@@ -324,94 +416,58 @@ fn zoom(
 }
 
 fn pivot(
-    mut event: EventReader<PivotEvent>,
-    desired_pow: Res<DesiredPoW>,
+    desired_off_nadir: Res<DesiredOffNadir>,
+    desired_azimuth: Res<DesiredAzimuth>,
     focus: Res<CameraFocus>,
     mut camera_query: Query<&mut Transform, With<Camera3d>>,
 ) {
-    if event.iter().next().is_none() {
+    if !desired_off_nadir.is_changed() && !desired_azimuth.is_changed() {
         return;
     }
 
     let mut transform = camera_query.single_mut();
     transform.rotation = Quat::from_euler(
         EulerRot::YXZ,
-        (-desired_pow.azimuth()).into(),
-        (desired_pow.off_nadir() - Radian::FRAC_PI_2).into(),
+        (-desired_azimuth.azimuth()).into(),
+        (desired_off_nadir.off_nadir() - Radian::FRAC_PI_2).into(),
         0.,
     );
     transform.translation = focus.point() - f32::from(focus.distance()) * transform.forward();
 }
 
-fn move_horizontaly_event(
-    mut horizontal_movement: ResMut<HorizontalMovement>,
-    windows: Res<Windows>,
-    keys: Res<Input<KeyCode>>,
+fn handle_horizontal_events(
+    mut movement: ResMut<HorizontalMovement>,
+    mut events: EventReader<MoveCameraHorizontallyEvent>,
 ) {
-    let window = windows.get_primary().unwrap();
-    let (x, y) = match window.cursor_position() {
-        Some(position) => (
-            LogicalPixel::try_from(position.x).unwrap(),
-            LogicalPixel::try_from(position.y).unwrap(),
-        ),
-        None => {
-            horizontal_movement.stop();
-            return;
-        }
-    };
-
-    let width = LogicalPixel::try_from(window.width()).unwrap();
-    let height = LogicalPixel::try_from(window.height()).unwrap();
-
-    let mut movement = Vec2::ZERO;
-    if x < MOVE_MARGIN || keys.pressed(KeyCode::Left) {
-        movement.x -= 1.;
-    } else if x > (width - MOVE_MARGIN) || keys.pressed(KeyCode::Right) {
-        movement.x += 1.;
+    if let Some(event) = events.iter().last() {
+        movement.set(event.direction());
     }
-    if y < MOVE_MARGIN || keys.pressed(KeyCode::Down) {
-        movement.y -= 1.;
-    } else if y > (height - MOVE_MARGIN) || keys.pressed(KeyCode::Up) {
-        movement.y += 1.;
-    }
-    horizontal_movement.start(movement);
 }
 
-fn zoom_event(
+fn handle_zoom_events(
     conf: Res<Configuration>,
-    mut desired_pow: ResMut<DesiredPoW>,
-    mut events: EventReader<MouseWheel>,
+    mut events: EventReader<ZoomCameraEvent>,
+    mut desired: ResMut<DesiredDistance>,
 ) {
-    let conf = conf.camera();
-    let factor = events.iter().fold(1.0, |factor, event| match event.unit {
-        MouseScrollUnit::Line => factor * conf.wheel_zoom_sensitivity().powf(event.y),
-        MouseScrollUnit::Pixel => factor * conf.touchpad_zoom_sensitivity().powf(event.y),
-    });
-    desired_pow.zoom_clamped(conf, factor);
+    for event in events.iter() {
+        desired.zoom_clamped(conf.camera(), event.factor());
+    }
 }
 
-fn pivot_event(
-    conf: Res<Configuration>,
-    mut desired_pow: ResMut<DesiredPoW>,
-    mut pivot_event: EventWriter<PivotEvent>,
-    buttons: Res<Input<MouseButton>>,
-    keys: Res<Input<KeyCode>>,
-    mut mouse_event: EventReader<MouseMotion>,
+fn handle_tilt_events(
+    mut events: EventReader<TiltCameraEvent>,
+    mut desired: ResMut<DesiredOffNadir>,
 ) {
-    let delta = mouse_event.iter().fold(Vec2::ZERO, |sum, e| sum + e.delta);
-
-    if !buttons.pressed(MouseButton::Middle) && !keys.pressed(KeyCode::LShift) {
-        return;
+    for event in events.iter() {
+        desired.tilt_clamped(Radian::ONE * event.delta());
     }
+}
 
-    if delta == Vec2::ZERO {
-        return;
+fn handle_rotate_events(
+    mut events: EventReader<RotateCameraEvent>,
+    mut desired: ResMut<DesiredAzimuth>,
+) {
+    for event in events.iter() {
+        desired.rotate(Radian::ONE * event.delta());
     }
-
-    let delta_x = LogicalPixel::try_from(delta.x).unwrap();
-    let delta_y = LogicalPixel::try_from(delta.y).unwrap();
-    let conf = conf.camera();
-    desired_pow.rotate(Radian::ONE * (conf.rotation_sensitivity() * delta_x));
-    desired_pow.tilt_clamped(-Radian::ONE * (conf.rotation_sensitivity() * delta_y));
-    pivot_event.send(PivotEvent);
 }

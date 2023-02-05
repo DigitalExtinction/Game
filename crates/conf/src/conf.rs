@@ -3,7 +3,7 @@
 
 use anyhow::{bail, ensure, Context, Error, Result};
 use bevy::prelude::Resource;
-use de_uom::{InverseLogicalPixel, LogicalPixel, Metre};
+use de_uom::{LogicalPixel, Metre};
 use url::Url;
 
 use crate::persisted::{self, *};
@@ -73,7 +73,7 @@ pub struct CameraConf {
     max_distance: Metre,
     wheel_zoom_sensitivity: f32,
     touchpad_zoom_sensitivity: f32,
-    rotation_sensitivity: InverseLogicalPixel,
+    rotation_sensitivity: f32,
 }
 
 impl CameraConf {
@@ -107,7 +107,7 @@ impl CameraConf {
 
     /// Mouse drag by `d` logical pixels will lead to rotation by `d *
     /// rotation_sensitivity` radians.
-    pub fn rotation_sensitivity(&self) -> InverseLogicalPixel {
+    pub fn rotation_sensitivity(&self) -> f32 {
         self.rotation_sensitivity
     }
 }
@@ -178,7 +178,7 @@ impl TryFrom<Option<Camera>> for CameraConf {
             max_distance: Metre::new(max_distance),
             wheel_zoom_sensitivity,
             touchpad_zoom_sensitivity,
-            rotation_sensitivity: InverseLogicalPixel::new(rotation_sensitivity),
+            rotation_sensitivity,
         })
     }
 }
