@@ -46,7 +46,6 @@ impl Plugin for CameraPlugin {
         app.add_event::<MoveFocusEvent>()
             .add_plugin(ResendEventPlugin::<MoveFocusEvent>::default())
             .add_event::<FocusInvalidatedEvent>()
-            .add_event::<PivotEvent>()
             .add_enter_system(GameState::Loading, setup)
             .add_system_to_stage(
                 GameStage::PreMovement,
@@ -146,8 +145,6 @@ impl CameraFocus {
 }
 
 struct FocusInvalidatedEvent;
-
-struct PivotEvent;
 
 #[derive(Default, Resource)]
 struct HorizontalMovement {
@@ -338,13 +335,12 @@ fn zoom(
 }
 
 fn pivot(
-    mut event: EventReader<PivotEvent>,
     desired_off_nadir: Res<DesiredOffNadir>,
     desired_azimuth: Res<DesiredAzimuth>,
     focus: Res<CameraFocus>,
     mut camera_query: Query<&mut Transform, With<Camera3d>>,
 ) {
-    if event.iter().next().is_none() {
+    if !desired_off_nadir.is_changed() && !desired_azimuth.is_changed() {
         return;
     }
 
@@ -409,7 +405,6 @@ fn pivot_event(
     conf: Res<Configuration>,
     mut desired_off_nadir: ResMut<DesiredOffNadir>,
     mut desired_azimuth: ResMut<DesiredAzimuth>,
-    mut pivot_event: EventWriter<PivotEvent>,
     buttons: Res<Input<MouseButton>>,
     keys: Res<Input<KeyCode>>,
     mut mouse_event: EventReader<MouseMotion>,
@@ -429,5 +424,4 @@ fn pivot_event(
     let conf = conf.camera();
     desired_azimuth.rotate(Radian::ONE * (conf.rotation_sensitivity() * delta_x));
     desired_off_nadir.tilt_clamped(-Radian::ONE * (conf.rotation_sensitivity() * delta_y));
-    pivot_event.send(PivotEvent);
 }
