@@ -1,5 +1,6 @@
 use bevy::prelude::*;
 use de_core::{
+    cleanup::DespawnOnGameExit,
     gconfig::GameConfig,
     objects::{BuildingType, ObjectType},
     stages::GameStage,
@@ -93,6 +94,7 @@ fn spawn(
             commands.spawn((
                 SpawnBundle::new(object_type, transform),
                 game_config.player(),
+                DespawnOnGameExit,
             ));
         }
     }
@@ -112,12 +114,15 @@ fn new_drafts(
         commands.entity(entity).despawn_recursive();
     }
 
-    commands.spawn(DraftBundle::new(
-        event.building_type(),
-        Transform {
-            translation: event.point(),
-            ..Default::default()
-        },
+    commands.spawn((
+        DraftBundle::new(
+            event.building_type(),
+            Transform {
+                translation: event.point(),
+                ..Default::default()
+            },
+        ),
+        DespawnOnGameExit,
     ));
 }
 

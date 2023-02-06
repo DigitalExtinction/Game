@@ -1,5 +1,5 @@
 use bevy::prelude::*;
-use de_core::state::GameState;
+use de_core::{cleanup::DespawnOnGameExit, state::GameState};
 use iyes_loopless::prelude::*;
 
 use super::{interaction::InteractionBlocker, HUD_COLOR};
@@ -33,6 +33,7 @@ fn spawn_details(mut commands: Commands) {
             background_color: HUD_COLOR.into(),
             ..default()
         },
+        DespawnOnGameExit,
         InteractionBlocker,
     ));
 }
@@ -57,6 +58,7 @@ fn spawn_action_bar(mut commands: Commands) {
             background_color: HUD_COLOR.into(),
             ..default()
         },
+        DespawnOnGameExit,
         InteractionBlocker,
     ));
 }

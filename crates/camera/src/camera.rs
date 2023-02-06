@@ -3,6 +3,7 @@ use std::f32::consts::FRAC_PI_2;
 use bevy::prelude::*;
 use de_conf::{CameraConf, Configuration};
 use de_core::{
+    cleanup::DespawnOnGameExit,
     events::ResendEventPlugin,
     projection::ToAltitude,
     stages::GameStage,
@@ -313,10 +314,14 @@ fn setup(mut commands: Commands, conf: Res<Configuration>) {
         point: Vec3::ZERO,
         distance,
     });
-    commands.spawn(Camera3dBundle {
-        transform: Transform::from_xyz(0.0, distance.into(), 0.0).looking_at(Vec3::ZERO, -Vec3::Z),
-        ..Default::default()
-    });
+    commands.spawn((
+        Camera3dBundle {
+            transform: Transform::from_xyz(0.0, distance.into(), 0.0)
+                .looking_at(Vec3::ZERO, -Vec3::Z),
+            ..Default::default()
+        },
+        DespawnOnGameExit,
+    ));
 }
 
 fn cleanup(mut commands: Commands) {

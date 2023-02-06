@@ -1,5 +1,7 @@
 use bevy::prelude::*;
-use de_core::{screengeom::ScreenRect, stages::GameStage, state::AppState};
+use de_core::{
+    cleanup::DespawnOnGameExit, screengeom::ScreenRect, stages::GameStage, state::AppState,
+};
 use iyes_loopless::prelude::*;
 
 const SELECTION_BOX_COLOR: Color = Color::rgba(0., 0.5, 0.8, 0.2);
@@ -67,6 +69,7 @@ fn process_events(
                                 ..Default::default()
                             },
                             SelectionBox,
+                            DespawnOnGameExit,
                         ));
                     }
                 }

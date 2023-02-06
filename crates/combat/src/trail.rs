@@ -12,6 +12,7 @@ use bevy::{
     },
 };
 use de_core::{
+    cleanup::DespawnOnGameExit,
     stages::GameStage,
     state::{AppState, GameState},
 };
@@ -131,6 +132,7 @@ fn spawn(
                 ..Default::default()
             },
             Trail::default(),
+            DespawnOnGameExit,
         ));
     }
 }

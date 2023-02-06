@@ -1,5 +1,5 @@
 use bevy::{prelude::*, render::texture::TextureFormatPixelInfo};
-use de_core::{stages::GameStage, state::GameState};
+use de_core::{cleanup::DespawnOnGameExit, stages::GameStage, state::GameState};
 use iyes_loopless::prelude::*;
 use wgpu_types::{Extent3d, TextureDimension, TextureFormat};
 
@@ -43,7 +43,7 @@ fn setup(mut commands: Commands, mut images: ResMut<Assets<Image>>) {
             background_color: HUD_COLOR.into(),
             ..default()
         })
-        .insert(InteractionBlocker)
+        .insert((InteractionBlocker, DespawnOnGameExit))
         .with_children(|parent| {
             parent
                 .spawn(ImageBundle {

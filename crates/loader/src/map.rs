@@ -5,6 +5,7 @@ use bevy::{
 use de_camera::MoveFocusEvent;
 use de_core::{
     assets::asset_path,
+    cleanup::DespawnOnGameExit,
     gconfig::GameConfig,
     log_full_error,
     objects::{ActiveObjectType, BuildingType, ObjectType},
@@ -102,7 +103,10 @@ fn spawn_map(
     }
 
     setup_light(&mut commands);
-    commands.spawn(TerrainBundle::flat(map.metadata().bounds()));
+    commands.spawn((
+        TerrainBundle::flat(map.metadata().bounds()),
+        DespawnOnGameExit,
+    ));
 
     for object in map.content().objects() {
         let mut entity_commands = commands.spawn_empty();
@@ -113,9 +117,9 @@ fn spawn_map(
             }
             InnerObject::Inactive(object) => ObjectType::Inactive(object.object_type()),
         };
-        entity_commands.insert(SpawnBundle::new(
-            object_type,
-            object.placement().to_transform(),
+        entity_commands.insert((
+            SpawnBundle::new(object_type, object.placement().to_transform()),
+            DespawnOnGameExit,
         ));
     }
 
@@ -131,13 +135,16 @@ fn setup_light(commands: &mut Commands) {
 
     let mut transform = Transform::IDENTITY;
     transform.look_at(Vec3::new(1., -1., 0.), Vec3::new(1., 1., 0.));
-    commands.spawn(DirectionalLightBundle {
-        directional_light: DirectionalLight {
-            color: Color::WHITE,
-            illuminance: 30000.,
+    commands.spawn((
+        DirectionalLightBundle {
+            directional_light: DirectionalLight {
+                color: Color::WHITE,
+                illuminance: 30000.,
+                ..Default::default()
+            },
+            transform,
             ..Default::default()
         },
-        transform,
-        ..Default::default()
-    });
+        DespawnOnGameExit,
+    ));
 }
