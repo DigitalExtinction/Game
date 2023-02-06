@@ -10,7 +10,7 @@ use de_core::{
     objects::{ActiveObjectType, BuildingType, MovableSolid, ObjectType, StaticSolid},
     projection::ToFlat,
     stages::GameStage,
-    state::GameState,
+    state::{AppState, GameState},
 };
 use de_index::{ColliderWithCache, IndexLabel, QueryCollider, SpatialQuery};
 use de_map::size::MapBounds;
@@ -32,29 +32,30 @@ pub(crate) struct DraftPlugin;
 
 impl Plugin for DraftPlugin {
     fn build(&self, app: &mut App) {
-        app.add_system_to_stage(
-            GameStage::Update,
-            new_draft.run_in_state(GameState::Playing),
-        )
-        .add_system_to_stage(
-            GameStage::PostUpdate,
-            update_draft
-                .run_in_state(GameState::Playing)
-                .after(IndexLabel::Index),
-        )
-        .add_system_to_stage(
-            GameStage::PostUpdate,
-            check_draft_loaded
-                .run_in_state(GameState::Playing)
-                .after(IndexLabel::Index),
-        )
-        .add_system_to_stage(
-            GameStage::PostUpdate,
-            update_draft_colour
-                .run_in_state(GameState::Playing)
-                .after(IndexLabel::Index),
-        )
-        .add_startup_system(insert_materials);
+        app.add_startup_system(insert_materials)
+            .add_exit_system(AppState::InGame, cleanup)
+            .add_system_to_stage(
+                GameStage::Update,
+                new_draft.run_in_state(GameState::Playing),
+            )
+            .add_system_to_stage(
+                GameStage::PostUpdate,
+                update_draft
+                    .run_in_state(GameState::Playing)
+                    .after(IndexLabel::Index),
+            )
+            .add_system_to_stage(
+                GameStage::PostUpdate,
+                check_draft_loaded
+                    .run_in_state(GameState::Playing)
+                    .after(IndexLabel::Index),
+            )
+            .add_system_to_stage(
+                GameStage::PostUpdate,
+                update_draft_colour
+                    .run_in_state(GameState::Playing)
+                    .after(IndexLabel::Index),
+            );
     }
 }
 
@@ -149,6 +150,10 @@ fn update_draft(
 struct DraftMaterials {
     valid_placement: Handle<StandardMaterial>,
     invalid_placement: Handle<StandardMaterial>,
+}
+
+fn cleanup(mut commands: Commands) {
+    commands.remove_resource::<DraftMaterials>();
 }
 
 fn insert_materials(mut commands: Commands, mut materials: ResMut<Assets<StandardMaterial>>) {

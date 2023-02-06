@@ -11,7 +11,10 @@ use bevy::{
         },
     },
 };
-use de_core::{stages::GameStage, state::GameState};
+use de_core::{
+    stages::GameStage,
+    state::{AppState, GameState},
+};
 use iyes_loopless::prelude::*;
 use parry3d::query::Ray;
 
@@ -25,6 +28,7 @@ impl Plugin for TrailPlugin {
         app.add_plugin(MaterialPlugin::<TrailMaterial>::default())
             .add_event::<TrailEvent>()
             .add_enter_system(GameState::Loading, setup)
+            .add_exit_system(AppState::InGame, cleanup)
             .add_system_set_to_stage(
                 GameStage::PostUpdate,
                 SystemSet::new()
@@ -143,6 +147,10 @@ fn update(mut commands: Commands, time: Res<Time>, mut query: Query<(Entity, &mu
 fn setup(mut commands: Commands, mut meshes: ResMut<Assets<Mesh>>) {
     let mesh = meshes.add(generate_trail_mesh());
     commands.insert_resource(MeshHandle(mesh));
+}
+
+fn cleanup(mut commands: Commands) {
+    commands.remove_resource::<MeshHandle>();
 }
 
 /// This generates a trail mesh starting at (0, 0, 0) and pointing towards +X

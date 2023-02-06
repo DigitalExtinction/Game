@@ -27,7 +27,8 @@ impl<T: Event> Plugin for ResendEventPlugin<T> {
     fn build(&self, app: &mut App) {
         app.add_enter_system(GameState::Loading, setup::<T>)
             .add_system(enqueue_events::<T>.run_in_state(GameState::Loading))
-            .add_enter_system(GameState::Playing, resend_events::<T>);
+            .add_enter_system(GameState::Playing, resend_events::<T>)
+            .add_enter_system(GameState::Playing, cleanup::<T>);
     }
 }
 
@@ -36,6 +37,10 @@ struct EventQueue<T: Event>(Vec<T>);
 
 fn setup<T: Event>(mut commands: Commands) {
     commands.insert_resource(EventQueue::<T>(Vec::new()));
+}
+
+fn cleanup<T: Event>(mut commands: Commands) {
+    commands.remove_resource::<EventQueue<T>>();
 }
 
 fn enqueue_events<T: Event>(mut queue: ResMut<EventQueue<T>>, mut events: ResMut<Events<T>>) {

@@ -3,7 +3,11 @@ use bevy::{
     input::{mouse::MouseButtonInput, ButtonState},
     prelude::*,
 };
-use de_core::{screengeom::ScreenRect, stages::GameStage, state::GameState};
+use de_core::{
+    screengeom::ScreenRect,
+    stages::GameStage,
+    state::{AppState, GameState},
+};
 use iyes_loopless::prelude::*;
 
 use crate::hud::HudNodes;
@@ -18,8 +22,8 @@ impl Plugin for InputPlugin {
         app.add_event::<MouseClicked>()
             .add_event::<MouseDoubleClicked>()
             .add_event::<MouseDragged>()
-            .init_resource::<MousePosition>()
-            .init_resource::<MouseDragStates>()
+            .add_enter_system(AppState::InGame, setup)
+            .add_exit_system(AppState::InGame, cleanup)
             .add_system_set_to_stage(
                 GameStage::Input,
                 SystemSet::new()
@@ -229,6 +233,16 @@ impl DragState {
 enum DragResolution {
     Point(Vec2),
     Rect(Option<ScreenRect>),
+}
+
+fn setup(mut commands: Commands) {
+    commands.init_resource::<MousePosition>();
+    commands.init_resource::<MouseDragStates>();
+}
+
+fn cleanup(mut commands: Commands) {
+    commands.remove_resource::<MousePosition>();
+    commands.remove_resource::<MouseDragStates>();
 }
 
 fn update_position(windows: Res<Windows>, hud: HudNodes, mut mouse: ResMut<MousePosition>) {

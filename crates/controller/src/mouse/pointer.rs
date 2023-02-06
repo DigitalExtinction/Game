@@ -1,5 +1,8 @@
 use bevy::prelude::*;
-use de_core::{stages::GameStage, state::GameState};
+use de_core::{
+    stages::GameStage,
+    state::{AppState, GameState},
+};
 use de_index::SpatialQuery;
 use de_signs::UpdateBarVisibilityEvent;
 use de_terrain::TerrainCollider;
@@ -16,7 +19,8 @@ pub(super) struct PointerPlugin;
 
 impl Plugin for PointerPlugin {
     fn build(&self, app: &mut App) {
-        app.init_resource::<Pointer>()
+        app.add_enter_system(AppState::InGame, setup)
+            .add_exit_system(AppState::InGame, cleanup)
             .add_system_to_stage(
                 GameStage::Input,
                 pointer_update_system
@@ -64,6 +68,14 @@ impl Pointer {
     fn set_terrain_point(&mut self, point: Option<Vec3>) {
         self.terrain = point;
     }
+}
+
+fn setup(mut commands: Commands) {
+    commands.init_resource::<Pointer>();
+}
+
+fn cleanup(mut commands: Commands) {
+    commands.remove_resource::<Pointer>();
 }
 
 fn pointer_update_system(

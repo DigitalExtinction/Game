@@ -23,6 +23,7 @@ impl Plugin for TerrainPlugin {
     fn build(&self, app: &mut App) {
         app.add_plugin(MaterialPlugin::<TerrainMaterial>::default())
             .add_enter_system(GameState::Loading, load)
+            .add_exit_system(AppState::InGame, cleanup)
             .add_system(
                 setup_textures
                     .track_progress()
@@ -34,6 +35,10 @@ impl Plugin for TerrainPlugin {
 
 #[derive(Resource)]
 struct Textures(Handle<Image>);
+
+fn cleanup(mut commands: Commands) {
+    commands.remove_resource::<Textures>();
+}
 
 fn load(mut commands: Commands, server: Res<AssetServer>) {
     let handle = server.load(TERRAIN_TEXTURE);

@@ -3,7 +3,10 @@ use std::f32::consts::FRAC_PI_2;
 use bevy::prelude::*;
 use de_conf::{CameraConf, Configuration};
 use de_core::{
-    events::ResendEventPlugin, projection::ToAltitude, stages::GameStage, state::GameState,
+    events::ResendEventPlugin,
+    projection::ToAltitude,
+    stages::GameStage,
+    state::{AppState, GameState},
 };
 use de_map::size::MapBounds;
 use de_terrain::{TerrainCollider, MAX_ELEVATION};
@@ -46,6 +49,7 @@ impl Plugin for CameraPlugin {
             .add_event::<FocusInvalidatedEvent>()
             .add_event::<UpdateTranslationEvent>()
             .add_enter_system(GameState::Loading, setup)
+            .add_exit_system(AppState::InGame, cleanup)
             .add_system_to_stage(
                 GameStage::PreMovement,
                 update_focus
@@ -313,6 +317,14 @@ fn setup(mut commands: Commands, conf: Res<Configuration>) {
         transform: Transform::from_xyz(0.0, distance.into(), 0.0).looking_at(Vec3::ZERO, -Vec3::Z),
         ..Default::default()
     });
+}
+
+fn cleanup(mut commands: Commands) {
+    commands.remove_resource::<HorizontalMovement>();
+    commands.remove_resource::<DesiredDistance>();
+    commands.remove_resource::<DesiredOffNadir>();
+    commands.remove_resource::<DesiredAzimuth>();
+    commands.remove_resource::<CameraFocus>();
 }
 
 fn update_focus(

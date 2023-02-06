@@ -36,8 +36,9 @@ pub struct PathingPlugin;
 
 impl Plugin for PathingPlugin {
     fn build(&self, app: &mut App) {
-        app.init_resource::<UpdatePathsState>()
-            .add_event::<UpdateEntityPath>()
+        app.add_event::<UpdateEntityPath>()
+            .add_enter_system(GameState::Loading, setup)
+            .add_exit_system(AppState::InGame, cleanup)
             .add_system_to_stage(
                 GameStage::PreMovement,
                 update_existing_paths
@@ -157,6 +158,14 @@ impl UpdatePathTask {
 enum UpdatePathState {
     Resolved(Option<Path>),
     Processing,
+}
+
+fn setup(mut commands: Commands) {
+    commands.init_resource::<UpdatePathsState>()
+}
+
+fn cleanup(mut commands: Commands) {
+    commands.remove_resource::<UpdatePathsState>();
 }
 
 fn update_existing_paths(
