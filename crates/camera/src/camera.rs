@@ -6,10 +6,10 @@ use de_core::{
     events::ResendEventPlugin, projection::ToAltitude, stages::GameStage, state::GameState,
 };
 use de_map::size::MapBounds;
-use de_terrain::TerrainCollider;
+use de_terrain::{TerrainCollider, MAX_ELEVATION};
 use de_uom::{InverseSecond, Metre, Quantity, Radian, Second};
 use iyes_loopless::prelude::*;
-use parry3d::query::Ray;
+use parry3d::{math::Vector, query::Ray};
 
 /// Camera moves horizontally at speed `distance * CAMERA_HORIZONTAL_SPEED`.
 const CAMERA_HORIZONTAL_SPEED: InverseSecond = Quantity::new_unchecked(2.0);
@@ -44,6 +44,7 @@ impl Plugin for CameraPlugin {
             .add_event::<TiltCameraEvent>()
             .add_plugin(ResendEventPlugin::<MoveFocusEvent>::default())
             .add_event::<FocusInvalidatedEvent>()
+            .add_event::<UpdateTranslationEvent>()
             .add_enter_system(GameState::Loading, setup)
             .add_system_to_stage(
                 GameStage::PreMovement,
@@ -79,7 +80,14 @@ impl Plugin for CameraPlugin {
                 GameStage::PreMovement,
                 process_move_focus_events
                     .run_in_state(GameState::Playing)
+                    .label(InternalCameraLabel::MoveFocus)
                     .after(InternalCameraLabel::UpdateFocus),
+            )
+            .add_system_to_stage(
+                GameStage::PreMovement,
+                update_translation_handler
+                    .run_in_state(GameState::Playing)
+                    .after(InternalCameraLabel::MoveFocus),
             )
             .add_system_to_stage(
                 GameStage::Movement,
@@ -117,6 +125,7 @@ enum InternalCameraLabel {
     UpdateFocus,
     Zoom,
     Pivot,
+    MoveFocus,
 }
 
 pub struct MoveFocusEvent {
@@ -231,6 +240,9 @@ impl CameraFocus {
 
 struct FocusInvalidatedEvent;
 
+/// Send this event to (re)set camera translation based on focus point.
+struct UpdateTranslationEvent;
+
 #[derive(Default, Resource)]
 struct HorizontalMovement {
     movement: Vec2,
@@ -329,21 +341,35 @@ fn update_focus(
 }
 
 fn process_move_focus_events(
-    mut events: EventReader<MoveFocusEvent>,
+    mut in_events: EventReader<MoveFocusEvent>,
     mut focus: ResMut<CameraFocus>,
-    mut camera_query: Query<&mut Transform, With<Camera3d>>,
+    terrain: TerrainCollider,
+    mut out_events: EventWriter<UpdateTranslationEvent>,
 ) {
-    let event = match events.iter().last() {
+    let event = match in_events.iter().last() {
         Some(event) => event,
         None => return,
     };
 
-    let focus_msl = event.point().to_msl();
-    focus.set_point(focus_msl);
+    let origin = event.point().to_altitude(MAX_ELEVATION);
+    let ray = Ray::new(origin.into(), Vector::new(0., -1., 0.));
+    let intersection = terrain.cast_ray_msl(&ray, f32::INFINITY).unwrap();
+    let focused_point = ray.origin + intersection.toi * ray.dir;
+    focus.set_point(focused_point.into());
+    out_events.send(UpdateTranslationEvent);
+}
 
-    let mut camera_transform = camera_query.single_mut();
-    camera_transform.translation =
-        focus_msl + f32::from(focus.distance()) * camera_transform.back();
+fn update_translation_handler(
+    mut events: EventReader<UpdateTranslationEvent>,
+    focus: Res<CameraFocus>,
+    mut camera_query: Query<&mut Transform, With<Camera3d>>,
+) {
+    if events.iter().count() == 0 {
+        return;
+    }
+
+    let mut transform = camera_query.single_mut();
+    transform.translation = focus.point() + f32::from(focus.distance()) * transform.back();
 }
 
 fn move_horizontaly(

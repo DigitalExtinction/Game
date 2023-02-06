@@ -11,6 +11,8 @@ use marker::MarkerPlugin;
 use plugin::TerrainPlugin;
 pub use terrain::TerrainBundle;
 
+pub const MAX_ELEVATION: f32 = 1024.;
+
 pub struct TerrainPluginGroup;
 
 impl PluginGroup for TerrainPluginGroup {
