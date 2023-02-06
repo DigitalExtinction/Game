@@ -101,6 +101,9 @@
 
 * Inter-crate interaction leans heavily on the usage of Bevy events.
 
+* All components and resources exposed in a crate public API, must be inserted,
+  removed and modified only from their respective crate.
+
 ## Getting Oriented
 
 Rust documentation is automatically build and deployed from `main` branch to
