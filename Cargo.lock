@@ -1949,6 +1949,7 @@ dependencies = [
  "async-std",
  "bevy",
  "de_core",
+ "de_gui",
  "de_uom",
  "dirs",
  "futures-lite",
@@ -2031,6 +2032,7 @@ name = "de_gui"
 version = "0.1.0-dev"
 dependencies = [
  "bevy",
+ "de_core",
  "iyes_loopless",
 ]
 

@@ -1,6 +1,7 @@
 use std::{collections::VecDeque, time::Duration};
 
 use bevy::prelude::*;
+use de_core::state::AppState;
 use iyes_loopless::prelude::*;
 
 use crate::text::TextProps;
@@ -18,7 +19,7 @@ impl Plugin for ToastPlugin {
                     .with_system(process_events.label(ToastLabel::ProcessEvents))
                     .with_system(
                         spawn_and_despawn
-                            .run_if_resource_exists::<TextProps>()
+                            .run_not_in_state(AppState::AppLoading)
                             .after(ToastLabel::ProcessEvents),
                     ),
             );
