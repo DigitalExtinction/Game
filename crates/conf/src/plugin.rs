@@ -5,6 +5,7 @@ use bevy::{
     tasks::{IoTaskPool, Task},
 };
 use de_core::{log_full_error, state::AppState};
+use de_gui::ToastEvent;
 use futures_lite::future;
 use iyes_loopless::prelude::*;
 use iyes_progress::prelude::*;
@@ -51,6 +52,7 @@ fn poll_conf(
     mut commands: Commands,
     task: Option<ResMut<LoadingTask>>,
     conf: Option<Res<Configuration>>,
+    mut toasts: EventWriter<ToastEvent>,
 ) -> Progress {
     if conf.is_some() {
         return true.into();
@@ -64,10 +66,14 @@ fn poll_conf(
                     true.into()
                 }
                 Err(error) => {
-                    let error = error.context("Failed to load game configuration");
+                    toasts.send(ToastEvent::new(format!(
+                        "Configuration loading failed: {error}"
+                    )));
                     let error: &dyn Error = error.as_ref();
                     log_full_error!(error);
-                    panic!("{}", error);
+
+                    commands.init_resource::<Configuration>();
+                    true.into()
                 }
             },
             None => false.into(),

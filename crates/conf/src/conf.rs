@@ -25,6 +25,12 @@ impl Configuration {
     }
 }
 
+impl Default for Configuration {
+    fn default() -> Self {
+        persisted::Configuration::default().try_into().unwrap()
+    }
+}
+
 impl TryFrom<persisted::Configuration> for Configuration {
     type Error = Error;
 

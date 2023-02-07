@@ -5,13 +5,14 @@ use bevy::prelude::info;
 use crate::{conf, persisted};
 
 pub(super) async fn load_conf(path: &Path) -> Result<conf::Configuration> {
-    let persistent: persisted::Configuration = match load_conf_text(path).await? {
+    match load_conf_text(path).await? {
         Some(text) => {
-            serde_yaml::from_str(text.as_str()).context("Failed to parse DE configuration")?
+            let persistent: persisted::Configuration =
+                serde_yaml::from_str(text.as_str()).context("Failed to parse DE configuration")?;
+            conf::Configuration::try_from(persistent)
         }
-        None => persisted::Configuration::default(),
-    };
-    conf::Configuration::try_from(persistent)
+        None => Ok(conf::Configuration::default()),
+    }
 }
 
 /// Loads configuration file to a string. Returns Ok(None) if the configuration

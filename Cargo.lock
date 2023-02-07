@@ -1949,6 +1949,7 @@ dependencies = [
  "async-std",
  "bevy",
  "de_core",
+ "de_gui",
  "de_uom",
  "dirs",
  "futures-lite",
