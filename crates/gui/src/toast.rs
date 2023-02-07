@@ -6,7 +6,8 @@ use iyes_loopless::prelude::*;
 
 use crate::text::TextProps;
 
-const TOAST_DURATION: Duration = Duration::from_secs(2);
+const MIN_TOAST_DURATION: Duration = Duration::from_secs(2);
+const PER_BYTE_TOAST_DURATION: Duration = Duration::from_nanos(84000000);
 
 pub(crate) struct ToastPlugin;
 
@@ -115,8 +116,10 @@ fn spawn_and_despawn(
 
     let current = match queue.pop() {
         Some(text) => {
+            let duration = (text.len() as f32) * PER_BYTE_TOAST_DURATION.as_secs_f32();
+            let duration = Duration::from_secs_f32(duration).max(MIN_TOAST_DURATION);
             let entity = spawn(&mut commands, text_props.as_ref(), text);
-            Some(CurrentToast::new(now + TOAST_DURATION, entity))
+            Some(CurrentToast::new(now + duration, entity))
         }
         None => None,
     };
