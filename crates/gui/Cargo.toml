@@ -12,5 +12,9 @@ license.workspace = true
 categories.workspace = true
 
 [dependencies]
+# DE
+de_core.workspace = true
+
+# Other
 bevy.workspace = true
 iyes_loopless.workspace = true
