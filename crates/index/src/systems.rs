@@ -43,7 +43,7 @@ pub(crate) struct IndexPlugin;
 impl Plugin for IndexPlugin {
     fn build(&self, app: &mut App) {
         app.add_enter_system(AppState::InGame, setup)
-            .add_exit_system(AppState::InGame, destruct)
+            .add_exit_system(AppState::InGame, cleanup)
             .add_system_to_stage(
                 GameStage::PostUpdate,
                 insert
@@ -77,7 +77,7 @@ fn setup(mut commands: Commands) {
     commands.insert_resource(EntityIndex::new());
 }
 
-fn destruct(mut commands: Commands) {
+fn cleanup(mut commands: Commands) {
     commands.remove_resource::<EntityIndex>();
 }
 
