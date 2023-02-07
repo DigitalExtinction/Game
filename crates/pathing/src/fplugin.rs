@@ -41,9 +41,10 @@ pub struct FinderPlugin;
 
 impl Plugin for FinderPlugin {
     fn build(&self, app: &mut App) {
-        app.init_resource::<UpdateFinderState>()
-            .add_event::<PathFinderUpdated>()
-            .add_enter_system(GameState::Playing, setup)
+        app.add_event::<PathFinderUpdated>()
+            .add_enter_system(GameState::Loading, setup_loading)
+            .add_enter_system(GameState::Playing, setup_playing)
+            .add_exit_system(AppState::InGame, cleanup)
             .add_system_to_stage(
                 GameStage::PostUpdate,
                 check_removed
@@ -158,8 +159,17 @@ impl Default for UpdateFinderState {
 type ChangedQuery<'world, 'state> =
     Query<'world, 'state, Entity, (With<StaticSolid>, Changed<Transform>)>;
 
-fn setup(mut commands: Commands, bounds: Res<MapBounds>) {
+fn setup_loading(mut commands: Commands) {
+    commands.init_resource::<UpdateFinderState>();
+}
+
+fn setup_playing(mut commands: Commands, bounds: Res<MapBounds>) {
     commands.insert_resource(FinderRes::new(PathFinder::new(bounds.as_ref())));
+}
+
+fn cleanup(mut commands: Commands) {
+    commands.remove_resource::<UpdateFinderState>();
+    commands.remove_resource::<FinderRes>();
 }
 
 fn check_removed(mut state: ResMut<UpdateFinderState>, removed: RemovedComponents<StaticSolid>) {

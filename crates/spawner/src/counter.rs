@@ -12,10 +12,12 @@ pub(crate) struct CounterPlugin;
 
 impl Plugin for CounterPlugin {
     fn build(&self, app: &mut App) {
-        app.init_resource::<ObjectCounter>().add_system_to_stage(
-            GameStage::PostUpdate,
-            recount.run_in_state(AppState::InGame),
-        );
+        app.add_enter_system(AppState::InGame, setup)
+            .add_exit_system(AppState::InGame, cleanup)
+            .add_system_to_stage(
+                GameStage::PostUpdate,
+                recount.run_in_state(AppState::InGame),
+            );
     }
 }
 
@@ -34,6 +36,14 @@ impl ObjectCounter {
     pub fn unit_count(&self) -> usize {
         self.unit_count
     }
+}
+
+fn setup(mut commands: Commands) {
+    commands.init_resource::<ObjectCounter>();
+}
+
+fn cleanup(mut commands: Commands) {
+    commands.remove_resource::<ObjectCounter>();
 }
 
 fn recount(

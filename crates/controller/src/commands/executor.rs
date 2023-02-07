@@ -1,5 +1,5 @@
 use bevy::prelude::*;
-use de_behaviour::ChaseTarget;
+use de_behaviour::ChaseTargetEvent;
 use de_combat::AttackEvent;
 use de_core::{objects::MovableSolid, stages::GameStage, state::AppState};
 use de_pathing::{PathQueryProps, PathTarget, UpdateEntityPath};
@@ -67,17 +67,14 @@ impl GroupAttackEvent {
 type SelectedMovable = (With<Selected>, With<MovableSolid>);
 
 fn send_selected_system(
-    mut commands: Commands,
     mut send_events: EventReader<SendSelectedEvent>,
-    selected: Query<(Entity, Option<&ChaseTarget>), SelectedMovable>,
+    selected: Query<Entity, SelectedMovable>,
     mut path_events: EventWriter<UpdateEntityPath>,
+    mut chase_events: EventWriter<ChaseTargetEvent>,
 ) {
     if let Some(send) = send_events.iter().last() {
-        for (entity, chase) in selected.iter() {
-            if chase.is_some() {
-                commands.entity(entity).remove::<ChaseTarget>();
-            }
-
+        for entity in selected.iter() {
+            chase_events.send(ChaseTargetEvent::new(entity, None));
             path_events.send(UpdateEntityPath::new(
                 entity,
                 PathTarget::new(send.target(), PathQueryProps::exact(), false),

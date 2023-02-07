@@ -37,6 +37,7 @@ impl Plugin for BarsPlugin {
             .add_event::<UpdateBarValueEvent>()
             .add_event::<UpdateBarVisibilityEvent>()
             .add_enter_system(GameState::Loading, setup)
+            .add_exit_system(AppState::InGame, cleanup)
             .add_system_set_to_stage(
                 GameStage::PostUpdate,
                 SystemSet::new()
@@ -178,6 +179,10 @@ struct BarChild(Entity);
 
 fn setup(mut commans: Commands, mut meshes: ResMut<Assets<Mesh>>) {
     commans.insert_resource(BarMesh(meshes.add(bar_mesh(1.5, 0.3))));
+}
+
+fn cleanup(mut commands: Commands) {
+    commands.remove_resource::<BarMesh>();
 }
 
 fn spawn(

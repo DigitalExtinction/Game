@@ -2,7 +2,7 @@
 
 use bevy::{app::PluginGroupBuilder, prelude::PluginGroup};
 use chase::ChasePlugin;
-pub use chase::ChaseTarget;
+pub use chase::{ChaseLabel, ChaseTarget, ChaseTargetComponent, ChaseTargetEvent};
 
 mod chase;
 

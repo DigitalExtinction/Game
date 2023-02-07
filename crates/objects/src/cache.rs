@@ -6,7 +6,7 @@ use bevy::{
 };
 use de_core::{
     objects::{ActiveObjectType, BuildingType, InactiveObjectType, ObjectType, UnitType},
-    state::GameState,
+    state::{AppState, GameState},
 };
 use enum_map::{enum_map, EnumMap};
 use iyes_loopless::prelude::*;
@@ -25,6 +25,7 @@ impl Plugin for CachePlugin {
         app.add_asset::<ObjectInfo>()
             .add_asset_loader(ObjectLoader)
             .add_enter_system(GameState::Loading, setup)
+            .add_exit_system(AppState::InGame, cleanup)
             .add_system(
                 check_status
                     .track_progress()
@@ -194,6 +195,11 @@ impl ItemLoader {
 
 fn setup(mut commands: Commands, server: Res<AssetServer>) {
     commands.insert_resource(CacheLoader::load(server.as_ref()));
+}
+
+fn cleanup(mut commands: Commands) {
+    commands.remove_resource::<CacheLoader>();
+    commands.remove_resource::<ObjectCache>();
 }
 
 fn check_status(

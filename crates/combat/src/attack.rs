@@ -1,7 +1,7 @@
 use std::{cmp::Ordering, collections::BinaryHeap};
 
 use bevy::prelude::*;
-use de_behaviour::ChaseTarget;
+use de_behaviour::{ChaseLabel, ChaseTarget, ChaseTargetComponent, ChaseTargetEvent};
 use de_core::{objects::ObjectType, stages::GameStage, state::GameState};
 use de_objects::{ColliderCache, LaserCannon, ObjectCache};
 use iyes_loopless::prelude::*;
@@ -24,7 +24,9 @@ impl Plugin for AttackPlugin {
         app.add_event::<AttackEvent>()
             .add_system_to_stage(
                 GameStage::PreUpdate,
-                attack.run_in_state(GameState::Playing),
+                attack
+                    .run_in_state(GameState::Playing)
+                    .before(ChaseLabel::ChaseTargetEvent),
             )
             .add_system_set_to_stage(
                 GameStage::Update,
@@ -67,17 +69,18 @@ impl AttackEvent {
 struct Attacking;
 
 fn attack(
-    mut commands: Commands,
-    mut events: EventReader<AttackEvent>,
+    mut attack_events: EventReader<AttackEvent>,
     cannons: Query<&LaserCannon>,
+    mut chase_events: EventWriter<ChaseTargetEvent>,
 ) {
-    for event in events.iter() {
+    for event in attack_events.iter() {
         if let Ok(cannon) = cannons.get(event.attacker()) {
-            commands.entity(event.attacker()).insert(ChaseTarget::new(
+            let target = ChaseTarget::new(
                 event.enemy(),
                 MIN_CHASE_DISTNACE * cannon.range(),
                 MAX_CHASE_DISTNACE * cannon.range(),
-            ));
+            );
+            chase_events.send(ChaseTargetEvent::new(event.attacker(), Some(target)));
         }
     }
 }
@@ -95,7 +98,7 @@ fn aim_and_fire(
         Entity,
         &Transform,
         &mut LaserCannon,
-        &ChaseTarget,
+        &ChaseTargetComponent,
         Option<&Attacking>,
     )>,
     targets: Query<(&Transform, &ObjectType)>,
@@ -108,7 +111,7 @@ fn aim_and_fire(
     let mut fire_queue = BinaryHeap::new();
 
     for (attacker, attacker_transform, mut cannon, target, marker) in attackers {
-        let target_position = match targets.get(target.entity()) {
+        let target_position = match targets.get(target.target()) {
             Ok((transform, &object_type)) => {
                 let centroid: Vec3 = cache.get_collider(object_type).aabb().center().into();
                 transform.translation + centroid
@@ -124,7 +127,7 @@ fn aim_and_fire(
         let aims_at_target = sightline
             .sight(&ray, cannon.range(), attacker)
             .entity()
-            .map_or(true, |e| e != target.entity());
+            .map_or(true, |e| e != target.target());
 
         if aims_at_target {
             if marker.is_some() {

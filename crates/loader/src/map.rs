@@ -5,15 +5,17 @@ use bevy::{
 use de_camera::MoveFocusEvent;
 use de_core::{
     assets::asset_path,
+    cleanup::DespawnOnGameExit,
     gconfig::GameConfig,
     log_full_error,
     objects::{ActiveObjectType, BuildingType, ObjectType},
-    state::GameState,
+    state::{AppState, GameState},
 };
 use de_map::{
     content::InnerObject,
     io::{load_map, MapLoadingError},
     map::Map,
+    size::MapBounds,
 };
 use de_spawner::SpawnBundle;
 use de_terrain::TerrainBundle;
@@ -26,12 +28,19 @@ pub(crate) struct MapLoaderPlugin;
 impl Plugin for MapLoaderPlugin {
     fn build(&self, app: &mut App) {
         app.add_enter_system(GameState::Loading, load_map_system)
+            .add_exit_system(AppState::InGame, cleanup)
             .add_system(spawn_map.track_progress().run_in_state(GameState::Loading));
     }
 }
 
 #[derive(Resource)]
 struct MapLoadingTask(Task<Result<Map, MapLoadingError>>);
+
+fn cleanup(mut commands: Commands) {
+    commands.remove_resource::<MapLoadingTask>();
+    commands.remove_resource::<MapBounds>();
+    commands.remove_resource::<AmbientLight>();
+}
 
 fn load_map_system(mut commands: Commands, game_config: Res<GameConfig>) {
     let map_path = if game_config.map_path().is_relative() {
@@ -94,7 +103,10 @@ fn spawn_map(
     }
 
     setup_light(&mut commands);
-    commands.spawn(TerrainBundle::flat(map.metadata().bounds()));
+    commands.spawn((
+        TerrainBundle::flat(map.metadata().bounds()),
+        DespawnOnGameExit,
+    ));
 
     for object in map.content().objects() {
         let mut entity_commands = commands.spawn_empty();
@@ -105,9 +117,9 @@ fn spawn_map(
             }
             InnerObject::Inactive(object) => ObjectType::Inactive(object.object_type()),
         };
-        entity_commands.insert(SpawnBundle::new(
-            object_type,
-            object.placement().to_transform(),
+        entity_commands.insert((
+            SpawnBundle::new(object_type, object.placement().to_transform()),
+            DespawnOnGameExit,
         ));
     }
 
@@ -123,13 +135,16 @@ fn setup_light(commands: &mut Commands) {
 
     let mut transform = Transform::IDENTITY;
     transform.look_at(Vec3::new(1., -1., 0.), Vec3::new(1., 1., 0.));
-    commands.spawn(DirectionalLightBundle {
-        directional_light: DirectionalLight {
-            color: Color::WHITE,
-            illuminance: 30000.,
+    commands.spawn((
+        DirectionalLightBundle {
+            directional_light: DirectionalLight {
+                color: Color::WHITE,
+                illuminance: 30000.,
+                ..Default::default()
+            },
+            transform,
             ..Default::default()
         },
-        transform,
-        ..Default::default()
-    });
+        DespawnOnGameExit,
+    ));
 }

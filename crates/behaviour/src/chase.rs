@@ -7,17 +7,65 @@ pub(crate) struct ChasePlugin;
 
 impl Plugin for ChasePlugin {
     fn build(&self, app: &mut App) {
-        app.add_system_set_to_stage(
-            GameStage::Update,
-            SystemSet::new().with_system(chase.run_in_state(GameState::Playing)),
-        );
+        app.add_event::<ChaseTargetEvent>()
+            .add_system_to_stage(
+                GameStage::PreUpdate,
+                handle_chase_events
+                    .run_in_state(GameState::Playing)
+                    .label(ChaseLabel::ChaseTargetEvent),
+            )
+            .add_system_set_to_stage(
+                GameStage::Update,
+                SystemSet::new().with_system(chase.run_in_state(GameState::Playing)),
+            );
+    }
+}
+
+#[derive(Copy, Clone, Hash, Debug, PartialEq, Eq, SystemLabel)]
+pub enum ChaseLabel {
+    ChaseTargetEvent,
+}
+
+/// Send this event to start or stop chasing of an entity (movable or static).
+pub struct ChaseTargetEvent {
+    entity: Entity,
+    target: Option<ChaseTarget>,
+}
+
+impl ChaseTargetEvent {
+    /// Creates a new chase event.
+    ///
+    /// # Arguments
+    ///
+    /// * `entity` - the chasing entity.
+    ///
+    /// * `target` - target to chase or None if chasing shall be stopped.
+    pub fn new(entity: Entity, target: Option<ChaseTarget>) -> Self {
+        Self { entity, target }
+    }
+
+    fn entity(&self) -> Entity {
+        self.entity
+    }
+
+    fn target(&self) -> Option<&ChaseTarget> {
+        self.target.as_ref()
     }
 }
 
 /// Units with this component will chase the target entity.
-#[derive(Component)]
+#[derive(Component, Deref)]
+pub struct ChaseTargetComponent(ChaseTarget);
+
+impl ChaseTargetComponent {
+    fn new(target: ChaseTarget) -> Self {
+        Self(target)
+    }
+}
+
+#[derive(Clone)]
 pub struct ChaseTarget {
-    entity: Entity,
+    target: Entity,
     min_distance: f32,
     max_distance: f32,
 }
@@ -27,7 +75,7 @@ impl ChaseTarget {
     ///
     /// # Arguments
     ///
-    /// * `entity` - entity to chase.
+    /// * `target` - entity to chase.
     ///
     /// * `min_distance` - minimum distance between the chasing entity and the
     ///   cased entity. Elevation is ignored during the distance calculation.
@@ -40,7 +88,7 @@ impl ChaseTarget {
     /// May panic if `min_distance` or `max_distance` is not non-negative
     /// finite number or when `min_distance` is greater or equal to
     /// `max_distance`.
-    pub fn new(entity: Entity, min_distance: f32, max_distance: f32) -> Self {
+    pub fn new(target: Entity, min_distance: f32, max_distance: f32) -> Self {
         debug_assert!(min_distance.is_finite());
         debug_assert!(max_distance.is_finite());
         debug_assert!(min_distance >= 0.);
@@ -48,14 +96,14 @@ impl ChaseTarget {
         debug_assert!(min_distance < max_distance);
 
         Self {
-            entity,
+            target,
             min_distance,
             max_distance,
         }
     }
 
-    pub fn entity(&self) -> Entity {
-        self.entity
+    pub fn target(&self) -> Entity {
+        self.target
     }
 
     fn min_distance(&self) -> f32 {
@@ -67,17 +115,32 @@ impl ChaseTarget {
     }
 }
 
+fn handle_chase_events(mut commands: Commands, mut events: EventReader<ChaseTargetEvent>) {
+    for event in events.iter() {
+        let mut entity_commands = commands.entity(event.entity());
+        match event.target() {
+            Some(target) => entity_commands.insert(ChaseTargetComponent::new(target.clone())),
+            None => entity_commands.remove::<ChaseTargetComponent>(),
+        };
+    }
+}
+
 fn chase(
     mut commands: Commands,
     mut path_events: EventWriter<UpdateEntityPath>,
-    chasing: Query<(Entity, &Transform, &ChaseTarget, Option<&PathTarget>)>,
+    chasing: Query<(
+        Entity,
+        &Transform,
+        &ChaseTargetComponent,
+        Option<&PathTarget>,
+    )>,
     targets: Query<&Transform>,
 ) {
     for (entity, transform, chase_target, path_target) in chasing.iter() {
-        let target_position = match targets.get(chase_target.entity()) {
+        let target_position = match targets.get(chase_target.target()) {
             Ok(transform) => transform.translation.to_flat(),
             Err(_) => {
-                commands.entity(entity).remove::<ChaseTarget>();
+                commands.entity(entity).remove::<ChaseTargetComponent>();
                 continue;
             }
         };
