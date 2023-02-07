@@ -16,6 +16,7 @@ pub(super) struct ConfPlugin;
 impl Plugin for ConfPlugin {
     fn build(&self, app: &mut App) {
         app.add_enter_system(AppState::AppLoading, start_loading)
+            .add_exit_system(AppState::AppLoading, cleanup)
             .add_system(
                 poll_conf
                     .track_progress()
@@ -26,6 +27,10 @@ impl Plugin for ConfPlugin {
 
 #[derive(Resource)]
 struct LoadingTask(Task<Result<Configuration>>);
+
+fn cleanup(mut commands: Commands) {
+    commands.remove_resource::<LoadingTask>();
+}
 
 fn start_loading(mut commands: Commands) {
     let task = IoTaskPool::get().spawn(async {
