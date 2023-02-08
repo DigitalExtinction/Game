@@ -39,7 +39,6 @@ struct MapLoadingTask(Task<Result<Map, MapLoadingError>>);
 fn cleanup(mut commands: Commands) {
     commands.remove_resource::<MapLoadingTask>();
     commands.remove_resource::<MapBounds>();
-    commands.remove_resource::<AmbientLight>();
 }
 
 fn load_map_system(mut commands: Commands, game_config: Res<GameConfig>) {
