@@ -14,7 +14,7 @@ use de_camera::{CameraDistance, DistanceLabels};
 use de_core::{
     objects::{Active, ObjectType},
     stages::GameStage,
-    state::{AppState, GameState},
+    state::AppState,
     visibility::{VisibilityFlags, VisibilityLabels},
 };
 use de_objects::{ColliderCache, ObjectCache};
@@ -36,7 +36,7 @@ impl Plugin for BarsPlugin {
         app.add_plugin(MaterialPlugin::<BarMaterial>::default())
             .add_event::<UpdateBarValueEvent>()
             .add_event::<UpdateBarVisibilityEvent>()
-            .add_enter_system(GameState::Loading, setup)
+            .add_enter_system(AppState::InGame, setup)
             .add_exit_system(AppState::InGame, cleanup)
             .add_system_set_to_stage(
                 GameStage::PostUpdate,

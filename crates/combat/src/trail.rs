@@ -28,7 +28,7 @@ impl Plugin for TrailPlugin {
     fn build(&self, app: &mut App) {
         app.add_plugin(MaterialPlugin::<TrailMaterial>::default())
             .add_event::<TrailEvent>()
-            .add_enter_system(GameState::Loading, setup)
+            .add_enter_system(AppState::InGame, setup)
             .add_exit_system(AppState::InGame, cleanup)
             .add_system_set_to_stage(
                 GameStage::PostUpdate,

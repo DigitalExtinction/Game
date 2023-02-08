@@ -42,7 +42,7 @@ pub struct FinderPlugin;
 impl Plugin for FinderPlugin {
     fn build(&self, app: &mut App) {
         app.add_event::<PathFinderUpdated>()
-            .add_enter_system(GameState::Loading, setup_loading)
+            .add_enter_system(AppState::InGame, setup_loading)
             .add_enter_system(GameState::Playing, setup_playing)
             .add_exit_system(AppState::InGame, cleanup)
             .add_system_to_stage(

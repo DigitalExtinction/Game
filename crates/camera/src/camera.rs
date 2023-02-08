@@ -49,7 +49,7 @@ impl Plugin for CameraPlugin {
             .add_plugin(ResendEventPlugin::<MoveFocusEvent>::default())
             .add_event::<FocusInvalidatedEvent>()
             .add_event::<UpdateTranslationEvent>()
-            .add_enter_system(GameState::Loading, setup)
+            .add_enter_system(AppState::InGame, setup)
             .add_exit_system(AppState::InGame, cleanup)
             .add_system_to_stage(
                 GameStage::PreMovement,

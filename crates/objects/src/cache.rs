@@ -24,7 +24,7 @@ impl Plugin for CachePlugin {
     fn build(&self, app: &mut App) {
         app.add_asset::<ObjectInfo>()
             .add_asset_loader(ObjectLoader)
-            .add_enter_system(GameState::Loading, setup)
+            .add_enter_system(AppState::InGame, setup)
             .add_exit_system(AppState::InGame, cleanup)
             .add_system(
                 check_status

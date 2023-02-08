@@ -27,7 +27,7 @@ pub(crate) struct MapLoaderPlugin;
 
 impl Plugin for MapLoaderPlugin {
     fn build(&self, app: &mut App) {
-        app.add_enter_system(GameState::Loading, load_map_system)
+        app.add_enter_system(AppState::InGame, load_map_system)
             .add_exit_system(AppState::InGame, cleanup)
             .add_system(spawn_map.track_progress().run_in_state(GameState::Loading));
     }
