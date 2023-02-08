@@ -33,7 +33,7 @@ pub(crate) struct DraftPlugin;
 
 impl Plugin for DraftPlugin {
     fn build(&self, app: &mut App) {
-        app.add_startup_system(insert_materials)
+        app.add_enter_system(AppState::InGame, insert_materials)
             .add_exit_system(AppState::InGame, cleanup)
             .add_system_to_stage(
                 GameStage::Update,
