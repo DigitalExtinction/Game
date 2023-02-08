@@ -363,11 +363,12 @@ fn handle_escape(
 
 fn place_draft(
     building_type: BuildingType,
-) -> impl Fn(Res<ObjectCounter>, Res<Pointer>, EventWriter<NewDraftEvent>) {
-    move |counter: Res<ObjectCounter>,
+) -> impl Fn(Res<GameConfig>, Res<ObjectCounter>, Res<Pointer>, EventWriter<NewDraftEvent>) {
+    move |conf: Res<GameConfig>,
+          counter: Res<ObjectCounter>,
           pointer: Res<Pointer>,
           mut events: EventWriter<NewDraftEvent>| {
-        if counter.building_count() >= PLAYER_MAX_BUILDINGS {
+        if counter.player(conf.player()).unwrap().building_count() >= PLAYER_MAX_BUILDINGS {
             warn!("Maximum number of buildings reached.");
             return;
         }

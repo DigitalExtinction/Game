@@ -107,15 +107,26 @@ fn spawn_map(
         DespawnOnGameExit,
     ));
 
+    let players = game_config.players();
     for object in map.content().objects() {
-        let mut entity_commands = commands.spawn_empty();
-        let object_type = match object.inner() {
+        let (mut entity_commands, object_type) = match object.inner() {
             InnerObject::Active(object) => {
-                entity_commands.insert(object.player());
-                ObjectType::Active(object.object_type())
+                let player = object.player();
+                if !players.contains(player) {
+                    continue;
+                }
+
+                (
+                    commands.spawn(player),
+                    ObjectType::Active(object.object_type()),
+                )
             }
-            InnerObject::Inactive(object) => ObjectType::Inactive(object.object_type()),
+            InnerObject::Inactive(object) => (
+                commands.spawn_empty(),
+                ObjectType::Inactive(object.object_type()),
+            ),
         };
+
         entity_commands.insert((
             SpawnBundle::new(object_type, object.placement().to_transform()),
             DespawnOnGameExit,

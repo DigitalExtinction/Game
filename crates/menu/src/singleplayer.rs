@@ -101,7 +101,11 @@ fn button_system(
             match action {
                 ButtonAction::StartGame => match map.0.as_ref() {
                     Some(path) => {
-                        commands.insert_resource(GameConfig::new(path, Player::Player1));
+                        commands.insert_resource(GameConfig::new(
+                            path,
+                            Player::Player1,
+                            Player::Player4,
+                        ));
                         commands.insert_resource(NextState(MenuState::None));
                         commands.insert_resource(NextState(AppState::InGame));
                         commands.insert_resource(NextState(GameState::Loading));

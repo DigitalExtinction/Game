@@ -12,6 +12,8 @@ use de_objects::{IchnographyCache, InitialHealths, ObjectCache};
 use de_terrain::CircleMarker;
 use iyes_loopless::prelude::*;
 
+use crate::ObjectCounter;
+
 pub(crate) struct SpawnerPlugin;
 
 impl Plugin for SpawnerPlugin {
@@ -51,6 +53,7 @@ fn spawn(
     game_config: Res<GameConfig>,
     cache: Res<ObjectCache>,
     healths: Res<InitialHealths>,
+    mut counter: ResMut<ObjectCounter>,
     to_spawn: Query<(Entity, &ObjectType, Option<&Player>), With<Spawn>>,
 ) {
     for (entity, &object_type, player) in to_spawn.iter() {
@@ -65,6 +68,8 @@ fn spawn(
                 entity_commands.insert(Active);
 
                 let player = *player.expect("Active object without an associated was spawned.");
+                counter.player_mut(player).unwrap().update(active_type, 1);
+
                 if player == game_config.player() {
                     entity_commands.insert(Playable);
                 }

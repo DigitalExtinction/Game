@@ -8,9 +8,9 @@ use enum_map::Enum;
 use serde::{Deserialize, Serialize};
 
 /// Maximum number of buildings belonging to a single player.
-pub const PLAYER_MAX_BUILDINGS: usize = 128;
+pub const PLAYER_MAX_BUILDINGS: u32 = 128;
 /// Maximum number of units belonging to a single player.
-pub const PLAYER_MAX_UNITS: usize = 1024;
+pub const PLAYER_MAX_UNITS: u32 = 1024;
 
 /// Active object which can be played by any player.
 #[derive(Component)]
