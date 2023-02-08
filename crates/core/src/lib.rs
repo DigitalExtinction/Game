@@ -13,6 +13,7 @@ pub mod events;
 pub mod frustum;
 pub mod gamestate;
 pub mod gconfig;
+pub mod gresult;
 pub mod objects;
 pub mod player;
 pub mod projection;

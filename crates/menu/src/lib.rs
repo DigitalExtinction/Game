@@ -1,6 +1,7 @@
+use aftergame::AfterGamePlugin;
 use bevy::{app::PluginGroupBuilder, prelude::*};
 use create::CreateGamePlugin;
-use de_core::state::AppState;
+use de_core::{gresult::GameResult, state::AppState};
 use gamelisting::GameListingPlugin;
 use iyes_loopless::prelude::*;
 use iyes_loopless::state::NextState;
@@ -10,6 +11,7 @@ use menu::MenuPlugin;
 use signin::SignInPlugin;
 use singleplayer::SinglePlayerPlugin;
 
+mod aftergame;
 mod create;
 mod gamelisting;
 mod mainmenu;
@@ -32,6 +34,7 @@ impl PluginGroup for MenuPluginGroup {
             .add(GameListingPlugin)
             .add(SinglePlayerPlugin)
             .add(CreateGamePlugin)
+            .add(AfterGamePlugin)
     }
 }
 
@@ -54,10 +57,15 @@ pub(crate) enum MenuState {
     GameListing,
     GameCreation,
     MultiPlayerGame,
+    AfterGame,
 }
 
-fn menu_entered_system(mut commands: Commands) {
-    commands.insert_resource(NextState(MenuState::MainMenu));
+fn menu_entered_system(mut commands: Commands, result: Option<Res<GameResult>>) {
+    if result.is_some() {
+        commands.insert_resource(NextState(MenuState::AfterGame));
+    } else {
+        commands.insert_resource(NextState(MenuState::MainMenu));
+    }
 }
 
 fn menu_exited_system(mut commands: Commands) {

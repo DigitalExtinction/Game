@@ -6,12 +6,14 @@ pub use counter::ObjectCounter;
 use destroyer::DestroyerPlugin;
 use draft::DraftPlugin;
 pub use draft::{Draft, DraftBundle};
+use gameend::GameEndPlugin;
 pub use spawner::SpawnBundle;
 use spawner::SpawnerPlugin;
 
 mod counter;
 mod destroyer;
 mod draft;
+mod gameend;
 mod spawner;
 
 pub struct SpawnerPluginGroup;
@@ -23,6 +25,7 @@ impl PluginGroup for SpawnerPluginGroup {
             .add(SpawnerPlugin)
             .add(DraftPlugin)
             .add(DestroyerPlugin)
+            .add(GameEndPlugin)
     }
 }
 
