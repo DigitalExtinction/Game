@@ -1,7 +1,7 @@
 use bevy::prelude::*;
 use de_behaviour::ChaseTargetEvent;
 use de_combat::AttackEvent;
-use de_core::{objects::MovableSolid, stages::GameStage, state::AppState};
+use de_core::{objects::MovableSolid, stages::GameStage, state::GameState};
 use de_pathing::{PathQueryProps, PathTarget, UpdateEntityPath};
 use glam::Vec2;
 use iyes_loopless::prelude::*;
@@ -19,12 +19,12 @@ impl Plugin for ExecutorPlugin {
                 SystemSet::new()
                     .with_system(
                         send_selected_system
-                            .run_in_state(AppState::InGame)
+                            .run_in_state(GameState::Playing)
                             .label(CommandsLabel::SendSelected),
                     )
                     .with_system(
                         attack_system
-                            .run_in_state(AppState::InGame)
+                            .run_in_state(GameState::Playing)
                             .label(CommandsLabel::Attack),
                     ),
             );
