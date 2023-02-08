@@ -40,7 +40,8 @@ struct MenuSetupPlugin;
 impl Plugin for MenuSetupPlugin {
     fn build(&self, app: &mut App) {
         app.add_loopless_state_before_stage(CoreStage::PreUpdate, MenuState::None)
-            .add_enter_system(AppState::InMenu, menu_entered_system);
+            .add_enter_system(AppState::InMenu, menu_entered_system)
+            .add_exit_system(AppState::InMenu, menu_exited_system);
     }
 }
 
@@ -57,4 +58,8 @@ pub(crate) enum MenuState {
 
 fn menu_entered_system(mut commands: Commands) {
     commands.insert_resource(NextState(MenuState::MainMenu));
+}
+
+fn menu_exited_system(mut commands: Commands) {
+    commands.insert_resource(NextState(MenuState::None));
 }

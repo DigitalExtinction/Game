@@ -102,7 +102,6 @@ fn button_system(
                             Player::Player1,
                             Player::Player4,
                         ));
-                        commands.insert_resource(NextState(MenuState::None));
                         commands.insert_resource(NextState(AppState::InGame));
                     }
                     None => {
