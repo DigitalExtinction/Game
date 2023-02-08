@@ -40,3 +40,29 @@ impl Ord for Player {
         self.partial_cmp(other).unwrap()
     }
 }
+
+pub struct PlayerRange {
+    start: Player,
+    stop: Player,
+}
+
+impl PlayerRange {
+    /// Returns inclusive player range from first player to `stop`.
+    pub fn up_to(stop: Player) -> Self {
+        Self::new(Player::Player1, stop)
+    }
+
+    /// # Arguments
+    ///
+    /// * `start` - first player, inclusive.
+    ///
+    /// * `stop` - last player, inclusive.
+    pub fn new(start: Player, stop: Player) -> Self {
+        assert!(start <= stop);
+        Self { start, stop }
+    }
+
+    pub fn contains(&self, player: Player) -> bool {
+        self.start <= player && player <= self.stop
+    }
+}
