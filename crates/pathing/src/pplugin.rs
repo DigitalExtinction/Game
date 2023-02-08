@@ -37,7 +37,7 @@ pub struct PathingPlugin;
 impl Plugin for PathingPlugin {
     fn build(&self, app: &mut App) {
         app.add_event::<UpdateEntityPath>()
-            .add_enter_system(GameState::Loading, setup)
+            .add_enter_system(AppState::InGame, setup)
             .add_exit_system(AppState::InGame, cleanup)
             .add_system_to_stage(
                 GameStage::PreMovement,

@@ -22,7 +22,7 @@ pub(crate) struct TerrainPlugin;
 impl Plugin for TerrainPlugin {
     fn build(&self, app: &mut App) {
         app.add_plugin(MaterialPlugin::<TerrainMaterial>::default())
-            .add_enter_system(GameState::Loading, load)
+            .add_enter_system(AppState::InGame, load)
             .add_exit_system(AppState::InGame, cleanup)
             .add_system(
                 setup_textures
