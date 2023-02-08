@@ -26,9 +26,9 @@ impl Default for InitialHealths {
     fn default() -> Self {
         Self {
             healths: enum_map! {
-                ActiveObjectType::Building(BuildingType::Base) => Health::full(10_000.),
-                ActiveObjectType::Building(BuildingType::PowerHub) => Health::full(1000.),
-                ActiveObjectType::Unit(UnitType::Attacker) => Health::full(100.),
+                ActiveObjectType::Building(BuildingType::Base) => Health::full(100.),
+                ActiveObjectType::Building(BuildingType::PowerHub) => Health::full(40.),
+                ActiveObjectType::Unit(UnitType::Attacker) => Health::full(10.),
             },
         }
     }
