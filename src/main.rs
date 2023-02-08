@@ -10,10 +10,7 @@ use de_camera::CameraPluginGroup;
 use de_combat::CombatPluginGroup;
 use de_conf::ConfigPluginGroup;
 use de_controller::ControllerPluginGroup;
-use de_core::{
-    state::{AppState, GameState},
-    CorePluginGroup,
-};
+use de_core::{state::AppState, CorePluginGroup};
 use de_gui::GuiPluginGroup;
 use de_index::IndexPluginGroup;
 use de_loader::LoaderPluginGroup;
@@ -75,8 +72,7 @@ struct GamePlugin;
 
 impl Plugin for GamePlugin {
     fn build(&self, app: &mut App) {
-        app.add_loopless_state_before_stage(CoreStage::PreUpdate, AppState::AppLoading)
-            .add_loopless_state_before_stage(CoreStage::PreUpdate, GameState::None);
+        app.add_loopless_state_before_stage(CoreStage::PreUpdate, AppState::AppLoading);
 
         #[cfg(not(target_os = "macos"))]
         {

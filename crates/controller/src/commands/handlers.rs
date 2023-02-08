@@ -14,13 +14,13 @@ use de_camera::{
 };
 use de_conf::Configuration;
 use de_core::{
+    gamestate::GameState,
     gconfig::GameConfig,
     objects::{BuildingType, ObjectType, Playable, PLAYER_MAX_BUILDINGS},
     player::Player,
     projection::ToFlat,
     screengeom::ScreenRect,
     stages::GameStage,
-    state::GameState,
 };
 use de_spawner::{Draft, ObjectCounter};
 use enum_map::enum_map;

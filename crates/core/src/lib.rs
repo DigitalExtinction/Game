@@ -1,8 +1,9 @@
 use bevy::{app::PluginGroupBuilder, prelude::PluginGroup};
 use cleanup::CleanupPlugin;
+use gamestate::GameStatePlugin;
 use iyes_progress::prelude::*;
 use stages::StagesPlugin;
-use state::{AppState, GameState};
+use state::AppState;
 use visibility::VisibilityPlugin;
 
 pub mod assets;
@@ -10,6 +11,7 @@ pub mod cleanup;
 mod errors;
 pub mod events;
 pub mod frustum;
+pub mod gamestate;
 pub mod gconfig;
 pub mod objects;
 pub mod player;
@@ -25,8 +27,8 @@ impl PluginGroup for CorePluginGroup {
     fn build(self) -> PluginGroupBuilder {
         PluginGroupBuilder::start::<Self>()
             .add(ProgressPlugin::new(AppState::AppLoading).continue_to(AppState::InMenu))
-            .add(ProgressPlugin::new(GameState::Loading).continue_to(GameState::Playing))
             .add(StagesPlugin)
+            .add(GameStatePlugin)
             .add(VisibilityPlugin)
             .add(CleanupPlugin)
     }

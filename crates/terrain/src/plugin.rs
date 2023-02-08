@@ -6,10 +6,7 @@ use bevy::{
         texture::ImageSampler,
     },
 };
-use de_core::{
-    stages::GameStage,
-    state::{AppState, GameState},
-};
+use de_core::{gamestate::GameState, stages::GameStage, state::AppState};
 use iyes_loopless::prelude::*;
 use iyes_progress::prelude::*;
 

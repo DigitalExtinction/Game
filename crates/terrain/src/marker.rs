@@ -7,7 +7,8 @@ use bevy::{
     utils::FloatOrd,
 };
 use de_core::{
-    frustum, objects::ObjectType, projection::ToFlat, state::GameState, visibility::VisibilityFlags,
+    frustum, gamestate::GameState, objects::ObjectType, projection::ToFlat,
+    visibility::VisibilityFlags,
 };
 use de_objects::{ColliderCache, ObjectCache};
 use glam::Vec3A;

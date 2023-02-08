@@ -3,11 +3,8 @@ use std::f32::consts::FRAC_PI_2;
 use bevy::prelude::*;
 use de_conf::{CameraConf, Configuration};
 use de_core::{
-    cleanup::DespawnOnGameExit,
-    events::ResendEventPlugin,
-    projection::ToAltitude,
-    stages::GameStage,
-    state::{AppState, GameState},
+    cleanup::DespawnOnGameExit, events::ResendEventPlugin, gamestate::GameState,
+    projection::ToAltitude, stages::GameStage, state::AppState,
 };
 use de_map::size::MapBounds;
 use de_terrain::{TerrainCollider, MAX_ELEVATION};

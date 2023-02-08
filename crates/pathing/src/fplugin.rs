@@ -5,9 +5,10 @@ use bevy::{
     tasks::{AsyncComputeTaskPool, Task},
 };
 use de_core::{
+    gamestate::GameState,
     objects::{ObjectType, StaticSolid},
     stages::GameStage,
-    state::{AppState, GameState},
+    state::AppState,
 };
 use de_map::size::MapBounds;
 use de_objects::{IchnographyCache, ObjectCache};

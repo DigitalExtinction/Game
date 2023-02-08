@@ -1,9 +1,10 @@
 use bevy::prelude::*;
 use de_core::{
+    gamestate::GameState,
     objects::{MovableSolid, ObjectType, StaticSolid},
     projection::ToFlat,
     stages::GameStage,
-    state::{AppState, GameState},
+    state::AppState,
 };
 use de_map::size::MapBounds;
 use de_objects::{IchnographyCache, ObjectCache, EXCLUSION_OFFSET};

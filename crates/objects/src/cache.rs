@@ -5,8 +5,9 @@ use bevy::{
     prelude::*,
 };
 use de_core::{
+    gamestate::GameState,
     objects::{ActiveObjectType, BuildingType, InactiveObjectType, ObjectType, UnitType},
-    state::{AppState, GameState},
+    state::AppState,
 };
 use enum_map::{enum_map, EnumMap};
 use iyes_loopless::prelude::*;

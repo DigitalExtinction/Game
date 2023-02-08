@@ -1,5 +1,5 @@
 use bevy::prelude::*;
-use de_core::{cleanup::DespawnOnGameExit, state::GameState};
+use de_core::{cleanup::DespawnOnGameExit, gamestate::GameState};
 use iyes_loopless::prelude::*;
 
 use super::{interaction::InteractionBlocker, HUD_COLOR};

@@ -6,10 +6,11 @@ use de_camera::MoveFocusEvent;
 use de_core::{
     assets::asset_path,
     cleanup::DespawnOnGameExit,
+    gamestate::GameState,
     gconfig::GameConfig,
     log_full_error,
     objects::{ActiveObjectType, BuildingType, ObjectType},
-    state::{AppState, GameState},
+    state::AppState,
 };
 use de_map::{
     content::InnerObject,

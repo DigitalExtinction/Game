@@ -1,8 +1,9 @@
 use bevy::prelude::*;
 use de_core::{
+    gamestate::GameState,
     objects::{MovableSolid, ObjectType},
     stages::GameStage,
-    state::{AppState, GameState},
+    state::AppState,
 };
 use de_objects::ObjectCache;
 use iyes_loopless::prelude::*;

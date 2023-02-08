@@ -1,5 +1,5 @@
 use bevy::{prelude::*, render::texture::TextureFormatPixelInfo};
-use de_core::{cleanup::DespawnOnGameExit, stages::GameStage, state::GameState};
+use de_core::{cleanup::DespawnOnGameExit, gamestate::GameState, stages::GameStage};
 use iyes_loopless::prelude::*;
 use wgpu_types::{Extent3d, TextureDimension, TextureFormat};
 

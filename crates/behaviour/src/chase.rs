@@ -1,5 +1,5 @@
 use bevy::prelude::*;
-use de_core::{projection::ToFlat, stages::GameStage, state::GameState};
+use de_core::{gamestate::GameState, projection::ToFlat, stages::GameStage};
 use de_pathing::{PathQueryProps, PathTarget, UpdateEntityPath};
 use iyes_loopless::prelude::*;
 

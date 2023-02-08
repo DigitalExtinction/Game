@@ -1,9 +1,9 @@
 use bevy::prelude::*;
 use de_core::{
+    gamestate::GameState,
     objects::{MovableSolid, ObjectType, StaticSolid},
     projection::ToFlat,
     stages::GameStage,
-    state::GameState,
 };
 use de_index::SpatialQuery;
 use de_objects::{IchnographyCache, ObjectCache};

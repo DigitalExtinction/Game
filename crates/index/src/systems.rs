@@ -3,9 +3,10 @@
 
 use bevy::prelude::*;
 use de_core::{
+    gamestate::GameState,
     objects::{MovableSolid, ObjectType, StaticSolid},
     stages::GameStage,
-    state::{AppState, GameState},
+    state::AppState,
 };
 use de_objects::{ColliderCache, ObjectCache};
 use iyes_loopless::prelude::*;
@@ -34,10 +35,10 @@ type MovedQuery<'w, 's> =
 /// [`de_core::objects::MovableSolid`] are indexed.
 ///
 /// The systems are executed only in state
-/// [`de_core::state::GameState::Playing`]. The systems automatically insert
-/// newly spawned solid entities to the index, update their position when
-/// [`bevy::prelude::Transform`] is changed and remove the entities from the
-/// index when they are de-spawned.
+/// [`de_core::gamestate::GameState::Playing`]. The systems automatically
+/// insert newly spawned solid entities to the index, update their position
+/// when [`bevy::prelude::Transform`] is changed and remove the entities from
+/// the index when they are de-spawned.
 pub(crate) struct IndexPlugin;
 
 impl Plugin for IndexPlugin {

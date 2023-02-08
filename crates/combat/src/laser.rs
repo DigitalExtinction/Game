@@ -1,5 +1,5 @@
 use bevy::prelude::*;
-use de_core::{stages::GameStage, state::GameState};
+use de_core::{gamestate::GameState, stages::GameStage};
 use de_objects::Health;
 use de_signs::UpdateBarValueEvent;
 use de_spawner::SpawnerLabels;

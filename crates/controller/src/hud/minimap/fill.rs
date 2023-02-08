@@ -2,8 +2,8 @@ use std::marker::PhantomData;
 
 use bevy::{ecs::system::SystemParam, prelude::*};
 use de_core::{
-    gconfig::GameConfig, objects::ObjectType, player::Player, projection::ToFlat,
-    stages::GameStage, state::GameState,
+    gamestate::GameState, gconfig::GameConfig, objects::ObjectType, player::Player,
+    projection::ToFlat, stages::GameStage,
 };
 use de_map::size::MapBounds;
 use de_objects::{IchnographyCache, ObjectCache};

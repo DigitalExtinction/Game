@@ -12,9 +12,7 @@ use bevy::{
     },
 };
 use de_core::{
-    cleanup::DespawnOnGameExit,
-    stages::GameStage,
-    state::{AppState, GameState},
+    cleanup::DespawnOnGameExit, gamestate::GameState, stages::GameStage, state::AppState,
 };
 use iyes_loopless::prelude::*;
 use parry3d::query::Ray;
