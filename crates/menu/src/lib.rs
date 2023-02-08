@@ -39,7 +39,7 @@ struct MenuSetupPlugin;
 
 impl Plugin for MenuSetupPlugin {
     fn build(&self, app: &mut App) {
-        app.add_loopless_state(MenuState::None)
+        app.add_loopless_state_before_stage(CoreStage::PreUpdate, MenuState::None)
             .add_enter_system(AppState::InMenu, menu_entered_system);
     }
 }

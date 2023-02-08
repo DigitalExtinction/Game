@@ -75,8 +75,8 @@ struct GamePlugin;
 
 impl Plugin for GamePlugin {
     fn build(&self, app: &mut App) {
-        app.add_loopless_state(AppState::AppLoading)
-            .add_loopless_state(GameState::None);
+        app.add_loopless_state_before_stage(CoreStage::PreUpdate, AppState::AppLoading)
+            .add_loopless_state_before_stage(CoreStage::PreUpdate, GameState::None);
 
         #[cfg(not(target_os = "macos"))]
         {

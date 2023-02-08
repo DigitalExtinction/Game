@@ -19,7 +19,7 @@ pub(crate) struct MapSelectionPlugin;
 
 impl Plugin for MapSelectionPlugin {
     fn build(&self, app: &mut App) {
-        app.add_loopless_state(MapState::Off)
+        app.add_loopless_state_before_stage(CoreStage::PreUpdate, MapState::Off)
             .add_event::<SelectMapEvent>()
             .add_event::<MapSelectedEvent>()
             .add_enter_system(MapState::On, setup)
