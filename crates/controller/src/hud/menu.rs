@@ -1,7 +1,7 @@
 use core::fmt;
 
-use bevy::{app::AppExit, prelude::*};
-use de_core::{gamestate::GameState, stages::GameStage};
+use bevy::prelude::*;
+use de_core::{gamestate::GameState, stages::GameStage, state::AppState};
 use de_gui::{ButtonCommands, GuiCommands, OuterStyle};
 use iyes_loopless::prelude::*;
 
@@ -123,13 +123,13 @@ fn toggle_system(
 }
 
 fn button_system(
-    mut exit: EventWriter<AppExit>,
+    mut commands: Commands,
     interactions: Query<(&Interaction, &ButtonAction), Changed<Interaction>>,
 ) {
     for (&interaction, &action) in interactions.iter() {
         if let Interaction::Clicked = interaction {
             match action {
-                ButtonAction::Quit => exit.send(AppExit),
+                ButtonAction::Quit => commands.insert_resource(NextState(AppState::InMenu)),
             }
         }
     }
