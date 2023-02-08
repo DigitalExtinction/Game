@@ -50,8 +50,8 @@ impl MapContent {
     pub(crate) fn validate(&self, metadata: &MapMetadata) -> Result<(), MapContentValidationError> {
         #[derive(Default)]
         struct Counter {
-            buildings: usize,
-            units: usize,
+            buildings: u32,
+            units: u32,
         }
 
         let mut counts: AHashMap<Player, Counter> = AHashMap::new();
@@ -102,14 +102,14 @@ pub enum MapContentValidationError {
     #[error("maximum number {player} buildings is {max}, got {number}")]
     MaxBuildings {
         player: Player,
-        max: usize,
-        number: usize,
+        max: u32,
+        number: u32,
     },
     #[error("maximum number of {player} units is {max}, got {number}")]
     MaxUnits {
         player: Player,
-        max: usize,
-        number: usize,
+        max: u32,
+        number: u32,
     },
     #[error("invalid objects[{index}]")]
     Object {
