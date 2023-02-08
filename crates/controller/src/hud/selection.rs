@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 use de_core::{
-    cleanup::DespawnOnGameExit, screengeom::ScreenRect, stages::GameStage, state::GameState,
+    cleanup::DespawnOnGameExit, gamestate::GameState, screengeom::ScreenRect, stages::GameStage,
 };
 use iyes_loopless::prelude::*;
 

@@ -1,8 +1,5 @@
 use bevy::prelude::*;
-use de_core::{
-    stages::GameStage,
-    state::{AppState, GameState},
-};
+use de_core::{gamestate::GameState, stages::GameStage, state::AppState};
 use de_index::SpatialQuery;
 use de_signs::UpdateBarVisibilityEvent;
 use de_terrain::TerrainCollider;

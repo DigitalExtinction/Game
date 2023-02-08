@@ -3,11 +3,7 @@ use bevy::{
     input::{mouse::MouseButtonInput, ButtonState},
     prelude::*,
 };
-use de_core::{
-    screengeom::ScreenRect,
-    stages::GameStage,
-    state::{AppState, GameState},
-};
+use de_core::{gamestate::GameState, screengeom::ScreenRect, stages::GameStage, state::AppState};
 use iyes_loopless::prelude::*;
 
 use crate::hud::HudNodes;

@@ -1,10 +1,11 @@
 use bevy::prelude::*;
 use de_core::{
     cleanup::DespawnOnGameExit,
+    gamestate::GameState,
     gconfig::GameConfig,
     objects::{BuildingType, ObjectType},
     stages::GameStage,
-    state::{AppState, GameState},
+    state::AppState,
 };
 use de_spawner::{Draft, DraftBundle, SpawnBundle};
 use iyes_loopless::prelude::*;

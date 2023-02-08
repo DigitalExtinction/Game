@@ -9,7 +9,7 @@ use bevy::{
 };
 use iyes_loopless::prelude::*;
 
-use crate::state::GameState;
+use crate::gamestate::GameState;
 
 pub struct ResendEventPlugin<T: Event> {
     _marker: PhantomData<T>,

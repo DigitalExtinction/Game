@@ -1,7 +1,7 @@
 use bevy::prelude::*;
 use de_behaviour::ChaseTargetEvent;
 use de_combat::AttackEvent;
-use de_core::{objects::MovableSolid, stages::GameStage, state::GameState};
+use de_core::{gamestate::GameState, objects::MovableSolid, stages::GameStage};
 use de_pathing::{PathQueryProps, PathTarget, UpdateEntityPath};
 use glam::Vec2;
 use iyes_loopless::prelude::*;

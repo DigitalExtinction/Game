@@ -1,10 +1,6 @@
 use async_std::path::PathBuf;
 use bevy::prelude::*;
-use de_core::{
-    gconfig::GameConfig,
-    player::Player,
-    state::{AppState, GameState},
-};
+use de_core::{gconfig::GameConfig, player::Player, state::AppState};
 use de_gui::{ButtonCommands, GuiCommands, OuterStyle, ToastEvent};
 use iyes_loopless::prelude::*;
 
@@ -106,9 +102,7 @@ fn button_system(
                             Player::Player1,
                             Player::Player4,
                         ));
-                        commands.insert_resource(NextState(MenuState::None));
                         commands.insert_resource(NextState(AppState::InGame));
-                        commands.insert_resource(NextState(GameState::Loading));
                     }
                     None => {
                         toasts.send(ToastEvent::new("No map selected."));

@@ -7,10 +7,11 @@
 use bevy::prelude::*;
 use bevy::scene::SceneInstance;
 use de_core::{
+    gamestate::GameState,
     objects::{ActiveObjectType, BuildingType, MovableSolid, ObjectType, StaticSolid},
     projection::ToFlat,
     stages::GameStage,
-    state::{AppState, GameState},
+    state::AppState,
 };
 use de_index::{ColliderWithCache, IndexLabel, QueryCollider, SpatialQuery};
 use de_map::size::MapBounds;

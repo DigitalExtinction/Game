@@ -1,7 +1,7 @@
 use core::fmt;
 
 use bevy::{app::AppExit, prelude::*};
-use de_core::{stages::GameStage, state::GameState};
+use de_core::{gamestate::GameState, stages::GameStage};
 use de_gui::{ButtonCommands, GuiCommands, OuterStyle};
 use iyes_loopless::prelude::*;
 

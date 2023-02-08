@@ -2,11 +2,11 @@
 
 use bevy::prelude::*;
 use de_core::{
+    gamestate::GameState,
     gconfig::GameConfig,
     objects::{Active, ActiveObjectType, MovableSolid, ObjectType, Playable, StaticSolid},
     player::Player,
     stages::GameStage,
-    state::GameState,
 };
 use de_objects::{IchnographyCache, InitialHealths, ObjectCache};
 use de_terrain::CircleMarker;

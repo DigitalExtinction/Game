@@ -4,10 +4,8 @@ use bevy::{
     tasks::{AsyncComputeTaskPool, Task},
 };
 use de_core::{
-    objects::MovableSolid,
-    projection::ToFlat,
-    stages::GameStage,
-    state::{AppState, GameState},
+    gamestate::GameState, objects::MovableSolid, projection::ToFlat, stages::GameStage,
+    state::AppState,
 };
 use futures_lite::future;
 use iyes_loopless::prelude::*;

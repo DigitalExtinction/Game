@@ -2,7 +2,7 @@ use std::{cmp::Ordering, collections::BinaryHeap};
 
 use bevy::prelude::*;
 use de_behaviour::{ChaseLabel, ChaseTarget, ChaseTargetComponent, ChaseTargetEvent};
-use de_core::{objects::ObjectType, stages::GameStage, state::GameState};
+use de_core::{gamestate::GameState, objects::ObjectType, stages::GameStage};
 use de_objects::{ColliderCache, LaserCannon, ObjectCache};
 use iyes_loopless::prelude::*;
 use parry3d::query::Ray;

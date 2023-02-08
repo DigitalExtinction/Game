@@ -1,4 +1,4 @@
-use std::ops::AddAssign;
+use std::ops::{Add, AddAssign};
 
 use ahash::AHashMap;
 use bevy::prelude::*;
@@ -50,6 +50,10 @@ pub struct PlayerObjectCounter {
 }
 
 impl PlayerObjectCounter {
+    pub fn total(&self) -> u32 {
+        (self.building_count + self.unit_count).0
+    }
+
     pub fn building_count(&self) -> u32 {
         self.building_count.0
     }
@@ -71,8 +75,16 @@ impl PlayerObjectCounter {
     }
 }
 
-#[derive(Default)]
+#[derive(Default, Clone, Copy)]
 struct Count(u32);
+
+impl Add for Count {
+    type Output = Self;
+
+    fn add(self, other: Self) -> Self {
+        Self(self.0.checked_add(other.0).unwrap())
+    }
+}
 
 impl AddAssign<i32> for Count {
     fn add_assign(&mut self, other: i32) {

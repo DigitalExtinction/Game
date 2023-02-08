@@ -1,9 +1,5 @@
 use bevy::prelude::*;
-use de_core::{
-    projection::ToFlat,
-    stages::GameStage,
-    state::{AppState, GameState},
-};
+use de_core::{gamestate::GameState, projection::ToFlat, stages::GameStage, state::AppState};
 use de_pathing::ScheduledPath;
 use iyes_loopless::prelude::*;
 

@@ -2,10 +2,8 @@ use std::marker::PhantomData;
 
 use bevy::prelude::*;
 use de_core::{
-    objects::MovableSolid,
-    projection::ToAltitude,
-    stages::GameStage,
-    state::{AppState, GameState},
+    gamestate::GameState, objects::MovableSolid, projection::ToAltitude, stages::GameStage,
+    state::AppState,
 };
 use de_map::size::MapBounds;
 use de_objects::EXCLUSION_OFFSET;

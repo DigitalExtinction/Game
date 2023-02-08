@@ -2,8 +2,8 @@ use std::marker::PhantomData;
 
 use bevy::{ecs::system::SystemParam, prelude::*};
 use de_core::{
-    gconfig::GameConfig, objects::ObjectType, player::Player, projection::ToFlat,
-    stages::GameStage, state::GameState,
+    gamestate::GameState, gconfig::GameConfig, objects::ObjectType, player::Player,
+    projection::ToFlat, stages::GameStage,
 };
 use de_map::size::MapBounds;
 use de_objects::{IchnographyCache, ObjectCache};
@@ -158,7 +158,6 @@ fn endpoints_to_line(start: Option<Vec2>, end: Option<Vec2>) -> Option<(Vec2, Ve
 
     let aabb = Aabb::new(Point::new(0., 0.), Point::new(1., 1.));
     if !aabb.contains_local_point(&start) {
-        println!();
         let ray = Ray::new(start, end - start);
         let Some(toi) = aabb.cast_local_ray(&ray, 1., false) else { return None };
         start = ray.origin + toi * ray.dir;
