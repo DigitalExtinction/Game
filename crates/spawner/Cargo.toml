@@ -14,13 +14,13 @@ categories.workspace = true
 [dependencies]
 # DE
 de_core.workspace = true
-de_objects.workspace = true
-de_map.workspace = true
 de_index.workspace = true
+de_map.workspace = true
+de_objects.workspace = true
 de_terrain.workspace = true
 
 # Other
 bevy.workspace = true
 iyes_loopless.workspace = true
-parry3d.workspace = true
 parry2d.workspace = true
+parry3d.workspace = true
