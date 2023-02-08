@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 use de_core::{
-    cleanup::DespawnOnGameExit, screengeom::ScreenRect, stages::GameStage, state::AppState,
+    cleanup::DespawnOnGameExit, screengeom::ScreenRect, stages::GameStage, state::GameState,
 };
 use iyes_loopless::prelude::*;
 
@@ -13,7 +13,7 @@ impl Plugin for SelectionPlugin {
         app.add_event::<UpdateSelectionBoxEvent>()
             .add_system_set_to_stage(
                 GameStage::PostUpdate,
-                SystemSet::new().with_system(process_events.run_in_state(AppState::InGame)),
+                SystemSet::new().with_system(process_events.run_in_state(GameState::Playing)),
             );
     }
 }
