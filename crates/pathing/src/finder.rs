@@ -151,7 +151,6 @@ impl PathFinder {
         if source_edges.is_empty() {
             return None;
         }
-        let source_edges = source_edges;
 
         let target_edges = self.locate_triangle_edges(to);
         if target_edges.is_empty() && target.properties().max_distance() == 0. {
