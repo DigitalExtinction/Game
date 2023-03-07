@@ -1,14 +1,13 @@
 use std::{cmp::Ordering, collections::BinaryHeap};
 
 use bevy::prelude::*;
-use de_behaviour::{ChaseLabel, ChaseTarget, ChaseTargetComponent, ChaseTargetEvent};
-use de_core::{gamestate::GameState, objects::ObjectType, stages::GameStage};
+use de_behaviour::{ChaseSet, ChaseTarget, ChaseTargetComponent, ChaseTargetEvent};
+use de_core::{baseset::GameSet, gamestate::GameState, objects::ObjectType};
 use de_objects::{ColliderCache, LaserCannon, ObjectCache};
-use iyes_loopless::prelude::*;
 use parry3d::query::Ray;
 
 use crate::laser::LaserFireEvent;
-use crate::{sightline::LineOfSight, AttackingLabels};
+use crate::{sightline::LineOfSight, AttackingSet};
 
 /// Multiple of cannon range. The attacking entities will try to stay as close
 /// or further from attacked targets.
@@ -22,26 +21,24 @@ pub(crate) struct AttackPlugin;
 impl Plugin for AttackPlugin {
     fn build(&self, app: &mut App) {
         app.add_event::<AttackEvent>()
-            .add_system_to_stage(
-                GameStage::PreUpdate,
+            .add_system(
                 attack
-                    .run_in_state(GameState::Playing)
-                    .before(ChaseLabel::ChaseTargetEvent),
+                    .in_base_set(GameSet::PreUpdate)
+                    .run_if(in_state(GameState::Playing))
+                    .before(ChaseSet::ChaseTargetEvent),
             )
-            .add_system_set_to_stage(
-                GameStage::Update,
-                SystemSet::new()
-                    .with_system(
-                        update
-                            .run_in_state(GameState::Playing)
-                            .label(AttackingLabels::Update),
-                    )
-                    .with_system(
-                        aim_and_fire
-                            .run_in_state(GameState::Playing)
-                            .after(AttackingLabels::Update)
-                            .before(AttackingLabels::Fire),
-                    ),
+            .add_system(
+                update
+                    .in_base_set(GameSet::Update)
+                    .run_if(in_state(GameState::Playing))
+                    .in_set(AttackingSet::Update),
+            )
+            .add_system(
+                aim_and_fire
+                    .in_base_set(GameSet::Update)
+                    .run_if(in_state(GameState::Playing))
+                    .after(AttackingSet::Update)
+                    .before(AttackingSet::Fire),
             );
     }
 }

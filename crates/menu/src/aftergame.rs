@@ -1,7 +1,6 @@
 use bevy::prelude::*;
 use de_core::gresult::GameResult;
 use de_gui::{GuiCommands, LabelCommands, OuterStyle};
-use iyes_loopless::prelude::*;
 
 use crate::{menu::Menu, MenuState};
 
@@ -9,8 +8,8 @@ pub(crate) struct AfterGamePlugin;
 
 impl Plugin for AfterGamePlugin {
     fn build(&self, app: &mut App) {
-        app.add_enter_system(MenuState::AfterGame, setup)
-            .add_enter_system(MenuState::AfterGame, cleanup);
+        app.add_system(setup.in_schedule(OnEnter(MenuState::AfterGame)))
+            .add_system(cleanup.in_schedule(OnEnter(MenuState::AfterGame)));
     }
 }
 

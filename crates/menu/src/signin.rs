@@ -1,11 +1,10 @@
 use bevy::prelude::*;
 use de_gui::{
     ButtonCommands, GuiCommands, LabelCommands, OuterStyle, SetFocusEvent, TextBoxCommands,
-    TextBoxQuery, ToastEvent, ToastLabel,
+    TextBoxQuery, ToastEvent, ToastSet,
 };
 use de_lobby_client::{Authentication, LobbyRequest, SignInRequest, SignUpRequest};
 use de_lobby_model::{User, UserWithPassword, UsernameAndPassword};
-use iyes_loopless::prelude::*;
 
 use crate::{
     menu::Menu,
@@ -19,24 +18,24 @@ impl Plugin for SignInPlugin {
     fn build(&self, app: &mut App) {
         app.add_plugin(RequestsPlugin::<SignInRequest>::new())
             .add_plugin(RequestsPlugin::<SignUpRequest>::new())
-            .add_enter_system(MenuState::SignIn, setup)
-            .add_exit_system(MenuState::SignIn, cleanup)
+            .add_system(setup.in_schedule(OnEnter(MenuState::SignIn)))
+            .add_system(cleanup.in_schedule(OnExit(MenuState::SignIn)))
             .add_system(
                 button_system
-                    .run_if_resource_exists::<Inputs>()
-                    .run_in_state(MenuState::SignIn),
+                    .run_if(resource_exists::<Inputs>())
+                    .run_if(in_state(MenuState::SignIn)),
             )
             .add_system(
                 response_system::<SignInRequest>
-                    .run_in_state(MenuState::SignIn)
-                    .before(ToastLabel::ProcessEvents),
+                    .run_if(in_state(MenuState::SignIn))
+                    .before(ToastSet::ProcessEvents),
             )
             .add_system(
                 response_system::<SignUpRequest>
-                    .run_in_state(MenuState::SignIn)
-                    .before(ToastLabel::ProcessEvents),
+                    .run_if(in_state(MenuState::SignIn))
+                    .before(ToastSet::ProcessEvents),
             )
-            .add_system(auth_system.run_in_state(MenuState::SignIn));
+            .add_system(auth_system.run_if(in_state(MenuState::SignIn)));
     }
 }
 
@@ -204,8 +203,8 @@ where
     }
 }
 
-fn auth_system(mut commands: Commands, auth: Res<Authentication>) {
+fn auth_system(mut next_state: ResMut<NextState<MenuState>>, auth: Res<Authentication>) {
     if auth.is_authenticated() {
-        commands.insert_resource(NextState(MenuState::GameListing));
+        next_state.set(MenuState::GameListing);
     }
 }

@@ -8,34 +8,34 @@ use bevy::{
         ButtonState,
     },
     prelude::*,
+    window::PrimaryWindow,
 };
 use de_camera::{
-    CameraLabel, MoveCameraHorizontallyEvent, RotateCameraEvent, TiltCameraEvent, ZoomCameraEvent,
+    CameraSet, MoveCameraHorizontallyEvent, RotateCameraEvent, TiltCameraEvent, ZoomCameraEvent,
 };
 use de_conf::Configuration;
 use de_core::{
+    baseset::GameSet,
     gamestate::GameState,
     gconfig::GameConfig,
     objects::{BuildingType, ObjectType, Playable, PLAYER_MAX_BUILDINGS},
     player::Player,
     projection::ToFlat,
     screengeom::ScreenRect,
-    stages::GameStage,
 };
 use de_spawner::{Draft, ObjectCounter};
 use enum_map::enum_map;
-use iyes_loopless::prelude::*;
 
-use super::{keyboard::KeyCondition, CommandsLabel, GroupAttackEvent, SendSelectedEvent};
+use super::{keyboard::KeyCondition, CommandsSet, GroupAttackEvent, SendSelectedEvent};
 use crate::{
-    draft::{DiscardDraftsEvent, DraftLabels, NewDraftEvent, SpawnDraftsEvent},
-    hud::{GameMenuLabel, ToggleGameMenu, UpdateSelectionBoxEvent},
+    draft::{DiscardDraftsEvent, DraftSet, NewDraftEvent, SpawnDraftsEvent},
+    hud::{GameMenuSet, ToggleGameMenu, UpdateSelectionBoxEvent},
     mouse::{
-        DragUpdateType, MouseClicked, MouseDoubleClicked, MouseDragged, MouseLabels, Pointer,
-        PointerLabels,
+        DragUpdateType, MouseClicked, MouseDoubleClicked, MouseDragged, MouseSet, Pointer,
+        PointerSet,
     },
     selection::{
-        AreaSelectLabels, SelectEvent, SelectInRectEvent, Selected, SelectionLabels, SelectionMode,
+        AreaSelectSet, SelectEvent, SelectInRectEvent, Selected, SelectionMode, SelectionSet,
     },
 };
 
@@ -46,117 +46,125 @@ const MOVE_MARGIN: f32 = 2.;
 pub(super) struct HandlersPlugin;
 
 impl HandlersPlugin {
-    fn place_draft_systems() -> SystemSet {
+    fn add_place_draft_systems(app: &mut App) {
         let key_map = enum_map! {
             BuildingType::Base => KeyCode::B,
             BuildingType::PowerHub => KeyCode::P,
         };
-        key_map
-            .iter()
-            .fold(SystemSet::new(), |systems, (building_type, &key)| {
-                systems.with_system(
-                    place_draft(building_type)
-                        .run_in_state(GameState::Playing)
-                        .run_if(KeyCondition::single(key).build())
-                        .before(DraftLabels::New)
-                        .after(PointerLabels::Update),
-                )
-            })
+
+        for (building_type, &key) in key_map.iter() {
+            app.add_system(
+                place_draft(building_type)
+                    .in_base_set(GameSet::Input)
+                    .run_if(in_state(GameState::Playing))
+                    .run_if(KeyCondition::single(key).build())
+                    .before(DraftSet::New)
+                    .after(PointerSet::Update),
+            );
+        }
     }
 }
 
 impl Plugin for HandlersPlugin {
     fn build(&self, app: &mut App) {
-        app.add_system_set_to_stage(
-            GameStage::Input,
-            SystemSet::new()
-                .with_system(
-                    right_click_handler
-                        .run_in_state(GameState::Playing)
-                        .run_if(on_click(MouseButton::Right))
-                        .after(PointerLabels::Update)
-                        .after(MouseLabels::Buttons)
-                        .before(CommandsLabel::SendSelected)
-                        .before(CommandsLabel::Attack),
-                )
-                .with_system(
-                    left_click_handler
-                        .run_in_state(GameState::Playing)
-                        .run_if(on_click(MouseButton::Left))
-                        .label(HandlersLabel::LeftClick)
-                        .before(SelectionLabels::Update)
-                        .before(DraftLabels::Spawn)
-                        .after(PointerLabels::Update)
-                        .after(MouseLabels::Buttons),
-                )
-                .with_system(
-                    double_click_handler
-                        .run_in_state(GameState::Playing)
-                        .run_if(on_double_click(MouseButton::Left))
-                        .before(SelectionLabels::Update)
-                        .before(DraftLabels::Spawn)
-                        .after(PointerLabels::Update)
-                        .after(MouseLabels::Buttons)
-                        .after(HandlersLabel::LeftClick),
-                )
-                .with_system(
-                    move_camera_arrows_system
-                        .run_in_state(GameState::Playing)
-                        .before(CameraLabel::MoveHorizontallEvent),
-                )
-                .with_system(
-                    move_camera_mouse_system
-                        .run_in_state(GameState::Playing)
-                        .before(CameraLabel::MoveHorizontallEvent),
-                )
-                .with_system(
-                    zoom_camera
-                        .run_in_state(GameState::Playing)
-                        .before(CameraLabel::ZoomEvent),
-                )
-                .with_system(
-                    pivot_camera
-                        .run_in_state(GameState::Playing)
-                        .before(CameraLabel::RotateEvent)
-                        .before(CameraLabel::TiltEvent),
-                )
-                .with_system(
-                    handle_escape
-                        .run_in_state(GameState::Playing)
-                        .run_if(KeyCondition::single(KeyCode::Escape).build())
-                        .before(GameMenuLabel::Toggle)
-                        .before(DraftLabels::Discard),
-                )
-                .with_system(
-                    select_all
-                        .run_in_state(GameState::Playing)
-                        .run_if(KeyCondition::single(KeyCode::A).with_ctrl().build())
-                        .before(SelectionLabels::Update),
-                )
-                .with_system(
-                    select_all_visible
-                        .run_in_state(GameState::Playing)
-                        .run_if(
-                            KeyCondition::single(KeyCode::A)
-                                .with_ctrl()
-                                .with_shift()
-                                .build(),
-                        )
-                        .before(AreaSelectLabels::SelectInArea),
-                )
-                .with_system(
-                    update_drags
-                        .run_in_state(GameState::Playing)
-                        .before(AreaSelectLabels::SelectInArea)
-                        .after(MouseLabels::Buttons),
-                ),
+        app.add_system(
+            right_click_handler
+                .in_base_set(GameSet::Input)
+                .run_if(in_state(GameState::Playing))
+                .run_if(on_click(MouseButton::Right))
+                .after(PointerSet::Update)
+                .after(MouseSet::Buttons)
+                .before(CommandsSet::SendSelected)
+                .before(CommandsSet::Attack),
         )
-        .add_system_set_to_stage(GameStage::Input, Self::place_draft_systems());
+        .add_system(
+            left_click_handler
+                .in_base_set(GameSet::Input)
+                .run_if(in_state(GameState::Playing))
+                .run_if(on_click(MouseButton::Left))
+                .in_set(HandlersSet::LeftClick)
+                .before(SelectionSet::Update)
+                .before(DraftSet::Spawn)
+                .after(PointerSet::Update)
+                .after(MouseSet::Buttons),
+        )
+        .add_system(
+            double_click_handler
+                .in_base_set(GameSet::Input)
+                .run_if(in_state(GameState::Playing))
+                .run_if(on_double_click(MouseButton::Left))
+                .before(SelectionSet::Update)
+                .before(DraftSet::Spawn)
+                .after(PointerSet::Update)
+                .after(MouseSet::Buttons)
+                .after(HandlersSet::LeftClick),
+        )
+        .add_system(
+            move_camera_arrows_system
+                .in_base_set(GameSet::Input)
+                .run_if(in_state(GameState::Playing))
+                .before(CameraSet::MoveHorizontallEvent),
+        )
+        .add_system(
+            move_camera_mouse_system
+                .in_base_set(GameSet::Input)
+                .run_if(in_state(GameState::Playing))
+                .before(CameraSet::MoveHorizontallEvent),
+        )
+        .add_system(
+            zoom_camera
+                .in_base_set(GameSet::Input)
+                .run_if(in_state(GameState::Playing))
+                .before(CameraSet::ZoomEvent),
+        )
+        .add_system(
+            pivot_camera
+                .in_base_set(GameSet::Input)
+                .run_if(in_state(GameState::Playing))
+                .before(CameraSet::RotateEvent)
+                .before(CameraSet::TiltEvent),
+        )
+        .add_system(
+            handle_escape
+                .in_base_set(GameSet::Input)
+                .run_if(in_state(GameState::Playing))
+                .run_if(KeyCondition::single(KeyCode::Escape).build())
+                .before(GameMenuSet::Toggle)
+                .before(DraftSet::Discard),
+        )
+        .add_system(
+            select_all
+                .in_base_set(GameSet::Input)
+                .run_if(in_state(GameState::Playing))
+                .run_if(KeyCondition::single(KeyCode::A).with_ctrl().build())
+                .before(SelectionSet::Update),
+        )
+        .add_system(
+            select_all_visible
+                .in_base_set(GameSet::Input)
+                .run_if(in_state(GameState::Playing))
+                .run_if(
+                    KeyCondition::single(KeyCode::A)
+                        .with_ctrl()
+                        .with_shift()
+                        .build(),
+                )
+                .before(AreaSelectSet::SelectInArea),
+        )
+        .add_system(
+            update_drags
+                .in_base_set(GameSet::Input)
+                .run_if(in_state(GameState::Playing))
+                .before(AreaSelectSet::SelectInArea)
+                .after(MouseSet::Buttons),
+        );
+
+        Self::add_place_draft_systems(app);
     }
 }
 
-#[derive(Copy, Clone, Hash, Debug, PartialEq, Eq, SystemLabel)]
-pub(crate) enum HandlersLabel {
+#[derive(Copy, Clone, Hash, Debug, PartialEq, Eq, SystemSet)]
+pub(crate) enum HandlersSet {
     LeftClick,
 }
 
@@ -255,11 +263,11 @@ fn move_camera_arrows_system(
 }
 
 fn move_camera_mouse_system(
-    windows: Res<Windows>,
+    window_query: Query<&Window, With<PrimaryWindow>>,
     mut was_moving: Local<bool>,
     mut move_events: EventWriter<MoveCameraHorizontallyEvent>,
 ) {
-    let window = windows.get_primary().unwrap();
+    let window = window_query.single();
     let Some(cursor) = window.cursor_position() else {
         if *was_moving {
             *was_moving = false;

@@ -1,28 +1,28 @@
 use bevy::prelude::*;
-use de_core::{gamestate::GameState, projection::ToFlat, stages::GameStage};
+use de_core::{baseset::GameSet, gamestate::GameState, projection::ToFlat};
 use de_pathing::{PathQueryProps, PathTarget, UpdateEntityPath};
-use iyes_loopless::prelude::*;
 
 pub(crate) struct ChasePlugin;
 
 impl Plugin for ChasePlugin {
     fn build(&self, app: &mut App) {
         app.add_event::<ChaseTargetEvent>()
-            .add_system_to_stage(
-                GameStage::PreUpdate,
+            .add_system(
                 handle_chase_events
-                    .run_in_state(GameState::Playing)
-                    .label(ChaseLabel::ChaseTargetEvent),
+                    .in_base_set(GameSet::PreUpdate)
+                    .run_if(in_state(GameState::Playing))
+                    .in_set(ChaseSet::ChaseTargetEvent),
             )
-            .add_system_set_to_stage(
-                GameStage::Update,
-                SystemSet::new().with_system(chase.run_in_state(GameState::Playing)),
+            .add_system(
+                chase
+                    .in_base_set(GameSet::Update)
+                    .run_if(in_state(GameState::Playing)),
             );
     }
 }
 
-#[derive(Copy, Clone, Hash, Debug, PartialEq, Eq, SystemLabel)]
-pub enum ChaseLabel {
+#[derive(Copy, Clone, Hash, Debug, PartialEq, Eq, SystemSet)]
+pub enum ChaseSet {
     ChaseTargetEvent,
 }
 

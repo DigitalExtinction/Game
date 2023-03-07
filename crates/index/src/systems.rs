@@ -3,13 +3,12 @@
 
 use bevy::prelude::*;
 use de_core::{
+    baseset::GameSet,
     gamestate::GameState,
     objects::{MovableSolid, ObjectType, StaticSolid},
-    stages::GameStage,
     state::AppState,
 };
 use de_objects::{ColliderCache, ObjectCache};
-use iyes_loopless::prelude::*;
 use parry3d::math::Isometry;
 
 use super::index::EntityIndex;
@@ -43,31 +42,31 @@ pub(crate) struct IndexPlugin;
 
 impl Plugin for IndexPlugin {
     fn build(&self, app: &mut App) {
-        app.add_enter_system(AppState::InGame, setup)
-            .add_exit_system(AppState::InGame, cleanup)
-            .add_system_to_stage(
-                GameStage::PostUpdate,
+        app.add_system(setup.in_schedule(OnEnter(AppState::InGame)))
+            .add_system(cleanup.in_schedule(OnExit(AppState::InGame)))
+            .add_system(
                 insert
-                    .run_in_state(GameState::Playing)
-                    .label(IndexLabel::Index),
+                    .in_base_set(GameSet::PostUpdate)
+                    .run_if(in_state(GameState::Playing))
+                    .in_set(IndexSet::Index),
             )
-            .add_system_to_stage(
-                GameStage::PostUpdate,
+            .add_system(
                 remove
-                    .run_in_state(GameState::Playing)
-                    .label(IndexLabel::Index),
+                    .in_base_set(GameSet::PostUpdate)
+                    .run_if(in_state(GameState::Playing))
+                    .in_set(IndexSet::Index),
             )
-            .add_system_to_stage(
-                GameStage::PostMovement,
+            .add_system(
                 update
-                    .run_in_state(GameState::Playing)
-                    .label(IndexLabel::Index),
+                    .in_base_set(GameSet::PostMovement)
+                    .run_if(in_state(GameState::Playing))
+                    .in_set(IndexSet::Index),
             );
     }
 }
 
-#[derive(SystemLabel)]
-pub enum IndexLabel {
+#[derive(Clone, Copy, PartialEq, Eq, Hash, Debug, SystemSet)]
+pub enum IndexSet {
     Index,
 }
 
@@ -105,7 +104,7 @@ fn insert(
     }
 }
 
-fn remove(mut index: ResMut<EntityIndex>, removed: RemovedComponents<Indexed>) {
+fn remove(mut index: ResMut<EntityIndex>, mut removed: RemovedComponents<Indexed>) {
     for entity in removed.iter() {
         index.remove(entity);
     }

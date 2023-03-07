@@ -1,13 +1,12 @@
 use bevy::prelude::*;
 use de_core::{
+    baseset::GameSet,
     gamestate::GameState,
     objects::{MovableSolid, ObjectType, StaticSolid},
     projection::ToFlat,
-    stages::GameStage,
 };
 use de_index::SpatialQuery;
 use de_objects::{IchnographyCache, ObjectCache};
-use iyes_loopless::prelude::*;
 use parry3d::{bounding_volume::Aabb, math::Point};
 
 use crate::{cache::DecayingCache, disc::Disc};
@@ -20,30 +19,32 @@ pub(crate) struct ObstaclesPlugin;
 
 impl Plugin for ObstaclesPlugin {
     fn build(&self, app: &mut App) {
-        app.add_system_set_to_stage(
-            GameStage::PreMovement,
-            SystemSet::new()
-                .with_system(setup_discs.run_in_state(GameState::Playing))
-                .with_system(update_discs.run_in_state(GameState::Playing)),
+        app.add_system(
+            setup_discs
+                .in_base_set(GameSet::PreMovement)
+                .run_if(in_state(GameState::Playing)),
         )
-        .add_system_set_to_stage(
-            GameStage::Movement,
-            SystemSet::new()
-                .with_system(
-                    update_nearby::<StaticObstacles, StaticSolid>
-                        .run_in_state(GameState::Playing)
-                        .label(ObstaclesLables::UpdateNearby),
-                )
-                .with_system(
-                    update_nearby::<MovableObstacles, MovableSolid>
-                        .run_in_state(GameState::Playing)
-                        .label(ObstaclesLables::UpdateNearby),
-                ),
+        .add_system(
+            update_discs
+                .in_base_set(GameSet::PreMovement)
+                .run_if(in_state(GameState::Playing)),
+        )
+        .add_system(
+            update_nearby::<StaticObstacles, StaticSolid>
+                .in_base_set(GameSet::Movement)
+                .run_if(in_state(GameState::Playing))
+                .in_set(ObstaclesLables::UpdateNearby),
+        )
+        .add_system(
+            update_nearby::<MovableObstacles, MovableSolid>
+                .in_base_set(GameSet::Movement)
+                .run_if(in_state(GameState::Playing))
+                .in_set(ObstaclesLables::UpdateNearby),
         );
     }
 }
 
-#[derive(Copy, Clone, Hash, Debug, PartialEq, Eq, SystemLabel)]
+#[derive(Copy, Clone, Hash, Debug, PartialEq, Eq, SystemSet)]
 pub(crate) enum ObstaclesLables {
     UpdateNearby,
 }
@@ -82,13 +83,15 @@ fn update_nearby<M: Send + Sync + 'static, T: Component>(
     mut objects: Query<(Entity, &Transform, &mut DecayingCache<M>)>,
     space: SpatialQuery<Entity, With<T>>,
 ) {
-    objects.par_for_each_mut(512, |(entity, transform, mut cache)| {
-        cache.clear();
-        let half_extent = Vec3::splat(NEARBY_HALF_EXTENT);
-        let mins = transform.translation - half_extent;
-        let maxs = transform.translation + half_extent;
-        let region = Aabb::new(Point::from(mins), Point::from(maxs));
-        cache.extend(space.query_aabb(&region, Some(entity)));
-        cache.decay(time.delta_seconds());
-    });
+    objects
+        .par_iter_mut()
+        .for_each_mut(|(entity, transform, mut cache)| {
+            cache.clear();
+            let half_extent = Vec3::splat(NEARBY_HALF_EXTENT);
+            let mins = transform.translation - half_extent;
+            let maxs = transform.translation + half_extent;
+            let region = Aabb::new(Point::from(mins), Point::from(maxs));
+            cache.extend(space.query_aabb(&region, Some(entity)));
+            cache.decay(time.delta_seconds());
+        });
 }

@@ -1,7 +1,6 @@
 use bevy::prelude::*;
 use de_core::state::AppState;
 use de_gui::{ButtonCommands, GuiCommands, OuterStyle};
-use iyes_loopless::{prelude::*, state::StateTransitionStageLabel};
 
 use crate::MenuState;
 
@@ -9,24 +8,20 @@ pub(crate) struct MenuPlugin;
 
 impl Plugin for MenuPlugin {
     fn build(&self, app: &mut App) {
-        app.add_stage_before(
-            StateTransitionStageLabel::from_type::<MenuState>(),
-            MenuStage::PreTransition,
-            SystemStage::parallel(),
-        )
-        .add_enter_system(AppState::InMenu, setup)
-        .add_exit_system(AppState::InMenu, cleanup)
-        .add_system_to_stage(
-            MenuStage::PreTransition,
-            state_transition.run_if_resource_exists::<Menu>(),
-        )
-        .add_system(button_system.run_in_state(AppState::InMenu));
+        app.add_system(setup.in_schedule(OnEnter(AppState::InMenu)))
+            .add_system(cleanup.in_schedule(OnExit(AppState::InMenu)))
+            .add_system(
+                clean_up_root
+                    .in_base_set(CoreSet::PreUpdate)
+                    .run_if(resource_exists::<Menu>()),
+            )
+            .add_system(
+                hide_show_corner
+                    .run_if(resource_exists::<Menu>())
+                    .run_if(resource_changed::<State<MenuState>>()),
+            )
+            .add_system(button_system.run_if(in_state(AppState::InMenu)));
     }
-}
-
-#[derive(StageLabel)]
-pub enum MenuStage {
-    PreTransition,
 }
 
 #[derive(Resource)]
@@ -57,18 +52,24 @@ enum ButtonAction {
     Close,
 }
 
-fn state_transition(
-    mut commands: Commands,
-    state: Option<Res<NextState<MenuState>>>,
+fn clean_up_root(mut commands: Commands, state: Res<NextState<MenuState>>, menu: Res<Menu>) {
+    if state.0.is_none() {
+        return;
+    };
+    commands.entity(menu.root_node()).despawn_descendants();
+}
+
+fn hide_show_corner(
+    state: Res<State<MenuState>>,
     menu: Res<Menu>,
     mut visibility: Query<&mut Visibility>,
 ) {
-    if let Some(state) = state {
-        commands.entity(menu.root_node()).despawn_descendants();
-
-        let mut corner_visibility = visibility.get_mut(menu.corner_node()).unwrap();
-        corner_visibility.is_visible = state.0 != MenuState::MainMenu;
-    }
+    let mut corner_visibility = visibility.get_mut(menu.corner_node()).unwrap();
+    *corner_visibility = if state.0 == MenuState::MainMenu {
+        Visibility::Hidden
+    } else {
+        Visibility::Inherited
+    };
 }
 
 fn setup(mut commands: GuiCommands) {
@@ -137,13 +138,13 @@ fn spawn_corner_node(commands: &mut GuiCommands) -> Entity {
 }
 
 fn button_system(
-    mut commands: Commands,
+    mut next_state: ResMut<NextState<MenuState>>,
     interactions: Query<(&Interaction, &ButtonAction), Changed<Interaction>>,
 ) {
     for (&interaction, &action) in interactions.iter() {
         if let Interaction::Clicked = interaction {
             match action {
-                ButtonAction::Close => commands.insert_resource(NextState(MenuState::MainMenu)),
+                ButtonAction::Close => next_state.set(MenuState::MainMenu),
             }
         }
     }

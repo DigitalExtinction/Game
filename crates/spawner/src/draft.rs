@@ -7,16 +7,15 @@
 use bevy::prelude::*;
 use bevy::scene::SceneInstance;
 use de_core::{
+    baseset::GameSet,
     gamestate::GameState,
     objects::{ActiveObjectType, BuildingType, MovableSolid, ObjectType, StaticSolid},
     projection::ToFlat,
-    stages::GameStage,
     state::AppState,
 };
-use de_index::{ColliderWithCache, IndexLabel, QueryCollider, SpatialQuery};
+use de_index::{ColliderWithCache, IndexSet, QueryCollider, SpatialQuery};
 use de_map::size::MapBounds;
 use de_objects::{ColliderCache, ObjectCache, EXCLUSION_OFFSET};
-use iyes_loopless::prelude::*;
 use parry2d::{
     bounding_volume::{Aabb, BoundingVolume},
     math::Vector,
@@ -33,29 +32,30 @@ pub(crate) struct DraftPlugin;
 
 impl Plugin for DraftPlugin {
     fn build(&self, app: &mut App) {
-        app.add_enter_system(AppState::InGame, insert_materials)
-            .add_exit_system(AppState::InGame, cleanup)
-            .add_system_to_stage(
-                GameStage::Update,
-                new_draft.run_in_state(GameState::Playing),
+        app.add_system(insert_materials.in_schedule(OnEnter(AppState::InGame)))
+            .add_system(cleanup.in_schedule(OnExit(AppState::InGame)))
+            .add_system(
+                new_draft
+                    .in_base_set(GameSet::Update)
+                    .run_if(in_state(GameState::Playing)),
             )
-            .add_system_to_stage(
-                GameStage::PostUpdate,
+            .add_system(
                 update_draft
-                    .run_in_state(GameState::Playing)
-                    .after(IndexLabel::Index),
+                    .in_base_set(GameSet::PostUpdate)
+                    .run_if(in_state(GameState::Playing))
+                    .after(IndexSet::Index),
             )
-            .add_system_to_stage(
-                GameStage::PostUpdate,
+            .add_system(
                 check_draft_loaded
-                    .run_in_state(GameState::Playing)
-                    .after(IndexLabel::Index),
+                    .in_base_set(GameSet::PostUpdate)
+                    .run_if(in_state(GameState::Playing))
+                    .after(IndexSet::Index),
             )
-            .add_system_to_stage(
-                GameStage::PostUpdate,
+            .add_system(
                 update_draft_colour
-                    .run_in_state(GameState::Playing)
-                    .after(IndexLabel::Index),
+                    .in_base_set(GameSet::PostUpdate)
+                    .run_if(in_state(GameState::Playing))
+                    .after(IndexSet::Index),
             );
     }
 }
@@ -77,8 +77,8 @@ impl DraftBundle {
             object_type: ObjectType::Active(ActiveObjectType::Building(building_type)),
             transform,
             global_transform: transform.into(),
-            visibility: Visibility::VISIBLE,
-            computed_visibility: ComputedVisibility::INVISIBLE,
+            visibility: Visibility::Inherited,
+            computed_visibility: ComputedVisibility::HIDDEN,
             draft: Draft::default(),
         }
     }

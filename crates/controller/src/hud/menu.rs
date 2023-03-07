@@ -1,9 +1,8 @@
 use core::fmt;
 
 use bevy::prelude::*;
-use de_core::{gamestate::GameState, stages::GameStage, state::AppState};
+use de_core::{baseset::GameSet, gamestate::GameState, state::AppState};
 use de_gui::{ButtonCommands, GuiCommands, OuterStyle};
-use iyes_loopless::prelude::*;
 
 use super::interaction::InteractionBlocker;
 
@@ -12,23 +11,24 @@ pub(crate) struct MenuPlugin;
 impl Plugin for MenuPlugin {
     fn build(&self, app: &mut App) {
         app.add_event::<ToggleGameMenu>()
-            .add_enter_system(GameState::Playing, setup)
-            .add_exit_system(GameState::Playing, cleanup)
-            .add_system_set_to_stage(
-                GameStage::Input,
-                SystemSet::new()
-                    .with_system(
-                        toggle_system
-                            .run_in_state(GameState::Playing)
-                            .label(GameMenuLabel::Toggle),
-                    )
-                    .with_system(button_system.run_in_state(GameState::Playing)),
+            .add_system(setup.in_schedule(OnEnter(GameState::Playing)))
+            .add_system(cleanup.in_schedule(OnExit(GameState::Playing)))
+            .add_system(
+                toggle_system
+                    .in_base_set(GameSet::Input)
+                    .run_if(in_state(GameState::Playing))
+                    .in_set(GameMenuSet::Toggle),
+            )
+            .add_system(
+                button_system
+                    .in_base_set(GameSet::Input)
+                    .run_if(in_state(GameState::Playing)),
             );
     }
 }
 
-#[derive(Copy, Clone, Hash, Debug, PartialEq, Eq, SystemLabel)]
-pub(crate) enum GameMenuLabel {
+#[derive(Copy, Clone, Hash, Debug, PartialEq, Eq, SystemSet)]
+pub(crate) enum GameMenuSet {
     Toggle,
 }
 
@@ -61,7 +61,7 @@ fn setup(mut commands: GuiCommands) {
                 justify_content: JustifyContent::Center,
                 ..default()
             },
-            visibility: Visibility::INVISIBLE,
+            visibility: Visibility::Hidden,
             z_index: ZIndex::Local(1000),
             ..default()
         })
@@ -119,17 +119,22 @@ fn toggle_system(
     if events.iter().count() % 2 == 0 {
         return;
     }
-    query.single_mut().toggle();
+
+    *query.single_mut() = if query.single() == Visibility::Hidden {
+        Visibility::Inherited
+    } else {
+        Visibility::Hidden
+    };
 }
 
 fn button_system(
-    mut commands: Commands,
+    mut next_state: ResMut<NextState<AppState>>,
     interactions: Query<(&Interaction, &ButtonAction), Changed<Interaction>>,
 ) {
     for (&interaction, &action) in interactions.iter() {
         if let Interaction::Clicked = interaction {
             match action {
-                ButtonAction::Quit => commands.insert_resource(NextState(AppState::InMenu)),
+                ButtonAction::Quit => next_state.set(AppState::InMenu),
             }
         }
     }

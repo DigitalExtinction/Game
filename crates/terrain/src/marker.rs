@@ -12,7 +12,6 @@ use de_core::{
 };
 use de_objects::{ColliderCache, ObjectCache};
 use glam::Vec3A;
-use iyes_loopless::prelude::*;
 
 use crate::shader::{Circle, TerrainMaterial, CIRCLE_CAPACITY};
 
@@ -20,10 +19,10 @@ pub(crate) struct MarkerPlugin;
 
 impl Plugin for MarkerPlugin {
     fn build(&self, app: &mut App) {
-        app.add_system_to_stage(
-            CoreStage::PostUpdate,
+        app.add_system(
             update_markers
-                .run_in_state(GameState::Playing)
+                .in_base_set(CoreSet::PostUpdate)
+                .run_if(in_state(GameState::Playing))
                 .after(VisibilitySystems::CheckVisibility),
         );
     }

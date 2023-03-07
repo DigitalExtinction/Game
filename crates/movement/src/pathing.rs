@@ -1,7 +1,6 @@
 use bevy::prelude::*;
-use de_core::{gamestate::GameState, projection::ToFlat, stages::GameStage, state::AppState};
+use de_core::{baseset::GameSet, gamestate::GameState, projection::ToFlat, state::AppState};
 use de_pathing::ScheduledPath;
-use iyes_loopless::prelude::*;
 
 use crate::{
     movement::{add_desired_velocity, DesiredVelocity},
@@ -14,27 +13,29 @@ pub(crate) struct PathingPlugin;
 
 impl Plugin for PathingPlugin {
     fn build(&self, app: &mut App) {
-        app.add_system_set_to_stage(
-            GameStage::PreMovement,
-            SystemSet::new()
-                .with_system(finish_paths.run_in_state(GameState::Playing))
-                .with_system(add_desired_velocity::<PathVelocity>.run_in_state(AppState::InGame)),
+        app.add_system(
+            finish_paths
+                .in_base_set(GameSet::PreMovement)
+                .run_if(in_state(GameState::Playing)),
         )
-        .add_system_set_to_stage(
-            GameStage::Movement,
-            SystemSet::new().with_system(
-                follow_path
-                    .run_in_state(GameState::Playing)
-                    .label(PathingLabels::FollowPath),
-            ),
+        .add_system(
+            add_desired_velocity::<PathVelocity>
+                .in_base_set(GameSet::PreMovement)
+                .run_if(in_state(AppState::InGame)),
+        )
+        .add_system(
+            follow_path
+                .in_base_set(GameSet::Movement)
+                .run_if(in_state(GameState::Playing))
+                .in_set(PathingSet::FollowPath),
         );
     }
 }
 
 pub(crate) struct PathVelocity;
 
-#[derive(Copy, Clone, Hash, Debug, PartialEq, Eq, SystemLabel)]
-pub(crate) enum PathingLabels {
+#[derive(Copy, Clone, Hash, Debug, PartialEq, Eq, SystemSet)]
+pub(crate) enum PathingSet {
     FollowPath,
 }
 
@@ -63,12 +64,14 @@ fn follow_path(
         &mut DesiredVelocity<PathVelocity>,
     )>,
 ) {
-    objects.par_for_each_mut(512, |(transform, mut path, mut movement)| {
-        let location = transform.translation.to_flat();
-        let remaining = path.destination().distance(location);
-        let advancement = path.advance(location, MAX_H_SPEED * 0.5);
-        let direction = (advancement - location).normalize();
-        let desired_speed = MAX_H_SPEED.min((2. * remaining * MAX_H_ACCELERATION).sqrt());
-        movement.update(desired_speed * direction);
-    });
+    objects
+        .par_iter_mut()
+        .for_each_mut(|(transform, mut path, mut movement)| {
+            let location = transform.translation.to_flat();
+            let remaining = path.destination().distance(location);
+            let advancement = path.advance(location, MAX_H_SPEED * 0.5);
+            let direction = (advancement - location).normalize();
+            let desired_speed = MAX_H_SPEED.min((2. * remaining * MAX_H_ACCELERATION).sqrt());
+            movement.update(desired_speed * direction);
+        });
 }

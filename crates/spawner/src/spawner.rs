@@ -2,15 +2,14 @@
 
 use bevy::prelude::*;
 use de_core::{
+    baseset::GameSet,
     gamestate::GameState,
     gconfig::GameConfig,
     objects::{Active, ActiveObjectType, MovableSolid, ObjectType, Playable, StaticSolid},
     player::Player,
-    stages::GameStage,
 };
 use de_objects::{IchnographyCache, InitialHealths, ObjectCache};
 use de_terrain::CircleMarker;
-use iyes_loopless::prelude::*;
 
 use crate::ObjectCounter;
 
@@ -18,7 +17,11 @@ pub(crate) struct SpawnerPlugin;
 
 impl Plugin for SpawnerPlugin {
     fn build(&self, app: &mut App) {
-        app.add_system_to_stage(GameStage::Update, spawn.run_in_state(GameState::Playing));
+        app.add_system(
+            spawn
+                .in_base_set(GameSet::Update)
+                .run_if(in_state(GameState::Playing)),
+        );
     }
 }
 
@@ -38,8 +41,8 @@ impl SpawnBundle {
             object_type,
             transform,
             global_transform: transform.into(),
-            visibility: Visibility::VISIBLE,
-            computed_visibility: ComputedVisibility::INVISIBLE,
+            visibility: Visibility::Inherited,
+            computed_visibility: ComputedVisibility::HIDDEN,
             spawn: Spawn,
         }
     }

@@ -19,6 +19,5 @@ de_pathing.workspace = true
 
 # Other
 bevy.workspace = true
-iyes_loopless.workspace = true
 glam.workspace = true
 parry3d.workspace = true

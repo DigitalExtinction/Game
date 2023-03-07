@@ -1,6 +1,5 @@
 use bevy::{app::AppExit, prelude::*};
 use de_gui::{ButtonCommands, GuiCommands, OuterStyle};
-use iyes_loopless::prelude::*;
 
 use crate::{menu::Menu, MenuState};
 
@@ -8,8 +7,8 @@ pub(crate) struct MainMenuPlugin;
 
 impl Plugin for MainMenuPlugin {
     fn build(&self, app: &mut App) {
-        app.add_enter_system(MenuState::MainMenu, setup)
-            .add_system(button_system.run_in_state(MenuState::MainMenu));
+        app.add_system(setup.in_schedule(OnEnter(MenuState::MainMenu)))
+            .add_system(button_system.run_if(in_state(MenuState::MainMenu)));
     }
 }
 
@@ -70,14 +69,14 @@ fn button(commands: &mut GuiCommands, parent: Entity, action: ButtonAction, capt
 }
 
 fn button_system(
-    mut commands: Commands,
+    mut next_state: ResMut<NextState<MenuState>>,
     mut exit: EventWriter<AppExit>,
     interactions: Query<(&Interaction, &ButtonAction), Changed<Interaction>>,
 ) {
     for (&interaction, &action) in interactions.iter() {
         if let Interaction::Clicked = interaction {
             match action {
-                ButtonAction::SwithState(state) => commands.insert_resource(NextState(state)),
+                ButtonAction::SwithState(state) => next_state.set(state),
                 ButtonAction::Quit => exit.send(AppExit),
             };
         }

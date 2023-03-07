@@ -1,8 +1,8 @@
 use area::AreaPlugin;
-pub(crate) use area::{AreaSelectLabels, SelectInRectEvent};
+pub(crate) use area::{AreaSelectSet, SelectInRectEvent};
 use bevy::prelude::*;
 use bookkeeping::BookkeepingPlugin;
-pub(crate) use bookkeeping::{SelectEvent, Selected, SelectionLabels, SelectionMode};
+pub(crate) use bookkeeping::{SelectEvent, Selected, SelectionMode, SelectionSet};
 
 mod area;
 mod bookkeeping;

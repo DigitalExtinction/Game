@@ -2,7 +2,7 @@
 //! actions.
 
 use bevy::prelude::*;
-pub(crate) use executor::{CommandsLabel, GroupAttackEvent, SendSelectedEvent};
+pub(crate) use executor::{CommandsSet, GroupAttackEvent, SendSelectedEvent};
 
 use self::{executor::ExecutorPlugin, handlers::HandlersPlugin};
 

@@ -1,19 +1,18 @@
 use bevy::prelude::*;
-use de_core::{objects::ObjectType, player::Player, stages::GameStage, state::AppState};
+use de_core::{baseset::GameSet, objects::ObjectType, player::Player, state::AppState};
 use de_objects::Health;
-use iyes_loopless::prelude::*;
 
-use crate::{ObjectCounter, SpawnerLabels};
+use crate::{ObjectCounter, SpawnerSet};
 
 pub(crate) struct DestroyerPlugin;
 
 impl Plugin for DestroyerPlugin {
     fn build(&self, app: &mut App) {
-        app.add_system_to_stage(
-            GameStage::Update,
+        app.add_system(
             destroy
-                .run_in_state(AppState::InGame)
-                .label(SpawnerLabels::Destroyer),
+                .in_base_set(GameSet::Update)
+                .run_if(in_state(AppState::InGame))
+                .in_set(SpawnerSet::Destroyer),
         );
     }
 }

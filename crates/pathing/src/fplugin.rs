@@ -5,15 +5,14 @@ use bevy::{
     tasks::{AsyncComputeTaskPool, Task},
 };
 use de_core::{
+    baseset::GameSet,
     gamestate::GameState,
     objects::{ObjectType, StaticSolid},
-    stages::GameStage,
     state::AppState,
 };
 use de_map::size::MapBounds;
 use de_objects::{IchnographyCache, ObjectCache};
 use futures_lite::future;
-use iyes_loopless::prelude::*;
 
 use crate::{exclusion::ExclusionArea, finder::PathFinder, triangulation::triangulate};
 
@@ -43,39 +42,39 @@ pub struct FinderPlugin;
 impl Plugin for FinderPlugin {
     fn build(&self, app: &mut App) {
         app.add_event::<PathFinderUpdated>()
-            .add_enter_system(AppState::InGame, setup_loading)
-            .add_enter_system(GameState::Playing, setup_playing)
-            .add_exit_system(AppState::InGame, cleanup)
-            .add_system_to_stage(
-                GameStage::PostUpdate,
+            .add_system(setup_loading.in_schedule(OnEnter(AppState::InGame)))
+            .add_system(setup_playing.in_schedule(OnEnter(GameState::Playing)))
+            .add_system(cleanup.in_schedule(OnExit(AppState::InGame)))
+            .add_system(
                 check_removed
-                    .run_in_state(AppState::InGame)
-                    .label(FinderLabel::CheckRemoved),
+                    .in_base_set(GameSet::PostUpdate)
+                    .run_if(in_state(AppState::InGame))
+                    .in_set(FinderSet::CheckRemoved),
             )
-            .add_system_to_stage(
-                GameStage::PostUpdate,
+            .add_system(
                 check_updated
-                    .run_in_state(GameState::Playing)
-                    .label(FinderLabel::CheckUpdated),
+                    .in_base_set(GameSet::PostUpdate)
+                    .run_if(in_state(GameState::Playing))
+                    .in_set(FinderSet::CheckUpdated),
             )
-            .add_system_to_stage(
-                GameStage::PostUpdate,
+            .add_system(
                 update
-                    .run_in_state(GameState::Playing)
-                    .after(FinderLabel::CheckUpdated)
-                    .after(FinderLabel::CheckRemoved),
+                    .in_base_set(GameSet::PostUpdate)
+                    .run_if(in_state(GameState::Playing))
+                    .after(FinderSet::CheckUpdated)
+                    .after(FinderSet::CheckRemoved),
             )
-            .add_system_to_stage(
-                GameStage::PreMovement,
+            .add_system(
                 check_update_result
-                    .run_in_state(GameState::Playing)
-                    .label(FinderLabel::UpdateFinder),
+                    .in_base_set(GameSet::PreMovement)
+                    .run_if(in_state(GameState::Playing))
+                    .in_set(FinderSet::UpdateFinder),
             );
     }
 }
 
-#[derive(SystemLabel)]
-pub(crate) enum FinderLabel {
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, SystemSet)]
+pub(crate) enum FinderSet {
     UpdateFinder,
     CheckRemoved,
     CheckUpdated,
@@ -173,7 +172,10 @@ fn cleanup(mut commands: Commands) {
     commands.remove_resource::<FinderRes>();
 }
 
-fn check_removed(mut state: ResMut<UpdateFinderState>, removed: RemovedComponents<StaticSolid>) {
+fn check_removed(
+    mut state: ResMut<UpdateFinderState>,
+    mut removed: RemovedComponents<StaticSolid>,
+) {
     if removed.iter().next().is_some() {
         state.invalidate();
     }

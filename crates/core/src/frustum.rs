@@ -29,5 +29,6 @@ pub fn intersects_bevy(frustum: &Frustum, transform: &GlobalTransform, aabb: &Aa
         radius: transform.radius_vec3a(aabb.half_extents),
     };
 
-    frustum.intersects_sphere(&model_sphere, false) && frustum.intersects_obb(aabb, &model, false)
+    frustum.intersects_sphere(&model_sphere, false)
+        && frustum.intersects_obb(aabb, &model, false, true)
 }

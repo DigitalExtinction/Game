@@ -3,15 +3,15 @@ use std::fmt;
 use bevy::{
     input::{mouse::MouseButtonInput, ButtonState},
     prelude::*,
+    window::PrimaryWindow,
 };
 use de_camera::MoveFocusEvent;
-use de_core::{gamestate::GameState, stages::GameStage};
+use de_core::{baseset::GameSet, gamestate::GameState};
 use de_map::size::MapBounds;
-use iyes_loopless::prelude::*;
 
 use super::nodes::MinimapNode;
 use crate::{
-    commands::{CommandsLabel, SendSelectedEvent},
+    commands::{CommandsSet, SendSelectedEvent},
     hud::HudNodes,
 };
 
@@ -20,31 +20,30 @@ pub(super) struct InteractionPlugin;
 impl Plugin for InteractionPlugin {
     fn build(&self, app: &mut App) {
         app.add_event::<MinimapClickEvent>()
-            .add_system_set_to_stage(
-                GameStage::Input,
-                SystemSet::new()
-                    .with_system(
-                        click_handler
-                            .run_in_state(GameState::Playing)
-                            .label(InteractionLabel::ClickHandler),
-                    )
-                    .with_system(
-                        move_camera_system
-                            .run_in_state(GameState::Playing)
-                            .after(InteractionLabel::ClickHandler),
-                    )
-                    .with_system(
-                        send_units_system
-                            .run_in_state(GameState::Playing)
-                            .after(InteractionLabel::ClickHandler)
-                            .before(CommandsLabel::SendSelected),
-                    ),
+            .add_system(
+                click_handler
+                    .in_base_set(GameSet::Input)
+                    .run_if(in_state(GameState::Playing))
+                    .in_set(InteractionSet::ClickHandler),
+            )
+            .add_system(
+                move_camera_system
+                    .in_base_set(GameSet::Input)
+                    .run_if(in_state(GameState::Playing))
+                    .after(InteractionSet::ClickHandler),
+            )
+            .add_system(
+                send_units_system
+                    .in_base_set(GameSet::Input)
+                    .run_if(in_state(GameState::Playing))
+                    .after(InteractionSet::ClickHandler)
+                    .before(CommandsSet::SendSelected),
             );
     }
 }
 
-#[derive(Copy, Clone, Hash, Debug, PartialEq, Eq, SystemLabel)]
-enum InteractionLabel {
+#[derive(Copy, Clone, Hash, Debug, PartialEq, Eq, SystemSet)]
+enum InteractionSet {
     ClickHandler,
 }
 
@@ -76,13 +75,13 @@ impl fmt::Debug for MinimapClickEvent {
 }
 
 fn click_handler(
-    windows: Res<Windows>,
+    window_query: Query<&Window, With<PrimaryWindow>>,
     mut input_events: EventReader<MouseButtonInput>,
     hud: HudNodes<With<MinimapNode>>,
     bounds: Res<MapBounds>,
     mut click_events: EventWriter<MinimapClickEvent>,
 ) {
-    let Some(cursor) = windows.get_primary().unwrap().cursor_position() else { return };
+    let Some(cursor) = window_query.single().cursor_position() else { return };
     for event in input_events.iter() {
         if event.state != ButtonState::Released {
             continue;
