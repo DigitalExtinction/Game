@@ -3,7 +3,6 @@ use std::marker::PhantomData;
 use bevy::{ecs::system::SystemParam, prelude::*};
 use de_core::state::AppState;
 use de_lobby_client::{LobbyRequest, RequestEvent, ResponseEvent, Result};
-use iyes_loopless::prelude::*;
 
 pub(crate) struct RequestsPlugin<T>
 where
@@ -28,21 +27,21 @@ where
     T: LobbyRequest,
 {
     fn build(&self, app: &mut App) {
-        app.add_enter_system(AppState::InMenu, setup::<T>)
-            .add_exit_system(AppState::InMenu, cleanup::<T>);
+        app.add_system(setup::<T>.in_schedule(OnEnter(AppState::InMenu)))
+            .add_system(cleanup::<T>.in_schedule(OnExit(AppState::InMenu)));
     }
 }
 
 #[derive(SystemParam)]
-pub(crate) struct Sender<'w, 's, T>
+pub(crate) struct Sender<'w, T>
 where
     T: LobbyRequest,
 {
     counter: ResMut<'w, Counter<T>>,
-    requests: EventWriter<'w, 's, RequestEvent<T>>,
+    requests: EventWriter<'w, RequestEvent<T>>,
 }
 
-impl<'w, 's, T> Sender<'w, 's, T>
+impl<'w, T> Sender<'w, T>
 where
     T: LobbyRequest,
 {

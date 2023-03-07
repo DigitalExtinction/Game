@@ -29,7 +29,7 @@ impl PluginGroup for SpawnerPluginGroup {
     }
 }
 
-#[derive(Copy, Clone, Hash, Debug, PartialEq, Eq, SystemLabel)]
-pub enum SpawnerLabels {
+#[derive(Copy, Clone, Hash, Debug, PartialEq, Eq, SystemSet)]
+pub enum SpawnerSet {
     Destroyer,
 }

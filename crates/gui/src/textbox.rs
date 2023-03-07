@@ -54,7 +54,7 @@ impl<'w, 's> TextBoxCommands<'w, 's> for GuiCommands<'w, 's> {
             .with_children(|builder| {
                 builder.spawn(
                     TextBundle::from_section("", text_style)
-                        .with_text_alignment(TextAlignment::CENTER_LEFT),
+                        .with_text_alignment(TextAlignment::Left),
                 );
             });
 

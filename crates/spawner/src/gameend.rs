@@ -1,9 +1,8 @@
 use bevy::prelude::*;
 use de_core::{
-    gamestate::GameState, gconfig::GameConfig, gresult::GameResult, stages::GameStage,
+    baseset::GameSet, gamestate::GameState, gconfig::GameConfig, gresult::GameResult,
     state::AppState,
 };
-use iyes_loopless::prelude::*;
 
 use crate::ObjectCounter;
 
@@ -11,15 +10,17 @@ pub(crate) struct GameEndPlugin;
 
 impl Plugin for GameEndPlugin {
     fn build(&self, app: &mut App) {
-        app.add_system_to_stage(
-            GameStage::PostUpdate,
-            game_end_detection_system.run_in_state(GameState::Playing),
+        app.add_system(
+            game_end_detection_system
+                .in_base_set(GameSet::PostUpdate)
+                .run_if(in_state(GameState::Playing)),
         );
     }
 }
 
 fn game_end_detection_system(
     mut commands: Commands,
+    mut next_state: ResMut<NextState<AppState>>,
     conf: Res<GameConfig>,
     counter: Res<ObjectCounter>,
 ) {
@@ -35,6 +36,6 @@ fn game_end_detection_system(
 
     if let Some(result) = result {
         commands.insert_resource(result);
-        commands.insert_resource(NextState(AppState::InMenu));
+        next_state.set(AppState::InMenu);
     }
 }

@@ -2,9 +2,9 @@ use ahash::AHashMap;
 use bevy::{
     input::{mouse::MouseButtonInput, ButtonState},
     prelude::*,
+    window::PrimaryWindow,
 };
-use de_core::{gamestate::GameState, screengeom::ScreenRect, stages::GameStage, state::AppState};
-use iyes_loopless::prelude::*;
+use de_core::{baseset::GameSet, gamestate::GameState, screengeom::ScreenRect, state::AppState};
 
 use crate::hud::HudNodes;
 
@@ -18,40 +18,40 @@ impl Plugin for InputPlugin {
         app.add_event::<MouseClicked>()
             .add_event::<MouseDoubleClicked>()
             .add_event::<MouseDragged>()
-            .add_enter_system(AppState::InGame, setup)
-            .add_exit_system(AppState::InGame, cleanup)
-            .add_system_set_to_stage(
-                GameStage::Input,
-                SystemSet::new()
-                    .with_system(
-                        update_position
-                            .run_in_state(GameState::Playing)
-                            .label(MouseLabels::Position),
-                    )
-                    .with_system(
-                        update_drags
-                            .run_in_state(GameState::Playing)
-                            .label(MouseLabels::Drags)
-                            .after(MouseLabels::Position),
-                    )
-                    .with_system(
-                        update_buttons
-                            .run_in_state(GameState::Playing)
-                            .label(MouseLabels::SingeButton)
-                            .after(MouseLabels::Drags),
-                    )
-                    .with_system(
-                        check_double_click
-                            .run_in_state(GameState::Playing)
-                            .label(MouseLabels::Buttons)
-                            .after(MouseLabels::SingeButton),
-                    ),
+            .add_system(setup.in_schedule(OnEnter(AppState::InGame)))
+            .add_system(cleanup.in_schedule(OnExit(AppState::InGame)))
+            .add_system(
+                update_position
+                    .in_base_set(GameSet::Input)
+                    .run_if(in_state(GameState::Playing))
+                    .in_set(MouseSet::Position),
+            )
+            .add_system(
+                update_drags
+                    .in_base_set(GameSet::Input)
+                    .run_if(in_state(GameState::Playing))
+                    .in_set(MouseSet::Drags)
+                    .after(MouseSet::Position),
+            )
+            .add_system(
+                update_buttons
+                    .in_base_set(GameSet::Input)
+                    .run_if(in_state(GameState::Playing))
+                    .in_set(MouseSet::SingeButton)
+                    .after(MouseSet::Drags),
+            )
+            .add_system(
+                check_double_click
+                    .in_base_set(GameSet::Input)
+                    .run_if(in_state(GameState::Playing))
+                    .in_set(MouseSet::Buttons)
+                    .after(MouseSet::SingeButton),
             );
     }
 }
 
-#[derive(Copy, Clone, Hash, Debug, PartialEq, Eq, SystemLabel)]
-pub(crate) enum MouseLabels {
+#[derive(Copy, Clone, Hash, Debug, PartialEq, Eq, SystemSet)]
+pub(crate) enum MouseSet {
     Position,
     Drags,
     SingeButton,
@@ -241,8 +241,12 @@ fn cleanup(mut commands: Commands) {
     commands.remove_resource::<MouseDragStates>();
 }
 
-fn update_position(windows: Res<Windows>, hud: HudNodes, mut mouse: ResMut<MousePosition>) {
-    let window = windows.get_primary().unwrap();
+fn update_position(
+    window_query: Query<&Window, With<PrimaryWindow>>,
+    hud: HudNodes,
+    mut mouse: ResMut<MousePosition>,
+) {
+    let window = window_query.single();
     let position = window
         .cursor_position()
         .filter(|&position| !hud.contains_point(position))

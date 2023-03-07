@@ -6,7 +6,6 @@ use de_gui::{
 use de_lobby_client::CreateGameRequest;
 use de_lobby_model::{GameConfig, GameMap, Validatable};
 use de_map::hash::MapHash;
-use iyes_loopless::prelude::*;
 
 use crate::{
     mapselection::{MapSelectedEvent, SelectMapEvent},
@@ -21,30 +20,30 @@ impl Plugin for CreateGamePlugin {
     fn build(&self, app: &mut App) {
         app.add_plugin(RequestsPlugin::<CreateGameRequest>::new())
             .add_event::<CreateGameEvent>()
-            .add_enter_system(MenuState::GameCreation, setup)
-            .add_exit_system(MenuState::GameCreation, cleanup)
+            .add_system(setup.in_schedule(OnEnter(MenuState::GameCreation)))
+            .add_system(cleanup.in_schedule(OnExit(MenuState::GameCreation)))
             .add_system(
                 button_system
-                    .run_in_state(MenuState::GameCreation)
-                    .label(CreateLabel::Buttons),
+                    .run_if(in_state(MenuState::GameCreation))
+                    .in_set(CreateSet::Buttons),
             )
             .add_system(
                 map_selected_system
-                    .run_in_state(MenuState::GameCreation)
-                    .label(CreateLabel::MapSelected),
+                    .run_if(in_state(MenuState::GameCreation))
+                    .in_set(CreateSet::MapSelected),
             )
             .add_system(
                 create_game_system
-                    .run_in_state(MenuState::GameCreation)
-                    .after(CreateLabel::Buttons)
-                    .after(CreateLabel::MapSelected),
+                    .run_if(in_state(MenuState::GameCreation))
+                    .after(CreateSet::Buttons)
+                    .after(CreateSet::MapSelected),
             )
-            .add_system(response_system.run_in_state(MenuState::GameCreation));
+            .add_system(response_system.run_if(in_state(MenuState::GameCreation)));
     }
 }
 
-#[derive(Copy, Clone, Hash, Debug, PartialEq, Eq, SystemLabel)]
-pub(crate) enum CreateLabel {
+#[derive(Copy, Clone, Hash, Debug, PartialEq, Eq, SystemSet)]
+pub(crate) enum CreateSet {
     Buttons,
     MapSelected,
 }
@@ -269,13 +268,13 @@ fn create_game_system(
 }
 
 fn response_system(
-    mut commands: Commands,
+    mut next_state: ResMut<NextState<MenuState>>,
     mut receiver: Receiver<CreateGameRequest>,
     mut toasts: EventWriter<ToastEvent>,
 ) {
     if let Some(result) = receiver.receive() {
         match result {
-            Ok(_) => commands.insert_resource(NextState(MenuState::MultiPlayerGame)),
+            Ok(_) => next_state.set(MenuState::MultiPlayerGame),
             Err(error) => toasts.send(ToastEvent::new(error)),
         }
     }

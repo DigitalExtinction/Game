@@ -48,7 +48,6 @@ de_terrain.workspace = true
 
 # Other
 bevy.workspace = true
-iyes_loopless.workspace = true
 
 [workspace]
 members = ["crates/*"]
@@ -94,18 +93,18 @@ approx = "0.5.1"
 async-compat = "0.2.1"
 async-std = "1.11"
 async-tar = "0.4.2"
-bevy = "0.9"
+bevy = "0.10"
 clap = { version = "4.0", features = ["derive"] }
 criterion = "0.4"
 dirs = "4.0.0"
 enum-map = "2.3.0"
-futures-lite = "1.11"
-glam = "0.22"
+futures-lite = "1.12"
+glam = "0.23"
 gltf = "1.0"
 itertools = "0.10.5"
-iyes_loopless = "0.9.1"
-iyes_progress = { version = "0.7.1", features = [ "iyes_loopless" ] }
-nalgebra = { version = "0.32.2", features = ["convert-glam022"] }
+# TODO: use a released version
+iyes_progress = { git = "https://github.com/NiklasEi/iyes_progress", rev = "ab493dba453505cda451c7cc3b3ca0db233e4005" }
+nalgebra = { version = "0.32.0", features = ["convert-glam023"] }
 ntest = "0.9.0"
 parry2d = "0.13.1"
 parry3d = "0.13.1"
@@ -120,4 +119,3 @@ thiserror = "1.0"
 tinyvec = { version = "1.6.0", features = ["rustc_1_40", "alloc"] }
 url = { version = "2.3.1", features = ["serde"] }
 urlencoding = "2.1.2"
-wgpu-types = "0.14.1"

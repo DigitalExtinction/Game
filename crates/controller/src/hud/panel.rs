@@ -1,6 +1,5 @@
 use bevy::prelude::*;
 use de_core::{cleanup::DespawnOnGameExit, gamestate::GameState};
-use iyes_loopless::prelude::*;
 
 use super::{interaction::InteractionBlocker, HUD_COLOR};
 
@@ -8,8 +7,8 @@ pub(crate) struct PanelPlugin;
 
 impl Plugin for PanelPlugin {
     fn build(&self, app: &mut App) {
-        app.add_enter_system(GameState::Playing, spawn_details)
-            .add_enter_system(GameState::Playing, spawn_action_bar);
+        app.add_system(spawn_details.in_schedule(OnEnter(GameState::Playing)))
+            .add_system(spawn_action_bar.in_schedule(OnEnter(GameState::Playing)));
     }
 }
 

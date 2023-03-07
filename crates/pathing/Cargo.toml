@@ -26,7 +26,6 @@ ahash.workspace = true
 approx.workspace = true
 rstar.workspace = true
 tinyvec.workspace = true
-iyes_loopless.workspace = true
 spade.workspace = true
 futures-lite.workspace = true
 

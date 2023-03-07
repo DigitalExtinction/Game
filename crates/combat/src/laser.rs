@@ -1,22 +1,21 @@
 use bevy::prelude::*;
-use de_core::{gamestate::GameState, stages::GameStage};
+use de_core::{baseset::GameSet, gamestate::GameState};
 use de_objects::Health;
 use de_signs::UpdateBarValueEvent;
-use de_spawner::SpawnerLabels;
-use iyes_loopless::prelude::*;
+use de_spawner::SpawnerSet;
 use parry3d::query::Ray;
 
-use crate::{sightline::LineOfSight, trail::TrailEvent, AttackingLabels};
+use crate::{sightline::LineOfSight, trail::TrailEvent, AttackingSet};
 
 pub(crate) struct LaserPlugin;
 
 impl Plugin for LaserPlugin {
     fn build(&self, app: &mut App) {
-        app.add_event::<LaserFireEvent>().add_system_to_stage(
-            GameStage::Update,
-            fire.run_in_state(GameState::Playing)
-                .label(AttackingLabels::Fire)
-                .before(SpawnerLabels::Destroyer),
+        app.add_event::<LaserFireEvent>().add_system(
+            fire.in_base_set(GameSet::Update)
+                .run_if(in_state(GameState::Playing))
+                .in_set(AttackingSet::Fire)
+                .before(SpawnerSet::Destroyer),
         );
     }
 }

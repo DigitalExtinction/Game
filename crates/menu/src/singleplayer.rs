@@ -2,7 +2,6 @@ use async_std::path::PathBuf;
 use bevy::prelude::*;
 use de_core::{gconfig::GameConfig, player::Player, state::AppState};
 use de_gui::{ButtonCommands, GuiCommands, OuterStyle, ToastEvent};
-use iyes_loopless::prelude::*;
 
 use crate::{
     mapselection::{MapSelectedEvent, SelectMapEvent},
@@ -14,10 +13,10 @@ pub(crate) struct SinglePlayerPlugin;
 
 impl Plugin for SinglePlayerPlugin {
     fn build(&self, app: &mut App) {
-        app.add_enter_system(MenuState::SinglePlayerGame, setup)
-            .add_exit_system(MenuState::SinglePlayerGame, cleanup)
-            .add_system(button_system.run_in_state(MenuState::SinglePlayerGame))
-            .add_system(map_selected_system.run_in_state(MenuState::SinglePlayerGame));
+        app.add_system(setup.in_schedule(OnEnter(MenuState::SinglePlayerGame)))
+            .add_system(cleanup.in_schedule(OnExit(MenuState::SinglePlayerGame)))
+            .add_system(button_system.run_if(in_state(MenuState::SinglePlayerGame)))
+            .add_system(map_selected_system.run_if(in_state(MenuState::SinglePlayerGame)));
     }
 }
 
@@ -88,6 +87,7 @@ fn cleanup(mut commands: Commands) {
 fn button_system(
     mut commands: Commands,
     interactions: Query<(&Interaction, &ButtonAction), Changed<Interaction>>,
+    mut next_state: ResMut<NextState<AppState>>,
     map: Res<SelectedMap>,
     mut map_events: EventWriter<SelectMapEvent>,
     mut toasts: EventWriter<ToastEvent>,
@@ -102,7 +102,7 @@ fn button_system(
                             Player::Player1,
                             Player::Player4,
                         ));
-                        commands.insert_resource(NextState(AppState::InGame));
+                        next_state.set(AppState::InGame);
                     }
                     None => {
                         toasts.send(ToastEvent::new("No map selected."));

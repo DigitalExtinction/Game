@@ -1,6 +1,6 @@
 #import bevy_pbr::mesh_view_bindings
 
-let COLOR = vec4<f32>(1., 0.85, 0.1, 0.7);
+const COLOR = vec4<f32>(1., 0.85, 0.1, 0.7);
 
 @group(1) @binding(0)
 var<uniform> start_time: f32;

@@ -21,16 +21,19 @@ use de_map::{
 use de_spawner::SpawnBundle;
 use de_terrain::TerrainBundle;
 use futures_lite::future;
-use iyes_loopless::prelude::*;
 use iyes_progress::prelude::*;
 
 pub(crate) struct MapLoaderPlugin;
 
 impl Plugin for MapLoaderPlugin {
     fn build(&self, app: &mut App) {
-        app.add_enter_system(AppState::InGame, load_map_system)
-            .add_exit_system(AppState::InGame, cleanup)
-            .add_system(spawn_map.track_progress().run_in_state(GameState::Loading));
+        app.add_system(load_map_system.in_schedule(OnEnter(AppState::InGame)))
+            .add_system(cleanup.in_schedule(OnExit(AppState::InGame)))
+            .add_system(
+                spawn_map
+                    .track_progress()
+                    .run_if(in_state(GameState::Loading)),
+            );
     }
 }
 
@@ -75,9 +78,9 @@ fn spawn_map(
 
     let map = match loading_result {
         Ok(map) => map,
-        Err(error) => {
-            log_full_error!(error);
-            panic!("{}", error);
+        Err(err) => {
+            log_full_error!(err);
+            panic!("{}", err);
         }
     };
 

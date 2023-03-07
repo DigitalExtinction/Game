@@ -2,7 +2,7 @@ pub use attack::AttackEvent;
 use attack::AttackPlugin;
 use bevy::{
     app::PluginGroupBuilder,
-    prelude::{PluginGroup, SystemLabel},
+    prelude::{PluginGroup, SystemSet},
 };
 use laser::LaserPlugin;
 use trail::TrailPlugin;
@@ -23,8 +23,8 @@ impl PluginGroup for CombatPluginGroup {
     }
 }
 
-#[derive(Copy, Clone, Hash, Debug, PartialEq, Eq, SystemLabel)]
-enum AttackingLabels {
+#[derive(Copy, Clone, Hash, Debug, PartialEq, Eq, SystemSet)]
+enum AttackingSet {
     Update,
     Fire,
 }

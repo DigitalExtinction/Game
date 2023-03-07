@@ -1,5 +1,5 @@
 #[cfg(not(target_os = "macos"))]
-use bevy::window::CursorGrabMode;
+use bevy::window::{CursorGrabMode, PrimaryWindow};
 use bevy::{
     diagnostic::{FrameTimeDiagnosticsPlugin, LogDiagnosticsPlugin},
     prelude::*,
@@ -22,20 +22,19 @@ use de_pathing::PathingPluginGroup;
 use de_signs::SignsPluginGroup;
 use de_spawner::SpawnerPluginGroup;
 use de_terrain::TerrainPluginGroup;
-use iyes_loopless::prelude::*;
 
 const CARGO_PKG_VERSION: &str = env!("CARGO_PKG_VERSION");
 const GIT_SHA: &str = env!("GIT_SHA");
 
 fn main() {
     let mut app = App::new();
-    app.insert_resource(Msaa { samples: 4 })
+    app.insert_resource(Msaa::Sample4)
         .add_plugins(DefaultPlugins.set(WindowPlugin {
-            window: WindowDescriptor {
+            primary_window: Some(Window {
                 title: "Digital Extinction".to_string(),
                 mode: WindowMode::BorderlessFullscreen,
                 ..Default::default()
-            },
+            }),
             ..default()
         }))
         .add_plugin(LogDiagnosticsPlugin::default())
@@ -72,17 +71,17 @@ struct GamePlugin;
 
 impl Plugin for GamePlugin {
     fn build(&self, app: &mut App) {
-        app.add_loopless_state_before_stage(CoreStage::PreUpdate, AppState::AppLoading);
+        app.add_state::<AppState>();
 
         #[cfg(not(target_os = "macos"))]
         {
-            app.add_enter_system(AppState::AppLoading, cursor_grab_system);
+            app.add_system(cursor_grab_system.in_schedule(OnEnter(AppState::AppLoading)));
         }
     }
 }
 
 #[cfg(not(target_os = "macos"))]
-fn cursor_grab_system(mut windows: ResMut<Windows>) {
-    let window = windows.get_primary_mut().unwrap();
-    window.set_cursor_grab_mode(CursorGrabMode::Confined);
+fn cursor_grab_system(mut window_query: Query<&mut Window, With<PrimaryWindow>>) {
+    let mut window = window_query.single_mut();
+    window.cursor.grab_mode = CursorGrabMode::Confined;
 }

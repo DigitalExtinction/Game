@@ -1,38 +1,34 @@
 use bevy::prelude::*;
 use de_core::{
+    baseset::GameSet,
     frustum,
     gamestate::GameState,
     objects::{ObjectType, Playable},
     screengeom::ScreenRect,
-    stages::GameStage,
 };
 use de_objects::{ColliderCache, ObjectCache};
-use iyes_loopless::prelude::*;
 
 use crate::{
     frustum::ScreenFrustum,
-    selection::{SelectEvent, SelectionLabels, SelectionMode},
+    selection::{SelectEvent, SelectionMode, SelectionSet},
 };
 
 pub(super) struct AreaPlugin;
 
 impl Plugin for AreaPlugin {
     fn build(&self, app: &mut App) {
-        app.add_event::<SelectInRectEvent>()
-            .add_system_set_to_stage(
-                GameStage::Input,
-                SystemSet::new().with_system(
-                    select_in_area
-                        .run_in_state(GameState::Playing)
-                        .label(AreaSelectLabels::SelectInArea)
-                        .before(SelectionLabels::Update),
-                ),
-            );
+        app.add_event::<SelectInRectEvent>().add_system(
+            select_in_area
+                .in_base_set(GameSet::Input)
+                .run_if(in_state(GameState::Playing))
+                .in_set(AreaSelectSet::SelectInArea)
+                .before(SelectionSet::Update),
+        );
     }
 }
 
-#[derive(Copy, Clone, Hash, Debug, PartialEq, Eq, SystemLabel)]
-pub(crate) enum AreaSelectLabels {
+#[derive(Copy, Clone, Hash, Debug, PartialEq, Eq, SystemSet)]
+pub(crate) enum AreaSelectSet {
     SelectInArea,
 }
 

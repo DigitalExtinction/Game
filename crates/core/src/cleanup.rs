@@ -1,5 +1,4 @@
 use bevy::prelude::*;
-use iyes_loopless::prelude::*;
 
 use crate::state::AppState;
 
@@ -7,7 +6,7 @@ pub(crate) struct CleanupPlugin;
 
 impl Plugin for CleanupPlugin {
     fn build(&self, app: &mut App) {
-        app.add_exit_system(AppState::InGame, cleanup);
+        app.add_system(cleanup.in_schedule(OnExit(AppState::InGame)));
     }
 }
 

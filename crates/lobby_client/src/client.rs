@@ -1,4 +1,4 @@
-use std::{marker::PhantomData, time::Duration};
+use std::time::Duration;
 
 use anyhow::{anyhow, bail, Context, Result};
 use async_compat::Compat;
@@ -15,14 +15,12 @@ use crate::requestable::LobbyRequestCreator;
 const USER_AGENT: &str = concat!("DigitalExtinction/", env!("CARGO_PKG_VERSION"));
 
 #[derive(SystemParam)]
-pub(super) struct AuthenticatedClient<'w, 's> {
+pub(super) struct AuthenticatedClient<'w> {
     auth: Res<'w, Authentication>,
     client: Option<Res<'w, LobbyClient>>,
-    #[system_param(ignore)]
-    _marker: PhantomData<&'s ()>,
 }
 
-impl<'w, 's> AuthenticatedClient<'w, 's> {
+impl<'w> AuthenticatedClient<'w> {
     pub(super) fn fire<T: LobbyRequestCreator>(
         &self,
         requestable: &T,

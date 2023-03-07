@@ -1,7 +1,8 @@
-use bevy::{prelude::*, render::texture::TextureFormatPixelInfo};
-use de_core::{cleanup::DespawnOnGameExit, gamestate::GameState, stages::GameStage};
-use iyes_loopless::prelude::*;
-use wgpu_types::{Extent3d, TextureDimension, TextureFormat};
+use bevy::{
+    prelude::*,
+    render::render_resource::{Extent3d, TextureDimension, TextureFormat},
+};
+use de_core::{baseset::GameSet, cleanup::DespawnOnGameExit, gamestate::GameState};
 
 use crate::hud::{interaction::InteractionBlocker, HUD_COLOR};
 
@@ -9,10 +10,11 @@ pub(super) struct NodesPlugin;
 
 impl Plugin for NodesPlugin {
     fn build(&self, app: &mut App) {
-        app.add_enter_system(GameState::Playing, setup)
-            .add_system_to_stage(
-                GameStage::PreMovement,
-                update_resolution.run_in_state(GameState::Playing),
+        app.add_system(setup.in_schedule(OnEnter(GameState::Playing)))
+            .add_system(
+                update_resolution
+                    .in_base_set(GameSet::PreMovement)
+                    .run_if(in_state(GameState::Playing)),
             );
     }
 }
@@ -78,7 +80,7 @@ fn update_resolution(
     }
 
     let image = images.add(new_image(resolution));
-    commands.entity(entity).insert(UiImage(image));
+    commands.entity(entity).insert(UiImage::new(image));
 }
 
 /// Creates a new minimap image.
@@ -86,7 +88,6 @@ fn new_image(resolution: UVec2) -> Image {
     info!("Creating new minimap image with resolution {resolution:?}");
 
     let format = TextureFormat::Rgba8UnormSrgb;
-    assert_eq!(format.pixel_size(), 4);
     let num_bytes = resolution.x as usize * resolution.y as usize * 4;
     let data = vec![255; num_bytes];
     Image::new(

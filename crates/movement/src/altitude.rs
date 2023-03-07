@@ -1,12 +1,11 @@
 use bevy::prelude::*;
 use de_core::{
+    baseset::GameSet,
     gamestate::GameState,
     objects::{MovableSolid, ObjectType},
-    stages::GameStage,
     state::AppState,
 };
 use de_objects::ObjectCache;
-use iyes_loopless::prelude::*;
 
 use crate::{
     movement::DesiredVelocity,
@@ -18,24 +17,23 @@ pub(crate) struct AltitudePlugin;
 
 impl Plugin for AltitudePlugin {
     fn build(&self, app: &mut App) {
-        app.add_system_to_stage(
-            GameStage::PreMovement,
-            setup_entities.run_in_state(AppState::InGame),
+        app.add_system(
+            setup_entities
+                .in_base_set(GameSet::PreMovement)
+                .run_if(in_state(AppState::InGame)),
         )
-        .add_system_set_to_stage(
-            GameStage::Movement,
-            SystemSet::new().with_system(
-                update
-                    .run_in_state(GameState::Playing)
-                    .label(AltitudeLabels::Update)
-                    .after(RepulsionLables::Apply),
-            ),
+        .add_system(
+            update
+                .in_base_set(GameSet::Movement)
+                .run_if(in_state(GameState::Playing))
+                .in_set(AltitudeSet::Update)
+                .after(RepulsionLables::Apply),
         );
     }
 }
 
-#[derive(Copy, Clone, Hash, Debug, PartialEq, Eq, SystemLabel)]
-pub(crate) enum AltitudeLabels {
+#[derive(Copy, Clone, Hash, Debug, PartialEq, Eq, SystemSet)]
+pub(crate) enum AltitudeSet {
     Update,
 }
 
@@ -70,8 +68,7 @@ fn update(
         &Transform,
     )>,
 ) {
-    objects.par_for_each_mut(
-        512,
+    objects.par_iter_mut().for_each_mut(
         |(&object_type, mut horizontal, mut climbing, transform)| {
             let Some(flight) = cache.get(object_type).flight() else { return };
             let height = transform.translation.y;

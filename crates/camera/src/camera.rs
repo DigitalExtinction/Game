@@ -3,13 +3,12 @@ use std::f32::consts::FRAC_PI_2;
 use bevy::prelude::*;
 use de_conf::{CameraConf, Configuration};
 use de_core::{
-    cleanup::DespawnOnGameExit, events::ResendEventPlugin, gamestate::GameState,
-    projection::ToAltitude, stages::GameStage, state::AppState,
+    baseset::GameSet, cleanup::DespawnOnGameExit, events::ResendEventPlugin, gamestate::GameState,
+    projection::ToAltitude, state::AppState,
 };
 use de_map::size::MapBounds;
 use de_terrain::{TerrainCollider, MAX_ELEVATION};
 use de_uom::{InverseSecond, Metre, Quantity, Radian, Second};
-use iyes_loopless::prelude::*;
 use parry3d::{math::Vector, query::Ray};
 
 /// Camera moves horizontally at speed `distance * CAMERA_HORIZONTAL_SPEED`.
@@ -46,84 +45,84 @@ impl Plugin for CameraPlugin {
             .add_plugin(ResendEventPlugin::<MoveFocusEvent>::default())
             .add_event::<FocusInvalidatedEvent>()
             .add_event::<UpdateTranslationEvent>()
-            .add_enter_system(AppState::InGame, setup)
-            .add_exit_system(AppState::InGame, cleanup)
-            .add_system_to_stage(
-                GameStage::PreMovement,
+            .add_system(setup.in_schedule(OnEnter(AppState::InGame)))
+            .add_system(cleanup.in_schedule(OnExit(AppState::InGame)))
+            .add_system(
                 update_focus
-                    .run_in_state(GameState::Playing)
-                    .label(InternalCameraLabel::UpdateFocus),
+                    .in_base_set(GameSet::PreMovement)
+                    .run_if(in_state(GameState::Playing))
+                    .in_set(InternalCameraSet::UpdateFocus),
             )
-            .add_system_to_stage(
-                GameStage::Input,
+            .add_system(
                 handle_horizontal_events
-                    .run_in_state(GameState::Playing)
-                    .label(CameraLabel::MoveHorizontallEvent),
+                    .in_base_set(GameSet::Input)
+                    .run_if(in_state(GameState::Playing))
+                    .in_set(CameraSet::MoveHorizontallEvent),
             )
-            .add_system_to_stage(
-                GameStage::Input,
+            .add_system(
                 handle_zoom_events
-                    .run_in_state(GameState::Playing)
-                    .label(CameraLabel::ZoomEvent),
+                    .in_base_set(GameSet::Input)
+                    .run_if(in_state(GameState::Playing))
+                    .in_set(CameraSet::ZoomEvent),
             )
-            .add_system_to_stage(
-                GameStage::Input,
+            .add_system(
                 handle_rotate_events
-                    .run_in_state(GameState::Playing)
-                    .label(CameraLabel::RotateEvent),
+                    .in_base_set(GameSet::Input)
+                    .run_if(in_state(GameState::Playing))
+                    .in_set(CameraSet::RotateEvent),
             )
-            .add_system_to_stage(
-                GameStage::Input,
+            .add_system(
                 handle_tilt_events
-                    .run_in_state(GameState::Playing)
-                    .label(CameraLabel::TiltEvent),
+                    .in_base_set(GameSet::Input)
+                    .run_if(in_state(GameState::Playing))
+                    .in_set(CameraSet::TiltEvent),
             )
-            .add_system_to_stage(
-                GameStage::PreMovement,
+            .add_system(
                 process_move_focus_events
-                    .run_in_state(GameState::Playing)
-                    .label(InternalCameraLabel::MoveFocus)
-                    .after(InternalCameraLabel::UpdateFocus),
+                    .in_base_set(GameSet::PreMovement)
+                    .run_if(in_state(GameState::Playing))
+                    .in_set(InternalCameraSet::MoveFocus)
+                    .after(InternalCameraSet::UpdateFocus),
             )
-            .add_system_to_stage(
-                GameStage::PreMovement,
+            .add_system(
                 update_translation_handler
-                    .run_in_state(GameState::Playing)
-                    .after(InternalCameraLabel::MoveFocus),
+                    .in_base_set(GameSet::PreMovement)
+                    .run_if(in_state(GameState::Playing))
+                    .after(InternalCameraSet::MoveFocus),
             )
-            .add_system_to_stage(
-                GameStage::Movement,
-                zoom.run_in_state(GameState::Playing)
-                    .label(InternalCameraLabel::Zoom),
+            .add_system(
+                zoom.in_base_set(GameSet::Movement)
+                    .run_if(in_state(GameState::Playing))
+                    .in_set(InternalCameraSet::Zoom),
             )
-            .add_system_to_stage(
-                GameStage::Movement,
+            .add_system(
                 pivot
-                    .run_in_state(GameState::Playing)
-                    .label(InternalCameraLabel::Pivot),
+                    .in_base_set(GameSet::Movement)
+                    .run_if(in_state(GameState::Playing))
+                    .in_set(InternalCameraSet::Pivot),
             )
-            .add_system_to_stage(
-                GameStage::Movement,
+            .add_system(
                 move_horizontaly
-                    .run_in_state(GameState::Playing)
+                    .in_base_set(GameSet::Movement)
+                    .run_if(in_state(GameState::Playing))
                     // Zooming changes camera focus point so do it
                     // after other types of camera movement.
-                    .after(InternalCameraLabel::Zoom)
-                    .after(InternalCameraLabel::Pivot),
+                    .after(InternalCameraSet::Zoom)
+                    .after(InternalCameraSet::Pivot),
             );
     }
 }
 
-#[derive(Copy, Clone, Hash, Debug, PartialEq, Eq, SystemLabel)]
-pub enum CameraLabel {
+#[derive(Copy, Clone, Hash, Debug, PartialEq, Eq, SystemSet)]
+pub enum CameraSet {
     MoveHorizontallEvent,
     RotateEvent,
     TiltEvent,
     ZoomEvent,
 }
 
-#[derive(Copy, Clone, Hash, Debug, PartialEq, Eq, SystemLabel)]
-enum InternalCameraLabel {
+#[derive(Copy, Clone, Hash, Debug, PartialEq, Eq, SystemSet)]
+enum InternalCameraSet {
     UpdateFocus,
     Zoom,
     Pivot,

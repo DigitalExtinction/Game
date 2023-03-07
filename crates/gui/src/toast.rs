@@ -2,7 +2,6 @@ use std::{collections::VecDeque, time::Duration};
 
 use bevy::prelude::*;
 use de_core::state::AppState;
-use iyes_loopless::prelude::*;
 
 use crate::text::TextProps;
 
@@ -15,26 +14,23 @@ impl Plugin for ToastPlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<ToastQueue>()
             .add_event::<ToastEvent>()
-            .add_system_set(
-                SystemSet::new()
-                    .with_system(process_events.label(ToastLabel::ProcessEvents))
-                    .with_system(
-                        spawn_and_despawn
-                            .run_not_in_state(AppState::AppLoading)
-                            .after(ToastLabel::ProcessEvents),
-                    ),
+            .add_system(process_events.in_set(ToastSet::ProcessEvents))
+            .add_system(
+                spawn_and_despawn
+                    .run_if(not(in_state(AppState::AppLoading)))
+                    .after(ToastSet::ProcessEvents),
             );
     }
 }
 
-#[derive(Copy, Clone, Hash, Debug, PartialEq, Eq, SystemLabel)]
-pub enum ToastLabel {
+#[derive(Copy, Clone, Hash, Debug, PartialEq, Eq, SystemSet)]
+pub enum ToastSet {
     ProcessEvents,
 }
 
 /// Send this event to briefly display a UI toast.
 ///
-/// The events are processed by a system labeled [`ToastLabel::ProcessEvents`].
+/// The events are processed by a system labeled [`ToastSet::ProcessEvents`].
 pub struct ToastEvent(String);
 
 impl ToastEvent {

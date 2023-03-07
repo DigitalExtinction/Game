@@ -1,23 +1,22 @@
 use bevy::prelude::*;
-use iyes_loopless::prelude::*;
 
-use crate::{stages::GameStage, state::AppState};
+use crate::{baseset::GameSet, state::AppState};
 
 pub(crate) struct VisibilityPlugin;
 
 impl Plugin for VisibilityPlugin {
     fn build(&self, app: &mut App) {
-        app.add_system_to_stage(
-            GameStage::PostUpdate,
+        app.add_system(
             update
-                .run_in_state(AppState::InGame)
-                .label(VisibilityLabels::Update),
+                .in_base_set(GameSet::PostUpdate)
+                .run_if(in_state(AppState::InGame))
+                .in_set(VisibilitySet::Update),
         );
     }
 }
 
-#[derive(Copy, Clone, Hash, Debug, PartialEq, Eq, SystemLabel)]
-pub enum VisibilityLabels {
+#[derive(Copy, Clone, Hash, Debug, PartialEq, Eq, SystemSet)]
+pub enum VisibilitySet {
     Update,
 }
 
@@ -25,8 +24,8 @@ pub enum VisibilityLabels {
 /// "visible" flag is set to true and none of "invisible" flag is true. The
 /// individual flags can be controlled independently.
 ///
-/// The system [`VisibilityLabels::Update`] executed during
-/// [`GameStage::PostUpdate`] automatically updates
+/// The system [`VisibilitySet::Update`] executed during
+/// [`GameSet::PostUpdate`] automatically updates
 /// [`bevy::render::prelude::Visibility`] of entities with this component.
 #[derive(Component, Default)]
 pub struct VisibilityFlags {
@@ -64,7 +63,11 @@ impl VisibilityFlags {
 
 fn update(mut entities: Query<(&VisibilityFlags, &mut Visibility), Changed<VisibilityFlags>>) {
     for (flags, mut visibility) in entities.iter_mut() {
-        visibility.is_visible = flags.visible();
+        *visibility = if flags.visible() {
+            Visibility::Inherited
+        } else {
+            Visibility::Hidden
+        };
     }
 }
 

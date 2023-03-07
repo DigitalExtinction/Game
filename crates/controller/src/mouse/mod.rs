@@ -1,10 +1,10 @@
 use bevy::prelude::*;
 use input::InputPlugin;
 pub(crate) use input::{
-    DragUpdateType, MouseClicked, MouseDoubleClicked, MouseDragged, MouseLabels, MousePosition,
+    DragUpdateType, MouseClicked, MouseDoubleClicked, MouseDragged, MousePosition, MouseSet,
 };
 use pointer::PointerPlugin;
-pub(crate) use pointer::{Pointer, PointerLabels};
+pub(crate) use pointer::{Pointer, PointerSet};
 
 mod input;
 mod pointer;

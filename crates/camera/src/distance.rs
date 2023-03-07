@@ -1,31 +1,35 @@
 use bevy::prelude::*;
 use de_core::{
+    baseset::GameSet,
     objects::{MovableSolid, StaticSolid},
-    stages::GameStage,
     state::AppState,
 };
-use iyes_loopless::prelude::*;
 
 pub(crate) struct DistancePlugin;
 
 impl Plugin for DistancePlugin {
     fn build(&self, app: &mut App) {
-        app.add_system_set_to_stage(
-            GameStage::PostUpdate,
-            SystemSet::new()
-                .with_system(init::<MovableSolid>.run_in_state(AppState::InGame))
-                .with_system(init::<StaticSolid>.run_in_state(AppState::InGame))
-                .with_system(
-                    update
-                        .run_in_state(AppState::InGame)
-                        .label(DistanceLabels::Update),
-                ),
+        app.add_system(
+            init::<MovableSolid>
+                .in_base_set(GameSet::PostUpdate)
+                .run_if(in_state(AppState::InGame)),
+        )
+        .add_system(
+            init::<StaticSolid>
+                .in_base_set(GameSet::PostUpdate)
+                .run_if(in_state(AppState::InGame)),
+        )
+        .add_system(
+            update
+                .in_base_set(GameSet::PostUpdate)
+                .run_if(in_state(AppState::InGame))
+                .in_set(DistanceSet::Update),
         );
     }
 }
 
-#[derive(Copy, Clone, Hash, Debug, PartialEq, Eq, SystemLabel)]
-pub enum DistanceLabels {
+#[derive(Copy, Clone, Hash, Debug, PartialEq, Eq, SystemSet)]
+pub enum DistanceSet {
     Update,
 }
 

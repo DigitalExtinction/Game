@@ -2,7 +2,7 @@ use bevy::{app::PluginGroupBuilder, prelude::PluginGroup};
 use cleanup::CleanupPlugin;
 use gamestate::GameStatePlugin;
 use iyes_progress::prelude::*;
-use stages::StagesPlugin;
+use baseset::StagesPlugin;
 use state::AppState;
 use visibility::VisibilityPlugin;
 
@@ -18,7 +18,7 @@ pub mod objects;
 pub mod player;
 pub mod projection;
 pub mod screengeom;
-pub mod stages;
+pub mod baseset;
 pub mod state;
 pub mod visibility;
 

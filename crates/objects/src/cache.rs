@@ -10,7 +10,6 @@ use de_core::{
     state::AppState,
 };
 use enum_map::{enum_map, EnumMap};
-use iyes_loopless::prelude::*;
 use iyes_progress::prelude::*;
 
 use crate::{
@@ -25,12 +24,12 @@ impl Plugin for CachePlugin {
     fn build(&self, app: &mut App) {
         app.add_asset::<ObjectInfo>()
             .add_asset_loader(ObjectLoader)
-            .add_enter_system(AppState::InGame, setup)
-            .add_exit_system(AppState::InGame, cleanup)
+            .add_system(setup.in_schedule(OnEnter(AppState::InGame)))
+            .add_system(cleanup.in_schedule(OnExit(AppState::InGame)))
             .add_system(
                 check_status
                     .track_progress()
-                    .run_in_state(GameState::Loading),
+                    .run_if(in_state(GameState::Loading)),
             );
     }
 }

@@ -2,12 +2,11 @@ use std::marker::PhantomData;
 
 use bevy::prelude::*;
 use de_core::{
-    gamestate::GameState, objects::MovableSolid, projection::ToAltitude, stages::GameStage,
+    baseset::GameSet, gamestate::GameState, objects::MovableSolid, projection::ToAltitude,
     state::AppState,
 };
 use de_map::size::MapBounds;
 use de_objects::EXCLUSION_OFFSET;
-use iyes_loopless::prelude::*;
 
 use crate::MAX_ALTITUDE;
 
@@ -15,23 +14,22 @@ pub(crate) struct MovementPlugin;
 
 impl Plugin for MovementPlugin {
     fn build(&self, app: &mut App) {
-        app.add_system_to_stage(
-            GameStage::PreMovement,
-            setup_entities.run_in_state(AppState::InGame),
+        app.add_system(
+            setup_entities
+                .in_base_set(GameSet::PreMovement)
+                .run_if(in_state(AppState::InGame)),
         )
-        .add_system_set_to_stage(
-            GameStage::Movement,
-            SystemSet::new().with_system(
-                update_transform
-                    .run_in_state(GameState::Playing)
-                    .label(MovementLabels::UpdateTransform),
-            ),
+        .add_system(
+            update_transform
+                .in_base_set(GameSet::Movement)
+                .run_if(in_state(GameState::Playing))
+                .in_set(MovementSet::UpdateTransform),
         );
     }
 }
 
-#[derive(Copy, Clone, Hash, Debug, PartialEq, Eq, SystemLabel)]
-pub(crate) enum MovementLabels {
+#[derive(Copy, Clone, Hash, Debug, PartialEq, Eq, SystemSet)]
+pub(crate) enum MovementSet {
     UpdateTransform,
 }
 
