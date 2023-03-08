@@ -96,6 +96,7 @@ fn spawn_root_node(commands: &mut GuiCommands) -> Entity {
                 position_type: PositionType::Absolute,
                 position: UiRect::all(Val::Percent(0.)),
                 size: Size::new(Val::Percent(100.), Val::Percent(100.)),
+                align_items: AlignItems::Center,
                 ..default()
             },
             background_color: Color::GRAY.into(),
