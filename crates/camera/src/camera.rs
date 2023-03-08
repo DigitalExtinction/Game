@@ -316,6 +316,12 @@ fn setup(mut commands: Commands, conf: Res<Configuration>) {
                 .looking_at(Vec3::ZERO, -Vec3::Z),
             ..Default::default()
         },
+        FogSettings {
+            color: Color::rgba(0.05, 0.05, 0.05, 1.0),
+            directional_light_color: Color::WHITE,
+            falloff: FogFalloff::from_visibility_color(20., Color::ALICE_BLUE),
+            ..default()
+        },
         DespawnOnGameExit,
     ));
 }
