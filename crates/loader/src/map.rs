@@ -1,8 +1,10 @@
 use bevy::{
+    pbr::{CascadeShadowConfig, CascadeShadowConfigBuilder},
     prelude::*,
     tasks::{IoTaskPool, Task},
 };
 use de_camera::MoveFocusEvent;
+use de_conf::Configuration;
 use de_core::{
     assets::asset_path,
     cleanup::DespawnOnGameExit,
@@ -61,6 +63,7 @@ fn spawn_map(
     mut commands: Commands,
     task: Option<ResMut<MapLoadingTask>>,
     mut move_focus_events: EventWriter<MoveFocusEvent>,
+    user_config: Res<Configuration>,
     game_config: Res<GameConfig>,
 ) -> Progress {
     let mut task = match task {
@@ -105,7 +108,7 @@ fn spawn_map(
         move_focus_events.send(MoveFocusEvent::new(focus));
     }
 
-    setup_light(&mut commands);
+    setup_light(&mut commands, user_config.as_ref());
     commands.spawn((
         TerrainBundle::flat(map.metadata().bounds()),
         DespawnOnGameExit,
@@ -141,7 +144,7 @@ fn spawn_map(
     true.into()
 }
 
-fn setup_light(commands: &mut Commands) {
+fn setup_light(commands: &mut Commands, conf: &Configuration) {
     commands.insert_resource(AmbientLight {
         color: Color::WHITE,
         brightness: 0.6,
@@ -149,13 +152,24 @@ fn setup_light(commands: &mut Commands) {
 
     let mut transform = Transform::IDENTITY;
     transform.look_at(Vec3::new(1., -1., 0.), Vec3::new(1., 1., 0.));
+
+    let cascade_shadow_config = CascadeShadowConfigBuilder {
+        num_cascades: 5,
+        maximum_distance: 1000.,
+        first_cascade_far_bound: conf.camera().min_distance().inner() * 2.,
+        ..default()
+    }
+    .build();
+
     commands.spawn((
         DirectionalLightBundle {
             directional_light: DirectionalLight {
                 color: Color::WHITE,
                 illuminance: 30000.,
+                shadows_enabled: true,
                 ..Default::default()
             },
+            cascade_shadow_config,
             transform,
             ..Default::default()
         },
