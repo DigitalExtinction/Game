@@ -2125,6 +2125,7 @@ version = "0.1.0-dev"
 dependencies = [
  "bevy",
  "de_camera",
+ "de_conf",
  "de_core",
  "de_map",
  "de_spawner",

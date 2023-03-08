@@ -1,7 +1,7 @@
 use std::time::Duration;
 
 use bevy::{
-    pbr::{MaterialPipeline, MaterialPipelineKey},
+    pbr::{MaterialPipeline, MaterialPipelineKey, NotShadowCaster, NotShadowReceiver},
     prelude::*,
     reflect::TypeUuid,
     render::{
@@ -134,6 +134,8 @@ fn spawn(
             },
             Trail::default(),
             DespawnOnGameExit,
+            NotShadowCaster,
+            NotShadowReceiver,
         ));
     }
 }
