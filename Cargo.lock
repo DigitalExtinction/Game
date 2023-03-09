@@ -1984,7 +1984,6 @@ dependencies = [
  "iyes_loopless",
  "parry2d",
  "parry3d",
- "wgpu-types",
 ]
 
 [[package]]
