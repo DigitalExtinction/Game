@@ -18,6 +18,7 @@ de_map.workspace = true
 de_terrain.workspace = true
 de_spawner.workspace = true
 de_camera.workspace = true
+de_conf.workspace = true
 
 # Other
 bevy.workspace = true
