@@ -25,7 +25,11 @@ impl Plugin for MapSelectionPlugin {
             .add_system(cleanup.in_schedule(OnExit(MapState::On)))
             .add_system(init_buttons.run_if(in_state(MapState::On)))
             .add_system(button_system.run_if(in_state(MapState::On)))
-            .add_system(select_map_system.run_if(in_state(AppState::InMenu)));
+            .add_system(
+                select_map_system
+                    .run_if(in_state(AppState::InMenu))
+                    .run_if(on_event::<SelectMapEvent>()),
+            );
     }
 }
 
@@ -231,13 +235,6 @@ fn map_button(commands: &mut GuiCommands, map: MapEntry) -> Entity {
         .id()
 }
 
-fn select_map_system(
-    mut next_state: ResMut<NextState<MapState>>,
-    mut events: EventReader<SelectMapEvent>,
-) {
-    // Exhaust the iterator.
-    if events.iter().count() == 0 {
-        return;
-    }
+fn select_map_system(mut next_state: ResMut<NextState<MapState>>) {
     next_state.set(MapState::On);
 }

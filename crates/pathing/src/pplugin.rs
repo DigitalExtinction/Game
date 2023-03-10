@@ -40,6 +40,7 @@ impl Plugin for PathingPlugin {
                 update_existing_paths
                     .in_base_set(GameSet::PreMovement)
                     .run_if(in_state(GameState::Playing))
+                    .run_if(on_event::<PathFinderUpdated>())
                     .in_set(PathingSet::UpdateExistingPaths)
                     .after(FinderSet::UpdateFinder),
             )
@@ -169,14 +170,8 @@ fn cleanup(mut commands: Commands) {
 fn update_existing_paths(
     finder: Res<FinderRes>,
     mut state: ResMut<UpdatePathsState>,
-    mut events: EventReader<PathFinderUpdated>,
     entities: Query<(Entity, &Transform, &PathTarget, Option<&ScheduledPath>)>,
 ) {
-    if events.iter().count() == 0 {
-        // consume the iterator
-        return;
-    }
-
     for (entity, transform, target, path) in entities.iter() {
         let position = transform.translation.to_flat();
         if path.is_none() && !state.contains(entity) {
