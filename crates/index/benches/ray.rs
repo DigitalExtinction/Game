@@ -74,7 +74,7 @@ fn load_points(number: u32) -> Vec<Vec2> {
     points
 }
 
-fn setup_world(num_entities: u32, max_distance: f32) -> World {
+fn setup_world(world: &mut World, num_entities: u32, max_distance: f32) {
     let points = load_points(num_entities);
     let mut index = EntityIndex::new();
 
@@ -102,11 +102,9 @@ fn setup_world(num_entities: u32, max_distance: f32) -> World {
         ));
     }
 
-    let mut world = World::default();
     world.insert_resource(index);
     world.insert_resource(rays);
     world.insert_resource(MaxDistance(max_distance));
-    world
 }
 
 fn cast_ray(mut rays: ResMut<Rays>, max_distance: Res<MaxDistance>, index: SpatialQuery<()>) {
@@ -125,12 +123,13 @@ fn ray_cast_benchmark(c: &mut Criterion) {
         group.plot_config(plot_config);
 
         for num_entities in [100, 1000, 10_000, 100_000] {
-            let mut world = setup_world(num_entities, max_distance);
-            let mut stage = SystemStage::single(cast_ray);
+            let mut app = App::new();
+            app.add_system(cast_ray);
+            setup_world(&mut app.world, num_entities, max_distance);
 
             group.throughput(Throughput::Elements(1));
             group.bench_function(BenchmarkId::from_parameter(num_entities), |b| {
-                b.iter(|| stage.run(&mut world));
+                b.iter(|| app.update());
             });
         }
 
