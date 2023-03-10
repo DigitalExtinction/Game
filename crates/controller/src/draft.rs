@@ -22,6 +22,7 @@ impl Plugin for DraftPlugin {
                 spawn
                     .in_base_set(GameSet::Input)
                     .run_if(in_state(AppState::InGame))
+                    .run_if(on_event::<SpawnDraftsEvent>())
                     .in_set(DraftSet::Spawn),
             )
             .add_system(
@@ -34,6 +35,7 @@ impl Plugin for DraftPlugin {
                 discard_drafts
                     .in_base_set(GameSet::Input)
                     .run_if(in_state(AppState::InGame))
+                    .run_if(on_event::<DiscardDraftsEvent>())
                     .in_set(DraftSet::Discard),
             )
             .add_system(
@@ -81,13 +83,8 @@ impl NewDraftEvent {
 fn spawn(
     mut commands: Commands,
     game_config: Res<GameConfig>,
-    mut events: EventReader<SpawnDraftsEvent>,
     drafts: Query<(Entity, &Transform, &ObjectType, &Draft)>,
 ) {
-    if events.iter().count() == 0 {
-        return;
-    }
-
     for (entity, &transform, &object_type, draft) in drafts.iter() {
         if draft.allowed() {
             commands.entity(entity).despawn_recursive();
@@ -126,14 +123,7 @@ fn new_drafts(
     ));
 }
 
-fn discard_drafts(
-    mut commands: Commands,
-    mut events: EventReader<DiscardDraftsEvent>,
-    drafts: Query<Entity, With<Draft>>,
-) {
-    if events.iter().count() == 0 {
-        return;
-    }
+fn discard_drafts(mut commands: Commands, drafts: Query<Entity, With<Draft>>) {
     for entity in drafts.iter() {
         commands.entity(entity).despawn_recursive();
     }

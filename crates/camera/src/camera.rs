@@ -51,6 +51,7 @@ impl Plugin for CameraPlugin {
                 update_focus
                     .in_base_set(GameSet::PreMovement)
                     .run_if(in_state(GameState::Playing))
+                    .run_if(on_event::<FocusInvalidatedEvent>())
                     .in_set(InternalCameraSet::UpdateFocus),
             )
             .add_system(
@@ -88,6 +89,7 @@ impl Plugin for CameraPlugin {
                 update_translation_handler
                     .in_base_set(GameSet::PreMovement)
                     .run_if(in_state(GameState::Playing))
+                    .run_if(on_event::<UpdateTranslationEvent>())
                     .after(InternalCameraSet::MoveFocus),
             )
             .add_system(
@@ -329,15 +331,10 @@ fn cleanup(mut commands: Commands) {
 }
 
 fn update_focus(
-    mut event: EventReader<FocusInvalidatedEvent>,
     mut focus: ResMut<CameraFocus>,
     terrain: TerrainCollider,
     camera_query: Query<&Transform, With<Camera3d>>,
 ) {
-    if event.iter().count() == 0 {
-        return;
-    }
-
     let camera_transform = camera_query.single();
     let ray = Ray::new(
         camera_transform.translation.into(),
@@ -373,14 +370,9 @@ fn process_move_focus_events(
 }
 
 fn update_translation_handler(
-    mut events: EventReader<UpdateTranslationEvent>,
     focus: Res<CameraFocus>,
     mut camera_query: Query<&mut Transform, With<Camera3d>>,
 ) {
-    if events.iter().count() == 0 {
-        return;
-    }
-
     let mut transform = camera_query.single_mut();
     transform.translation = focus.point() + f32::from(focus.distance()) * transform.back();
 }

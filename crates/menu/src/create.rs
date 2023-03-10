@@ -35,6 +35,7 @@ impl Plugin for CreateGamePlugin {
             .add_system(
                 create_game_system
                     .run_if(in_state(MenuState::GameCreation))
+                    .run_if(on_event::<CreateGameEvent>())
                     .after(CreateSet::Buttons)
                     .after(CreateSet::MapSelected),
             )
@@ -232,18 +233,12 @@ fn map_selected_system(
 }
 
 fn create_game_system(
-    mut events: EventReader<CreateGameEvent>,
     inputs: Res<Inputs>,
     texts: TextBoxQuery,
     selected_map: Option<Res<SelectedMap>>,
     mut toasts: EventWriter<ToastEvent>,
     mut sender: Sender<CreateGameRequest>,
 ) {
-    // Always exhaust the iterator
-    if events.iter().count() == 0 {
-        return;
-    }
-
     let Some(selected_map) = selected_map else {
         toasts.send(ToastEvent::new("No map selected."));
         return;
