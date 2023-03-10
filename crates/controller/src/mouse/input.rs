@@ -30,6 +30,7 @@ impl Plugin for InputPlugin {
                 update_drags
                     .in_base_set(GameSet::Input)
                     .run_if(in_state(GameState::Playing))
+                    .run_if(resource_exists_and_changed::<MousePosition>())
                     .in_set(MouseSet::Drags)
                     .after(MouseSet::Position),
             )
@@ -264,11 +265,9 @@ fn update_drags(
     mut mouse_state: ResMut<MouseDragStates>,
     mut drags: EventWriter<MouseDragged>,
 ) {
-    if mouse_position.is_changed() {
-        let resolutions = mouse_state.update(mouse_position.ndc());
-        for (&button, &rect) in resolutions.iter() {
-            drags.send(MouseDragged::new(button, rect, DragUpdateType::Moved));
-        }
+    let resolutions = mouse_state.update(mouse_position.ndc());
+    for (&button, &rect) in resolutions.iter() {
+        drags.send(MouseDragged::new(button, rect, DragUpdateType::Moved));
     }
 }
 

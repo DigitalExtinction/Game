@@ -101,7 +101,11 @@ impl Plugin for CameraPlugin {
                 pivot
                     .in_base_set(GameSet::Movement)
                     .run_if(in_state(GameState::Playing))
-                    .in_set(InternalCameraSet::Pivot),
+                    .in_set(InternalCameraSet::Pivot)
+                    .run_if(
+                        resource_exists_and_changed::<DesiredOffNadir>()
+                            .or_else(resource_exists_and_changed::<DesiredAzimuth>()),
+                    ),
             )
             .add_system(
                 move_horizontaly
@@ -452,10 +456,6 @@ fn pivot(
     focus: Res<CameraFocus>,
     mut camera_query: Query<&mut Transform, With<Camera3d>>,
 ) {
-    if !desired_off_nadir.is_changed() && !desired_azimuth.is_changed() {
-        return;
-    }
-
     let mut transform = camera_query.single_mut();
     transform.rotation = Quat::from_euler(
         EulerRot::YXZ,
