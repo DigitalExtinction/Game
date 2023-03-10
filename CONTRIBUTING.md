@@ -79,7 +79,7 @@
   When the complexity grows, split the system and use events for inter-system
   communication.
 
-* Label struct names end with `Label` (for example `CameraLabel`). Event struct
+* SystemSet enum names end with `Set` (for example `CameraSet`). Event struct
   names end with `Event` (for example `DoubleClickEvent`).
 
 ### Crate Structure
@@ -189,9 +189,9 @@ Topologically sorted crates:
 * [/utils](/utils) — various utilities (e.g. small Python scripts) intended for
   contributors.
 
-### Bevy Schedule Stages
+### Bevy Schedule
 
-See de_core::stages::GameStage.
+See de_core::baseset::GameSet.
 
 ### Coordinate Systems
 

@@ -12,30 +12,27 @@ use de_map::{
     meta::MapMetadata,
 };
 use futures_lite::future;
-use iyes_loopless::prelude::*;
 use thiserror::Error;
 
 pub(crate) struct MapSelectionPlugin;
 
 impl Plugin for MapSelectionPlugin {
     fn build(&self, app: &mut App) {
-        app.add_loopless_state_before_stage(CoreStage::PreUpdate, MapState::Off)
+        app.add_state::<MapState>()
             .add_event::<SelectMapEvent>()
             .add_event::<MapSelectedEvent>()
-            .add_enter_system(MapState::On, setup)
-            .add_exit_system(MapState::On, cleanup)
-            .add_system_set(
-                SystemSet::new()
-                    .with_system(init_buttons.run_in_state(MapState::On))
-                    .with_system(button_system.run_in_state(MapState::On))
-                    .with_system(select_map_system.run_in_state(AppState::InMenu)),
-            );
+            .add_system(setup.in_schedule(OnEnter(MapState::On)))
+            .add_system(cleanup.in_schedule(OnExit(MapState::On)))
+            .add_system(init_buttons.run_if(in_state(MapState::On)))
+            .add_system(button_system.run_if(in_state(MapState::On)))
+            .add_system(select_map_system.run_if(in_state(AppState::InMenu)));
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default, States)]
 enum MapState {
     On,
+    #[default]
     Off,
 }
 
@@ -128,9 +125,9 @@ fn init_buttons(
 
     let map_entries = match result {
         Ok(entries) => entries,
-        Err(error) => {
-            log_full_error!(error);
-            panic!("{}", error);
+        Err(err) => {
+            log_full_error!(err);
+            panic!("{}", err);
         }
     };
 
@@ -164,13 +161,13 @@ fn cleanup(mut commands: Commands, node: Res<PopUpNode>) {
 }
 
 fn button_system(
-    mut commands: Commands,
+    mut next_state: ResMut<NextState<MapState>>,
     interactions: Query<(&Interaction, &MapEntry), Changed<Interaction>>,
     mut events: EventWriter<MapSelectedEvent>,
 ) {
     for (&interaction, map) in interactions.iter() {
         if let Interaction::Clicked = interaction {
-            commands.insert_resource(NextState(MapState::Off));
+            next_state.set(MapState::Off);
             events.send(MapSelectedEvent::new(
                 map.path().into(),
                 map.metadata().clone(),
@@ -234,10 +231,13 @@ fn map_button(commands: &mut GuiCommands, map: MapEntry) -> Entity {
         .id()
 }
 
-fn select_map_system(mut commands: Commands, mut events: EventReader<SelectMapEvent>) {
+fn select_map_system(
+    mut next_state: ResMut<NextState<MapState>>,
+    mut events: EventReader<SelectMapEvent>,
+) {
     // Exhaust the iterator.
     if events.iter().count() == 0 {
         return;
     }
-    commands.insert_resource(NextState(MapState::On));
+    next_state.set(MapState::On);
 }

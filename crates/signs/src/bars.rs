@@ -10,15 +10,14 @@ use bevy::{
         },
     },
 };
-use de_camera::{CameraDistance, DistanceLabels};
+use de_camera::{CameraDistance, DistanceSet};
 use de_core::{
+    baseset::GameSet,
     objects::{Active, ObjectType},
-    stages::GameStage,
     state::AppState,
-    visibility::{VisibilityFlags, VisibilityLabels},
+    visibility::{VisibilityFlags, VisibilitySet},
 };
 use de_objects::{ColliderCache, ObjectCache};
-use iyes_loopless::prelude::*;
 
 use crate::{DISTANCE_FLAG_BIT, MAX_VISIBILITY_DISTANCE};
 
@@ -36,24 +35,30 @@ impl Plugin for BarsPlugin {
         app.add_plugin(MaterialPlugin::<BarMaterial>::default())
             .add_event::<UpdateBarValueEvent>()
             .add_event::<UpdateBarVisibilityEvent>()
-            .add_enter_system(AppState::InGame, setup)
-            .add_exit_system(AppState::InGame, cleanup)
-            .add_system_set_to_stage(
-                GameStage::PostUpdate,
-                SystemSet::new()
-                    .with_system(spawn.run_in_state(AppState::InGame))
-                    .with_system(update_value.run_in_state(AppState::InGame))
-                    .with_system(
-                        update_visibility_events
-                            .run_in_state(AppState::InGame)
-                            .before(VisibilityLabels::Update),
-                    )
-                    .with_system(
-                        update_visibility_distance
-                            .run_in_state(AppState::InGame)
-                            .before(VisibilityLabels::Update)
-                            .after(DistanceLabels::Update),
-                    ),
+            .add_system(setup.in_schedule(OnEnter(AppState::InGame)))
+            .add_system(cleanup.in_schedule(OnExit(AppState::InGame)))
+            .add_system(
+                spawn
+                    .in_base_set(GameSet::PostUpdate)
+                    .run_if(in_state(AppState::InGame)),
+            )
+            .add_system(
+                update_value
+                    .in_base_set(GameSet::PostUpdate)
+                    .run_if(in_state(AppState::InGame)),
+            )
+            .add_system(
+                update_visibility_events
+                    .in_base_set(GameSet::PostUpdate)
+                    .run_if(in_state(AppState::InGame))
+                    .before(VisibilitySet::Update),
+            )
+            .add_system(
+                update_visibility_distance
+                    .in_base_set(GameSet::PostUpdate)
+                    .run_if(in_state(AppState::InGame))
+                    .before(VisibilitySet::Update)
+                    .after(DistanceSet::Update),
             );
     }
 }
@@ -211,7 +216,7 @@ fn spawn(
                     mesh: mesh.mesh(),
                     material,
                     transform,
-                    visibility: Visibility { is_visible: false },
+                    visibility: Visibility::Hidden,
                     ..Default::default()
                 },
                 NotShadowCaster,

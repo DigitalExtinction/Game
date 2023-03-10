@@ -1,9 +1,8 @@
 use ahash::AHashSet;
 use bevy::{ecs::system::SystemParam, prelude::*};
-use de_core::{gamestate::GameState, stages::GameStage};
+use de_core::{baseset::GameSet, gamestate::GameState};
 use de_signs::UpdateBarVisibilityEvent;
 use de_terrain::CircleMarker;
-use iyes_loopless::prelude::*;
 
 use crate::SELECTION_BAR_ID;
 
@@ -11,17 +10,17 @@ pub(super) struct BookkeepingPlugin;
 
 impl Plugin for BookkeepingPlugin {
     fn build(&self, app: &mut App) {
-        app.add_event::<SelectEvent>().add_system_to_stage(
-            GameStage::Input,
+        app.add_event::<SelectEvent>().add_system(
             update_selection
-                .run_in_state(GameState::Playing)
-                .label(SelectionLabels::Update),
+                .in_base_set(GameSet::Input)
+                .run_if(in_state(GameState::Playing))
+                .in_set(SelectionSet::Update),
         );
     }
 }
 
-#[derive(Copy, Clone, Hash, Debug, PartialEq, Eq, SystemLabel)]
-pub(crate) enum SelectionLabels {
+#[derive(Copy, Clone, Hash, Debug, PartialEq, Eq, SystemSet)]
+pub(crate) enum SelectionSet {
     Update,
 }
 
@@ -77,7 +76,7 @@ struct SelectorBuilder<'w, 's> {
     commands: Commands<'w, 's>,
     selected: Query<'w, 's, Entity, With<Selected>>,
     markers: Query<'w, 's, &'static mut CircleMarker>,
-    bars: EventWriter<'w, 's, UpdateBarVisibilityEvent>,
+    bars: EventWriter<'w, UpdateBarVisibilityEvent>,
 }
 
 impl<'w, 's> SelectorBuilder<'w, 's> {
@@ -97,7 +96,7 @@ impl<'w, 's> SelectorBuilder<'w, 's> {
 struct Selector<'w, 's> {
     commands: Commands<'w, 's>,
     markers: Query<'w, 's, &'static mut CircleMarker>,
-    bars: EventWriter<'w, 's, UpdateBarVisibilityEvent>,
+    bars: EventWriter<'w, UpdateBarVisibilityEvent>,
     selected: AHashSet<Entity>,
     to_select: AHashSet<Entity>,
     to_deselect: AHashSet<Entity>,

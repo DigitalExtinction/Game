@@ -8,14 +8,13 @@ use de_core::{
     player::{Player, PlayerRange},
     state::AppState,
 };
-use iyes_loopless::prelude::*;
 
 pub(crate) struct CounterPlugin;
 
 impl Plugin for CounterPlugin {
     fn build(&self, app: &mut App) {
-        app.add_enter_system(AppState::InGame, setup)
-            .add_exit_system(AppState::InGame, cleanup);
+        app.add_system(setup.in_schedule(OnEnter(AppState::InGame)))
+            .add_system(cleanup.in_schedule(OnExit(AppState::InGame)));
     }
 }
 

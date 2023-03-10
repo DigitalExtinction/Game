@@ -1,10 +1,9 @@
 use bevy::prelude::*;
 use de_behaviour::ChaseTargetEvent;
 use de_combat::AttackEvent;
-use de_core::{gamestate::GameState, objects::MovableSolid, stages::GameStage};
+use de_core::{baseset::GameSet, gamestate::GameState, objects::MovableSolid};
 use de_pathing::{PathQueryProps, PathTarget, UpdateEntityPath};
 use glam::Vec2;
-use iyes_loopless::prelude::*;
 
 use crate::selection::Selected;
 
@@ -14,25 +13,23 @@ impl Plugin for ExecutorPlugin {
     fn build(&self, app: &mut App) {
         app.add_event::<SendSelectedEvent>()
             .add_event::<GroupAttackEvent>()
-            .add_system_set_to_stage(
-                GameStage::Input,
-                SystemSet::new()
-                    .with_system(
-                        send_selected_system
-                            .run_in_state(GameState::Playing)
-                            .label(CommandsLabel::SendSelected),
-                    )
-                    .with_system(
-                        attack_system
-                            .run_in_state(GameState::Playing)
-                            .label(CommandsLabel::Attack),
-                    ),
+            .add_system(
+                send_selected_system
+                    .in_base_set(GameSet::Input)
+                    .run_if(in_state(GameState::Playing))
+                    .in_set(CommandsSet::SendSelected),
+            )
+            .add_system(
+                attack_system
+                    .in_base_set(GameSet::Input)
+                    .run_if(in_state(GameState::Playing))
+                    .in_set(CommandsSet::Attack),
             );
     }
 }
 
-#[derive(Copy, Clone, Hash, Debug, PartialEq, Eq, SystemLabel)]
-pub(crate) enum CommandsLabel {
+#[derive(Copy, Clone, Hash, Debug, PartialEq, Eq, SystemSet)]
+pub(crate) enum CommandsSet {
     SendSelected,
     Attack,
 }

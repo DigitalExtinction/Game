@@ -1,10 +1,9 @@
 use std::time::Duration;
 
 use bevy::{prelude::*, time::Stopwatch};
-use de_gui::{ButtonCommands, GuiCommands, LabelCommands, OuterStyle, ToastEvent, ToastLabel};
+use de_gui::{ButtonCommands, GuiCommands, LabelCommands, OuterStyle, ToastEvent, ToastSet};
 use de_lobby_client::{ListGamesRequest, RequestEvent, ResponseEvent};
 use de_lobby_model::GamePartial;
-use iyes_loopless::prelude::*;
 
 use crate::{menu::Menu, MenuState};
 
@@ -14,15 +13,15 @@ pub(crate) struct GameListingPlugin;
 
 impl Plugin for GameListingPlugin {
     fn build(&self, app: &mut App) {
-        app.add_enter_system(MenuState::GameListing, setup)
-            .add_exit_system(MenuState::GameListing, cleanup)
-            .add_system(refresh_system.run_in_state(MenuState::GameListing))
+        app.add_system(setup.in_schedule(OnEnter(MenuState::GameListing)))
+            .add_system(cleanup.in_schedule(OnExit(MenuState::GameListing)))
+            .add_system(refresh_system.run_if(in_state(MenuState::GameListing)))
             .add_system(
                 list_games_system
-                    .run_in_state(MenuState::GameListing)
-                    .before(ToastLabel::ProcessEvents),
+                    .run_if(in_state(MenuState::GameListing))
+                    .before(ToastSet::ProcessEvents),
             )
-            .add_system(button_system.run_in_state(MenuState::GameListing));
+            .add_system(button_system.run_if(in_state(MenuState::GameListing)));
     }
 }
 
@@ -178,16 +177,14 @@ fn list_games_system(
 }
 
 fn button_system(
-    mut commands: Commands,
+    mut next_state: ResMut<NextState<MenuState>>,
     interactions: Query<(&Interaction, &ButtonAction), Changed<Interaction>>,
     mut toasts: EventWriter<ToastEvent>,
 ) {
     for (&interaction, action) in interactions.iter() {
         if let Interaction::Clicked = interaction {
             match action {
-                ButtonAction::Create => {
-                    commands.insert_resource(NextState(MenuState::GameCreation))
-                }
+                ButtonAction::Create => next_state.set(MenuState::GameCreation),
                 ButtonAction::Join => {
                     toasts.send(ToastEvent::new("Not yet implemented (issue #301)."))
                 }

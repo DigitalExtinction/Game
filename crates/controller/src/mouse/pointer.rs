@@ -1,13 +1,12 @@
 use bevy::prelude::*;
-use de_core::{gamestate::GameState, stages::GameStage, state::AppState};
+use de_core::{baseset::GameSet, gamestate::GameState, state::AppState};
 use de_index::SpatialQuery;
 use de_signs::UpdateBarVisibilityEvent;
 use de_terrain::TerrainCollider;
 use glam::Vec3;
-use iyes_loopless::prelude::*;
 
 use crate::{
-    mouse::{MouseLabels, MousePosition},
+    mouse::{MousePosition, MouseSet},
     ray::ScreenRay,
     POINTER_BAR_ID,
 };
@@ -16,26 +15,26 @@ pub(super) struct PointerPlugin;
 
 impl Plugin for PointerPlugin {
     fn build(&self, app: &mut App) {
-        app.add_enter_system(AppState::InGame, setup)
-            .add_exit_system(AppState::InGame, cleanup)
-            .add_system_to_stage(
-                GameStage::Input,
+        app.add_system(setup.in_schedule(OnEnter(AppState::InGame)))
+            .add_system(cleanup.in_schedule(OnExit(AppState::InGame)))
+            .add_system(
                 pointer_update_system
-                    .run_in_state(GameState::Playing)
-                    .label(PointerLabels::Update)
-                    .after(MouseLabels::Position),
+                    .in_base_set(GameSet::Input)
+                    .run_if(in_state(GameState::Playing))
+                    .in_set(PointerSet::Update)
+                    .after(MouseSet::Position),
             )
-            .add_system_to_stage(
-                GameStage::Input,
+            .add_system(
                 update_bar_visibility
-                    .run_in_state(GameState::Playing)
-                    .after(PointerLabels::Update),
+                    .in_base_set(GameSet::Input)
+                    .run_if(in_state(GameState::Playing))
+                    .after(PointerSet::Update),
             );
     }
 }
 
-#[derive(Copy, Clone, Hash, Debug, PartialEq, Eq, SystemLabel)]
-pub(crate) enum PointerLabels {
+#[derive(Copy, Clone, Hash, Debug, PartialEq, Eq, SystemSet)]
+pub(crate) enum PointerSet {
     Update,
 }
 

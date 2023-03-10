@@ -23,5 +23,4 @@ de_map.workspace = true
 async-std.workspace = true
 bevy.workspace = true
 futures-lite.workspace = true
-iyes_loopless.workspace = true
 thiserror.workspace = true

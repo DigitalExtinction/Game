@@ -1,14 +1,11 @@
-use std::marker::PhantomData;
-
 use bevy::{ecs::system::SystemParam, prelude::*};
 use de_core::{
-    gamestate::GameState, gconfig::GameConfig, objects::ObjectType, player::Player,
-    projection::ToFlat, stages::GameStage,
+    baseset::GameSet, gamestate::GameState, gconfig::GameConfig, objects::ObjectType,
+    player::Player, projection::ToFlat,
 };
 use de_map::size::MapBounds;
 use de_objects::{IchnographyCache, ObjectCache};
 use de_terrain::TerrainCollider;
-use iyes_loopless::prelude::*;
 use parry2d::{
     bounding_volume::Aabb,
     math::Point,
@@ -28,43 +25,40 @@ pub(super) struct FillPlugin;
 
 impl Plugin for FillPlugin {
     fn build(&self, app: &mut App) {
-        app.add_system_set_to_stage(
-            GameStage::PostMovement,
-            SystemSet::new()
-                .with_system(
-                    clear_system
-                        .run_in_state(GameState::Playing)
-                        .label(FillLabel::Clear),
-                )
-                .with_system(
-                    draw_entities_system
-                        .run_in_state(GameState::Playing)
-                        .label(FillLabel::DrawEntities)
-                        .after(FillLabel::Clear),
-                )
-                .with_system(
-                    draw_camera_system
-                        .run_in_state(GameState::Playing)
-                        .after(FillLabel::DrawEntities),
-                ),
+        app.add_system(
+            clear_system
+                .in_base_set(GameSet::PostMovement)
+                .run_if(in_state(GameState::Playing))
+                .in_set(FillSet::Clear),
+        )
+        .add_system(
+            draw_entities_system
+                .in_base_set(GameSet::PostMovement)
+                .run_if(in_state(GameState::Playing))
+                .in_set(FillSet::DrawEntities)
+                .after(FillSet::Clear),
+        )
+        .add_system(
+            draw_camera_system
+                .in_base_set(GameSet::PostMovement)
+                .run_if(in_state(GameState::Playing))
+                .after(FillSet::DrawEntities),
         );
     }
 }
 
-#[derive(Copy, Clone, Hash, Debug, PartialEq, Eq, SystemLabel)]
-enum FillLabel {
+#[derive(Copy, Clone, Hash, Debug, PartialEq, Eq, SystemSet)]
+enum FillSet {
     Clear,
     DrawEntities,
 }
 
 #[derive(SystemParam)]
-struct UiCoords<'w, 's> {
+struct UiCoords<'w> {
     bounds: Res<'w, MapBounds>,
-    #[system_param(ignore)]
-    marker: PhantomData<&'s ()>,
 }
 
-impl<'w, 's> UiCoords<'w, 's> {
+impl<'w> UiCoords<'w> {
     /// Transforms 2D flat position (in meters from origin) to relative UI
     /// position (from 0 to 1 from top-right corner).
     fn flat_to_rel(&self, point: Vec2) -> Vec2 {
@@ -110,7 +104,7 @@ fn draw_entities_system(
 struct CameraPoint<'w, 's> {
     ray: ScreenRay<'w, 's>,
     terrain: TerrainCollider<'w, 's>,
-    ui_coords: UiCoords<'w, 's>,
+    ui_coords: UiCoords<'w>,
 }
 
 impl<'w, 's> CameraPoint<'w, 's> {

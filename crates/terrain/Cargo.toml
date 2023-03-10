@@ -19,7 +19,6 @@ de_objects.workspace = true
 
 # Other
 bevy.workspace = true
-iyes_loopless.workspace = true
 iyes_progress.workspace = true
 glam.workspace = true
 parry3d.workspace = true

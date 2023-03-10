@@ -12,9 +12,8 @@ use bevy::{
     },
 };
 use de_core::{
-    cleanup::DespawnOnGameExit, gamestate::GameState, stages::GameStage, state::AppState,
+    baseset::GameSet, cleanup::DespawnOnGameExit, gamestate::GameState, state::AppState,
 };
-use iyes_loopless::prelude::*;
 use parry3d::query::Ray;
 
 const TRAIL_LIFESPAN: Duration = Duration::from_millis(500);
@@ -26,13 +25,17 @@ impl Plugin for TrailPlugin {
     fn build(&self, app: &mut App) {
         app.add_plugin(MaterialPlugin::<TrailMaterial>::default())
             .add_event::<TrailEvent>()
-            .add_enter_system(AppState::InGame, setup)
-            .add_exit_system(AppState::InGame, cleanup)
-            .add_system_set_to_stage(
-                GameStage::PostUpdate,
-                SystemSet::new()
-                    .with_system(spawn.run_in_state(GameState::Playing))
-                    .with_system(update.run_in_state(GameState::Playing)),
+            .add_system(setup.in_schedule(OnEnter(AppState::InGame)))
+            .add_system(cleanup.in_schedule(OnExit(AppState::InGame)))
+            .add_system(
+                spawn
+                    .in_base_set(GameSet::PostUpdate)
+                    .run_if(in_state(GameState::Playing)),
+            )
+            .add_system(
+                update
+                    .in_base_set(GameSet::PostUpdate)
+                    .run_if(in_state(GameState::Playing)),
             );
     }
 }

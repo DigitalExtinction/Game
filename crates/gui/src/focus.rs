@@ -16,7 +16,11 @@ impl Plugin for FocusPlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<UiFocus>()
             .add_event::<SetFocusEvent>()
-            .add_system_to_stage(CoreStage::PreUpdate, focus_system.after(UiSystem::Focus));
+            .add_system(
+                focus_system
+                    .in_base_set(CoreSet::PreUpdate)
+                    .after(UiSystem::Focus),
+            );
     }
 }
 
@@ -87,7 +91,7 @@ pub(super) struct UiFocus {
 
 fn focus_system(
     mut focus: ResMut<UiFocus>,
-    removals: RemovedComponents<Interaction>,
+    mut removals: RemovedComponents<Interaction>,
     mouse: Res<Input<MouseButton>>,
     touch: Res<Touches>,
     interactions: Query<(Entity, &Interaction), Changed<Interaction>>,

@@ -5,15 +5,17 @@
 #import bevy_pbr::utils
 #import bevy_pbr::clustered_forward
 #import bevy_pbr::lighting
+#import bevy_pbr::pbr_ambient
 #import bevy_pbr::shadows
+#import bevy_pbr::fog
 #import bevy_pbr::pbr_functions
 
 // How large (in meters) is a texture.
-let TEXTURE_SIZE = 16.;
-let SHAPE_COLOR = vec4<f32>(1., 1., 1., 0.75);
-let SHAPE_THICKNESS = 0.15;
+const TEXTURE_SIZE = 16.;
+const SHAPE_COLOR = vec4<f32>(1., 1., 1., 0.75);
+const SHAPE_THICKNESS = 0.15;
 // Keep thie array lenght in sync with /crates/terrain/src/shader.rs.
-let MAX_KD_TREE_SIZE = 127u;
+const MAX_KD_TREE_SIZE = 127u;
 
 struct KdTreeNode {
     @align(16) location: vec2<f32>,
@@ -179,11 +181,18 @@ fn fragment(in: FragmentInput) -> @location(0) vec4<f32> {
         in.world_tangent,
 #endif
 #endif
+#ifdef VERTEX_UVS
         in.uv,
+#endif
     );
     pbr_input.V = calculate_view(in.world_position, pbr_input.is_orthographic);
 
-    var output_color = tone_mapping(pbr(pbr_input));
+    var output_color = pbr(pbr_input);
+
+#ifdef TONEMAP_IN_SHADER
+    output_color = tone_mapping(output_color);
+#endif
+
     output_color = draw_circles(output_color, in.uv);
     return output_color;
 }

@@ -7,7 +7,7 @@ mod panel;
 mod selection;
 
 pub(crate) use interaction::HudNodes;
-pub(crate) use menu::{GameMenuLabel, ToggleGameMenu};
+pub(crate) use menu::{GameMenuSet, ToggleGameMenu};
 pub(crate) use selection::UpdateSelectionBoxEvent;
 
 use self::{

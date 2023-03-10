@@ -99,12 +99,12 @@ mod test {
         #[derive(Resource)]
         struct Vec3Wrap(Vec3);
 
-        let mut world = World::default();
+        let mut app = App::new();
 
-        world
+        app.world
             .spawn(TerrainBundle::flat(MapBounds::new(Vec2::new(100., 200.))))
             .insert(Transform::from_translation(10000. * Vec3::ONE));
-        world
+        app.world
             .spawn(TerrainBundle::flat(MapBounds::new(Vec2::new(100., 200.))))
             .insert(Transform::from_xyz(-17., 3.2, -22.));
 
@@ -114,11 +114,11 @@ mod test {
             commands.insert_resource(Vec3Wrap(Vec3::from(ray.point_at(intersection.toi))));
         }
 
-        let mut stage = SystemStage::parallel();
-        stage.add_system(help_system);
-        stage.run(&mut world);
+        app.add_system(help_system);
 
-        let intersection = world.get_resource::<Vec3Wrap>().unwrap();
+        app.update();
+
+        let intersection = app.world.get_resource::<Vec3Wrap>().unwrap();
         assert!(Vec3::new(13.6, 3.2, 6.8).distance(intersection.0) < 0.00001);
     }
 }

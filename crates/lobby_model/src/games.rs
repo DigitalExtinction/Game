@@ -162,7 +162,7 @@ impl validation::Validatable for GameMap {
         );
         for byte in self.hash.bytes() {
             ensure!(
-                (b'0'..=b'9').contains(&byte) || (b'a'..=b'f').contains(&byte),
+                byte.is_ascii_digit() || (b'a'..=b'f').contains(&byte),
                 "Map has must consist solely of hexadecimal characters [0-9a-f]."
             );
         }

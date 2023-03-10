@@ -7,7 +7,6 @@ use bevy::{
     },
     prelude::*,
 };
-use iyes_loopless::prelude::*;
 
 use crate::gamestate::GameState;
 
@@ -25,10 +24,10 @@ impl<T: Event> Default for ResendEventPlugin<T> {
 
 impl<T: Event> Plugin for ResendEventPlugin<T> {
     fn build(&self, app: &mut App) {
-        app.add_enter_system(GameState::Loading, setup::<T>)
-            .add_system(enqueue_events::<T>.run_in_state(GameState::Loading))
-            .add_enter_system(GameState::Playing, resend_events::<T>)
-            .add_enter_system(GameState::Playing, cleanup::<T>);
+        app.add_system(setup::<T>.in_schedule(OnEnter(GameState::Loading)))
+            .add_system(enqueue_events::<T>.run_if(in_state(GameState::Loading)))
+            .add_system(resend_events::<T>.in_schedule(OnEnter(GameState::Playing)))
+            .add_system(cleanup::<T>.in_schedule(OnEnter(GameState::Playing)));
     }
 }
 

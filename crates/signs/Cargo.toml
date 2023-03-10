@@ -21,4 +21,3 @@ de_terrain.workspace = true
 # Other
 bevy.workspace = true
 glam.workspace = true
-iyes_loopless.workspace = true

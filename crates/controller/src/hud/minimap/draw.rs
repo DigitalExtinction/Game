@@ -13,7 +13,7 @@ pub(super) struct DrawingParam<'w, 's> {
 
 impl<'w, 's> DrawingParam<'w, 's> {
     pub(super) fn drawing(&mut self) -> Drawing {
-        let image = self.images.get_mut(&self.query.single().0).unwrap();
+        let image = self.images.get_mut(&self.query.single().texture).unwrap();
         let size = UVec2::new(
             image.texture_descriptor.size.width,
             image.texture_descriptor.size.height,

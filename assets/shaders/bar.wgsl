@@ -2,8 +2,8 @@
 #import bevy_pbr::mesh_bindings
 #import bevy_pbr::mesh_functions
 
-let BACKGROUND_COLOR = vec4<f32>(0., 0., 0., 0.75);
-let FOREGROUND_COLOR = vec4<f32>(0.6, 1., 0.6, 0.75);
+const BACKGROUND_COLOR = vec4<f32>(0., 0., 0., 0.75);
+const FOREGROUND_COLOR = vec4<f32>(0.6, 1., 0.6, 0.75);
 
 @group(1) @binding(0)
 var<uniform> value: f32;

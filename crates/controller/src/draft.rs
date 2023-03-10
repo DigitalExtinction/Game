@@ -1,16 +1,15 @@
 use bevy::prelude::*;
 use de_core::{
+    baseset::GameSet,
     cleanup::DespawnOnGameExit,
     gamestate::GameState,
     gconfig::GameConfig,
     objects::{BuildingType, ObjectType},
-    stages::GameStage,
     state::AppState,
 };
 use de_spawner::{Draft, DraftBundle, SpawnBundle};
-use iyes_loopless::prelude::*;
 
-use crate::mouse::{Pointer, PointerLabels};
+use crate::mouse::{Pointer, PointerSet};
 
 pub(crate) struct DraftPlugin;
 
@@ -19,35 +18,35 @@ impl Plugin for DraftPlugin {
         app.add_event::<SpawnDraftsEvent>()
             .add_event::<NewDraftEvent>()
             .add_event::<DiscardDraftsEvent>()
-            .add_system_set_to_stage(
-                GameStage::Input,
-                SystemSet::new()
-                    .with_system(
-                        spawn
-                            .run_in_state(AppState::InGame)
-                            .label(DraftLabels::Spawn),
-                    )
-                    .with_system(
-                        new_drafts
-                            .run_in_state(AppState::InGame)
-                            .label(DraftLabels::New),
-                    )
-                    .with_system(
-                        discard_drafts
-                            .run_in_state(AppState::InGame)
-                            .label(DraftLabels::Discard),
-                    )
-                    .with_system(
-                        move_drafts
-                            .run_in_state(GameState::Playing)
-                            .after(PointerLabels::Update),
-                    ),
+            .add_system(
+                spawn
+                    .in_base_set(GameSet::Input)
+                    .run_if(in_state(AppState::InGame))
+                    .in_set(DraftSet::Spawn),
+            )
+            .add_system(
+                new_drafts
+                    .in_base_set(GameSet::Input)
+                    .run_if(in_state(AppState::InGame))
+                    .in_set(DraftSet::New),
+            )
+            .add_system(
+                discard_drafts
+                    .in_base_set(GameSet::Input)
+                    .run_if(in_state(AppState::InGame))
+                    .in_set(DraftSet::Discard),
+            )
+            .add_system(
+                move_drafts
+                    .in_base_set(GameSet::Input)
+                    .run_if(in_state(GameState::Playing))
+                    .after(PointerSet::Update),
             );
     }
 }
 
-#[derive(Copy, Clone, Hash, Debug, PartialEq, Eq, SystemLabel)]
-pub(crate) enum DraftLabels {
+#[derive(Copy, Clone, Hash, Debug, PartialEq, Eq, SystemSet)]
+pub(crate) enum DraftSet {
     Spawn,
     New,
     Discard,

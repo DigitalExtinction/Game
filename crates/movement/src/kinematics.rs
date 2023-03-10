@@ -2,14 +2,13 @@ use std::f32::consts::{FRAC_PI_4, PI, TAU};
 
 use bevy::prelude::*;
 use de_core::{
-    gamestate::GameState, objects::MovableSolid, projection::ToAltitude, stages::GameStage,
+    baseset::GameSet, gamestate::GameState, objects::MovableSolid, projection::ToAltitude,
     state::AppState,
 };
-use iyes_loopless::prelude::*;
 
 use crate::{
-    altitude::{AltitudeLabels, DesiredClimbing},
-    movement::{DesiredVelocity, MovementLabels, ObjectVelocity},
+    altitude::{AltitudeSet, DesiredClimbing},
+    movement::{DesiredVelocity, MovementSet, ObjectVelocity},
     repulsion::{RepulsionLables, RepulsionVelocity},
     G_ACCELERATION, MAX_ANGULAR_SPEED, MAX_H_SPEED, MAX_V_ACCELERATION, MAX_V_SPEED,
 };
@@ -18,26 +17,25 @@ pub(crate) struct KinematicsPlugin;
 
 impl Plugin for KinematicsPlugin {
     fn build(&self, app: &mut App) {
-        app.add_system_to_stage(
-            GameStage::PreMovement,
-            setup_entities.run_in_state(AppState::InGame),
+        app.add_system(
+            setup_entities
+                .in_base_set(GameSet::PreMovement)
+                .run_if(in_state(AppState::InGame)),
         )
-        .add_system_set_to_stage(
-            GameStage::Movement,
-            SystemSet::new().with_system(
-                kinematics
-                    .run_in_state(GameState::Playing)
-                    .label(KinematicsLabels::Kinematics)
-                    .before(MovementLabels::UpdateTransform)
-                    .after(RepulsionLables::Apply)
-                    .after(AltitudeLabels::Update),
-            ),
+        .add_system(
+            kinematics
+                .in_base_set(GameSet::Movement)
+                .run_if(in_state(GameState::Playing))
+                .in_set(KinematicsSet::Kinematics)
+                .before(MovementSet::UpdateTransform)
+                .after(RepulsionLables::Apply)
+                .after(AltitudeSet::Update),
         );
     }
 }
 
-#[derive(Copy, Clone, Hash, Debug, PartialEq, Eq, SystemLabel)]
-enum KinematicsLabels {
+#[derive(Copy, Clone, Hash, Debug, PartialEq, Eq, SystemSet)]
+enum KinematicsSet {
     Kinematics,
 }
 
@@ -115,37 +113,39 @@ fn kinematics(
 ) {
     let time_delta = time.delta_seconds();
 
-    objects.par_for_each_mut(512, |(movement, climbing, mut kinematics, mut velocity)| {
-        let desired_h_velocity = movement.velocity();
-        let desired_heading = if desired_h_velocity == Vec2::ZERO {
-            kinematics.heading()
-        } else {
-            desired_h_velocity.y.atan2(desired_h_velocity.x)
-        };
+    objects
+        .par_iter_mut()
+        .for_each_mut(|(movement, climbing, mut kinematics, mut velocity)| {
+            let desired_h_velocity = movement.velocity();
+            let desired_heading = if desired_h_velocity == Vec2::ZERO {
+                kinematics.heading()
+            } else {
+                desired_h_velocity.y.atan2(desired_h_velocity.x)
+            };
 
-        let heading_diff = normalize_angle(desired_heading - kinematics.heading());
-        let max_heading_delta = MAX_ANGULAR_SPEED * time_delta;
-        let heading_delta = heading_diff.clamp(-max_heading_delta, max_heading_delta);
-        kinematics.update_heading(heading_delta);
+            let heading_diff = normalize_angle(desired_heading - kinematics.heading());
+            let max_heading_delta = MAX_ANGULAR_SPEED * time_delta;
+            let heading_delta = heading_diff.clamp(-max_heading_delta, max_heading_delta);
+            kinematics.update_heading(heading_delta);
 
-        let max_h_speed_delta = MAX_H_SPEED * time_delta;
-        let h_speed_delta = if (heading_diff - heading_delta).abs() > FRAC_PI_4 {
-            // Slow down if not going in roughly good direction.
-            -kinematics.horizontal_speed()
-        } else {
-            desired_h_velocity.length() - kinematics.horizontal_speed()
-        }
-        .clamp(-max_h_speed_delta, max_h_speed_delta);
-        kinematics.update_horizontal_speed(h_speed_delta);
+            let max_h_speed_delta = MAX_H_SPEED * time_delta;
+            let h_speed_delta = if (heading_diff - heading_delta).abs() > FRAC_PI_4 {
+                // Slow down if not going in roughly good direction.
+                -kinematics.horizontal_speed()
+            } else {
+                desired_h_velocity.length() - kinematics.horizontal_speed()
+            }
+            .clamp(-max_h_speed_delta, max_h_speed_delta);
+            kinematics.update_horizontal_speed(h_speed_delta);
 
-        let v_speed_delta = (climbing.speed() - kinematics.vertical_speed()).clamp(
-            -time_delta * G_ACCELERATION,
-            time_delta * MAX_V_ACCELERATION,
-        );
-        kinematics.update_vertical_speed(v_speed_delta);
+            let v_speed_delta = (climbing.speed() - kinematics.vertical_speed()).clamp(
+                -time_delta * G_ACCELERATION,
+                time_delta * MAX_V_ACCELERATION,
+            );
+            kinematics.update_vertical_speed(v_speed_delta);
 
-        velocity.update(kinematics.compute_velocity(), kinematics.heading());
-    });
+            velocity.update(kinematics.compute_velocity(), kinematics.heading());
+        });
 }
 
 fn normalize_angle(mut angle: f32) -> f32 {

@@ -1,14 +1,13 @@
 use bevy::prelude::*;
 use de_core::{
+    baseset::GameSet,
     gamestate::GameState,
     objects::{MovableSolid, ObjectType, StaticSolid},
     projection::ToFlat,
-    stages::GameStage,
     state::AppState,
 };
 use de_map::size::MapBounds;
 use de_objects::{IchnographyCache, ObjectCache, EXCLUSION_OFFSET};
-use iyes_loopless::prelude::*;
 use parry2d::{math::Isometry, na::Unit, query::PointQuery};
 
 use crate::{
@@ -16,7 +15,7 @@ use crate::{
     disc::Disc,
     movement::{add_desired_velocity, DesiredVelocity},
     obstacles::{MovableObstacles, ObstaclesLables, StaticObstacles},
-    pathing::{PathVelocity, PathingLabels},
+    pathing::{PathVelocity, PathingSet},
     MAX_H_ACCELERATION, MAX_H_SPEED,
 };
 
@@ -29,50 +28,52 @@ pub(crate) struct RepulsionPlugin;
 
 impl Plugin for RepulsionPlugin {
     fn build(&self, app: &mut App) {
-        app.add_system_set_to_stage(
-            GameStage::PreMovement,
-            SystemSet::new()
-                .with_system(setup_entities.run_in_state(AppState::InGame))
-                .with_system(
-                    add_desired_velocity::<RepulsionVelocity>.run_in_state(AppState::InGame),
-                ),
+        app.add_system(
+            setup_entities
+                .in_base_set(GameSet::PreMovement)
+                .run_if(in_state(AppState::InGame)),
         )
-        .add_system_set_to_stage(
-            GameStage::Movement,
-            SystemSet::new()
-                .with_system(
-                    repel_static
-                        .run_in_state(GameState::Playing)
-                        .label(RepulsionLables::RepelStatic)
-                        .after(ObstaclesLables::UpdateNearby)
-                        .after(PathingLabels::FollowPath),
-                )
-                .with_system(
-                    repel_movable
-                        .run_in_state(GameState::Playing)
-                        .label(RepulsionLables::RepelMovable)
-                        .after(ObstaclesLables::UpdateNearby)
-                        .after(PathingLabels::FollowPath),
-                )
-                .with_system(
-                    repel_bounds
-                        .run_in_state(GameState::Playing)
-                        .label(RepulsionLables::RepelBounds)
-                        .after(PathingLabels::FollowPath),
-                )
-                .with_system(
-                    apply
-                        .run_in_state(GameState::Playing)
-                        .label(RepulsionLables::Apply)
-                        .after(RepulsionLables::RepelStatic)
-                        .after(RepulsionLables::RepelMovable)
-                        .after(RepulsionLables::RepelBounds),
-                ),
+        .add_system(
+            add_desired_velocity::<RepulsionVelocity>
+                .in_base_set(GameSet::PreMovement)
+                .run_if(in_state(AppState::InGame)),
+        )
+        .add_system(
+            repel_static
+                .in_base_set(GameSet::Movement)
+                .run_if(in_state(GameState::Playing))
+                .in_set(RepulsionLables::RepelStatic)
+                .after(ObstaclesLables::UpdateNearby)
+                .after(PathingSet::FollowPath),
+        )
+        .add_system(
+            repel_movable
+                .in_base_set(GameSet::Movement)
+                .run_if(in_state(GameState::Playing))
+                .in_set(RepulsionLables::RepelMovable)
+                .after(ObstaclesLables::UpdateNearby)
+                .after(PathingSet::FollowPath),
+        )
+        .add_system(
+            repel_bounds
+                .in_base_set(GameSet::Movement)
+                .run_if(in_state(GameState::Playing))
+                .in_set(RepulsionLables::RepelBounds)
+                .after(PathingSet::FollowPath),
+        )
+        .add_system(
+            apply
+                .in_base_set(GameSet::Movement)
+                .run_if(in_state(GameState::Playing))
+                .in_set(RepulsionLables::Apply)
+                .after(RepulsionLables::RepelStatic)
+                .after(RepulsionLables::RepelMovable)
+                .after(RepulsionLables::RepelBounds),
         );
     }
 }
 
-#[derive(Copy, Clone, Hash, Debug, PartialEq, Eq, SystemLabel)]
+#[derive(Copy, Clone, Hash, Debug, PartialEq, Eq, SystemSet)]
 pub(crate) enum RepulsionLables {
     RepelStatic,
     RepelMovable,
@@ -171,44 +172,46 @@ fn repel_static(
     )>,
     obstacles: Query<(&ObjectType, &Transform), With<StaticSolid>>,
 ) {
-    objects.par_for_each_mut(512, |(movement, disc, static_obstacles, mut repulsion)| {
-        if movement.stationary() {
-            return;
-        }
-
-        for &entity in static_obstacles.entities() {
-            let (&object_type, transform) = obstacles.get(entity).unwrap();
-
-            let angle = transform.rotation.to_euler(EulerRot::YXZ).0;
-            let isometry = Isometry::new(transform.translation.to_flat().into(), angle);
-            let local_point = isometry.inverse_transform_point(&From::from(disc.center()));
-
-            let footprint = cache.get_ichnography(object_type).convex_hull();
-            let projection = footprint.project_local_point(&local_point, true);
-
-            let mut diff = projection.point - local_point;
-            let mut distance = diff.norm();
-            if projection.is_inside {
-                diff *= -1.;
-                distance *= -1.;
-            }
-            distance -= disc.radius();
-
-            if distance > MAX_REPULSION_DISTANCE {
-                continue;
+    objects
+        .par_iter_mut()
+        .for_each_mut(|(movement, disc, static_obstacles, mut repulsion)| {
+            if movement.stationary() {
+                return;
             }
 
-            let direction = match Unit::try_new(diff, parry2d::math::DEFAULT_EPSILON) {
-                Some(direction) => {
-                    let feature_id = footprint.support_feature_id_toward(&direction);
-                    let local_normal = footprint.feature_normal(feature_id).unwrap();
-                    Vec2::from(isometry.transform_vector(&local_normal))
+            for &entity in static_obstacles.entities() {
+                let (&object_type, transform) = obstacles.get(entity).unwrap();
+
+                let angle = transform.rotation.to_euler(EulerRot::YXZ).0;
+                let isometry = Isometry::new(transform.translation.to_flat().into(), angle);
+                let local_point = isometry.inverse_transform_point(&From::from(disc.center()));
+
+                let footprint = cache.get_ichnography(object_type).convex_hull();
+                let projection = footprint.project_local_point(&local_point, true);
+
+                let mut diff = projection.point - local_point;
+                let mut distance = diff.norm();
+                if projection.is_inside {
+                    diff *= -1.;
+                    distance *= -1.;
                 }
-                None => Vec2::X,
-            };
-            repulsion.add(direction, distance - MIN_STATIC_OBJECT_DISTANCE);
-        }
-    });
+                distance -= disc.radius();
+
+                if distance > MAX_REPULSION_DISTANCE {
+                    continue;
+                }
+
+                let direction = match Unit::try_new(diff, parry2d::math::DEFAULT_EPSILON) {
+                    Some(direction) => {
+                        let feature_id = footprint.support_feature_id_toward(&direction);
+                        let local_normal = footprint.feature_normal(feature_id).unwrap();
+                        Vec2::from(isometry.transform_vector(&local_normal))
+                    }
+                    None => Vec2::X,
+                };
+                repulsion.add(direction, distance - MIN_STATIC_OBJECT_DISTANCE);
+            }
+        });
 }
 
 fn repel_movable(
@@ -220,50 +223,54 @@ fn repel_movable(
     )>,
     obstacles: Query<&Disc>,
 ) {
-    objects.par_for_each_mut(512, |(movement, disc, movable_obstacles, mut repulsion)| {
-        if movement.stationary() {
-            return;
-        }
-
-        for &entity in movable_obstacles.entities() {
-            let other_disc = obstacles.get(entity).unwrap();
-            let diff = other_disc.center() - disc.center();
-            let mut distance = diff.length();
-            let direction = if distance <= parry2d::math::DEFAULT_EPSILON {
-                Vec2::X
-            } else {
-                diff / distance
-            };
-            distance -= disc.radius() + other_disc.radius();
-            if distance < MAX_REPULSION_DISTANCE {
-                repulsion.add(direction, distance - MIN_MOVABLE_OBJECT_DISTANCE);
+    objects
+        .par_iter_mut()
+        .for_each_mut(|(movement, disc, movable_obstacles, mut repulsion)| {
+            if movement.stationary() {
+                return;
             }
-        }
-    });
+
+            for &entity in movable_obstacles.entities() {
+                let other_disc = obstacles.get(entity).unwrap();
+                let diff = other_disc.center() - disc.center();
+                let mut distance = diff.length();
+                let direction = if distance <= parry2d::math::DEFAULT_EPSILON {
+                    Vec2::X
+                } else {
+                    diff / distance
+                };
+                distance -= disc.radius() + other_disc.radius();
+                if distance < MAX_REPULSION_DISTANCE {
+                    repulsion.add(direction, distance - MIN_MOVABLE_OBJECT_DISTANCE);
+                }
+            }
+        });
 }
 
 fn repel_bounds(
     bounds: Res<MapBounds>,
     mut objects: Query<(&DesiredVelocity<PathVelocity>, &Disc, &mut Repulsion)>,
 ) {
-    objects.par_for_each_mut(512, |(movement, disc, mut repulsion)| {
-        if movement.stationary() {
-            return;
-        }
+    objects
+        .par_iter_mut()
+        .for_each_mut(|(movement, disc, mut repulsion)| {
+            if movement.stationary() {
+                return;
+            }
 
-        let projection = bounds
-            .aabb()
-            .project_local_point(&From::from(disc.center()), false);
-        debug_assert!(projection.is_inside);
+            let projection = bounds
+                .aabb()
+                .project_local_point(&From::from(disc.center()), false);
+            debug_assert!(projection.is_inside);
 
-        let diff = Vec2::from(projection.point) - disc.center();
-        let diff_norm = diff.length();
-        let distance = diff_norm - disc.radius();
+            let diff = Vec2::from(projection.point) - disc.center();
+            let diff_norm = diff.length();
+            let distance = diff_norm - disc.radius();
 
-        if distance < MAX_REPULSION_DISTANCE {
-            repulsion.add(diff / diff_norm, distance - EXCLUSION_OFFSET);
-        }
-    });
+            if distance < MAX_REPULSION_DISTANCE {
+                repulsion.add(diff / diff_norm, distance - EXCLUSION_OFFSET);
+            }
+        });
 }
 
 fn apply(
@@ -273,8 +280,7 @@ fn apply(
         &mut DesiredVelocity<RepulsionVelocity>,
     )>,
 ) {
-    objects.par_for_each_mut(
-        512,
+    objects.par_iter_mut().for_each_mut(
         |(mut repulsion, path_velocity, mut repulsion_velocity)| {
             let velocity = repulsion.apply(path_velocity.velocity());
             repulsion_velocity.update(velocity.clamp_length_max(MAX_H_SPEED));

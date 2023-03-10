@@ -1,8 +1,7 @@
 use bevy::prelude::*;
 use de_core::{
-    cleanup::DespawnOnGameExit, gamestate::GameState, screengeom::ScreenRect, stages::GameStage,
+    baseset::GameSet, cleanup::DespawnOnGameExit, gamestate::GameState, screengeom::ScreenRect,
 };
-use iyes_loopless::prelude::*;
 
 const SELECTION_BOX_COLOR: Color = Color::rgba(0., 0.5, 0.8, 0.2);
 
@@ -10,11 +9,11 @@ pub(crate) struct SelectionPlugin;
 
 impl Plugin for SelectionPlugin {
     fn build(&self, app: &mut App) {
-        app.add_event::<UpdateSelectionBoxEvent>()
-            .add_system_set_to_stage(
-                GameStage::PostUpdate,
-                SystemSet::new().with_system(process_events.run_in_state(GameState::Playing)),
-            );
+        app.add_event::<UpdateSelectionBoxEvent>().add_system(
+            process_events
+                .in_base_set(GameSet::PostUpdate)
+                .run_if(in_state(GameState::Playing)),
+        );
     }
 }
 
