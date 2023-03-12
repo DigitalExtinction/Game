@@ -52,15 +52,16 @@ Clone, build & run recipe (will work in the majority of the cases):
 
 # Build Profiles
 
-Link time optimizations (LTO) are enabled on `release` profile. Thus release
-build takes a long time.
-
 ## Testing Profile
 
 On top of the standard Cargo build profiles, there is a `testing` profile
 optimized for manual testing. In this profile, extra checks and debug info are
 included in the build. LTO is disabled and the optimization level is fine-tuned
 for fast compilation times while keeping performance reasonable.
+
+## LTO Profile
+
+Profile `lto` shares configuration with `release` profile but enables LTO.
 
 # Where to Get Help?
 
