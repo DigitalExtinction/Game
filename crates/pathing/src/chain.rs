@@ -6,9 +6,8 @@ use std::rc::Rc;
 use de_types::path::Path;
 use parry2d::math::Point;
 
-use crate::geometry::{which_side, Side};
-
 /// A linked list of points which keeps track of its length in meters.
+#[derive(Clone)]
 pub(crate) struct PointChain {
     prev: Option<Rc<Self>>,
     point: Point<f32>,
@@ -58,26 +57,6 @@ impl PointChain {
         self.length
     }
 
-    /// Returns true if the point has no predecessor.
-    pub(crate) fn is_first(&self) -> bool {
-        self.prev.is_none()
-    }
-
-    /// Returns relative side of a point to `self` from the perspective of the
-    /// parent point. Returns `None` if `self` has no parent.
-    ///
-    /// See [`crate::geometry::which_side`].
-    ///
-    /// # Panics
-    ///
-    /// May panic if self is a degenerate point chain or of `point` coincides
-    /// with last but one point in self.
-    pub(crate) fn which_side(&self, point: Point<f32>) -> Option<Side> {
-        self.prev
-            .as_ref()
-            .map(|p| which_side(p.point(), self.point, point))
-    }
-
     /// Returns an iterator over points in this linked list. The iterator
     /// starts at `self` and traverses all predecessors.
     pub(crate) fn iter(&self) -> Predecessors {
@@ -123,7 +102,6 @@ mod tests {
     fn test_chain() {
         let chain = PointChain::first(Point::new(1., 2.));
         assert!(chain.prev().is_none());
-        assert!(chain.is_first());
         assert_eq!(chain.point(), Point::new(1., 2.));
         assert_eq!(chain.length(), 0.);
         let collected: Vec<Point<f32>> = chain.iter().map(|p| p.point()).collect();
@@ -131,21 +109,10 @@ mod tests {
 
         let chain = PointChain::extended(&Rc::new(chain), Point::new(3., 2.));
         assert!(chain.prev().is_some());
-        assert!(!chain.is_first());
         assert_eq!(chain.point(), Point::new(3., 2.));
         assert_eq!(chain.length(), 2.);
         let collected: Vec<Point<f32>> = chain.iter().map(|p| p.point()).collect();
         assert_eq!(collected, vec![Point::new(3., 2.), Point::new(1., 2.)]);
-    }
-
-    #[test]
-    fn test_which_side() {
-        let chain = PointChain::first(Point::new(1., 2.));
-        assert!(chain.which_side(Point::new(2., 1.)).is_none());
-
-        let chain = PointChain::extended(&Rc::new(chain), Point::new(3., 2.));
-        assert_eq!(chain.which_side(Point::new(2., 1.)).unwrap(), Side::Left);
-        assert_eq!(chain.which_side(Point::new(2., 3.)).unwrap(), Side::Right);
     }
 
     #[test]

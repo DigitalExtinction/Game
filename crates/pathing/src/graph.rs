@@ -1,8 +1,8 @@
 //! This module contains implementation of a edge-based visibility graph used
 //! in shortest path search on the game map.
 
-use parry2d::{math::Point, shape::Segment};
-use tinyvec::TinyVec;
+use parry2d::shape::Segment;
+use tinyvec::ArrayVec;
 
 /// Edge based visibility sub-graph.
 ///
@@ -50,11 +50,22 @@ impl VisibilityGraph {
     /// * `segment` - line segment of the triangle edge.
     pub(crate) fn new_node(&mut self, segment: Segment) -> u32 {
         let id = self.nodes.len().try_into().unwrap();
-        self.nodes.push(Node::new(EdgeGeometry::new(segment)));
+        self.nodes.push(Node::new(segment));
         id
     }
 
     /// Add 2 neighbours to a graph node (triangle edge).
+    ///
+    /// # Arguments
+    ///
+    /// * `edge_id` - ID of the edge whose neighbors are added.
+    ///
+    /// * `polygon_id` - ID of the traversed polygon (i.e. the polygon which
+    ///   contains the source and target edges).
+    ///
+    /// * `neighbour_a_id` - edge ID of the a neighbor.
+    ///
+    /// * `neighbour_b_id` - edge ID of the a neighbor.
     ///
     /// # Panics
     ///
@@ -62,49 +73,62 @@ impl VisibilityGraph {
     pub(crate) fn add_neighbours(
         &mut self,
         edge_id: u32,
+        polygon_id: u32,
         neighbour_a_id: u32,
         neighbour_b_id: u32,
     ) {
         let index: usize = edge_id.try_into().unwrap();
         let node = self.nodes.get_mut(index).unwrap();
-        node.add_neighbour(neighbour_a_id);
-        node.add_neighbour(neighbour_b_id);
+        node.add_neighbour(Step::new(neighbour_a_id, polygon_id));
+        node.add_neighbour(Step::new(neighbour_b_id, polygon_id));
     }
 
     /// Returns a geometry of a graph node (triangle edge).
-    pub(crate) fn geometry(&self, edge_id: u32) -> &EdgeGeometry {
+    pub(crate) fn segment(&self, edge_id: u32) -> Segment {
         let index: usize = edge_id.try_into().unwrap();
-        self.nodes[index].geometry()
+        self.nodes[index].segment()
     }
 
     /// Returns all neighbors of a graph node (triangle edge).
-    pub(crate) fn neighbours(&self, edge_id: u32) -> &[u32] {
+    pub(crate) fn neighbours(&self, edge_id: u32) -> &[Step] {
         let index: usize = edge_id.try_into().unwrap();
         self.nodes[index].neighbours()
+    }
+
+    pub(crate) fn polygons(&self, edge_id: u32) -> &[u32] {
+        let index: usize = edge_id.try_into().unwrap();
+        self.nodes[index].polygons()
     }
 }
 
 /// A node in the visibility graph.
 struct Node {
-    geometry: EdgeGeometry,
-    /// Neighbor IDs.
-    neighbours: TinyVec<[u32; 4]>,
+    segment: Segment,
+    /// Graph steps to reach direct neighbors.
+    neighbours: ArrayVec<[Step; 4]>,
+    /// IDs of polygons which contain the edge (node).
+    polygons: ArrayVec<[u32; 2]>,
 }
 
 impl Node {
-    fn new(geometry: EdgeGeometry) -> Self {
+    fn new(segment: Segment) -> Self {
         Self {
-            geometry,
-            neighbours: TinyVec::new(),
+            segment,
+            neighbours: ArrayVec::new(),
+            polygons: ArrayVec::new(),
         }
     }
 
-    fn geometry(&self) -> &EdgeGeometry {
-        &self.geometry
+    fn segment(&self) -> Segment {
+        self.segment
     }
 
-    fn neighbours(&self) -> &[u32] {
+    fn neighbours(&self) -> &[Step] {
         self.neighbours.as_slice()
+    }
+
+    fn polygons(&self) -> &[u32] {
+        self.polygons.as_slice()
     }
 
     /// Adds a neighbor to the node.
@@ -113,37 +137,47 @@ impl Node {
     ///
     /// # Panics
     ///
-    /// Panics if the number of already stored neighbors is 4.
-    fn add_neighbour(&mut self, edge_id: u32) {
-        self.neighbours.push(edge_id);
+    /// * If the number of already stored neighbors is 4.
+    ///
+    /// * If the number of already stored polygons is 2.
+    fn add_neighbour(&mut self, step: Step) {
+        self.neighbours.push(step);
+        if !self.polygons.contains(&step.polygon_id()) {
+            self.polygons.push(step.polygon_id());
+        }
     }
 }
 
-pub(crate) struct EdgeGeometry {
-    segment: Segment,
-    /// Middle of `segment` cached for efficiency reasons.
-    midpoint: Point<f32>,
+/// A step in the polygon edge neighbor graph.
+#[derive(Clone, Copy, Default, Debug, PartialEq, Eq)]
+pub(crate) struct Step {
+    edge_id: u32,
+    polygon_id: u32,
 }
 
-impl EdgeGeometry {
-    fn new(segment: Segment) -> Self {
+impl Step {
+    pub(crate) fn new(edge_id: u32, polygon_id: u32) -> Self {
         Self {
-            segment,
-            midpoint: segment.a.coords.lerp(&segment.b.coords, 0.5).into(),
+            edge_id,
+            polygon_id,
         }
     }
 
-    pub(crate) fn segment(&self) -> Segment {
-        self.segment
+    /// A target edge ID (reached from neighboring edge).
+    pub(crate) fn edge_id(&self) -> u32 {
+        self.edge_id
     }
 
-    pub(crate) fn midpoint(&self) -> Point<f32> {
-        self.midpoint
+    /// ID of the traversed polygon (to reach [`Self::edge_id()`].
+    pub(crate) fn polygon_id(&self) -> u32 {
+        self.polygon_id
     }
 }
 
 #[cfg(test)]
 mod tests {
+    use parry2d::math::Point;
+
     use super::*;
 
     #[test]
@@ -153,12 +187,17 @@ mod tests {
         let edge_id_a = graph.new_node(Segment::new(Point::new(1., 2.), Point::new(2., 3.)));
         let edge_id_b = graph.new_node(Segment::new(Point::new(2., 3.), Point::new(5., 6.)));
         let edge_id_c = graph.new_node(Segment::new(Point::new(5., 6.), Point::new(1., 2.)));
-        graph.add_neighbours(edge_id_a, edge_id_b, edge_id_c);
-        graph.add_neighbours(edge_id_b, edge_id_c, edge_id_a);
+        graph.add_neighbours(edge_id_a, 1, edge_id_b, edge_id_c);
+        graph.add_neighbours(edge_id_b, 1, edge_id_c, edge_id_a);
 
-        assert_eq!(graph.neighbours(edge_id_a), &[edge_id_b, edge_id_c]);
-        assert_eq!(graph.neighbours(edge_id_b), &[edge_id_c, edge_id_a]);
-        assert_eq!(graph.neighbours(edge_id_c), &[] as &[u32]);
-        assert_eq!(graph.geometry(edge_id_a).midpoint(), Point::new(1.5, 2.5));
+        assert_eq!(
+            graph.neighbours(edge_id_a),
+            &[Step::new(edge_id_b, 1), Step::new(edge_id_c, 1)]
+        );
+        assert_eq!(
+            graph.neighbours(edge_id_b),
+            &[Step::new(edge_id_c, 1), Step::new(edge_id_a, 1)]
+        );
+        assert_eq!(graph.neighbours(edge_id_c), &[] as &[Step]);
     }
 }

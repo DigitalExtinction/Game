@@ -3,14 +3,15 @@
 //! game map.
 
 mod chain;
-mod dijkstra;
 mod exclusion;
 mod finder;
 mod fplugin;
-mod funnel;
 mod geometry;
 mod graph;
+mod interval;
+mod node;
 mod path;
+mod polyanya;
 mod pplugin;
 mod query;
 mod syncing;
