@@ -1,8 +1,8 @@
 #![allow(clippy::forget_non_drop)] // Needed because of #[derive(Bundle)]
 
 //! This module implements a Bevy plugin for drafting new objects on the map.
-//! An entity marked with a component [`Draft`] is automatically handled and
-//! visualized by the plugin.
+//! An entity marked with a component [`DraftAllowed`] is automatically handled
+//! and visualized by the plugin.
 
 use bevy::prelude::*;
 use bevy::scene::SceneInstance;
@@ -68,7 +68,7 @@ pub struct DraftBundle {
     global_transform: GlobalTransform,
     visibility: Visibility,
     computed_visibility: ComputedVisibility,
-    draft: Draft,
+    draft: DraftAllowed,
 }
 
 impl DraftBundle {
@@ -79,19 +79,17 @@ impl DraftBundle {
             global_transform: transform.into(),
             visibility: Visibility::Inherited,
             computed_visibility: ComputedVisibility::HIDDEN,
-            draft: Draft::default(),
+            draft: DraftAllowed::default(),
         }
     }
 }
 
 #[derive(Component, Default)]
-pub struct Draft {
-    allowed: bool,
-}
+pub struct DraftAllowed(bool);
 
-impl Draft {
+impl DraftAllowed {
     pub fn allowed(&self) -> bool {
-        self.allowed
+        self.0
     }
 }
 
@@ -99,7 +97,7 @@ type Solids<'w, 's> = SpatialQuery<'w, 's, Entity, Or<(With<StaticSolid>, With<M
 
 fn new_draft(
     mut commands: Commands,
-    drafts: Query<(Entity, &ObjectType), Added<Draft>>,
+    drafts: Query<(Entity, &ObjectType), Added<DraftAllowed>>,
     cache: Res<ObjectCache>,
 ) {
     for (entity, object_type) in drafts.iter() {
@@ -113,7 +111,7 @@ fn new_draft(
 }
 
 fn update_draft(
-    mut drafts: Query<(&Transform, &ObjectType, &mut Draft)>,
+    mut drafts: Query<(&Transform, &ObjectType, &mut DraftAllowed)>,
     solids: Solids,
     cache: Res<ObjectCache>,
     bounds: Res<MapBounds>,
@@ -133,10 +131,10 @@ fn update_draft(
             Aabb::new(aabb.mins + MAP_OFFSET, aabb.maxs - MAP_OFFSET)
         };
         let allowed = shrinked_map.contains(&flat_aabb) && !solids.collides(&collider);
-        if allowed != draft.allowed {
+        if allowed != draft.0 {
             // Access the component mutably only when really needed for optimal
             // Bevy change detection.
-            draft.allowed = allowed
+            draft.0 = allowed
         }
     }
 }
@@ -181,7 +179,7 @@ fn update_object_material(
 /// Set the draft as changed when the scene is loaded in order to update the colour
 fn check_draft_loaded(
     new_instances_query: Query<&Parent, Added<SceneInstance>>,
-    mut draft_query: Query<&mut Draft>,
+    mut draft_query: Query<&mut DraftAllowed>,
 ) {
     for parent in &new_instances_query {
         if let Ok(mut draft) = draft_query.get_mut(parent.get()) {
@@ -191,7 +189,7 @@ fn check_draft_loaded(
 }
 
 fn update_draft_colour(
-    mut draft_query: Query<(&Draft, &Children), Changed<Draft>>,
+    mut draft_query: Query<(&DraftAllowed, &Children), Changed<DraftAllowed>>,
     scene_instances_query: Query<&SceneInstance>,
     mut standard_materials: Query<&mut Handle<StandardMaterial>>,
     scene_spawner: Res<SceneSpawner>,
