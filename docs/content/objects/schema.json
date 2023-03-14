@@ -91,9 +91,14 @@
           "description": "Enemy damage when hit by the gun.",
           "exclusiveMinimum": 0
         },
-        "recharge_interval": {
+        "charge_time_sec": {
           "type": "number",
-          "description": "Minimum time between two gun shots.",
+          "description": "How long it takes to fully charge the gun.",
+          "exclusiveMinimum": 0
+        },
+        "discharge_time_sec": {
+          "type": "number",
+          "description": "How long it takes until the gun is fully discharged if not actively charged.",
           "exclusiveMinimum": 0
         }
       },
@@ -101,7 +106,8 @@
         "muzzle",
         "range",
         "damage",
-        "recharge_interval"
+        "charge_time_sec",
+        "discharge_time_sec"
       ]
     },
     "flight": {

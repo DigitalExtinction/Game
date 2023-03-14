@@ -66,7 +66,8 @@ pub(crate) struct LaserCannonInfo {
     muzzle: [f32; 3],
     range: f32,
     damage: f32,
-    recharge_interval: f32,
+    charge_time_sec: f32,
+    discharge_time_sec: f32,
 }
 
 impl LaserCannonInfo {
@@ -84,8 +85,14 @@ impl LaserCannonInfo {
 
     /// A time duration in seconds. The cannon takes this long to charge before
     /// firing.
-    pub(crate) fn recharge_interval(&self) -> f32 {
-        self.recharge_interval
+    pub(crate) fn charge_time_sec(&self) -> f32 {
+        self.charge_time_sec
+    }
+
+    /// A time duration in seconds. The cannon takes this long to fully
+    /// discharge if not actively charged.
+    pub(crate) fn discharge_time_sec(&self) -> f32 {
+        self.discharge_time_sec
     }
 }
 

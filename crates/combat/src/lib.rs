@@ -25,6 +25,7 @@ impl PluginGroup for CombatPluginGroup {
 
 #[derive(Copy, Clone, Hash, Debug, PartialEq, Eq, SystemSet)]
 enum AttackingSet {
-    Update,
+    Attack,
+    Charge,
     Fire,
 }
