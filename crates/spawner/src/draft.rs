@@ -95,25 +95,20 @@ impl Draft {
     }
 }
 
-#[derive(Component)]
-struct Ready;
-
-type NonReadyDrafts<'w, 's> =
-    Query<'w, 's, (Entity, &'static ObjectType), (With<Draft>, Without<Ready>)>;
-
 type Solids<'w, 's> = SpatialQuery<'w, 's, Entity, Or<(With<StaticSolid>, With<MovableSolid>)>>;
 
-fn new_draft(mut commands: Commands, drafts: NonReadyDrafts, cache: Res<ObjectCache>) {
+fn new_draft(
+    mut commands: Commands,
+    drafts: Query<(Entity, &ObjectType), Added<Draft>>,
+    cache: Res<ObjectCache>,
+) {
     for (entity, object_type) in drafts.iter() {
-        commands
-            .entity(entity)
-            .insert(Ready)
-            .with_children(|parent| {
-                parent.spawn(SceneBundle {
-                    scene: cache.get(*object_type).scene(),
-                    ..Default::default()
-                });
+        commands.entity(entity).with_children(|parent| {
+            parent.spawn(SceneBundle {
+                scene: cache.get(*object_type).scene(),
+                ..Default::default()
             });
+        });
     }
 }
 
