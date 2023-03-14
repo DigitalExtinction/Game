@@ -1,11 +1,12 @@
 #![allow(clippy::forget_non_drop)] // Needed because of #[derive(Bundle)]
 
 //! This module implements a Bevy plugin for drafting new objects on the map.
-//! An entity marked with a component [`Draft`] is automatically handled and
-//! visualized by the plugin.
+//! An entity marked with components [`DraftAllowed`] and [`DraftReady`] is
+//! automatically handled and visualized by the plugin.
 
-use bevy::prelude::*;
+use bevy::pbr::NotShadowReceiver;
 use bevy::scene::SceneInstance;
+use bevy::{pbr::NotShadowCaster, prelude::*};
 use de_core::{
     baseset::GameSet,
     gamestate::GameState,
@@ -68,7 +69,8 @@ pub struct DraftBundle {
     global_transform: GlobalTransform,
     visibility: Visibility,
     computed_visibility: ComputedVisibility,
-    draft: Draft,
+    draft: DraftAllowed,
+    ready: DraftReady,
 }
 
 impl DraftBundle {
@@ -79,46 +81,43 @@ impl DraftBundle {
             global_transform: transform.into(),
             visibility: Visibility::Inherited,
             computed_visibility: ComputedVisibility::HIDDEN,
-            draft: Draft::default(),
+            draft: DraftAllowed::default(),
+            ready: DraftReady::default(),
         }
     }
 }
 
 #[derive(Component, Default)]
-pub struct Draft {
-    allowed: bool,
-}
+pub struct DraftAllowed(bool);
 
-impl Draft {
+impl DraftAllowed {
     pub fn allowed(&self) -> bool {
-        self.allowed
+        self.0
     }
 }
 
-#[derive(Component)]
-struct Ready;
-
-type NonReadyDrafts<'w, 's> =
-    Query<'w, 's, (Entity, &'static ObjectType), (With<Draft>, Without<Ready>)>;
+#[derive(Component, Default)]
+struct DraftReady(bool);
 
 type Solids<'w, 's> = SpatialQuery<'w, 's, Entity, Or<(With<StaticSolid>, With<MovableSolid>)>>;
 
-fn new_draft(mut commands: Commands, drafts: NonReadyDrafts, cache: Res<ObjectCache>) {
+fn new_draft(
+    mut commands: Commands,
+    drafts: Query<(Entity, &ObjectType), Added<DraftAllowed>>,
+    cache: Res<ObjectCache>,
+) {
     for (entity, object_type) in drafts.iter() {
-        commands
-            .entity(entity)
-            .insert(Ready)
-            .with_children(|parent| {
-                parent.spawn(SceneBundle {
-                    scene: cache.get(*object_type).scene(),
-                    ..Default::default()
-                });
+        commands.entity(entity).with_children(|parent| {
+            parent.spawn(SceneBundle {
+                scene: cache.get(*object_type).scene(),
+                ..Default::default()
             });
+        });
     }
 }
 
 fn update_draft(
-    mut drafts: Query<(&Transform, &ObjectType, &mut Draft)>,
+    mut drafts: Query<(&Transform, &ObjectType, &mut DraftAllowed)>,
     solids: Solids,
     cache: Res<ObjectCache>,
     bounds: Res<MapBounds>,
@@ -138,10 +137,10 @@ fn update_draft(
             Aabb::new(aabb.mins + MAP_OFFSET, aabb.maxs - MAP_OFFSET)
         };
         let allowed = shrinked_map.contains(&flat_aabb) && !solids.collides(&collider);
-        if allowed != draft.allowed {
+        if allowed != draft.0 {
             // Access the component mutably only when really needed for optimal
             // Bevy change detection.
-            draft.allowed = allowed
+            draft.0 = allowed
         }
     }
 }
@@ -166,43 +165,63 @@ fn insert_materials(mut commands: Commands, mut materials: ResMut<Assets<Standar
 
 // Assign the appropriate allowed to all entities in the spawned glb scene
 fn update_object_material(
+    entity: Entity,
     allowed: bool,
-    entities: impl Iterator<Item = Entity>,
     standard_materials: &mut Query<&mut Handle<StandardMaterial>>,
     draft_materials: &DraftMaterials,
 ) {
-    for entity in entities {
-        let Ok(mut material_handle) = standard_materials.get_mut(entity) else {
-            continue;
-        };
-        if allowed {
-            *material_handle = draft_materials.valid_placement.clone();
-        } else {
-            *material_handle = draft_materials.invalid_placement.clone();
-        }
+    let Ok(mut material_handle) = standard_materials.get_mut(entity) else {
+        return;
+    };
+    if allowed {
+        *material_handle = draft_materials.valid_placement.clone();
+    } else {
+        *material_handle = draft_materials.invalid_placement.clone();
     }
 }
 
 /// Set the draft as changed when the scene is loaded in order to update the colour
 fn check_draft_loaded(
-    new_instances_query: Query<&Parent, Added<SceneInstance>>,
-    mut draft_query: Query<&mut Draft>,
+    scene_spawner: Res<SceneSpawner>,
+    instances: Query<(&Parent, &SceneInstance)>,
+    mut drafts: Query<&mut DraftReady>,
 ) {
-    for parent in &new_instances_query {
-        if let Ok(mut draft) = draft_query.get_mut(parent.get()) {
-            draft.set_changed();
+    for (parent, instance) in instances.iter() {
+        if let Ok(mut draft) = drafts.get_mut(parent.get()) {
+            let ready = scene_spawner.instance_is_ready(**instance);
+            if draft.0 != ready {
+                // Access the component mutably only when really needed for
+                // optimal Bevy change detection.
+                draft.0 = ready;
+            }
         }
     }
 }
 
+type ChangedDraftQuery<'w, 's> = Query<
+    'w,
+    's,
+    (
+        &'static DraftAllowed,
+        Ref<'static, DraftReady>,
+        &'static Children,
+    ),
+    Or<(Changed<DraftAllowed>, Changed<DraftReady>)>,
+>;
+
 fn update_draft_colour(
-    mut draft_query: Query<(&Draft, &Children), Changed<Draft>>,
+    mut commands: Commands,
+    draft_query: ChangedDraftQuery,
     scene_instances_query: Query<&SceneInstance>,
     mut standard_materials: Query<&mut Handle<StandardMaterial>>,
     scene_spawner: Res<SceneSpawner>,
     draft_materials: Res<DraftMaterials>,
 ) {
-    for (draft, children) in &mut draft_query {
+    for (draft, ready, children) in draft_query.iter() {
+        if !ready.0 {
+            continue;
+        }
+
         let allowed = draft.allowed();
 
         for &child in children.into_iter() {
@@ -212,8 +231,14 @@ fn update_draft_colour(
             };
 
             let entities = scene_spawner.iter_instance_entities(**scene_instance);
-
-            update_object_material(allowed, entities, &mut standard_materials, &draft_materials);
+            for entity in entities {
+                if ready.is_changed() {
+                    commands
+                        .entity(entity)
+                        .insert((NotShadowCaster, NotShadowReceiver));
+                }
+                update_object_material(entity, allowed, &mut standard_materials, &draft_materials);
+            }
         }
     }
 }

@@ -7,7 +7,7 @@ use de_core::{
     objects::{BuildingType, ObjectType},
     state::AppState,
 };
-use de_spawner::{Draft, DraftBundle, SpawnBundle};
+use de_spawner::{DraftAllowed, DraftBundle, SpawnBundle};
 
 use crate::mouse::{Pointer, PointerSet};
 
@@ -83,7 +83,7 @@ impl NewDraftEvent {
 fn spawn(
     mut commands: Commands,
     game_config: Res<GameConfig>,
-    drafts: Query<(Entity, &Transform, &ObjectType, &Draft)>,
+    drafts: Query<(Entity, &Transform, &ObjectType, &DraftAllowed)>,
 ) {
     for (entity, &transform, &object_type, draft) in drafts.iter() {
         if draft.allowed() {
@@ -100,7 +100,7 @@ fn spawn(
 fn new_drafts(
     mut commands: Commands,
     mut events: EventReader<NewDraftEvent>,
-    drafts: Query<Entity, With<Draft>>,
+    drafts: Query<Entity, With<DraftAllowed>>,
 ) {
     let event = match events.iter().last() {
         Some(event) => event,
@@ -123,13 +123,13 @@ fn new_drafts(
     ));
 }
 
-fn discard_drafts(mut commands: Commands, drafts: Query<Entity, With<Draft>>) {
+fn discard_drafts(mut commands: Commands, drafts: Query<Entity, With<DraftAllowed>>) {
     for entity in drafts.iter() {
         commands.entity(entity).despawn_recursive();
     }
 }
 
-fn move_drafts(pointer: Res<Pointer>, mut drafts: Query<&mut Transform, With<Draft>>) {
+fn move_drafts(pointer: Res<Pointer>, mut drafts: Query<&mut Transform, With<DraftAllowed>>) {
     let pointer_changed = pointer.is_changed();
 
     let point = match pointer.terrain_point() {

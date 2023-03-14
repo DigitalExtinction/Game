@@ -5,7 +5,7 @@ use counter::CounterPlugin;
 pub use counter::ObjectCounter;
 use destroyer::DestroyerPlugin;
 use draft::DraftPlugin;
-pub use draft::{Draft, DraftBundle};
+pub use draft::{DraftAllowed, DraftBundle};
 use gameend::GameEndPlugin;
 pub use spawner::SpawnBundle;
 use spawner::SpawnerPlugin;

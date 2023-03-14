@@ -23,7 +23,7 @@ use de_core::{
     projection::ToFlat,
     screengeom::ScreenRect,
 };
-use de_spawner::{Draft, ObjectCounter};
+use de_spawner::{DraftAllowed, ObjectCounter};
 use enum_map::enum_map;
 
 use super::{keyboard::KeyCondition, CommandsSet, GroupAttackEvent, SendSelectedEvent};
@@ -209,7 +209,7 @@ fn double_click_handler(
     keys: Res<Input<KeyCode>>,
     pointer: Res<Pointer>,
     playable: Query<&ObjectType, With<Playable>>,
-    drafts: Query<(), With<Draft>>,
+    drafts: Query<(), With<DraftAllowed>>,
     mut select_in_rect_events: EventWriter<SelectInRectEvent>,
 ) {
     if !drafts.is_empty() {
@@ -338,7 +338,7 @@ fn left_click_handler(
     keys: Res<Input<KeyCode>>,
     pointer: Res<Pointer>,
     playable: Query<(), With<Playable>>,
-    drafts: Query<(), With<Draft>>,
+    drafts: Query<(), With<DraftAllowed>>,
 ) {
     if drafts.is_empty() {
         let selection_mode = if keys.pressed(KeyCode::LControl) {
@@ -360,7 +360,7 @@ fn left_click_handler(
 fn handle_escape(
     mut toggle_menu_events: EventWriter<ToggleGameMenu>,
     mut discard_events: EventWriter<DiscardDraftsEvent>,
-    drafts: Query<(), With<Draft>>,
+    drafts: Query<(), With<DraftAllowed>>,
 ) {
     if drafts.is_empty() {
         toggle_menu_events.send(ToggleGameMenu);
