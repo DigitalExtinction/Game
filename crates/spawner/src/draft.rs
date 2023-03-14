@@ -4,8 +4,9 @@
 //! An entity marked with components [`DraftAllowed`] and [`DraftReady`] is
 //! automatically handled and visualized by the plugin.
 
-use bevy::prelude::*;
+use bevy::pbr::NotShadowReceiver;
 use bevy::scene::SceneInstance;
+use bevy::{pbr::NotShadowCaster, prelude::*};
 use de_core::{
     baseset::GameSet,
     gamestate::GameState,
@@ -164,20 +165,18 @@ fn insert_materials(mut commands: Commands, mut materials: ResMut<Assets<Standar
 
 // Assign the appropriate allowed to all entities in the spawned glb scene
 fn update_object_material(
+    entity: Entity,
     allowed: bool,
-    entities: impl Iterator<Item = Entity>,
     standard_materials: &mut Query<&mut Handle<StandardMaterial>>,
     draft_materials: &DraftMaterials,
 ) {
-    for entity in entities {
-        let Ok(mut material_handle) = standard_materials.get_mut(entity) else {
-            continue;
-        };
-        if allowed {
-            *material_handle = draft_materials.valid_placement.clone();
-        } else {
-            *material_handle = draft_materials.invalid_placement.clone();
-        }
+    let Ok(mut material_handle) = standard_materials.get_mut(entity) else {
+        return;
+    };
+    if allowed {
+        *material_handle = draft_materials.valid_placement.clone();
+    } else {
+        *material_handle = draft_materials.invalid_placement.clone();
     }
 }
 
@@ -204,20 +203,21 @@ type ChangedDraftQuery<'w, 's> = Query<
     's,
     (
         &'static DraftAllowed,
-        &'static DraftReady,
+        Ref<'static, DraftReady>,
         &'static Children,
     ),
     Or<(Changed<DraftAllowed>, Changed<DraftReady>)>,
 >;
 
 fn update_draft_colour(
-    mut draft_query: ChangedDraftQuery,
+    mut commands: Commands,
+    draft_query: ChangedDraftQuery,
     scene_instances_query: Query<&SceneInstance>,
     mut standard_materials: Query<&mut Handle<StandardMaterial>>,
     scene_spawner: Res<SceneSpawner>,
     draft_materials: Res<DraftMaterials>,
 ) {
-    for (draft, ready, children) in &mut draft_query {
+    for (draft, ready, children) in draft_query.iter() {
         if !ready.0 {
             continue;
         }
@@ -231,8 +231,14 @@ fn update_draft_colour(
             };
 
             let entities = scene_spawner.iter_instance_entities(**scene_instance);
-
-            update_object_material(allowed, entities, &mut standard_materials, &draft_materials);
+            for entity in entities {
+                if ready.is_changed() {
+                    commands
+                        .entity(entity)
+                        .insert((NotShadowCaster, NotShadowReceiver));
+                }
+                update_object_material(entity, allowed, &mut standard_materials, &draft_materials);
+            }
         }
     }
 }
