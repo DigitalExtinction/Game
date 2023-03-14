@@ -1,8 +1,8 @@
 #![allow(clippy::forget_non_drop)] // Needed because of #[derive(Bundle)]
 
 //! This module implements a Bevy plugin for drafting new objects on the map.
-//! An entity marked with a component [`DraftAllowed`] is automatically handled
-//! and visualized by the plugin.
+//! An entity marked with components [`DraftAllowed`] and [`DraftReady`] is
+//! automatically handled and visualized by the plugin.
 
 use bevy::prelude::*;
 use bevy::scene::SceneInstance;
@@ -69,6 +69,7 @@ pub struct DraftBundle {
     visibility: Visibility,
     computed_visibility: ComputedVisibility,
     draft: DraftAllowed,
+    ready: DraftReady,
 }
 
 impl DraftBundle {
@@ -80,6 +81,7 @@ impl DraftBundle {
             visibility: Visibility::Inherited,
             computed_visibility: ComputedVisibility::HIDDEN,
             draft: DraftAllowed::default(),
+            ready: DraftReady::default(),
         }
     }
 }
@@ -92,6 +94,9 @@ impl DraftAllowed {
         self.0
     }
 }
+
+#[derive(Component, Default)]
+struct DraftReady(bool);
 
 type Solids<'w, 's> = SpatialQuery<'w, 's, Entity, Or<(With<StaticSolid>, With<MovableSolid>)>>;
 
@@ -178,24 +183,45 @@ fn update_object_material(
 
 /// Set the draft as changed when the scene is loaded in order to update the colour
 fn check_draft_loaded(
-    new_instances_query: Query<&Parent, Added<SceneInstance>>,
-    mut draft_query: Query<&mut DraftAllowed>,
+    scene_spawner: Res<SceneSpawner>,
+    instances: Query<(&Parent, &SceneInstance)>,
+    mut drafts: Query<&mut DraftReady>,
 ) {
-    for parent in &new_instances_query {
-        if let Ok(mut draft) = draft_query.get_mut(parent.get()) {
-            draft.set_changed();
+    for (parent, instance) in instances.iter() {
+        if let Ok(mut draft) = drafts.get_mut(parent.get()) {
+            let ready = scene_spawner.instance_is_ready(**instance);
+            if draft.0 != ready {
+                // Access the component mutably only when really needed for
+                // optimal Bevy change detection.
+                draft.0 = ready;
+            }
         }
     }
 }
 
+type ChangedDraftQuery<'w, 's> = Query<
+    'w,
+    's,
+    (
+        &'static DraftAllowed,
+        &'static DraftReady,
+        &'static Children,
+    ),
+    Or<(Changed<DraftAllowed>, Changed<DraftReady>)>,
+>;
+
 fn update_draft_colour(
-    mut draft_query: Query<(&DraftAllowed, &Children), Changed<DraftAllowed>>,
+    mut draft_query: ChangedDraftQuery,
     scene_instances_query: Query<&SceneInstance>,
     mut standard_materials: Query<&mut Handle<StandardMaterial>>,
     scene_spawner: Res<SceneSpawner>,
     draft_materials: Res<DraftMaterials>,
 ) {
-    for (draft, children) in &mut draft_query {
+    for (draft, ready, children) in &mut draft_query {
+        if !ready.0 {
+            continue;
+        }
+
         let allowed = draft.allowed();
 
         for &child in children.into_iter() {
