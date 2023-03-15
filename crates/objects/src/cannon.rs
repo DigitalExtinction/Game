@@ -10,7 +10,7 @@ pub struct LaserCannon {
     muzzle: Vec3,
     range: f32,
     damage: f32,
-    timer: LaserTimer,
+    charge: LaserCharge,
 }
 
 impl LaserCannon {
@@ -30,88 +30,117 @@ impl LaserCannon {
         self.damage
     }
 
-    pub fn timer(&self) -> &LaserTimer {
-        &self.timer
+    pub fn charge(&self) -> &LaserCharge {
+        &self.charge
     }
 
-    pub fn timer_mut(&mut self) -> &mut LaserTimer {
-        &mut self.timer
+    pub fn charge_mut(&mut self) -> &mut LaserCharge {
+        &mut self.charge
     }
 }
 
-/// Timer of a laser cannon. It is used to keep track of needed cannon charging
-/// time.
+/// Charge of a laser cannon. It is used to keep track of needed cannon
+/// charging time.
 ///
 /// A laser cannon cannot fire immediately after it is activated, but takes
 /// time to charge. After firing, it has to (re)charge. It has to recharge
 /// after it any (re)activation.
 ///
-/// LaserTimer implements total ordering based on elapsed time.
-#[derive(Eq, Clone)]
-pub struct LaserTimer {
-    interval: Duration,
-    elapsed: Duration,
+/// [`Self::tick`] must be called during every frame. After that,
+/// [`Self::hold`] or [`Self::fire`] must be called in a loop while
+/// [`Self::changed`] returns true.
+///
+/// LaserTimer implements total ordering based on elapsed time since reaching
+/// charge for at least one fire.
+#[derive(Clone, PartialEq)]
+pub struct LaserCharge {
+    charge_time: Duration,
+    discharge_time: Duration,
+    charge: f32,
 }
 
-impl LaserTimer {
+impl LaserCharge {
     /// Returns a new timer.
     ///
     /// # Arguments
     ///
-    /// * `interval` - time it takes to (re)charge the laser cannon.
-    fn new(interval: Duration) -> Self {
+    /// * `charge_time` - time it takes to fully (re)charge the laser cannon.
+    ///
+    /// * `discharge_time` - time it takes to fully discharge the laser cannot
+    ///   if it is not actively charged.
+    ///
+    /// # Panics
+    ///
+    /// Panics if `charge_time` or `discharge_time` spans zero time.
+    fn new(charge_time: Duration, discharge_time: Duration) -> Self {
+        assert!(!charge_time.is_zero());
+        assert!(!discharge_time.is_zero());
+
         Self {
-            interval,
-            elapsed: Duration::new(0, 0),
+            charge_time,
+            discharge_time,
+            charge: 0.,
         }
     }
 
-    /// Updates the timer. This must be called during every frame.
-    pub fn tick(&mut self, tick: Duration) {
-        self.elapsed += tick;
-    }
-
-    /// Resets the (re)charge timer. This must be called during every frame
-    /// when the cannon is not activated.
-    pub fn reset(&mut self) {
-        self.elapsed = Duration::new(0, 0);
-    }
-
-    /// Returns true if the cannon is ready to fire and updates the timer for
-    /// (re)charging.
+    /// Updates the timer.
     ///
-    /// It is assumed that the laser cannon is fired after this method returns
-    /// true.
+    /// # Arguments
     ///
-    /// The timer keeps track of any extra time beyond the time to (re)charge
-    /// so that its function is not dependent on update rate. However, update
-    /// interval (time between to successive calls to this method) must be
-    /// smaller or equal to laser charging interval.
-    pub fn check_and_update(&mut self) -> bool {
-        if self.elapsed >= self.interval {
-            self.elapsed -= self.interval;
-            true
+    /// * `time_delta` - time delta since last call to this method.
+    ///
+    /// * `charge` - true if the cannon is charging, false if it is
+    ///   discharging.
+    pub fn tick(&mut self, time_delta: Duration, charge: bool) {
+        if charge {
+            self.charge += time_delta.as_secs_f32() / self.charge_time.as_secs_f32();
         } else {
-            false
+            self.charge -= time_delta.as_secs_f32() / self.discharge_time.as_secs_f32();
+            self.charge = self.charge.max(0.);
         }
     }
-}
 
-impl Ord for LaserTimer {
-    fn cmp(&self, other: &Self) -> Ordering {
-        self.elapsed.cmp(&other.elapsed)
+    /// Returns true if the cannon is charged for at least one fire.
+    pub fn charged(&self) -> bool {
+        self.charge >= 1.
+    }
+
+    /// Clamps charge to one fire.
+    ///
+    /// Must be called after [`Self::tick`].
+    pub fn hold(&mut self) {
+        self.charge = self.charge.min(1.);
+    }
+
+    /// Subtracts one fire worth of charge and returns true if there is charge
+    /// for another fire.
+    ///
+    /// Must be called after [`Self::tick`].
+    pub fn fire(&mut self) -> bool {
+        debug_assert!(self.charge >= 1.);
+        self.charge -= 1.;
+        self.charged()
     }
 }
 
-impl PartialOrd for LaserTimer {
+impl Eq for LaserCharge {}
+
+impl Ord for LaserCharge {
+    fn cmp(&self, other: &Self) -> Ordering {
+        // Cannon is either fired until the charge goes below 1. or its charge
+        // is clipped at 1. Therefore, if the cannon is to be fired, it must
+        // have been charging since the last tick.
+        //
+        // The ordering (who comes first) is based on the above assumptions.
+        let self_over = (self.charge - 1.) * self.charge_time.as_secs_f32();
+        let other_over = (other.charge - 1.) * other.charge_time.as_secs_f32();
+        self_over.partial_cmp(&other_over).unwrap()
+    }
+}
+
+impl PartialOrd for LaserCharge {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
         Some(self.cmp(other))
-    }
-}
-
-impl PartialEq for LaserTimer {
-    fn eq(&self, other: &Self) -> bool {
-        self.elapsed == other.elapsed && self.interval == other.interval
     }
 }
 
@@ -121,7 +150,10 @@ impl From<&LaserCannonInfo> for LaserCannon {
             muzzle: Vec3::from_slice(info.muzzle().as_slice()),
             range: info.range(),
             damage: info.damage(),
-            timer: LaserTimer::new(Duration::from_secs_f32(info.recharge_interval())),
+            charge: LaserCharge::new(
+                Duration::from_secs_f32(info.charge_time_sec()),
+                Duration::from_secs_f32(info.discharge_time_sec()),
+            ),
         }
     }
 }
@@ -133,33 +165,40 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_timer() {
-        let mut timer = LaserTimer::new(Duration::from_secs_f32(2.5));
+    fn test_charge() {
+        let mut charge =
+            LaserCharge::new(Duration::from_secs_f32(2.5), Duration::from_secs_f32(3.5));
 
-        assert!(!timer.check_and_update());
-        assert!(!timer.check_and_update());
-        timer.tick(Duration::from_secs(2));
-        assert!(!timer.check_and_update());
-        timer.tick(Duration::from_secs(1));
-        assert!(timer.check_and_update());
-        assert!(!timer.check_and_update());
-        timer.tick(Duration::from_secs(2));
-        assert!(timer.check_and_update());
-        assert!(!timer.check_and_update());
+        assert!(!charge.charged());
 
-        timer.tick(Duration::from_secs(100));
-        timer.reset();
-        assert!(!timer.check_and_update());
+        charge.tick(Duration::from_secs(2), true);
+        assert!(!charge.charged()); // charge: 0.8
+        charge.tick(Duration::from_secs(1), true);
+        assert!(charge.charged()); // charge: 1.2
+        charge.fire();
+        assert!(!charge.charged()); // 0.2
+        charge.tick(Duration::from_secs(2), true);
+        assert!(charge.charged()); // charge: 1
+        charge.fire();
+        assert!(!charge.charged()); // charge: 0
+        charge.tick(Duration::from_secs_f32(2.4), true);
+        assert!(!charge.charged()); // charge: 0.96
+        charge.tick(Duration::from_secs_f32(2.6), true);
+        assert!(charge.charged()); // charge: 2
+        charge.tick(Duration::from_secs_f32(3.4), false);
+        assert!(charge.charged()); // charge: 1.028
+        charge.tick(Duration::from_secs_f32(0.15), false);
+        assert!(!charge.charged()); // charge: 0.985
     }
 
     #[test]
     fn test_timer_ordering() {
-        let mut a = LaserTimer::new(Duration::from_secs(2));
-        a.tick(Duration::from_secs(3));
-        let mut b = LaserTimer::new(Duration::from_secs(3));
-        b.tick(Duration::from_secs(3));
-        let mut c = LaserTimer::new(Duration::from_secs(0));
-        c.tick(Duration::from_secs(10));
+        let mut a = LaserCharge::new(Duration::from_secs(2), Duration::from_secs(1));
+        a.tick(Duration::from_secs(3), true);
+        let mut b = LaserCharge::new(Duration::from_secs(4), Duration::from_secs(1));
+        b.tick(Duration::from_secs(5), true);
+        let mut c = LaserCharge::new(Duration::from_secs_f32(0.1), Duration::from_secs(1));
+        c.tick(Duration::from_secs(10), true);
 
         assert!(a.cmp(&b) == Ordering::Equal);
         assert!(b.cmp(&a) == Ordering::Equal);

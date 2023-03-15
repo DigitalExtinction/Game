@@ -1,8 +1,9 @@
 use std::{cmp::Ordering, collections::BinaryHeap};
 
 use bevy::prelude::*;
-use de_behaviour::{ChaseSet, ChaseTarget, ChaseTargetComponent, ChaseTargetEvent};
+use de_behaviour::{ChaseSet, ChaseTarget, ChaseTargetEvent};
 use de_core::{baseset::GameSet, gamestate::GameState, objects::ObjectType};
+use de_index::SpatialQuery;
 use de_objects::{ColliderCache, LaserCannon, ObjectCache};
 use parry3d::query::Ray;
 
@@ -25,19 +26,26 @@ impl Plugin for AttackPlugin {
                 attack
                     .in_base_set(GameSet::PreUpdate)
                     .run_if(in_state(GameState::Playing))
+                    .in_set(AttackingSet::Attack)
                     .before(ChaseSet::ChaseTargetEvent),
             )
             .add_system(
-                update
+                update_positions
+                    .in_base_set(GameSet::PreUpdate)
+                    .run_if(in_state(GameState::Playing))
+                    .after(AttackingSet::Attack),
+            )
+            .add_system(
+                charge
                     .in_base_set(GameSet::Update)
                     .run_if(in_state(GameState::Playing))
-                    .in_set(AttackingSet::Update),
+                    .in_set(AttackingSet::Charge),
             )
             .add_system(
                 aim_and_fire
                     .in_base_set(GameSet::Update)
                     .run_if(in_state(GameState::Playing))
-                    .after(AttackingSet::Update)
+                    .after(AttackingSet::Charge)
                     .before(AttackingSet::Fire),
             );
     }
@@ -63,15 +71,45 @@ impl AttackEvent {
 }
 
 #[derive(Component)]
-struct Attacking;
+struct Attacking {
+    enemy: Entity,
+    muzzle: Vec3,
+    target: Option<Vec3>,
+}
+
+impl Attacking {
+    fn new(enemy: Entity) -> Self {
+        Self {
+            enemy,
+            muzzle: Vec3::ZERO,
+            target: None,
+        }
+    }
+
+    fn distance(&self) -> Option<f32> {
+        self.target.map(|target| target.distance(self.muzzle))
+    }
+
+    fn ray(&self) -> Option<Ray> {
+        self.target.map(|target| {
+            let direction = (target - self.muzzle).normalize();
+            Ray::new(self.muzzle.into(), direction.into())
+        })
+    }
+}
 
 fn attack(
+    mut commands: Commands,
     mut attack_events: EventReader<AttackEvent>,
     cannons: Query<&LaserCannon>,
     mut chase_events: EventWriter<ChaseTargetEvent>,
 ) {
     for event in attack_events.iter() {
         if let Ok(cannon) = cannons.get(event.attacker()) {
+            commands
+                .entity(event.attacker())
+                .insert(Attacking::new(event.enemy()));
+
             let target = ChaseTarget::new(
                 event.enemy(),
                 MIN_CHASE_DISTNACE * cannon.range(),
@@ -82,23 +120,47 @@ fn attack(
     }
 }
 
-fn update(time: Res<Time>, mut cannons: Query<&mut LaserCannon, With<Attacking>>) {
-    for mut cannon in cannons.iter_mut() {
-        cannon.timer_mut().tick(time.delta());
+fn update_positions(
+    mut commands: Commands,
+    cache: Res<ObjectCache>,
+    mut cannons: Query<(Entity, &Transform, &LaserCannon, &mut Attacking)>,
+    targets: Query<(&Transform, &ObjectType)>,
+    sightline: SpatialQuery<Entity>,
+) {
+    for (attacker, transform, cannon, mut attacking) in cannons.iter_mut() {
+        match targets.get(attacking.enemy) {
+            Ok((enemy_transform, &target_type)) => {
+                attacking.muzzle = transform.translation + cannon.muzzle();
+
+                let enemy_aabb = cache.get_collider(target_type).aabb();
+                let enemy_centroid = enemy_transform.translation + Vec3::from(enemy_aabb.center());
+                let direction = (enemy_centroid - attacking.muzzle)
+                    .try_normalize()
+                    .expect("Attacker and target too close together");
+                let cannon_ray = Ray::new(attacking.muzzle.into(), direction.into());
+
+                attacking.target = sightline
+                    .cast_ray(&cannon_ray, cannon.range(), Some(attacker))
+                    .map(|intersection| cannon_ray.point_at(intersection.toi()).into());
+            }
+            Err(_) => {
+                commands.entity(attacker).remove::<Attacking>();
+            }
+        }
+    }
+}
+
+fn charge(time: Res<Time>, mut cannons: Query<(&mut LaserCannon, Option<&Attacking>)>) {
+    for (mut cannon, attacking) in cannons.iter_mut() {
+        let charge = attacking
+            .and_then(|attacking| attacking.distance())
+            .map_or(false, |distance| distance <= cannon.range());
+        cannon.charge_mut().tick(time.delta(), charge);
     }
 }
 
 fn aim_and_fire(
-    mut commands: Commands,
-    cache: Res<ObjectCache>,
-    mut attackers: Query<(
-        Entity,
-        &Transform,
-        &mut LaserCannon,
-        &ChaseTargetComponent,
-        Option<&Attacking>,
-    )>,
-    targets: Query<(&Transform, &ObjectType)>,
+    mut attackers: Query<(Entity, &mut LaserCannon, &Attacking)>,
     sightline: LineOfSight,
     mut events: EventWriter<LaserFireEvent>,
 ) {
@@ -107,37 +169,20 @@ fn aim_and_fire(
     // done in real-time (unaffected by update frequency).
     let mut fire_queue = BinaryHeap::new();
 
-    for (attacker, attacker_transform, mut cannon, target, marker) in attackers {
-        let target_position = match targets.get(target.target()) {
-            Ok((transform, &object_type)) => {
-                let centroid: Vec3 = cache.get_collider(object_type).aabb().center().into();
-                transform.translation + centroid
-            }
-            Err(_) => continue,
-        };
+    for (attacker, mut cannon, attacking) in attackers {
+        let ray = attacking.ray().filter(|ray| {
+            sightline
+                .sight(ray, cannon.range(), attacker)
+                .entity()
+                .map_or(false, |e| e == attacking.enemy)
+        });
 
-        let muzzle = attacker_transform.translation + cannon.muzzle();
-        let to_target = (target_position - muzzle)
-            .try_normalize()
-            .expect("Attacker and target to close together");
-        let ray = Ray::new(muzzle.into(), to_target.into());
-        let aims_at_target = sightline
-            .sight(&ray, cannon.range(), attacker)
-            .entity()
-            .map_or(true, |e| e != target.target());
-
-        if aims_at_target {
-            if marker.is_some() {
-                cannon.timer_mut().reset();
-                commands.entity(attacker).remove::<Attacking>();
-            }
-        } else {
-            if marker.is_none() {
-                commands.entity(attacker).insert(Attacking);
-            }
-            if cannon.timer_mut().check_and_update() {
+        if let Some(ray) = ray {
+            if cannon.charge().charged() {
                 fire_queue.push(FireScheduleItem::new(attacker, ray, cannon.into_inner()));
             }
+        } else {
+            cannon.charge_mut().hold();
         }
     }
 
@@ -170,13 +215,13 @@ impl<'a> FireScheduleItem<'a> {
             self.cannon.range(),
             self.cannon.damage(),
         ));
-        self.cannon.timer_mut().check_and_update()
+        self.cannon.charge_mut().fire()
     }
 }
 
 impl<'a> Ord for FireScheduleItem<'a> {
     fn cmp(&self, other: &Self) -> Ordering {
-        let ordering = self.cannon.timer().cmp(other.cannon.timer());
+        let ordering = self.cannon.charge().cmp(other.cannon.charge());
         if let Ordering::Equal = ordering {
             // Make it more deterministic, objects with smaller coordinates
             // have disadvantage.
@@ -198,7 +243,7 @@ impl<'a> PartialOrd for FireScheduleItem<'a> {
 
 impl<'a> PartialEq for FireScheduleItem<'a> {
     fn eq(&self, other: &Self) -> bool {
-        self.ray.origin == other.ray.origin && self.cannon.timer() == other.cannon.timer()
+        self.ray.origin == other.ray.origin && self.cannon.charge() == other.cannon.charge()
     }
 }
 

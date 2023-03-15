@@ -55,7 +55,7 @@ impl ChaseTargetEvent {
 
 /// Units with this component will chase the target entity.
 #[derive(Component, Deref)]
-pub struct ChaseTargetComponent(ChaseTarget);
+struct ChaseTargetComponent(ChaseTarget);
 
 impl ChaseTargetComponent {
     fn new(target: ChaseTarget) -> Self {
