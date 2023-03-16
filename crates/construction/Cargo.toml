@@ -15,6 +15,9 @@ categories.workspace = true
 # DE
 de_core.workspace = true
 de_objects.workspace = true
+de_pathing.workspace = true
+de_spawner.workspace = true
 
 # Other
+ahash.workspace = true
 bevy.workspace = true

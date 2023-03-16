@@ -2037,9 +2037,12 @@ dependencies = [
 name = "de_construction"
 version = "0.1.0-dev"
 dependencies = [
+ "ahash 0.7.6",
  "bevy",
  "de_core",
  "de_objects",
+ "de_pathing",
+ "de_spawner",
 ]
 
 [[package]]
@@ -2052,6 +2055,7 @@ dependencies = [
  "de_camera",
  "de_combat",
  "de_conf",
+ "de_construction",
  "de_core",
  "de_gui",
  "de_index",

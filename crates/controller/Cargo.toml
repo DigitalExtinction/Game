@@ -17,6 +17,7 @@ de_behaviour.workspace = true
 de_camera.workspace = true
 de_combat.workspace = true
 de_conf.workspace = true
+de_construction.workspace = true
 de_core.workspace = true
 de_gui.workspace = true
 de_index.workspace = true

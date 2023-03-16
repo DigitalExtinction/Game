@@ -45,6 +45,12 @@ construction by left clicking the mouse.
 * <kbd>B</kbd> — Base
 * <kbd>P</kbd> — Power Hub
 
+# Unit Manufacturing
+
+* Select a single building with a factory (for example a base).
+* Clicking "manufacture unit" buttons in the bottom middle panel enqueues the
+  units for manufacturing.
+
 # Commanding Units and Buildings
 
 Right click on the terrain sends selected units to that location. Right click
