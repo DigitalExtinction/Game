@@ -32,6 +32,7 @@ de_behaviour.workspace = true
 de_camera.workspace = true
 de_combat.workspace = true
 de_conf.workspace = true
+de_construction.workspace = true
 de_controller.workspace = true
 de_core.workspace = true
 de_gui.workspace = true
@@ -69,6 +70,7 @@ de_behaviour = { path = "crates/behaviour", version = "0.1.0-dev" }
 de_camera = { path = "crates/camera", version = "0.1.0-dev" }
 de_combat = { path = "crates/combat", version = "0.1.0-dev" }
 de_conf = { path = "crates/conf", version = "0.1.0-dev" }
+de_construction = { path = "crates/construction", version = "0.1.0-dev" }
 de_controller = { path = "crates/controller", version = "0.1.0-dev" }
 de_core = { path = "crates/core", version = "0.1.0-dev" }
 de_gui = { path = "crates/gui", version = "0.1.0-dev" }

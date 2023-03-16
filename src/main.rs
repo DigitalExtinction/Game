@@ -9,6 +9,7 @@ use de_behaviour::BehaviourPluginGroup;
 use de_camera::CameraPluginGroup;
 use de_combat::CombatPluginGroup;
 use de_conf::ConfigPluginGroup;
+use de_construction::ConstructionPluginGroup;
 use de_controller::ControllerPluginGroup;
 use de_core::{state::AppState, transition::DeStateTransition, CorePluginGroup};
 use de_gui::GuiPluginGroup;
@@ -56,7 +57,8 @@ fn main() {
         .add_plugins(ControllerPluginGroup)
         .add_plugins(CameraPluginGroup)
         .add_plugins(BehaviourPluginGroup)
-        .add_plugins(CombatPluginGroup);
+        .add_plugins(CombatPluginGroup)
+        .add_plugins(ConstructionPluginGroup);
 
     // This has to be after LogPlugin is inserted.
     info!(

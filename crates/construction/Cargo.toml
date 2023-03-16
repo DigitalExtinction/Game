@@ -1,0 +1,20 @@
+[package]
+name = "de_construction"
+description = "Functionality related to manufacturing and construction in Digital Extinction."
+
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+repository.workspace = true
+keywords.workspace = true
+homepage.workspace = true
+license.workspace = true
+categories.workspace = true
+
+[dependencies]
+# DE
+de_core.workspace = true
+de_objects.workspace = true
+
+# Other
+bevy.workspace = true
