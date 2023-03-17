@@ -8,7 +8,7 @@ use de_core::{
 };
 use de_map::size::MapBounds;
 use de_objects::{IchnographyCache, ObjectCache, EXCLUSION_OFFSET};
-use parry2d::{math::Isometry, na::Unit, query::PointQuery};
+use parry2d::{math::Isometry, query::PointQuery};
 
 use crate::{
     cache::DecayingCache,
@@ -187,12 +187,11 @@ fn repel_static(
                 let local_point = isometry.inverse_transform_point(&From::from(disc.center()));
 
                 let footprint = cache.get_ichnography(object_type).convex_hull();
-                let projection = footprint.project_local_point(&local_point, true);
+                let (projection, feature_id) =
+                    footprint.project_local_point_and_get_feature(&local_point);
 
-                let mut diff = projection.point - local_point;
-                let mut distance = diff.norm();
+                let mut distance = (projection.point - local_point).norm();
                 if projection.is_inside {
-                    diff *= -1.;
                     distance *= -1.;
                 }
                 distance -= disc.radius();
@@ -201,14 +200,9 @@ fn repel_static(
                     continue;
                 }
 
-                let direction = match Unit::try_new(diff, parry2d::math::DEFAULT_EPSILON) {
-                    Some(direction) => {
-                        let feature_id = footprint.support_feature_id_toward(&direction);
-                        let local_normal = footprint.feature_normal(feature_id).unwrap();
-                        Vec2::from(isometry.transform_vector(&local_normal))
-                    }
-                    None => Vec2::X,
-                };
+                let neg_local_normal = -footprint.feature_normal(feature_id).unwrap();
+                let direction = Vec2::from(isometry.transform_vector(&neg_local_normal));
+
                 repulsion.add(direction, distance - MIN_STATIC_OBJECT_DISTANCE);
             }
         });

@@ -18,17 +18,6 @@ Right click on the minimap to send selected units to the target.
 
 * <kbd>Escape</kbd> — cancel current action or display menu.
 
-# Building Construction
-
-You have to select a building to construct by pressing a key, place it on an
-empty place on the terrain by moving your mouse and then confirm the
-construction by left clicking the mouse.
-
-## Building Keys
-
-* <kbd>B</kbd> — Base
-* <kbd>P</kbd> — Power Hub
-
 # Building and Unit Selection
 
 Left click on any of your units or buildings to select it. Press and hold
@@ -44,6 +33,23 @@ Double click on a unit to select all visible units of that type. Holding
 Press <kbd>Ctrl</kbd>+<kbd>A</kbd> to select all entities.
 
 Press <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>A</kbd> to select all visible entities.
+
+# Building Construction
+
+You have to select a building to construct by pressing a key, place it on an
+empty place on the terrain by moving your mouse and then confirm the
+construction by left clicking the mouse.
+
+## Building Keys
+
+* <kbd>B</kbd> — Base
+* <kbd>P</kbd> — Power Hub
+
+# Unit Manufacturing
+
+* Select a single building with a factory (for example a base).
+* Clicking "manufacture unit" buttons in the bottom middle panel enqueues the
+  units for manufacturing.
 
 # Commanding Units and Buildings
 
