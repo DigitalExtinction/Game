@@ -14,6 +14,7 @@ pub use ichnography::{Ichnography, IchnographyCache, EXCLUSION_OFFSET};
 mod cache;
 mod cannon;
 mod collider;
+mod factory;
 mod flight;
 mod health;
 mod ichnography;

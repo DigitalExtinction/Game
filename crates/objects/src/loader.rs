@@ -1,8 +1,11 @@
+use std::collections::HashSet;
+
 use anyhow::{Context, Result};
 use bevy::{
     asset::{AssetLoader, BoxedFuture, LoadContext, LoadedAsset},
     reflect::TypeUuid,
 };
+use de_core::objects::UnitType;
 use serde::{Deserialize, Serialize};
 
 const OBJECT_EXTENSION: [&str; 1] = ["obj.json"];
@@ -14,6 +17,7 @@ pub(crate) struct ObjectInfo {
     shape: TriMeshShape,
     cannon: Option<LaserCannonInfo>,
     flight: Option<FlightInfo>,
+    factory: Option<FactoryInfo>,
 }
 
 impl ObjectInfo {
@@ -31,6 +35,10 @@ impl ObjectInfo {
 
     pub(crate) fn flight(&self) -> Option<&FlightInfo> {
         self.flight.as_ref()
+    }
+
+    pub(crate) fn factory(&self) -> Option<&FactoryInfo> {
+        self.factory.as_ref()
     }
 }
 
@@ -109,6 +117,22 @@ impl FlightInfo {
 
     pub(crate) fn max_height(&self) -> f32 {
         self.max_height
+    }
+}
+
+#[derive(Serialize, Deserialize)]
+pub(crate) struct FactoryInfo {
+    products: HashSet<UnitType>,
+    position: [f32; 2],
+}
+
+impl FactoryInfo {
+    pub(crate) fn products(&self) -> &HashSet<UnitType> {
+        &self.products
+    }
+
+    pub(crate) fn position(&self) -> [f32; 2] {
+        self.position
     }
 }
 

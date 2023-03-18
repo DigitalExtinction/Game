@@ -2250,6 +2250,7 @@ dependencies = [
 name = "de_objects"
 version = "0.1.0-dev"
 dependencies = [
+ "ahash 0.7.6",
  "anyhow",
  "bevy",
  "de_core",

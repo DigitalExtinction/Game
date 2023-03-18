@@ -5,7 +5,6 @@ use bevy::{
     prelude::*,
 };
 use de_core::{
-    gamestate::GameState,
     objects::{ActiveObjectType, BuildingType, InactiveObjectType, ObjectType, UnitType},
     state::AppState,
 };
@@ -13,6 +12,7 @@ use enum_map::{enum_map, EnumMap};
 use iyes_progress::prelude::*;
 
 use crate::{
+    factory::Factory,
     ichnography::Ichnography,
     loader::{ObjectInfo, ObjectLoader},
     Flight, LaserCannon, ObjectCollider,
@@ -24,12 +24,12 @@ impl Plugin for CachePlugin {
     fn build(&self, app: &mut App) {
         app.add_asset::<ObjectInfo>()
             .add_asset_loader(ObjectLoader)
-            .add_system(setup.in_schedule(OnEnter(AppState::InGame)))
-            .add_system(cleanup.in_schedule(OnExit(AppState::InGame)))
+            .add_system(setup.in_schedule(OnEnter(AppState::AppLoading)))
+            .add_system(cleanup.in_schedule(OnExit(AppState::AppLoading)))
             .add_system(
                 check_status
                     .track_progress()
-                    .run_if(in_state(GameState::Loading)),
+                    .run_if(in_state(AppState::AppLoading)),
             );
     }
 }
@@ -71,6 +71,7 @@ pub struct CacheItem {
     collider: ObjectCollider,
     cannon: Option<LaserCannon>,
     flight: Option<Flight>,
+    factory: Option<Factory>,
 }
 
 impl CacheItem {
@@ -86,6 +87,12 @@ impl CacheItem {
     /// fly.
     pub fn flight(&self) -> Option<&Flight> {
         self.flight.as_ref()
+    }
+
+    /// Returns None if the object has no manufacturing capabilities, otherwise
+    /// it returns info about object manufacturing capabilities.
+    pub fn factory(&self) -> Option<&Factory> {
+        self.factory.as_ref()
     }
 
     pub(crate) fn ichnography(&self) -> &Ichnography {
@@ -175,6 +182,7 @@ impl ItemLoader {
             collider: ObjectCollider::from(object_info.shape()),
             cannon: object_info.cannon().map(LaserCannon::from),
             flight: object_info.flight().map(Flight::from),
+            factory: object_info.factory().map(Factory::from),
         }
     }
 
@@ -199,7 +207,6 @@ fn setup(mut commands: Commands, server: Res<AssetServer>) {
 
 fn cleanup(mut commands: Commands) {
     commands.remove_resource::<CacheLoader>();
-    commands.remove_resource::<ObjectCache>();
 }
 
 fn check_status(

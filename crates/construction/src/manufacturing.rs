@@ -23,6 +23,7 @@ pub(crate) struct ManufacturingPlugin;
 impl Plugin for ManufacturingPlugin {
     fn build(&self, app: &mut App) {
         app.add_event::<EnqueueAssemblyEvent>()
+            .add_event::<DeliverEvent>()
             .add_system(
                 configure
                     .in_base_set(GameSet::PostUpdate)
@@ -36,9 +37,21 @@ impl Plugin for ManufacturingPlugin {
             .add_system(
                 produce
                     .in_base_set(GameSet::PreUpdate)
-                    .run_if(in_state(GameState::Playing)),
+                    .run_if(in_state(GameState::Playing))
+                    .in_set(ManufacturingSet::Produce),
+            )
+            .add_system(
+                deliver
+                    .in_base_set(GameSet::PreUpdate)
+                    .run_if(in_state(GameState::Playing))
+                    .after(ManufacturingSet::Produce),
             );
     }
+}
+
+#[derive(Copy, Clone, Hash, Debug, PartialEq, Eq, SystemSet)]
+enum ManufacturingSet {
+    Produce,
 }
 
 /// Send this event to enqueue a unit to be manufactured by a factory.
@@ -54,6 +67,25 @@ impl EnqueueAssemblyEvent {
     ///
     /// `unit` - unit to be produced.
     pub fn new(factory: Entity, unit: UnitType) -> Self {
+        Self { factory, unit }
+    }
+
+    fn factory(&self) -> Entity {
+        self.factory
+    }
+
+    fn unit(&self) -> UnitType {
+        self.unit
+    }
+}
+
+struct DeliverEvent {
+    factory: Entity,
+    unit: UnitType,
+}
+
+impl DeliverEvent {
+    fn new(factory: Entity, unit: UnitType) -> Self {
         Self { factory, unit }
     }
 
@@ -197,12 +229,13 @@ impl ProductionItem {
     }
 }
 
-fn configure(mut commands: Commands, new: Query<(Entity, &ObjectType), Added<ObjectType>>) {
+fn configure(
+    mut commands: Commands,
+    cache: Res<ObjectCache>,
+    new: Query<(Entity, &ObjectType), Added<ObjectType>>,
+) {
     for (entity, &object_type) in new.iter() {
-        if matches!(
-            object_type,
-            ObjectType::Active(ActiveObjectType::Building(_))
-        ) {
+        if cache.get(object_type).factory().is_some() {
             commands.entity(entity).insert(AssemblyLine::default());
         }
     }
@@ -221,13 +254,11 @@ fn enqueue(mut events: EventReader<EnqueueAssemblyEvent>, mut lines: Query<&mut 
 }
 
 fn produce(
-    mut commands: Commands,
     time: Res<Time>,
-    cache: Res<ObjectCache>,
     conf: Res<GameConfig>,
     counter: Res<ObjectCounter>,
-    mut path_events: EventWriter<UpdateEntityPath>,
-    mut factories: Query<(Entity, &ObjectType, &Transform, &Player, &mut AssemblyLine)>,
+    mut factories: Query<(Entity, &Player, &mut AssemblyLine)>,
+    mut deliver_events: EventWriter<DeliverEvent>,
 ) {
     let mut counts: AHashMap<Player, u32> = AHashMap::new();
     for player in conf.players() {
@@ -235,7 +266,7 @@ fn produce(
         counts.insert(player, count);
     }
 
-    for (factory, &factory_object_type, transform, &player, mut assembly) in factories.iter_mut() {
+    for (factory, &player, mut assembly) in factories.iter_mut() {
         let player_count = counts.get_mut(&player).unwrap();
         if *player_count < PLAYER_MAX_UNITS {
             assembly.restart(time.elapsed());
@@ -250,33 +281,50 @@ fn produce(
             let Some(unit_type) = assembly.produce(time.elapsed()) else { break };
             *player_count += 1;
 
-            info!(
-                "Manufacturing of {unit_type} in {:?} just finished.",
-                factory
-            );
-
-            let unit_object_type = ObjectType::Active(ActiveObjectType::Unit(unit_type));
-
-            let local_aabb = cache.get_ichnography(factory_object_type).local_aabb();
-            let center: Vec2 = local_aabb.center().into();
-            let direction = Vec2::new(local_aabb.half_extents().x + 40., 0.);
-            let target = transform
-                .transform_point((center + direction).to_msl())
-                .to_flat();
-            let center = transform.transform_point(center.to_msl());
-
-            let unit = commands
-                .spawn((
-                    SpawnBundle::new(unit_object_type, Transform::from_translation(center)),
-                    player,
-                    DespawnOnGameExit,
-                ))
-                .id();
-            path_events.send(UpdateEntityPath::new(
-                unit,
-                PathTarget::new(target, PathQueryProps::new(0., f32::INFINITY), false),
-            ));
+            deliver_events.send(DeliverEvent::new(factory, unit_type));
         }
+    }
+}
+
+fn deliver(
+    mut commands: Commands,
+    cache: Res<ObjectCache>,
+    mut deliver_events: EventReader<DeliverEvent>,
+    mut path_events: EventWriter<UpdateEntityPath>,
+    factories: Query<(&Transform, &ObjectType, &Player)>,
+) {
+    for delivery in deliver_events.iter() {
+        info!(
+            "Manufacturing of {} in {:?} just finished.",
+            delivery.unit(),
+            delivery.factory()
+        );
+
+        let (transform, &factory_object_type, &player) = factories.get(delivery.factory()).unwrap();
+        let unit_object_type = ObjectType::Active(ActiveObjectType::Unit(delivery.unit()));
+
+        let factory = cache.get(factory_object_type).factory().unwrap();
+        debug_assert!(factory.products().contains(&delivery.unit()));
+        let spawn_point = transform.transform_point(factory.position().to_msl());
+
+        let local_aabb = cache.get_ichnography(factory_object_type).local_aabb();
+        let center: Vec2 = local_aabb.center().into();
+        let direction = Vec2::new(local_aabb.half_extents().x + 40., 0.);
+        let target = transform
+            .transform_point((center + direction).to_msl())
+            .to_flat();
+
+        let unit = commands
+            .spawn((
+                SpawnBundle::new(unit_object_type, Transform::from_translation(spawn_point)),
+                player,
+                DespawnOnGameExit,
+            ))
+            .id();
+        path_events.send(UpdateEntityPath::new(
+            unit,
+            PathTarget::new(target, PathQueryProps::new(0., f32::INFINITY), false),
+        ));
     }
 }
 

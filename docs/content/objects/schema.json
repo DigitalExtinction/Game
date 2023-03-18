@@ -129,6 +129,36 @@
         "min_height",
         "max_height"
       ]
+    },
+    "factory": {
+      "type": "object",
+      "description": "Configuration of the manufacturing capability of the object.",
+      "properties": {
+        "products": {
+          "type": "array",
+          "description": "List of products which can be manufactured.",
+          "items": {
+            "type": "string",
+            "enum": [
+              "Attacker"
+            ]
+          },
+          "minItems": 1
+        },
+        "position": {
+          "type": "array",
+          "description": "Position of the assembly line, i.e. where the products are manufactured and spawned. A 2D position in the object space.",
+          "items": {
+            "type": "number"
+          },
+          "minItems": 2,
+          "maxItems": 2
+        }
+      },
+      "required": [
+        "products",
+        "position"
+      ]
     }
   },
   "required": [

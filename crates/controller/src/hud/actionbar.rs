@@ -4,9 +4,10 @@ use de_core::{
     baseset::GameSet,
     cleanup::DespawnOnGameExit,
     gamestate::GameState,
-    objects::{ActiveObjectType, BuildingType, ObjectType, UnitType},
+    objects::{ObjectType, UnitType},
 };
 use de_gui::{ButtonCommands, GuiCommands, OuterStyle};
+use de_objects::ObjectCache;
 
 use super::{interaction::InteractionBlocker, HUD_COLOR};
 use crate::selection::Selected;
@@ -97,6 +98,7 @@ fn detect_update(mut active: ResMut<ActiveEntity>, selected: Query<Entity, With<
 
 fn update(
     mut commands: GuiCommands,
+    cache: Res<ObjectCache>,
     bar_node: Res<ActionBarNode>,
     active: Res<ActiveEntity>,
     objects: Query<&ObjectType>,
@@ -104,26 +106,32 @@ fn update(
     commands.entity(bar_node.0).despawn_descendants();
 
     let Some(active) = active.0 else {return };
-    let object_type = objects.get(active).unwrap();
+    let object_type = *objects.get(active).unwrap();
 
-    if let ObjectType::Active(ActiveObjectType::Building(BuildingType::Base)) = object_type {
-        let button = commands
-            .spawn_button(
-                OuterStyle {
-                    size: Size::new(Val::Percent(10.), Val::Percent(80.)),
-                    margin: UiRect::new(
-                        Val::Percent(0.),
-                        Val::Percent(0.),
-                        Val::Percent(2.),
-                        Val::Percent(2.),
-                    ),
-                },
-                "A",
-            )
-            .insert(ButtonAction(UnitType::Attacker))
-            .id();
-        commands.entity(bar_node.0).add_child(button);
+    if let Some(factory) = cache.get(object_type).factory() {
+        for &unit in factory.products() {
+            spawn_button(&mut commands, bar_node.0, unit);
+        }
     }
+}
+
+fn spawn_button(commands: &mut GuiCommands, parent: Entity, unit: UnitType) {
+    let button = commands
+        .spawn_button(
+            OuterStyle {
+                size: Size::new(Val::Percent(10.), Val::Percent(80.)),
+                margin: UiRect::new(
+                    Val::Percent(0.),
+                    Val::Percent(0.),
+                    Val::Percent(2.),
+                    Val::Percent(2.),
+                ),
+            },
+            unit.to_string().chars().next().unwrap(),
+        )
+        .insert(ButtonAction(unit))
+        .id();
+    commands.entity(parent).add_child(button);
 }
 
 fn button_system(
