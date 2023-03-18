@@ -5,7 +5,6 @@ use bevy::{
     prelude::*,
 };
 use de_core::{
-    gamestate::GameState,
     objects::{ActiveObjectType, BuildingType, InactiveObjectType, ObjectType, UnitType},
     state::AppState,
 };
@@ -24,12 +23,12 @@ impl Plugin for CachePlugin {
     fn build(&self, app: &mut App) {
         app.add_asset::<ObjectInfo>()
             .add_asset_loader(ObjectLoader)
-            .add_system(setup.in_schedule(OnEnter(AppState::InGame)))
-            .add_system(cleanup.in_schedule(OnExit(AppState::InGame)))
+            .add_system(setup.in_schedule(OnEnter(AppState::AppLoading)))
+            .add_system(cleanup.in_schedule(OnExit(AppState::AppLoading)))
             .add_system(
                 check_status
                     .track_progress()
-                    .run_if(in_state(GameState::Loading)),
+                    .run_if(in_state(AppState::AppLoading)),
             );
     }
 }
@@ -199,7 +198,6 @@ fn setup(mut commands: Commands, server: Res<AssetServer>) {
 
 fn cleanup(mut commands: Commands) {
     commands.remove_resource::<CacheLoader>();
-    commands.remove_resource::<ObjectCache>();
 }
 
 fn check_status(
