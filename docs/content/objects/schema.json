@@ -153,11 +153,21 @@
           },
           "minItems": 2,
           "maxItems": 2
+        },
+        "gate": {
+          "type": "array",
+          "description": "After a unit is produced it moves towards this position before it continues to a target location. A 2D position in the object space.",
+          "items": {
+            "type": "number"
+          },
+          "minItems": 2,
+          "maxItems": 2
         }
       },
       "required": [
         "products",
-        "position"
+        "position",
+        "gate"
       ]
     }
   },

@@ -7,6 +7,7 @@ use crate::loader::FactoryInfo;
 pub struct Factory {
     products: AHashSet<UnitType>,
     position: Vec2,
+    gate: Vec2,
 }
 
 impl Factory {
@@ -17,6 +18,10 @@ impl Factory {
     pub fn position(&self) -> Vec2 {
         self.position
     }
+
+    pub fn gate(&self) -> Vec2 {
+        self.gate
+    }
 }
 
 impl From<&FactoryInfo> for Factory {
@@ -24,6 +29,7 @@ impl From<&FactoryInfo> for Factory {
         Self {
             products: AHashSet::from_iter(info.products().iter().cloned()),
             position: info.position().into(),
+            gate: info.gate().into(),
         }
     }
 }

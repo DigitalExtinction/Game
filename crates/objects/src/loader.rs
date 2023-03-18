@@ -124,6 +124,7 @@ impl FlightInfo {
 pub(crate) struct FactoryInfo {
     products: HashSet<UnitType>,
     position: [f32; 2],
+    gate: [f32; 2],
 }
 
 impl FactoryInfo {
@@ -133,6 +134,10 @@ impl FactoryInfo {
 
     pub(crate) fn position(&self) -> [f32; 2] {
         self.position
+    }
+
+    pub(crate) fn gate(&self) -> [f32; 2] {
+        self.gate
     }
 }
 

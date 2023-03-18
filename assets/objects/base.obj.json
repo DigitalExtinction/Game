@@ -35,6 +35,7 @@
   },
   "factory": {
     "products": ["Attacker"],
-    "position": [22, 0]
+    "position": [22, 0],
+    "gate": [19, 0]
   }
 }
