@@ -12,6 +12,7 @@ use enum_map::{enum_map, EnumMap};
 use iyes_progress::prelude::*;
 
 use crate::{
+    factory::Factory,
     ichnography::Ichnography,
     loader::{ObjectInfo, ObjectLoader},
     Flight, LaserCannon, ObjectCollider,
@@ -70,6 +71,7 @@ pub struct CacheItem {
     collider: ObjectCollider,
     cannon: Option<LaserCannon>,
     flight: Option<Flight>,
+    factory: Option<Factory>,
 }
 
 impl CacheItem {
@@ -85,6 +87,12 @@ impl CacheItem {
     /// fly.
     pub fn flight(&self) -> Option<&Flight> {
         self.flight.as_ref()
+    }
+
+    /// Returns None if the object has no manufacturing capabilities, otherwise
+    /// it returns info about object manufacturing capabilities.
+    pub fn factory(&self) -> Option<&Factory> {
+        self.factory.as_ref()
     }
 
     pub(crate) fn ichnography(&self) -> &Ichnography {
@@ -174,6 +182,7 @@ impl ItemLoader {
             collider: ObjectCollider::from(object_info.shape()),
             cannon: object_info.cannon().map(LaserCannon::from),
             flight: object_info.flight().map(Flight::from),
+            factory: object_info.factory().map(Factory::from),
         }
     }
 

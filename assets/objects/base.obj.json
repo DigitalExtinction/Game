@@ -32,5 +32,9 @@
       [7, 6, 5],
       [4, 7, 5]
     ]
+  },
+  "factory": {
+    "products": ["Attacker"],
+    "position": [22, 0]
   }
 }

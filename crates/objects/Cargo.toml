@@ -16,6 +16,7 @@ categories.workspace = true
 de_core.workspace = true
 
 # Other
+ahash.workspace = true
 bevy.workspace = true
 iyes_progress.workspace = true
 glam.workspace = true

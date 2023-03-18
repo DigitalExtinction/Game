@@ -86,7 +86,7 @@ impl fmt::Display for BuildingType {
     }
 }
 
-#[derive(Copy, Clone, Debug, Component, Serialize, Deserialize, PartialEq, Eq, Enum)]
+#[derive(Copy, Clone, Hash, Debug, Component, Serialize, Deserialize, PartialEq, Eq, Enum)]
 pub enum UnitType {
     Attacker,
 }
