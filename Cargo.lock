@@ -2043,6 +2043,7 @@ dependencies = [
  "de_objects",
  "de_pathing",
  "de_spawner",
+ "parry2d",
 ]
 
 [[package]]

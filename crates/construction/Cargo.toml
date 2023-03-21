@@ -21,3 +21,4 @@ de_spawner.workspace = true
 # Other
 ahash.workspace = true
 bevy.workspace = true
+parry2d.workspace = true

@@ -10,9 +10,14 @@ rotate the camera around its focus point on the terrain.
 
 # Minimap
 
-Left click on the minimap to move the camera to the target.
+## Left Click
 
-Right click on the minimap to send selected units to the target.
+* Moves the camera to the target.
+
+## Right Click
+
+* Sends selected units to the click position.
+* Sets manufacturing delivery location to the click position.
 
 # Hotkeys
 
@@ -50,6 +55,11 @@ construction by left clicking the mouse.
 * Select a single building with a factory (for example a base).
 * Clicking "manufacture unit" buttons in the bottom middle panel enqueues the
   units for manufacturing.
+
+## Delivery Location
+
+Right clicking on the terrain sets manufacturing delivery location to the click
+position.
 
 # Commanding Units and Buildings
 

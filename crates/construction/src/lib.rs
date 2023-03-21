@@ -1,6 +1,6 @@
 use bevy::{app::PluginGroupBuilder, prelude::*};
-pub use manufacturing::EnqueueAssemblyEvent;
 use manufacturing::ManufacturingPlugin;
+pub use manufacturing::{AssemblyLine, ChangeDeliveryLocationEvent, EnqueueAssemblyEvent};
 
 mod manufacturing;
 

@@ -26,7 +26,10 @@ use de_core::{
 use de_spawner::{DraftAllowed, ObjectCounter};
 use enum_map::enum_map;
 
-use super::{keyboard::KeyCondition, CommandsSet, GroupAttackEvent, SendSelectedEvent};
+use super::{
+    executor::DeliveryLocationSelectedEvent, keyboard::KeyCondition, CommandsSet, GroupAttackEvent,
+    SendSelectedEvent,
+};
 use crate::{
     draft::{DiscardDraftsEvent, DraftSet, NewDraftEvent, SpawnDraftsEvent},
     hud::{GameMenuSet, ToggleGameMenu, UpdateSelectionBoxEvent},
@@ -75,6 +78,7 @@ impl Plugin for HandlersPlugin {
                 .after(PointerSet::Update)
                 .after(MouseSet::Buttons)
                 .before(CommandsSet::SendSelected)
+                .before(CommandsSet::DeliveryLocation)
                 .before(CommandsSet::Attack),
         )
         .add_system(
@@ -187,6 +191,7 @@ fn on_double_click(button: MouseButton) -> impl Fn(EventReader<MouseDoubleClicke
 fn right_click_handler(
     config: Res<GameConfig>,
     mut send_events: EventWriter<SendSelectedEvent>,
+    mut location_events: EventWriter<DeliveryLocationSelectedEvent>,
     mut attack_events: EventWriter<GroupAttackEvent>,
     targets: Query<&Player>,
     pointer: Res<Pointer>,
@@ -201,6 +206,7 @@ fn right_click_handler(
         None => {
             let Some(target) = pointer.terrain_point().map(|p| p.to_flat()) else { return };
             send_events.send(SendSelectedEvent::new(target));
+            location_events.send(DeliveryLocationSelectedEvent::new(target));
         }
     }
 }
