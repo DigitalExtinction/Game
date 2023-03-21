@@ -15,19 +15,28 @@ use de_core::{
 use de_objects::{IchnographyCache, ObjectCache};
 use de_pathing::{PathQueryProps, PathTarget, UpdateEntityPath};
 use de_spawner::{ObjectCounter, SpawnBundle};
+use parry2d::bounding_volume::Aabb;
 
 const MANUFACTURING_TIME: Duration = Duration::from_secs(2);
+const DEFAULT_TARGET_DISTANCE: f32 = 20.;
 
 pub(crate) struct ManufacturingPlugin;
 
 impl Plugin for ManufacturingPlugin {
     fn build(&self, app: &mut App) {
         app.add_event::<EnqueueAssemblyEvent>()
+            .add_event::<ChangeDeliveryLocationEvent>()
             .add_event::<DeliverEvent>()
             .add_system(
                 configure
                     .in_base_set(GameSet::PostUpdate)
                     .run_if(in_state(AppState::InGame)),
+            )
+            .add_system(
+                change_locations
+                    .in_base_set(GameSet::PreUpdate)
+                    .run_if(in_state(GameState::Playing))
+                    .in_set(ManufacturingSet::ChangeLocations),
             )
             .add_system(
                 enqueue
@@ -44,6 +53,7 @@ impl Plugin for ManufacturingPlugin {
                 deliver
                     .in_base_set(GameSet::PreUpdate)
                     .run_if(in_state(GameState::Playing))
+                    .after(ManufacturingSet::ChangeLocations)
                     .after(ManufacturingSet::Produce),
             );
     }
@@ -51,7 +61,28 @@ impl Plugin for ManufacturingPlugin {
 
 #[derive(Copy, Clone, Hash, Debug, PartialEq, Eq, SystemSet)]
 enum ManufacturingSet {
+    ChangeLocations,
     Produce,
+}
+
+/// Send this event to change target location of freshly manufactured units.
+pub struct ChangeDeliveryLocationEvent {
+    factory: Entity,
+    position: Vec2,
+}
+
+impl ChangeDeliveryLocationEvent {
+    pub fn new(factory: Entity, position: Vec2) -> Self {
+        Self { factory, position }
+    }
+
+    fn factory(&self) -> Entity {
+        self.factory
+    }
+
+    fn position(&self) -> Vec2 {
+        self.position
+    }
 }
 
 /// Send this event to enqueue a unit to be manufactured by a factory.
@@ -98,10 +129,23 @@ impl DeliverEvent {
     }
 }
 
+#[derive(Component)]
+struct DeliveryLocation(Vec2);
+
+impl DeliveryLocation {
+    fn initial(local_aabb: Aabb, transform: &Transform) -> Self {
+        let target = Vec2::new(
+            local_aabb.maxs.x + DEFAULT_TARGET_DISTANCE,
+            0.5 * (local_aabb.mins.y + local_aabb.maxs.y),
+        );
+        Self(transform.transform_point(target.to_msl()).to_flat())
+    }
+}
+
 /// An assembly line attached to every building and capable of production of
 /// any units.
 #[derive(Component, Default)]
-struct AssemblyLine {
+pub struct AssemblyLine {
     queue: VecDeque<ProductionItem>,
 }
 
@@ -232,11 +276,26 @@ impl ProductionItem {
 fn configure(
     mut commands: Commands,
     cache: Res<ObjectCache>,
-    new: Query<(Entity, &ObjectType), Added<ObjectType>>,
+    new: Query<(Entity, &Transform, &ObjectType), Added<ObjectType>>,
 ) {
-    for (entity, &object_type) in new.iter() {
+    for (entity, transform, &object_type) in new.iter() {
         if cache.get(object_type).factory().is_some() {
-            commands.entity(entity).insert(AssemblyLine::default());
+            let local_aabb = cache.get_ichnography(object_type).local_aabb();
+            let delivery_location = DeliveryLocation::initial(local_aabb, transform);
+            commands
+                .entity(entity)
+                .insert((AssemblyLine::default(), delivery_location));
+        }
+    }
+}
+
+fn change_locations(
+    mut events: EventReader<ChangeDeliveryLocationEvent>,
+    mut locations: Query<&mut DeliveryLocation>,
+) {
+    for event in events.iter() {
+        if let Ok(mut location) = locations.get_mut(event.factory()) {
+            location.0 = event.position();
         }
     }
 }
@@ -291,7 +350,7 @@ fn deliver(
     cache: Res<ObjectCache>,
     mut deliver_events: EventReader<DeliverEvent>,
     mut path_events: EventWriter<UpdateEntityPath>,
-    factories: Query<(&Transform, &ObjectType, &Player)>,
+    factories: Query<(&Transform, &ObjectType, &Player, &DeliveryLocation)>,
 ) {
     for delivery in deliver_events.iter() {
         info!(
@@ -300,19 +359,13 @@ fn deliver(
             delivery.factory()
         );
 
-        let (transform, &factory_object_type, &player) = factories.get(delivery.factory()).unwrap();
+        let (transform, &factory_object_type, &player, delivery_location) =
+            factories.get(delivery.factory()).unwrap();
         let unit_object_type = ObjectType::Active(ActiveObjectType::Unit(delivery.unit()));
 
         let factory = cache.get(factory_object_type).factory().unwrap();
         debug_assert!(factory.products().contains(&delivery.unit()));
         let spawn_point = transform.transform_point(factory.position().to_msl());
-
-        let local_aabb = cache.get_ichnography(factory_object_type).local_aabb();
-        let center: Vec2 = local_aabb.center().into();
-        let direction = Vec2::new(local_aabb.half_extents().x + 40., 0.);
-        let target = transform
-            .transform_point((center + direction).to_msl())
-            .to_flat();
 
         let unit = commands
             .spawn((
@@ -323,7 +376,11 @@ fn deliver(
             .id();
         path_events.send(UpdateEntityPath::new(
             unit,
-            PathTarget::new(target, PathQueryProps::new(0., f32::INFINITY), false),
+            PathTarget::new(
+                delivery_location.0,
+                PathQueryProps::new(0., f32::INFINITY),
+                false,
+            ),
         ));
     }
 }

@@ -1,6 +1,7 @@
 use bevy::prelude::*;
 use de_behaviour::ChaseTargetEvent;
 use de_combat::AttackEvent;
+use de_construction::{AssemblyLine, ChangeDeliveryLocationEvent};
 use de_core::{baseset::GameSet, gamestate::GameState, objects::MovableSolid};
 use de_pathing::{PathQueryProps, PathTarget, UpdateEntityPath};
 use glam::Vec2;
@@ -12,12 +13,19 @@ pub(super) struct ExecutorPlugin;
 impl Plugin for ExecutorPlugin {
     fn build(&self, app: &mut App) {
         app.add_event::<SendSelectedEvent>()
+            .add_event::<DeliveryLocationSelectedEvent>()
             .add_event::<GroupAttackEvent>()
             .add_system(
                 send_selected_system
                     .in_base_set(GameSet::Input)
                     .run_if(in_state(GameState::Playing))
                     .in_set(CommandsSet::SendSelected),
+            )
+            .add_system(
+                delivery_location_system
+                    .in_base_set(GameSet::Input)
+                    .run_if(in_state(GameState::Playing))
+                    .in_set(CommandsSet::DeliveryLocation),
             )
             .add_system(
                 attack_system
@@ -31,6 +39,7 @@ impl Plugin for ExecutorPlugin {
 #[derive(Copy, Clone, Hash, Debug, PartialEq, Eq, SystemSet)]
 pub(crate) enum CommandsSet {
     SendSelected,
+    DeliveryLocation,
     Attack,
 }
 
@@ -38,6 +47,20 @@ pub(crate) enum CommandsSet {
 pub(crate) struct SendSelectedEvent(Vec2);
 
 impl SendSelectedEvent {
+    pub(crate) fn new(target: Vec2) -> Self {
+        Self(target)
+    }
+
+    fn target(&self) -> Vec2 {
+        self.0
+    }
+}
+
+/// Send this event to set manufacturing delivery location for all selected
+/// building with a factory.
+pub(crate) struct DeliveryLocationSelectedEvent(Vec2);
+
+impl DeliveryLocationSelectedEvent {
     pub(crate) fn new(target: Vec2) -> Self {
         Self(target)
     }
@@ -76,6 +99,20 @@ fn send_selected_system(
                 entity,
                 PathTarget::new(send.target(), PathQueryProps::exact(), false),
             ));
+        }
+    }
+}
+
+type SelectedFactory = (With<Selected>, With<AssemblyLine>);
+
+fn delivery_location_system(
+    mut in_events: EventReader<DeliveryLocationSelectedEvent>,
+    selected: Query<Entity, SelectedFactory>,
+    mut out_events: EventWriter<ChangeDeliveryLocationEvent>,
+) {
+    if let Some(event) = in_events.iter().last() {
+        for entity in selected.iter() {
+            out_events.send(ChangeDeliveryLocationEvent::new(entity, event.target()));
         }
     }
 }

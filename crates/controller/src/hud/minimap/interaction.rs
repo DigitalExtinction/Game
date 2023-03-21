@@ -11,7 +11,7 @@ use de_map::size::MapBounds;
 
 use super::nodes::MinimapNode;
 use crate::{
-    commands::{CommandsSet, SendSelectedEvent},
+    commands::{CommandsSet, DeliveryLocationSelectedEvent, SendSelectedEvent},
     hud::HudNodes,
 };
 
@@ -38,6 +38,13 @@ impl Plugin for InteractionPlugin {
                     .run_if(in_state(GameState::Playing))
                     .after(InteractionSet::ClickHandler)
                     .before(CommandsSet::SendSelected),
+            )
+            .add_system(
+                delivery_location_system
+                    .in_base_set(GameSet::Input)
+                    .run_if(in_state(GameState::Playing))
+                    .after(InteractionSet::ClickHandler)
+                    .before(CommandsSet::DeliveryLocation),
             );
     }
 }
@@ -117,5 +124,17 @@ fn send_units_system(
             continue;
         }
         send_events.send(SendSelectedEvent::new(click.position()));
+    }
+}
+
+fn delivery_location_system(
+    mut click_events: EventReader<MinimapClickEvent>,
+    mut location_events: EventWriter<DeliveryLocationSelectedEvent>,
+) {
+    for click in click_events.iter() {
+        if click.button() != MouseButton::Right {
+            continue;
+        }
+        location_events.send(DeliveryLocationSelectedEvent::new(click.position()));
     }
 }
