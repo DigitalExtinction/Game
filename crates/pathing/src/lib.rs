@@ -17,6 +17,7 @@ mod triangulation;
 mod utils;
 
 use bevy::{app::PluginGroupBuilder, prelude::PluginGroup};
+pub use exclusion::ExclusionArea;
 pub use fplugin::create_finder;
 use fplugin::FinderPlugin;
 pub use path::ScheduledPath;

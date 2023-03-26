@@ -1,21 +1,10 @@
-use de_core::objects::ObjectType;
+use anyhow::anyhow;
 use parry2d::{bounding_volume::Aabb, math::Point, shape::ConvexPolygon};
-
-use crate::{loader::Footprint, ObjectCache};
+use serde::{Deserialize, Serialize};
 
 /// Padding around static object ichnographies used to accommodate for moving
 /// object trajectory smoothing and non-zero moving object sizes.
 pub const EXCLUSION_OFFSET: f32 = 2.;
-
-pub trait IchnographyCache {
-    fn get_ichnography(&self, object_type: ObjectType) -> &Ichnography;
-}
-
-impl IchnographyCache for ObjectCache {
-    fn get_ichnography(&self, object_type: ObjectType) -> &Ichnography {
-        self.get(object_type).ichnography()
-    }
-}
 
 pub struct Ichnography {
     radius: f32,
@@ -75,18 +64,25 @@ impl From<ConvexPolygon> for Ichnography {
     }
 }
 
-impl From<&Footprint> for Ichnography {
-    fn from(footprint: &Footprint) -> Self {
-        ConvexPolygon::from_convex_polyline(
+impl TryFrom<FootprintSerde> for Ichnography {
+    type Error = anyhow::Error;
+
+    fn try_from(footprint: FootprintSerde) -> Result<Self, Self::Error> {
+        Ok(ConvexPolygon::from_convex_polyline(
             footprint
-                .convex_hull()
+                .convex_hull
                 .iter()
                 .map(|&[x, y]| Point::new(x, y))
                 .collect(),
         )
-        .unwrap()
-        .into()
+        .ok_or_else(|| anyhow!("Polygon lies (almost) on a line."))?
+        .into())
     }
+}
+
+#[derive(Serialize, Deserialize)]
+pub(crate) struct FootprintSerde {
+    convex_hull: Vec<[f32; 2]>,
 }
 
 #[cfg(test)]

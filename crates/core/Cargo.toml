@@ -12,11 +12,12 @@ license.workspace = true
 categories.workspace = true
 
 [dependencies]
-serde.workspace = true
 bevy.workspace = true
-iyes_progress.workspace = true
+enum-iterator.workspace = true
+enum-map.workspace = true
 glam.workspace = true
+iyes_progress.workspace = true
 nalgebra.workspace = true
 parry2d.workspace = true
 parry3d.workspace = true
-enum-map.workspace = true
+serde.workspace = true

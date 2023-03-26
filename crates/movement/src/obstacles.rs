@@ -6,7 +6,7 @@ use de_core::{
     projection::ToFlat,
 };
 use de_index::SpatialQuery;
-use de_objects::{IchnographyCache, ObjectCache};
+use de_objects::SolidObjects;
 use parry3d::{bounding_volume::Aabb, math::Point};
 
 use crate::{cache::DecayingCache, disc::Disc};
@@ -60,10 +60,10 @@ type Uninitialized<'w, 's> = Query<
     (With<MovableSolid>, Without<Disc>),
 >;
 
-fn setup_discs(mut commands: Commands, cache: Res<ObjectCache>, objects: Uninitialized) {
+fn setup_discs(mut commands: Commands, solids: SolidObjects, objects: Uninitialized) {
     for (entity, transform, &object_type) in objects.iter() {
         let center = transform.translation.to_flat();
-        let radius = cache.get_ichnography(object_type).radius();
+        let radius = solids.get(object_type).ichnography().radius();
         commands.entity(entity).insert((
             Disc::new(center, radius),
             DecayingCache::<StaticObstacles>::default(),

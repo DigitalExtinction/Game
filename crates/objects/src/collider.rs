@@ -1,22 +1,10 @@
-use de_core::objects::ObjectType;
 use parry3d::{
     bounding_volume::Aabb,
     math::{Isometry, Point},
     query::{intersection_test, PointQuery, Ray, RayCast},
     shape::{Shape, TriMesh, TriMeshFlags},
 };
-
-use crate::{loader::TriMeshShape, ObjectCache};
-
-pub trait ColliderCache {
-    fn get_collider(&self, object_type: ObjectType) -> &ObjectCollider;
-}
-
-impl ColliderCache for ObjectCache {
-    fn get_collider(&self, object_type: ObjectType) -> &ObjectCollider {
-        self.get(object_type).collider()
-    }
-}
+use serde::{Deserialize, Serialize};
 
 #[derive(Clone)]
 pub struct ObjectCollider {
@@ -74,21 +62,28 @@ impl From<TriMesh> for ObjectCollider {
     }
 }
 
-impl From<&TriMeshShape> for ObjectCollider {
-    fn from(shape: &TriMeshShape) -> Self {
+impl TryFrom<ColliderSerde> for ObjectCollider {
+    type Error = anyhow::Error;
+
+    fn try_from(shape: ColliderSerde) -> Result<Self, Self::Error> {
         let vertices: Vec<Point<f32>> = shape
-            .vertices()
+            .vertices
             .iter()
             .map(|&[x, y, z]| Point::new(x, y, z))
             .collect();
-        let indices = shape.indices().to_owned();
         let trimesh = TriMesh::with_flags(
             vertices,
-            indices,
+            shape.indices,
             TriMeshFlags::MERGE_DUPLICATE_VERTICES | TriMeshFlags::ORIENTED,
         );
-        Self::from(trimesh)
+        Ok(Self::from(trimesh))
     }
+}
+
+#[derive(Serialize, Deserialize)]
+pub(crate) struct ColliderSerde {
+    vertices: Vec<[f32; 3]>,
+    indices: Vec<[u32; 3]>,
 }
 
 #[cfg(test)]

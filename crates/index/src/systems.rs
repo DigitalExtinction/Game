@@ -8,7 +8,7 @@ use de_core::{
     objects::{MovableSolid, ObjectType, StaticSolid},
     state::AppState,
 };
-use de_objects::{ColliderCache, ObjectCache};
+use de_objects::SolidObjects;
 use parry3d::math::Isometry;
 
 use super::index::EntityIndex;
@@ -90,7 +90,7 @@ fn cleanup(mut commands: Commands) {
 fn insert(
     mut commands: Commands,
     mut index: ResMut<EntityIndex>,
-    cache: Res<ObjectCache>,
+    solids: SolidObjects,
     query: SolidEntityQuery,
 ) {
     for (entity, object_type, transform) in query.iter() {
@@ -98,7 +98,7 @@ fn insert(
             transform.translation.into(),
             transform.rotation.to_scaled_axis().into(),
         );
-        let collider = LocalCollider::new(cache.get_collider(*object_type).clone(), position);
+        let collider = LocalCollider::new(solids.get(*object_type).collider().clone(), position);
         index.insert(entity, collider);
         commands.entity(entity).insert(Indexed);
     }

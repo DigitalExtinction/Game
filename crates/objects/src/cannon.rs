@@ -2,8 +2,7 @@ use std::{cmp::Ordering, time::Duration};
 
 use bevy::prelude::Component;
 use glam::Vec3;
-
-use crate::loader::LaserCannonInfo;
+use serde::{Deserialize, Serialize};
 
 #[derive(Component, Clone)]
 pub struct LaserCannon {
@@ -144,18 +143,29 @@ impl PartialOrd for LaserCharge {
     }
 }
 
-impl From<&LaserCannonInfo> for LaserCannon {
-    fn from(info: &LaserCannonInfo) -> Self {
-        Self {
-            muzzle: Vec3::from_slice(info.muzzle().as_slice()),
-            range: info.range(),
-            damage: info.damage(),
+impl TryFrom<LaserCannonSerde> for LaserCannon {
+    type Error = anyhow::Error;
+
+    fn try_from(info: LaserCannonSerde) -> Result<Self, Self::Error> {
+        Ok(Self {
+            muzzle: Vec3::from_slice(info.muzzle.as_slice()),
+            range: info.range,
+            damage: info.damage,
             charge: LaserCharge::new(
-                Duration::from_secs_f32(info.charge_time_sec()),
-                Duration::from_secs_f32(info.discharge_time_sec()),
+                Duration::from_secs_f32(info.charge_time_sec),
+                Duration::from_secs_f32(info.discharge_time_sec),
             ),
-        }
+        })
     }
+}
+
+#[derive(Serialize, Deserialize)]
+pub(crate) struct LaserCannonSerde {
+    muzzle: [f32; 3],
+    range: f32,
+    damage: f32,
+    charge_time_sec: f32,
+    discharge_time_sec: f32,
 }
 
 #[cfg(test)]

@@ -16,7 +16,7 @@ use de_core::{
 };
 use de_index::{ColliderWithCache, IndexSet, QueryCollider, SpatialQuery};
 use de_map::size::MapBounds;
-use de_objects::{ColliderCache, ObjectCache, EXCLUSION_OFFSET};
+use de_objects::{AssetCollection, Scenes, SolidObjects, EXCLUSION_OFFSET};
 use parry2d::{
     bounding_volume::{Aabb, BoundingVolume},
     math::Vector,
@@ -104,12 +104,12 @@ type Solids<'w, 's> = SpatialQuery<'w, 's, Entity, Or<(With<StaticSolid>, With<M
 fn new_draft(
     mut commands: Commands,
     drafts: Query<(Entity, &ObjectType), Added<DraftAllowed>>,
-    cache: Res<ObjectCache>,
+    scenes: Res<Scenes>,
 ) {
     for (entity, object_type) in drafts.iter() {
         commands.entity(entity).with_children(|parent| {
             parent.spawn(SceneBundle {
-                scene: cache.get(*object_type).scene(),
+                scene: scenes.get(*object_type).clone(),
                 ..Default::default()
             });
         });
@@ -119,12 +119,12 @@ fn new_draft(
 fn update_draft(
     mut drafts: Query<(&Transform, &ObjectType, &mut DraftAllowed)>,
     solids: Solids,
-    cache: Res<ObjectCache>,
+    solid_objects: SolidObjects,
     bounds: Res<MapBounds>,
 ) {
     for (transform, &object_type, mut draft) in drafts.iter_mut() {
         let collider = QueryCollider::new(
-            cache.get_collider(object_type),
+            solid_objects.get(object_type).collider(),
             Isometry::new(
                 transform.translation.into(),
                 transform.rotation.to_scaled_axis().into(),

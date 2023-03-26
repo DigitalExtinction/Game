@@ -1,6 +1,6 @@
 use bevy::prelude::Transform;
-use de_core::{objects::ObjectType, projection::ToFlat};
-use de_objects::{Ichnography, IchnographyCache};
+use de_core::projection::ToFlat;
+use de_objects::Ichnography;
 use glam::EulerRot;
 use parry2d::{
     math::{Isometry, Point},
@@ -17,34 +17,15 @@ use rstar::{Envelope, PointDistance, RTree, RTreeObject, SelectionFunction, AABB
 /// area to accommodate for non-zero moving object sizes and moving object
 /// trajectory smoothing.
 #[derive(Clone, Debug)]
-pub(crate) struct ExclusionArea {
+pub struct ExclusionArea {
     polygon: ConvexPolygon,
     aabb: RstarAABB<[f32; 2]>,
 }
 
 impl ExclusionArea {
-    /// Builds and returns a list of exclusion areas from an iterator of static
-    /// object ichnographies and their world-to-object transforms.
-    ///
-    /// Each ichnography is offset by a padding.
-    pub(crate) fn build(
-        cache: impl IchnographyCache,
-        objects: &[(Transform, ObjectType)],
-    ) -> Vec<Self> {
-        if objects.is_empty() {
-            return Vec::new();
-        }
-
-        let exclusions: Vec<Self> = objects
-            .iter()
-            .map(|(transform, object_type)| {
-                Self::from_ichnography(transform, cache.get_ichnography(*object_type))
-            })
-            .collect();
-        Self::merge(exclusions)
-    }
-
-    fn merge(mut exclusions: Vec<Self>) -> Vec<Self> {
+    /// Collectively process exclusion areas and recursively merge overlapping
+    /// areas.
+    pub(crate) fn build(mut exclusions: Vec<Self>) -> Vec<Self> {
         let mut rtree: RTree<ExclusionArea> = RTree::new();
 
         for mut exclusion in exclusions.drain(..) {
@@ -64,7 +45,7 @@ impl ExclusionArea {
 
     /// Creates a new exclusion area from a static object ichnography and its
     /// world-to-object transform.
-    fn from_ichnography(transform: &Transform, ichnography: &Ichnography) -> Self {
+    pub fn from_ichnography(transform: &Transform, ichnography: &Ichnography) -> Self {
         let angle = transform.rotation.to_euler(EulerRot::YXZ).0;
         let isometry = Isometry::new(transform.translation.to_flat().into(), angle);
         let vertices: Vec<Point<f32>> = ichnography
@@ -181,7 +162,7 @@ mod tests {
             .unwrap(),
         );
 
-        let exclusions = ExclusionArea::merge(vec![
+        let exclusions = ExclusionArea::build(vec![
             ExclusionArea::from_ichnography(&transform_a, &ichnography_a),
             ExclusionArea::from_ichnography(&transform_b, &ichnography_b),
             ExclusionArea::from_ichnography(&transform_c, &ichnography_c),

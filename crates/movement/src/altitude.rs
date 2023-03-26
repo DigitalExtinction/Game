@@ -5,7 +5,7 @@ use de_core::{
     objects::{MovableSolid, ObjectType},
     state::AppState,
 };
-use de_objects::ObjectCache;
+use de_objects::SolidObjects;
 
 use crate::{
     movement::DesiredVelocity,
@@ -60,7 +60,7 @@ fn setup_entities(
 }
 
 fn update(
-    cache: Res<ObjectCache>,
+    solids: SolidObjects,
     mut objects: Query<(
         &ObjectType,
         &mut DesiredVelocity<RepulsionVelocity>,
@@ -70,7 +70,7 @@ fn update(
 ) {
     objects.par_iter_mut().for_each_mut(
         |(&object_type, mut horizontal, mut climbing, transform)| {
-            let Some(flight) = cache.get(object_type).flight() else { return };
+            let Some(flight) = solids.get(object_type).flight() else { return };
             let height = transform.translation.y;
 
             let desired_height = if horizontal.stationary() {

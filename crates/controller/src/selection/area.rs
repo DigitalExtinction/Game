@@ -6,7 +6,7 @@ use de_core::{
     objects::{ObjectType, Playable},
     screengeom::ScreenRect,
 };
-use de_objects::{ColliderCache, ObjectCache};
+use de_objects::SolidObjects;
 
 use crate::{
     frustum::ScreenFrustum,
@@ -66,7 +66,7 @@ impl SelectInRectEvent {
 
 fn select_in_area(
     screen_frustum: ScreenFrustum,
-    cache: Res<ObjectCache>,
+    solids: SolidObjects,
     candidates: Query<(Entity, &ObjectType, &Transform), With<Playable>>,
     mut in_events: EventReader<SelectInRectEvent>,
     mut out_events: EventWriter<SelectEvent>,
@@ -81,7 +81,7 @@ fn select_in_area(
                     .map_or(true, |filter| filter == object_type)
             })
             .filter_map(|(entity, &object_type, &transform)| {
-                let aabb = cache.get_collider(object_type).aabb();
+                let aabb = solids.get(object_type).collider().aabb();
                 if frustum::intersects_parry(&event_frustum, transform, &aabb) {
                     Some(entity)
                 } else {

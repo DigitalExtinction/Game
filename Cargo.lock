@@ -2077,6 +2077,7 @@ name = "de_core"
 version = "0.1.0-dev"
 dependencies = [
  "bevy",
+ "enum-iterator",
  "enum-map",
  "glam",
  "iyes_progress",
@@ -2255,6 +2256,7 @@ dependencies = [
  "anyhow",
  "bevy",
  "de_core",
+ "enum-iterator",
  "enum-map",
  "glam",
  "iyes_progress",
@@ -2454,6 +2456,26 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "071a31f4ee85403370b58aca746f01041ede6f0da2730960ad001edc2b71b394"
 dependencies = [
  "cfg-if",
+]
+
+[[package]]
+name = "enum-iterator"
+version = "1.4.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "706d9e7cf1c7664859d79cd524e4e53ea2b67ea03c98cc2870c5e539695d597e"
+dependencies = [
+ "enum-iterator-derive",
+]
+
+[[package]]
+name = "enum-iterator-derive"
+version = "1.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "355f93763ef7b0ae1c43c4d8eccc9d5848d84ad1a1d8ce61c421d1ac85a19d05"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn",
 ]
 
 [[package]]
