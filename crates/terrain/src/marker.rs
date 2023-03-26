@@ -10,7 +10,7 @@ use de_core::{
     frustum, gamestate::GameState, objects::ObjectType, projection::ToFlat,
     visibility::VisibilityFlags,
 };
-use de_objects::{ColliderCache, ObjectCache};
+use de_objects::SolidObjects;
 use glam::Vec3A;
 
 use crate::shader::{Circle, TerrainMaterial, CIRCLE_CAPACITY};
@@ -60,7 +60,7 @@ impl CircleMarker {
 
 fn update_markers(
     mut materials: ResMut<Assets<TerrainMaterial>>,
-    cache: Res<ObjectCache>,
+    solids: SolidObjects,
     camera: Query<(&Transform, &Frustum), With<Camera3d>>,
     terrains: Query<(&ComputedVisibility, &Handle<TerrainMaterial>)>,
     markers: Query<(
@@ -90,7 +90,7 @@ fn update_markers(
             continue;
         }
 
-        let aabb = cache.get_collider(object_type).aabb();
+        let aabb = solids.get(object_type).collider().aabb();
         let aabb = Aabb {
             center: Vec3A::from(aabb.center()),
             half_extents: Vec3A::from(aabb.half_extents()),

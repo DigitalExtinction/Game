@@ -11,7 +11,7 @@ use de_core::{
     state::AppState,
 };
 use de_map::size::MapBounds;
-use de_objects::{IchnographyCache, ObjectCache};
+use de_objects::SolidObjects;
 use futures_lite::future;
 
 use crate::{exclusion::ExclusionArea, finder::PathFinder, triangulation::triangulate};
@@ -122,16 +122,20 @@ impl UpdateFinderState {
         self.invalid && self.task.is_none()
     }
 
-    fn spawn_update<'a, T>(&mut self, cache: ObjectCache, bounds: MapBounds, entities: T)
+    fn spawn_update<'a, T>(&mut self, solids: SolidObjects, bounds: MapBounds, entities: T)
     where
         T: Iterator<Item = (&'a Transform, &'a ObjectType)>,
     {
         debug_assert!(self.task.is_none());
-        let entities: Vec<(Transform, ObjectType)> = entities
-            .map(|(transform, object_type)| (*transform, *object_type))
+
+        let exclusions: Vec<ExclusionArea> = entities
+            .map(|(transform, object_type)| {
+                ExclusionArea::from_ichnography(transform, solids.get(*object_type).ichnography())
+            })
             .collect();
+
         let pool = AsyncComputeTaskPool::get();
-        self.task = Some(pool.spawn(async move { create_finder(cache, bounds, entities) }));
+        self.task = Some(pool.spawn(async move { create_finder(bounds, exclusions) }));
         self.invalid = false;
     }
 
@@ -190,12 +194,12 @@ fn check_updated(mut state: ResMut<UpdateFinderState>, changed: ChangedQuery) {
 fn update(
     mut state: ResMut<UpdateFinderState>,
     bounds: Res<MapBounds>,
-    cache: Res<ObjectCache>,
+    solids: SolidObjects,
     entities: Query<(&Transform, &ObjectType), With<StaticSolid>>,
 ) {
     if state.should_update() {
         info!("Spawning path finder update task");
-        state.spawn_update(cache.clone(), *bounds, entities.iter());
+        state.spawn_update(solids, *bounds, entities.iter());
     }
 }
 
@@ -213,16 +217,12 @@ fn check_update_result(
 
 /// Creates a new path finder by triangulating accessible area on the map.
 // This function has to be public due to its benchmark.
-pub fn create_finder(
-    cache: impl IchnographyCache,
-    bounds: MapBounds,
-    entities: Vec<(Transform, ObjectType)>,
-) -> PathFinder {
+pub fn create_finder(bounds: MapBounds, exclusions: Vec<ExclusionArea>) -> PathFinder {
     debug!(
         "Going to create a new path finder from {} entities",
-        entities.len()
+        exclusions.len()
     );
-    let exclusions = ExclusionArea::build(cache, entities.as_slice());
+    let exclusions = ExclusionArea::build(exclusions);
     let triangles = triangulate(&bounds, exclusions.as_slice());
     PathFinder::from_triangles(triangles, exclusions)
 }

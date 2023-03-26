@@ -17,7 +17,7 @@ use de_core::{
     state::AppState,
     visibility::{VisibilityFlags, VisibilitySet},
 };
-use de_objects::{ColliderCache, ObjectCache};
+use de_objects::SolidObjects;
 
 use crate::{DISTANCE_FLAG_BIT, MAX_VISIBILITY_DISTANCE};
 
@@ -192,20 +192,13 @@ fn cleanup(mut commands: Commands) {
 
 fn spawn(
     mut commands: Commands,
-    cache: Option<Res<ObjectCache>>,
+    solids: SolidObjects,
     mesh: Res<BarMesh>,
     mut materials: ResMut<Assets<BarMaterial>>,
     entities: Query<(Entity, &ObjectType), Added<Active>>,
 ) {
     for (entity, &object_type) in entities.iter() {
-        let height = cache
-            .as_ref()
-            .unwrap()
-            .get_collider(object_type)
-            .aabb()
-            .maxs
-            .y
-            + BAR_HEIGHT;
+        let height = solids.get(object_type).collider().aabb().maxs.y + BAR_HEIGHT;
         let transform = Transform::from_translation(height * Vec3::Y);
 
         let material = materials.add(BarMaterial::default());

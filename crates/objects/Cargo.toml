@@ -17,12 +17,13 @@ de_core.workspace = true
 
 # Other
 ahash.workspace = true
+anyhow.workspace = true
 bevy.workspace = true
-iyes_progress.workspace = true
+enum-iterator.workspace = true
+enum-map.workspace = true
 glam.workspace = true
+iyes_progress.workspace = true
 parry2d.workspace = true
 parry3d.workspace = true
-enum-map.workspace = true
 serde.workspace = true
 serde_json.workspace = true
-anyhow.workspace = true

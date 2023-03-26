@@ -12,7 +12,7 @@ use de_core::{
     projection::{ToAltitude, ToFlat},
     state::AppState,
 };
-use de_objects::{IchnographyCache, ObjectCache};
+use de_objects::SolidObjects;
 use de_pathing::{PathQueryProps, PathTarget, UpdateEntityPath};
 use de_spawner::{ObjectCounter, SpawnBundle};
 use parry2d::bounding_volume::Aabb;
@@ -275,12 +275,13 @@ impl ProductionItem {
 
 fn configure(
     mut commands: Commands,
-    cache: Res<ObjectCache>,
+    solids: SolidObjects,
     new: Query<(Entity, &Transform, &ObjectType), Added<ObjectType>>,
 ) {
     for (entity, transform, &object_type) in new.iter() {
-        if cache.get(object_type).factory().is_some() {
-            let local_aabb = cache.get_ichnography(object_type).local_aabb();
+        let solid = solids.get(object_type);
+        if solid.factory().is_some() {
+            let local_aabb = solid.ichnography().local_aabb();
             let delivery_location = DeliveryLocation::initial(local_aabb, transform);
             commands
                 .entity(entity)
@@ -347,7 +348,7 @@ fn produce(
 
 fn deliver(
     mut commands: Commands,
-    cache: Res<ObjectCache>,
+    solids: SolidObjects,
     mut deliver_events: EventReader<DeliverEvent>,
     mut path_events: EventWriter<UpdateEntityPath>,
     factories: Query<(&Transform, &ObjectType, &Player, &DeliveryLocation)>,
@@ -363,7 +364,7 @@ fn deliver(
             factories.get(delivery.factory()).unwrap();
         let unit_object_type = ObjectType::Active(ActiveObjectType::Unit(delivery.unit()));
 
-        let factory = cache.get(factory_object_type).factory().unwrap();
+        let factory = solids.get(factory_object_type).factory().unwrap();
         debug_assert!(factory.products().contains(&delivery.unit()));
         let spawn_point = transform.transform_point(factory.position().to_msl());
 

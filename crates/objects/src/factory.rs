@@ -1,8 +1,8 @@
 use ahash::AHashSet;
+use bevy::utils::HashSet;
 use de_core::objects::UnitType;
 use glam::Vec2;
-
-use crate::loader::FactoryInfo;
+use serde::{Deserialize, Serialize};
 
 pub struct Factory {
     products: AHashSet<UnitType>,
@@ -19,11 +19,19 @@ impl Factory {
     }
 }
 
-impl From<&FactoryInfo> for Factory {
-    fn from(info: &FactoryInfo) -> Self {
-        Self {
-            products: AHashSet::from_iter(info.products().iter().cloned()),
-            position: info.position().into(),
-        }
+impl TryFrom<FactorySerde> for Factory {
+    type Error = anyhow::Error;
+
+    fn try_from(factory_serde: FactorySerde) -> Result<Self, Self::Error> {
+        Ok(Self {
+            products: AHashSet::from_iter(factory_serde.products),
+            position: factory_serde.position.into(),
+        })
     }
+}
+
+#[derive(Serialize, Deserialize)]
+pub(crate) struct FactorySerde {
+    products: HashSet<UnitType>,
+    position: [f32; 2],
 }

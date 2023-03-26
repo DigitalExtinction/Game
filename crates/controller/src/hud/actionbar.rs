@@ -7,7 +7,7 @@ use de_core::{
     objects::{ObjectType, UnitType},
 };
 use de_gui::{ButtonCommands, GuiCommands, OuterStyle};
-use de_objects::ObjectCache;
+use de_objects::SolidObjects;
 
 use super::{interaction::InteractionBlocker, HUD_COLOR};
 use crate::selection::Selected;
@@ -98,7 +98,7 @@ fn detect_update(mut active: ResMut<ActiveEntity>, selected: Query<Entity, With<
 
 fn update(
     mut commands: GuiCommands,
-    cache: Res<ObjectCache>,
+    solids: SolidObjects,
     bar_node: Res<ActionBarNode>,
     active: Res<ActiveEntity>,
     objects: Query<&ObjectType>,
@@ -108,7 +108,7 @@ fn update(
     let Some(active) = active.0 else {return };
     let object_type = *objects.get(active).unwrap();
 
-    if let Some(factory) = cache.get(object_type).factory() {
+    if let Some(factory) = solids.get(object_type).factory() {
         for &unit in factory.products() {
             spawn_button(&mut commands, bar_node.0, unit);
         }

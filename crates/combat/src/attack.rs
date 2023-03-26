@@ -4,7 +4,7 @@ use bevy::prelude::*;
 use de_behaviour::{ChaseSet, ChaseTarget, ChaseTargetEvent};
 use de_core::{baseset::GameSet, gamestate::GameState, objects::ObjectType};
 use de_index::SpatialQuery;
-use de_objects::{ColliderCache, LaserCannon, ObjectCache};
+use de_objects::{LaserCannon, SolidObjects};
 use parry3d::query::Ray;
 
 use crate::laser::LaserFireEvent;
@@ -122,7 +122,7 @@ fn attack(
 
 fn update_positions(
     mut commands: Commands,
-    cache: Res<ObjectCache>,
+    solids: SolidObjects,
     mut cannons: Query<(Entity, &Transform, &LaserCannon, &mut Attacking)>,
     targets: Query<(&Transform, &ObjectType)>,
     sightline: SpatialQuery<Entity>,
@@ -132,7 +132,7 @@ fn update_positions(
             Ok((enemy_transform, &target_type)) => {
                 attacking.muzzle = transform.translation + cannon.muzzle();
 
-                let enemy_aabb = cache.get_collider(target_type).aabb();
+                let enemy_aabb = solids.get(target_type).collider().aabb();
                 let enemy_centroid = enemy_transform.translation + Vec3::from(enemy_aabb.center());
                 let direction = (enemy_centroid - attacking.muzzle)
                     .try_normalize()

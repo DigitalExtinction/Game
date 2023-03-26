@@ -4,7 +4,7 @@ use de_core::{
     player::Player, projection::ToFlat,
 };
 use de_map::size::MapBounds;
-use de_objects::{IchnographyCache, ObjectCache};
+use de_objects::SolidObjects;
 use de_terrain::TerrainCollider;
 use parry2d::{
     bounding_volume::Aabb,
@@ -80,7 +80,7 @@ fn clear_system(mut drawing: DrawingParam) {
 fn draw_entities_system(
     mut drawing: DrawingParam,
     ui_coords: UiCoords,
-    cache: Res<ObjectCache>,
+    solids: SolidObjects,
     game: Res<GameConfig>,
     entities: Query<(&Transform, &Player, &ObjectType)>,
 ) {
@@ -94,7 +94,7 @@ fn draw_entities_system(
             ENEMY_COLOR
         };
 
-        let radius = cache.get_ichnography(object_type).radius();
+        let radius = solids.get(object_type).ichnography().radius();
         let rect_size = MIN_ENTITY_SIZE.max(ui_coords.size_to_rel(Vec2::splat(radius)));
         drawing.rect(minimap_position, rect_size, color);
     }

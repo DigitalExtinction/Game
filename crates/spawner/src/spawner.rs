@@ -8,7 +8,7 @@ use de_core::{
     objects::{Active, ActiveObjectType, MovableSolid, ObjectType, Playable, StaticSolid},
     player::Player,
 };
-use de_objects::{IchnographyCache, InitialHealths, ObjectCache};
+use de_objects::{AssetCollection, InitialHealths, Scenes, SolidObjects};
 use de_terrain::CircleMarker;
 
 use crate::ObjectCounter;
@@ -54,7 +54,8 @@ struct Spawn;
 fn spawn(
     mut commands: Commands,
     game_config: Res<GameConfig>,
-    cache: Res<ObjectCache>,
+    scenes: Res<Scenes>,
+    solids: SolidObjects,
     healths: Res<InitialHealths>,
     mut counter: ResMut<ObjectCounter>,
     to_spawn: Query<(Entity, &ObjectType, Option<&Player>), With<Spawn>>,
@@ -62,10 +63,12 @@ fn spawn(
     for (entity, &object_type, player) in to_spawn.iter() {
         info!("Spawning object {}", object_type);
 
-        let cache_item = cache.get(object_type);
         let mut entity_commands = commands.entity(entity);
-        entity_commands.remove::<Spawn>().insert(cache_item.scene());
+        entity_commands
+            .remove::<Spawn>()
+            .insert(scenes.get(object_type).clone());
 
+        let solid = solids.get(object_type);
         match object_type {
             ObjectType::Active(active_type) => {
                 entity_commands.insert(Active);
@@ -84,13 +87,13 @@ fn spawn(
                     ActiveObjectType::Unit(_) => {
                         entity_commands.insert(MovableSolid);
 
-                        let radius = cache.get_ichnography(object_type).radius();
+                        let radius = solid.ichnography().radius();
                         entity_commands.insert(CircleMarker::new(radius));
                     }
                 }
 
                 entity_commands.insert(healths.health(active_type).clone());
-                if let Some(cannon) = cache_item.cannon() {
+                if let Some(cannon) = solid.cannon() {
                     entity_commands.insert(cannon.clone());
                 }
             }

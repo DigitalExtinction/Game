@@ -7,7 +7,7 @@ use de_core::{
     state::AppState,
 };
 use de_map::size::MapBounds;
-use de_objects::{IchnographyCache, ObjectCache, EXCLUSION_OFFSET};
+use de_objects::{SolidObjects, EXCLUSION_OFFSET};
 use parry2d::{math::Isometry, query::PointQuery};
 
 use crate::{
@@ -163,7 +163,7 @@ fn setup_entities(
 }
 
 fn repel_static(
-    cache: Res<ObjectCache>,
+    solids: SolidObjects,
     mut objects: Query<(
         &DesiredVelocity<PathVelocity>,
         &Disc,
@@ -186,7 +186,7 @@ fn repel_static(
                 let isometry = Isometry::new(transform.translation.to_flat().into(), angle);
                 let local_point = isometry.inverse_transform_point(&From::from(disc.center()));
 
-                let footprint = cache.get_ichnography(object_type).convex_hull();
+                let footprint = solids.get(object_type).ichnography().convex_hull();
                 let (projection, feature_id) =
                     footprint.project_local_point_and_get_feature(&local_point);
 

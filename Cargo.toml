@@ -99,6 +99,7 @@ bevy = "0.10"
 clap = { version = "4.0", features = ["derive"] }
 criterion = "0.4"
 dirs = "4.0.0"
+enum-iterator = "1.4.0"
 enum-map = "2.3.0"
 futures-lite = "1.11"
 glam = "0.23"

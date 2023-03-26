@@ -4,6 +4,7 @@
 use std::fmt;
 
 use bevy::prelude::*;
+use enum_iterator::Sequence;
 use enum_map::Enum;
 use serde::{Deserialize, Serialize};
 
@@ -28,7 +29,7 @@ pub struct StaticSolid;
 #[derive(Component)]
 pub struct MovableSolid;
 
-#[derive(Enum, Component, Copy, Clone, PartialEq, Eq)]
+#[derive(Enum, Sequence, Component, Copy, Clone, PartialEq, Eq, Hash)]
 pub enum ObjectType {
     Active(ActiveObjectType),
     Inactive(InactiveObjectType),
@@ -43,7 +44,9 @@ impl fmt::Display for ObjectType {
     }
 }
 
-#[derive(Copy, Clone, Debug, Component, Serialize, Deserialize, PartialEq, Eq, Enum)]
+#[derive(
+    Enum, Sequence, Copy, Clone, Debug, Component, Serialize, Deserialize, PartialEq, Eq, Hash,
+)]
 pub enum InactiveObjectType {
     Tree,
 }
@@ -56,7 +59,9 @@ impl fmt::Display for InactiveObjectType {
     }
 }
 
-#[derive(Copy, Clone, Debug, Component, Serialize, Deserialize, PartialEq, Eq, Enum)]
+#[derive(
+    Enum, Sequence, Copy, Clone, Debug, Component, Serialize, Deserialize, PartialEq, Eq, Hash,
+)]
 pub enum ActiveObjectType {
     Building(BuildingType),
     Unit(UnitType),
@@ -71,7 +76,9 @@ impl fmt::Display for ActiveObjectType {
     }
 }
 
-#[derive(Copy, Clone, Debug, Component, Serialize, Deserialize, PartialEq, Eq, Enum)]
+#[derive(
+    Enum, Sequence, Copy, Clone, Debug, Component, Serialize, Deserialize, PartialEq, Eq, Hash,
+)]
 pub enum BuildingType {
     Base,
     PowerHub,
@@ -86,7 +93,9 @@ impl fmt::Display for BuildingType {
     }
 }
 
-#[derive(Copy, Clone, Hash, Debug, Component, Serialize, Deserialize, PartialEq, Eq, Enum)]
+#[derive(
+    Copy, Clone, Debug, Component, Serialize, Deserialize, PartialEq, Eq, Enum, Sequence, Hash,
+)]
 pub enum UnitType {
     Attacker,
 }
