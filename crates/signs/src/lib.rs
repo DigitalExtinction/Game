@@ -2,9 +2,12 @@ use bars::BarsPlugin;
 pub use bars::{UpdateBarValueEvent, UpdateBarVisibilityEvent};
 use bevy::{app::PluginGroupBuilder, prelude::*};
 use markers::MarkersPlugin;
+use pole::PolePlugin;
+pub use pole::{UpdatePoleLocationEvent, UpdatePoleVisibilityEvent};
 
 mod bars;
 mod markers;
+mod pole;
 
 /// The 3D signs are not displayed if further than this from the camera.
 const MAX_VISIBILITY_DISTANCE: f32 = 140.;
@@ -17,5 +20,6 @@ impl PluginGroup for SignsPluginGroup {
         PluginGroupBuilder::start::<Self>()
             .add(BarsPlugin)
             .add(MarkersPlugin)
+            .add(PolePlugin)
     }
 }

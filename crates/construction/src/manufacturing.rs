@@ -14,6 +14,7 @@ use de_core::{
 };
 use de_objects::SolidObjects;
 use de_pathing::{PathQueryProps, PathTarget, UpdateEntityPath};
+use de_signs::UpdatePoleLocationEvent;
 use de_spawner::{ObjectCounter, SpawnBundle};
 use parry2d::bounding_volume::Aabb;
 
@@ -277,12 +278,14 @@ fn configure(
     mut commands: Commands,
     solids: SolidObjects,
     new: Query<(Entity, &Transform, &ObjectType), Added<Active>>,
+    mut pole_events: EventWriter<UpdatePoleLocationEvent>,
 ) {
     for (entity, transform, &object_type) in new.iter() {
         let solid = solids.get(object_type);
         if solid.factory().is_some() {
             let local_aabb = solid.ichnography().local_aabb();
             let delivery_location = DeliveryLocation::initial(local_aabb, transform);
+            pole_events.send(UpdatePoleLocationEvent::new(entity, delivery_location.0));
             commands
                 .entity(entity)
                 .insert((AssemblyLine::default(), delivery_location));
@@ -293,10 +296,15 @@ fn configure(
 fn change_locations(
     mut events: EventReader<ChangeDeliveryLocationEvent>,
     mut locations: Query<&mut DeliveryLocation>,
+    mut pole_events: EventWriter<UpdatePoleLocationEvent>,
 ) {
     for event in events.iter() {
         if let Ok(mut location) = locations.get_mut(event.factory()) {
             location.0 = event.position();
+            pole_events.send(UpdatePoleLocationEvent::new(
+                event.factory(),
+                event.position(),
+            ));
         }
     }
 }

@@ -22,6 +22,7 @@ pub mod projection;
 pub mod screengeom;
 pub mod state;
 pub mod transition;
+pub mod vecord;
 pub mod visibility;
 
 pub struct CorePluginGroup;

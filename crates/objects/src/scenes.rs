@@ -1,9 +1,13 @@
 use ahash::AHashMap;
 use bevy::prelude::*;
 use de_core::{objects::ObjectType, state::AppState};
+use enum_iterator::Sequence;
 use iyes_progress::prelude::*;
 
-use crate::collection::{AssetCollection, AssetCollectionLoader};
+use crate::{
+    collection::{AssetCollection, AssetCollectionLoader},
+    names::FileStem,
+};
 
 pub(crate) struct ScenesPlugin;
 
@@ -19,10 +23,10 @@ impl Plugin for ScenesPlugin {
 }
 
 #[derive(Resource)]
-pub struct Scenes(AHashMap<ObjectType, Handle<Scene>>);
+pub struct Scenes(AHashMap<SceneType, Handle<Scene>>);
 
 impl AssetCollection for Scenes {
-    type Key = ObjectType;
+    type Key = SceneType;
     type Asset = Scene;
 
     fn get(&self, key: Self::Key) -> &Handle<Self::Asset> {
@@ -40,6 +44,21 @@ impl AssetCollectionLoader for Scenes {
 
     fn label() -> Option<String> {
         Some("Scene0".to_owned())
+    }
+}
+
+#[derive(Sequence, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum SceneType {
+    Solid(ObjectType),
+    Pole,
+}
+
+impl FileStem for SceneType {
+    fn stem(self) -> &'static str {
+        match self {
+            Self::Solid(object_type) => object_type.stem(),
+            Self::Pole => "pole",
+        }
     }
 }
 

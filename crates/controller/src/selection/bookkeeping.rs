@@ -1,7 +1,7 @@
 use ahash::AHashSet;
 use bevy::{ecs::system::SystemParam, prelude::*};
 use de_core::{baseset::GameSet, gamestate::GameState};
-use de_signs::UpdateBarVisibilityEvent;
+use de_signs::{UpdateBarVisibilityEvent, UpdatePoleVisibilityEvent};
 use de_terrain::CircleMarker;
 
 use crate::SELECTION_BAR_ID;
@@ -166,6 +166,7 @@ fn selected_system(
     mut events: EventReader<SelectedEvent>,
     mut markers: Query<&mut CircleMarker>,
     mut bars: EventWriter<UpdateBarVisibilityEvent>,
+    mut poles: EventWriter<UpdatePoleVisibilityEvent>,
 ) {
     for event in events.iter() {
         if let Ok(mut marker) = markers.get_mut(event.0) {
@@ -179,6 +180,8 @@ fn selected_system(
             SELECTION_BAR_ID,
             true,
         ));
+
+        poles.send(UpdatePoleVisibilityEvent::new(event.0, true));
     }
 }
 
@@ -186,6 +189,7 @@ fn deselected_system(
     mut events: EventReader<DeselectedEvent>,
     mut markers: Query<&mut CircleMarker>,
     mut bars: EventWriter<UpdateBarVisibilityEvent>,
+    mut poles: EventWriter<UpdatePoleVisibilityEvent>,
 ) {
     for event in events.iter() {
         if let Ok(mut marker) = markers.get_mut(event.0) {
@@ -199,5 +203,7 @@ fn deselected_system(
             SELECTION_BAR_ID,
             false,
         ));
+
+        poles.send(UpdatePoleVisibilityEvent::new(event.0, false));
     }
 }
