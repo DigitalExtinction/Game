@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 
-use crate::{baseset::GameSet, state::AppState};
+use crate::{baseset::GameSet, flags::Flags, state::AppState};
 
 pub(crate) struct VisibilityPlugin;
 
@@ -29,35 +29,26 @@ pub enum VisibilitySet {
 /// [`bevy::render::prelude::Visibility`] of entities with this component.
 #[derive(Component, Default)]
 pub struct VisibilityFlags {
-    visible: u32,
-    invisible: u32,
+    visible: Flags,
+    invisible: Flags,
 }
 
 impl VisibilityFlags {
     pub fn update_visible(&mut self, bit: u32, value: bool) {
-        Self::update(&mut self.visible, bit, value);
+        self.visible.set(bit, value);
     }
 
     pub fn update_invisible(&mut self, bit: u32, value: bool) {
-        Self::update(&mut self.invisible, bit, value);
-    }
-
-    fn update(flags: &mut u32, bit: u32, value: bool) {
-        let mask = 1 << bit;
-        if value {
-            *flags |= mask;
-        } else {
-            *flags &= !mask;
-        }
+        self.invisible.set(bit, value);
     }
 
     /// Returns value of a specific "invisible" flag.
     pub fn invisible_value(&self, bit: u32) -> bool {
-        self.invisible & (1 << bit) != 0
+        self.invisible.get(bit)
     }
 
     pub fn visible(&self) -> bool {
-        self.invisible == 0 && self.visible > 0
+        !self.invisible.any() && self.visible.any()
     }
 }
 

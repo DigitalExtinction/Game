@@ -11,6 +11,7 @@ pub mod baseset;
 pub mod cleanup;
 mod errors;
 pub mod events;
+pub mod flags;
 pub mod frustum;
 pub mod gamestate;
 pub mod gconfig;
