@@ -7,7 +7,7 @@ use de_core::{
     cleanup::DespawnOnGameExit,
     gamestate::GameState,
     gconfig::GameConfig,
-    objects::{ActiveObjectType, ObjectType, UnitType, PLAYER_MAX_UNITS},
+    objects::{Active, ActiveObjectType, ObjectType, UnitType, PLAYER_MAX_UNITS},
     player::Player,
     projection::{ToAltitude, ToFlat},
     state::AppState,
@@ -276,7 +276,7 @@ impl ProductionItem {
 fn configure(
     mut commands: Commands,
     solids: SolidObjects,
-    new: Query<(Entity, &Transform, &ObjectType), Added<ObjectType>>,
+    new: Query<(Entity, &Transform, &ObjectType), Added<Active>>,
 ) {
     for (entity, transform, &object_type) in new.iter() {
         let solid = solids.get(object_type);
