@@ -10,12 +10,27 @@ pub(super) struct BookkeepingPlugin;
 
 impl Plugin for BookkeepingPlugin {
     fn build(&self, app: &mut App) {
-        app.add_event::<SelectEvent>().add_system(
-            update_selection
-                .in_base_set(GameSet::Input)
-                .run_if(in_state(GameState::Playing))
-                .in_set(SelectionSet::Update),
-        );
+        app.add_event::<SelectEvent>()
+            .add_event::<SelectedEvent>()
+            .add_event::<DeselectedEvent>()
+            .add_system(
+                update_selection
+                    .in_base_set(GameSet::Input)
+                    .run_if(in_state(GameState::Playing))
+                    .in_set(SelectionSet::Update),
+            )
+            .add_system(
+                selected_system
+                    .in_base_set(GameSet::Input)
+                    .run_if(in_state(GameState::Playing))
+                    .after(SelectionSet::Update),
+            )
+            .add_system(
+                deselected_system
+                    .in_base_set(GameSet::Input)
+                    .run_if(in_state(GameState::Playing))
+                    .after(SelectionSet::Update),
+            );
     }
 }
 
@@ -57,6 +72,10 @@ impl SelectEvent {
     }
 }
 
+struct SelectedEvent(Entity);
+
+struct DeselectedEvent(Entity);
+
 #[derive(Component)]
 pub(crate) struct Selected;
 
@@ -75,8 +94,8 @@ pub(crate) enum SelectionMode {
 struct SelectorBuilder<'w, 's> {
     commands: Commands<'w, 's>,
     selected: Query<'w, 's, Entity, With<Selected>>,
-    markers: Query<'w, 's, &'static mut CircleMarker>,
-    bars: EventWriter<'w, UpdateBarVisibilityEvent>,
+    selected_events: EventWriter<'w, SelectedEvent>,
+    deselected_events: EventWriter<'w, DeselectedEvent>,
 }
 
 impl<'w, 's> SelectorBuilder<'w, 's> {
@@ -84,22 +103,22 @@ impl<'w, 's> SelectorBuilder<'w, 's> {
         let selected: AHashSet<Entity> = self.selected.iter().collect();
         Selector {
             commands: self.commands,
-            markers: self.markers,
-            bars: self.bars,
             selected,
             to_select: AHashSet::new(),
             to_deselect: AHashSet::new(),
+            selected_events: self.selected_events,
+            deselected_events: self.deselected_events,
         }
     }
 }
 
 struct Selector<'w, 's> {
     commands: Commands<'w, 's>,
-    markers: Query<'w, 's, &'static mut CircleMarker>,
-    bars: EventWriter<'w, UpdateBarVisibilityEvent>,
     selected: AHashSet<Entity>,
     to_select: AHashSet<Entity>,
     to_deselect: AHashSet<Entity>,
+    selected_events: EventWriter<'w, SelectedEvent>,
+    deselected_events: EventWriter<'w, DeselectedEvent>,
 }
 
 impl<'w, 's> Selector<'w, 's> {
@@ -124,37 +143,13 @@ impl<'w, 's> Selector<'w, 's> {
 
     fn execute(mut self) {
         for entity in self.to_deselect {
-            let mut entity_commands = self.commands.entity(entity);
-            entity_commands.remove::<Selected>();
-
-            if let Ok(mut marker) = self.markers.get_mut(entity) {
-                marker
-                    .visibility_mut()
-                    .update_visible(SELECTION_BAR_ID, false);
-            }
-
-            self.bars.send(UpdateBarVisibilityEvent::new(
-                entity,
-                SELECTION_BAR_ID,
-                false,
-            ));
+            self.commands.entity(entity).remove::<Selected>();
+            self.deselected_events.send(DeselectedEvent(entity));
         }
 
         for entity in self.to_select {
-            let mut entity_commands = self.commands.entity(entity);
-            entity_commands.insert(Selected);
-
-            if let Ok(mut marker) = self.markers.get_mut(entity) {
-                marker
-                    .visibility_mut()
-                    .update_visible(SELECTION_BAR_ID, true);
-            }
-
-            self.bars.send(UpdateBarVisibilityEvent::new(
-                entity,
-                SELECTION_BAR_ID,
-                true,
-            ));
+            self.commands.entity(entity).insert(Selected);
+            self.selected_events.send(SelectedEvent(entity));
         }
     }
 }
@@ -165,4 +160,44 @@ fn update_selection(mut events: EventReader<SelectEvent>, selector_builder: Sele
         selector.update(event.entities(), event.mode());
     }
     selector.execute();
+}
+
+fn selected_system(
+    mut events: EventReader<SelectedEvent>,
+    mut markers: Query<&mut CircleMarker>,
+    mut bars: EventWriter<UpdateBarVisibilityEvent>,
+) {
+    for event in events.iter() {
+        if let Ok(mut marker) = markers.get_mut(event.0) {
+            marker
+                .visibility_mut()
+                .update_visible(SELECTION_BAR_ID, true);
+        }
+
+        bars.send(UpdateBarVisibilityEvent::new(
+            event.0,
+            SELECTION_BAR_ID,
+            true,
+        ));
+    }
+}
+
+fn deselected_system(
+    mut events: EventReader<DeselectedEvent>,
+    mut markers: Query<&mut CircleMarker>,
+    mut bars: EventWriter<UpdateBarVisibilityEvent>,
+) {
+    for event in events.iter() {
+        if let Ok(mut marker) = markers.get_mut(event.0) {
+            marker
+                .visibility_mut()
+                .update_visible(SELECTION_BAR_ID, false);
+        }
+
+        bars.send(UpdateBarVisibilityEvent::new(
+            event.0,
+            SELECTION_BAR_ID,
+            false,
+        ));
+    }
 }
