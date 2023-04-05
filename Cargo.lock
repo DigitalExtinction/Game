@@ -2101,6 +2101,7 @@ dependencies = [
  "de_core",
  "de_objects",
  "de_pathing",
+ "de_signs",
  "de_spawner",
  "parry2d",
 ]
@@ -2350,6 +2351,7 @@ dependencies = [
 name = "de_signs"
 version = "0.1.0-dev"
 dependencies = [
+ "ahash 0.7.6",
  "bevy",
  "de_camera",
  "de_core",

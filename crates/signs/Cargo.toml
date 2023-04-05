@@ -19,5 +19,6 @@ de_objects.workspace = true
 de_terrain.workspace = true
 
 # Other
+ahash.workspace = true
 bevy.workspace = true
 glam.workspace = true

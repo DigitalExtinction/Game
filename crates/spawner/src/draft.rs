@@ -16,7 +16,7 @@ use de_core::{
 };
 use de_index::{ColliderWithCache, IndexSet, QueryCollider, SpatialQuery};
 use de_map::size::MapBounds;
-use de_objects::{AssetCollection, Scenes, SolidObjects, EXCLUSION_OFFSET};
+use de_objects::{AssetCollection, SceneType, Scenes, SolidObjects, EXCLUSION_OFFSET};
 use parry2d::{
     bounding_volume::{Aabb, BoundingVolume},
     math::Vector,
@@ -109,7 +109,7 @@ fn new_draft(
     for (entity, object_type) in drafts.iter() {
         commands.entity(entity).with_children(|parent| {
             parent.spawn(SceneBundle {
-                scene: scenes.get(*object_type).clone(),
+                scene: scenes.get(SceneType::Solid(*object_type)).clone(),
                 ..Default::default()
             });
         });

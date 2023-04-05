@@ -8,7 +8,7 @@ use de_core::{
     objects::{Active, ActiveObjectType, MovableSolid, ObjectType, Playable, StaticSolid},
     player::Player,
 };
-use de_objects::{AssetCollection, InitialHealths, Scenes, SolidObjects};
+use de_objects::{AssetCollection, InitialHealths, SceneType, Scenes, SolidObjects};
 use de_terrain::CircleMarker;
 
 use crate::ObjectCounter;
@@ -66,7 +66,7 @@ fn spawn(
         let mut entity_commands = commands.entity(entity);
         entity_commands
             .remove::<Spawn>()
-            .insert(scenes.get(object_type).clone());
+            .insert(scenes.get(SceneType::Solid(object_type)).clone());
 
         let solid = solids.get(object_type);
         match object_type {

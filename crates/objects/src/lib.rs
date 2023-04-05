@@ -9,8 +9,8 @@ pub use flight::Flight;
 use health::HealthPlugin;
 pub use health::{Health, InitialHealths};
 pub use ichnography::{Ichnography, EXCLUSION_OFFSET};
-pub use scenes::Scenes;
 use scenes::ScenesPlugin;
+pub use scenes::{SceneType, Scenes};
 use solids::SolidsPlugin;
 pub use solids::{SolidObject, SolidObjects};
 

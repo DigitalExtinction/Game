@@ -11,6 +11,7 @@ pub mod baseset;
 pub mod cleanup;
 mod errors;
 pub mod events;
+pub mod flags;
 pub mod frustum;
 pub mod gamestate;
 pub mod gconfig;
@@ -21,6 +22,7 @@ pub mod projection;
 pub mod screengeom;
 pub mod state;
 pub mod transition;
+pub mod vecord;
 pub mod visibility;
 
 pub struct CorePluginGroup;
