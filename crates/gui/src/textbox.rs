@@ -2,7 +2,9 @@ use std::{borrow::Cow, iter::repeat};
 
 use bevy::{
     ecs::system::{EntityCommands, SystemParam},
+    input::{keyboard::KeyboardInput, ButtonState},
     prelude::*,
+    window::PrimaryWindow,
 };
 
 use crate::{focus::FocusedQuery, GuiCommands, OuterStyle};
@@ -14,7 +16,10 @@ pub(crate) struct TextBoxPlugin;
 
 impl Plugin for TextBoxPlugin {
     fn build(&self, app: &mut App) {
-        app.add_system(focus_system).add_system(input_system);
+        app.add_system(focus_system).add_system(
+            input_system
+                .run_if(on_event::<ReceivedCharacter>().or_else(on_event::<KeyboardInput>())),
+        );
     }
 }
 
@@ -99,23 +104,32 @@ impl TextBox {
         }
     }
 
-    fn input(&mut self, input: char) {
-        if input == '\u{0008}' {
-            // backspace
-            self.text.pop();
-        } else if !input.is_control() {
-            self.text.push(input);
-        }
+    fn push(&mut self, input: char) {
+        debug_assert!(!input.is_control());
+        self.text.push(input);
+    }
+
+    fn backspace(&mut self) {
+        self.text.pop();
     }
 }
 
-fn focus_system(mut focused: FocusedQuery<&mut BackgroundColor, With<TextBox>>) {
+fn focus_system(
+    mut window_query: Query<&mut Window, With<PrimaryWindow>>,
+    mut focused: FocusedQuery<&mut BackgroundColor, With<TextBox>>,
+) {
     if focused.is_changed() {
         if let Some(mut color) = focused.get_previous_mut() {
             *color = INACTIVE_COLOR.into();
         }
-        if let Some(mut color) = focused.get_current_mut() {
-            *color = FOCUSED_COLOR.into();
+
+        let mut window = window_query.single_mut();
+        match focused.get_current_mut() {
+            Some(mut color) => {
+                *color = FOCUSED_COLOR.into();
+                window.ime_enabled = true;
+            }
+            None => window.ime_enabled = false,
         }
     }
 }
@@ -123,12 +137,9 @@ fn focus_system(mut focused: FocusedQuery<&mut BackgroundColor, With<TextBox>>) 
 fn input_system(
     mut focused: FocusedQuery<(&mut TextBox, &Children)>,
     mut texts: Query<&mut Text>,
-    mut events: EventReader<ReceivedCharacter>,
+    mut characters: EventReader<ReceivedCharacter>,
+    mut keyboard: EventReader<KeyboardInput>,
 ) {
-    if events.is_empty() {
-        return;
-    }
-
     let Some((mut text_box, children)) = focused.get_current_mut() else { return };
 
     let text_id = children
@@ -138,8 +149,24 @@ fn input_system(
         .expect("Text box without `Text` child component.");
     let mut text = texts.get_mut(text_id).unwrap();
 
-    for event in events.iter() {
-        text_box.input(event.char);
-        text.sections[0].value = text_box.ui_text();
+    // FIXME: Fix ordering of multiple event streams once
+    // https://github.com/bevyengine/bevy/issues/5984 is fixed.
+    for event in characters.iter() {
+        if !event.char.is_control() {
+            text_box.push(event.char);
+        }
     }
+
+    for event in keyboard.iter() {
+        if event.state != ButtonState::Pressed {
+            continue;
+        }
+
+        match event.key_code {
+            Some(KeyCode::Back) => text_box.backspace(),
+            _ => continue,
+        }
+    }
+
+    text.sections[0].value = text_box.ui_text();
 }
