@@ -12,11 +12,13 @@ use de_core::{
     projection::{ToAltitude, ToFlat},
     state::AppState,
 };
+use de_index::SpatialQuery;
 use de_objects::SolidObjects;
 use de_pathing::{PathQueryProps, PathTarget, UpdateEntityPath};
 use de_signs::UpdatePoleLocationEvent;
 use de_spawner::{ObjectCounter, SpawnBundle};
 use parry2d::bounding_volume::Aabb;
+use parry3d::math::Isometry;
 
 const MANUFACTURING_TIME: Duration = Duration::from_secs(2);
 const DEFAULT_TARGET_DISTANCE: f32 = 20.;
@@ -43,6 +45,12 @@ impl Plugin for ManufacturingPlugin {
                 enqueue
                     .in_base_set(GameSet::Update)
                     .run_if(in_state(GameState::Playing)),
+            )
+            .add_system(
+                check_spawn_locations
+                    .in_base_set(GameSet::PreUpdate)
+                    .run_if(in_state(GameState::Playing))
+                    .before(ManufacturingSet::Produce),
             )
             .add_system(
                 produce
@@ -156,6 +164,12 @@ impl AssemblyLine {
         &mut self.blocks
     }
 
+    /// Returns the first item in the assembly line (i.e. the first one to be
+    /// delivered).
+    fn current(&self) -> Option<UnitType> {
+        self.queue.front().map(|item| item.unit())
+    }
+
     /// Put another unit into the manufacturing queue.
     fn enqueue(&mut self, unit: UnitType, time: Duration) {
         let mut item = ProductionItem::new(unit);
@@ -200,12 +214,14 @@ impl AssemblyLine {
 /// started.
 #[derive(Default)]
 struct Blocks {
+    /// Whether spawn location is currently occupied.
+    spawn_location: bool,
     map_capacity: bool,
 }
 
 impl Blocks {
     fn blocked(&self) -> bool {
-        self.map_capacity
+        self.spawn_location || self.map_capacity
     }
 }
 
@@ -336,6 +352,32 @@ fn enqueue(
             event.factory()
         );
         line.enqueue(event.unit(), time.elapsed());
+    }
+}
+
+fn check_spawn_locations(
+    solids: SolidObjects,
+    space: SpatialQuery<Entity>,
+    mut factories: Query<(Entity, &ObjectType, &Transform, &mut AssemblyLine)>,
+) {
+    for (entity, &object_type, transform, mut line) in factories.iter_mut() {
+        line.blocks_mut().spawn_location = match line.current() {
+            Some(unit_type) => {
+                let factory = solids.get(object_type).factory().unwrap();
+                let collider = solids
+                    .get(ObjectType::Active(ActiveObjectType::Unit(unit_type)))
+                    .collider();
+
+                let spawn_point = transform.transform_point(factory.position().to_msl());
+                let isometry = Isometry::translation(spawn_point.x, spawn_point.y, spawn_point.z);
+                let mut aabb = collider.aabb().transform_by(&isometry);
+                aabb.mins.y = f32::NEG_INFINITY;
+                aabb.maxs.y = f32::INFINITY;
+
+                space.query_aabb(&aabb, Some(entity)).next().is_some()
+            }
+            None => false,
+        };
     }
 }
 
