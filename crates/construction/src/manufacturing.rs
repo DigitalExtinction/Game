@@ -12,11 +12,13 @@ use de_core::{
     projection::{ToAltitude, ToFlat},
     state::AppState,
 };
+use de_index::SpatialQuery;
 use de_objects::SolidObjects;
 use de_pathing::{PathQueryProps, PathTarget, UpdateEntityPath};
 use de_signs::UpdatePoleLocationEvent;
 use de_spawner::{ObjectCounter, SpawnBundle};
 use parry2d::bounding_volume::Aabb;
+use parry3d::math::Isometry;
 
 const MANUFACTURING_TIME: Duration = Duration::from_secs(2);
 const DEFAULT_TARGET_DISTANCE: f32 = 20.;
@@ -43,6 +45,12 @@ impl Plugin for ManufacturingPlugin {
                 enqueue
                     .in_base_set(GameSet::Update)
                     .run_if(in_state(GameState::Playing)),
+            )
+            .add_system(
+                check_spawn_locations
+                    .in_base_set(GameSet::PreUpdate)
+                    .run_if(in_state(GameState::Playing))
+                    .before(ManufacturingSet::Produce),
             )
             .add_system(
                 produce
@@ -147,36 +155,28 @@ impl DeliveryLocation {
 /// any units.
 #[derive(Component, Default)]
 pub struct AssemblyLine {
+    blocks: Blocks,
     queue: VecDeque<ProductionItem>,
 }
 
 impl AssemblyLine {
-    /// Put another unit into the manufacturing queue.
-    fn enqueue(&mut self, unit: UnitType) {
-        self.queue.push_back(ProductionItem::new(unit));
+    fn blocks_mut(&mut self) -> &mut Blocks {
+        &mut self.blocks
     }
 
-    /// In case the assembly line is stopped, restart the production.
-    ///
-    /// # Arguments
-    ///
-    /// * `time` - elapsed time since a fixed point in time in the past.
-    fn restart(&mut self, time: Duration) {
-        if let Some(item) = self.queue.front_mut().filter(|item| !item.is_active()) {
+    /// Returns the first item in the assembly line (i.e. the first one to be
+    /// delivered).
+    fn current(&self) -> Option<UnitType> {
+        self.queue.front().map(|item| item.unit())
+    }
+
+    /// Put another unit into the manufacturing queue.
+    fn enqueue(&mut self, unit: UnitType, time: Duration) {
+        let mut item = ProductionItem::new(unit);
+        if self.queue.is_empty() {
             item.restart(time);
         }
-    }
-
-    /// In case the assembly line is actively manufacturing some units, stop
-    /// it.
-    ///
-    /// # Arguments
-    ///
-    /// * `time` - elapsed time since a fixed point in time in the past.
-    fn stop(&mut self, time: Duration) {
-        if let Some(item) = self.queue.front_mut().filter(|item| item.is_active()) {
-            item.stop(time);
-        }
+        self.queue.push_back(item);
     }
 
     /// Update the production line.
@@ -189,18 +189,39 @@ impl AssemblyLine {
     /// * `time` - elapsed time since a fixed point in time in the past.
     fn produce(&mut self, time: Duration) -> Option<UnitType> {
         if let Some(time_past) = self.queue.front().and_then(|item| item.finished(time)) {
-            let item = self.queue.pop_front().unwrap();
+            if self.blocks.blocked() {
+                self.queue.front_mut().unwrap().block(time);
+                None
+            } else {
+                let item = self.queue.pop_front().unwrap();
 
-            if item.is_active() {
-                if let Some(next) = self.queue.front_mut() {
-                    next.restart(time - time_past);
+                if item.is_active() {
+                    if let Some(next) = self.queue.front_mut() {
+                        next.restart(time - time_past);
+                    }
                 }
-            }
 
-            Some(item.unit())
+                Some(item.unit())
+            }
         } else {
             None
         }
+    }
+}
+
+/// When the assembly line is blocked for any reason, the last unit is produced
+/// up until 100% competition but is not delivered and next unit is not
+/// started.
+#[derive(Default)]
+struct Blocks {
+    /// Whether spawn location is currently occupied.
+    spawn_location: bool,
+    map_capacity: bool,
+}
+
+impl Blocks {
+    fn blocked(&self) -> bool {
+        self.spawn_location || self.map_capacity
     }
 }
 
@@ -252,6 +273,15 @@ impl ProductionItem {
             }
         }
         self.restarted = None;
+    }
+
+    /// If the item is already finished, stop the manufacturing and clip its
+    /// due time to just now.
+    fn block(&mut self, time: Duration) {
+        if self.progress(time) >= MANUFACTURING_TIME {
+            self.accumulated = MANUFACTURING_TIME;
+            self.restarted = Some(time);
+        }
     }
 
     /// Returns None if the unit is not yet finished. Otherwise, it returns for
@@ -309,7 +339,11 @@ fn change_locations(
     }
 }
 
-fn enqueue(mut events: EventReader<EnqueueAssemblyEvent>, mut lines: Query<&mut AssemblyLine>) {
+fn enqueue(
+    time: Res<Time>,
+    mut events: EventReader<EnqueueAssemblyEvent>,
+    mut lines: Query<&mut AssemblyLine>,
+) {
     for event in events.iter() {
         let Ok(mut line) = lines.get_mut(event.factory()) else { continue };
         info!(
@@ -317,7 +351,33 @@ fn enqueue(mut events: EventReader<EnqueueAssemblyEvent>, mut lines: Query<&mut 
             event.unit(),
             event.factory()
         );
-        line.enqueue(event.unit());
+        line.enqueue(event.unit(), time.elapsed());
+    }
+}
+
+fn check_spawn_locations(
+    solids: SolidObjects,
+    space: SpatialQuery<Entity>,
+    mut factories: Query<(Entity, &ObjectType, &Transform, &mut AssemblyLine)>,
+) {
+    for (entity, &object_type, transform, mut line) in factories.iter_mut() {
+        line.blocks_mut().spawn_location = match line.current() {
+            Some(unit_type) => {
+                let factory = solids.get(object_type).factory().unwrap();
+                let collider = solids
+                    .get(ObjectType::Active(ActiveObjectType::Unit(unit_type)))
+                    .collider();
+
+                let spawn_point = transform.transform_point(factory.position().to_msl());
+                let isometry = Isometry::translation(spawn_point.x, spawn_point.y, spawn_point.z);
+                let mut aabb = collider.aabb().transform_by(&isometry);
+                aabb.mins.y = f32::NEG_INFINITY;
+                aabb.maxs.y = f32::INFINITY;
+
+                space.query_aabb(&aabb, Some(entity)).next().is_some()
+            }
+            None => false,
+        };
     }
 }
 
@@ -336,15 +396,9 @@ fn produce(
 
     for (factory, &player, mut assembly) in factories.iter_mut() {
         let player_count = counts.get_mut(&player).unwrap();
-        if *player_count < PLAYER_MAX_UNITS {
-            assembly.restart(time.elapsed());
-        }
 
         loop {
-            if *player_count >= PLAYER_MAX_UNITS {
-                assembly.stop(time.elapsed());
-                break;
-            }
+            assembly.blocks_mut().map_capacity = *player_count >= PLAYER_MAX_UNITS;
 
             let Some(unit_type) = assembly.produce(time.elapsed()) else { break };
             *player_count += 1;
@@ -402,31 +456,29 @@ mod tests {
     fn test_assembly_line() {
         let mut line = AssemblyLine::default();
 
-        line.restart(Duration::from_secs(0));
         assert!(line.produce(Duration::from_secs(20)).is_none());
+        line.enqueue(UnitType::Attacker, Duration::from_secs(21));
+        line.enqueue(UnitType::Attacker, Duration::from_secs(21));
 
-        line.enqueue(UnitType::Attacker);
-        line.enqueue(UnitType::Attacker);
-        line.restart(Duration::from_secs(20));
-        assert!(line.produce(Duration::from_secs(21)).is_none());
+        assert!(line.produce(Duration::from_secs(22)).is_none());
+        line.blocks_mut().map_capacity = true;
+        assert!(line.produce(Duration::from_secs(25)).is_none());
+        line.blocks_mut().map_capacity = false;
         assert_eq!(
-            line.produce(Duration::from_secs(23)).unwrap(),
+            line.produce(Duration::from_secs(26)).unwrap(),
             UnitType::Attacker
         );
-        assert!(line.produce(Duration::from_secs(23)).is_none());
+        assert!(line.produce(Duration::from_secs(26)).is_none());
         assert_eq!(
-            line.produce(Duration::from_secs(24)).unwrap(),
+            line.produce(Duration::from_secs(27)).unwrap(),
             UnitType::Attacker
         );
         assert!(line.produce(Duration::from_secs(30)).is_none());
 
-        line.enqueue(UnitType::Attacker);
-        line.enqueue(UnitType::Attacker);
-        line.restart(Duration::from_secs(50));
+        line.enqueue(UnitType::Attacker, Duration::from_secs(50));
+        line.enqueue(UnitType::Attacker, Duration::from_secs(51));
+
         assert!(line.produce(Duration::from_secs(51)).is_none());
-        line.stop(Duration::from_secs(51));
-        line.restart(Duration::from_secs(60));
-        assert!(line.produce(Duration::from_secs_f32(60.5)).is_none());
         assert_eq!(
             line.produce(Duration::from_secs(61)).unwrap(),
             UnitType::Attacker

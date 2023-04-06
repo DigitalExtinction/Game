@@ -2099,11 +2099,13 @@ dependencies = [
  "ahash 0.7.6",
  "bevy",
  "de_core",
+ "de_index",
  "de_objects",
  "de_pathing",
  "de_signs",
  "de_spawner",
  "parry2d",
+ "parry3d",
 ]
 
 [[package]]
