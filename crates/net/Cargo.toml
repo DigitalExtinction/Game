@@ -1,0 +1,24 @@
+[package]
+name = "de_net"
+description = "Digital Extinction in-game networking implementation."
+
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+repository.workspace = true
+keywords.workspace = true
+homepage.workspace = true
+license.workspace = true
+categories.workspace = true
+
+[dependencies]
+# DE
+de_core.workspace = true
+
+# Other
+ahash.workspace = true
+async-std.workspace = true
+bevy.workspace = true
+futures-lite.workspace = true
+local-ip-address.workspace = true
+thiserror.workspace = true
