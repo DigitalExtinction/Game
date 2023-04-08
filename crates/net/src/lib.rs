@@ -3,8 +3,10 @@
 use bevy::{app::PluginGroupBuilder, prelude::PluginGroup};
 use io::IoPlugin;
 
-mod network;
+mod buffer;
 mod io;
+mod msg;
+mod net;
 
 pub struct NetPluginGroup;
 

@@ -5,7 +5,7 @@ use ahash::AHashMap;
 use bevy::prelude::*;
 use de_core::player::Player;
 
-use crate::network::Network;
+use crate::net::Network;
 
 pub(crate) struct IoPlugin;
 
@@ -17,16 +17,11 @@ impl Plugin for IoPlugin {
 
 struct Client {
     network: Network,
-    players: AHashMap<Player, SocketAddr>,
 }
 
 impl Client {
     fn new(network: Network) -> Self {
-        Self {
-            network,
-            // TODO
-            players: AHashMap::new(),
-        }
+        Self { network }
     }
 
     // TODO listen

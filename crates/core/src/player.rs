@@ -70,6 +70,10 @@ pub struct PlayerRange {
 }
 
 impl PlayerRange {
+    pub fn all() -> Self {
+        Self::new(Player::Player1, Player::Player4)
+    }
+
     /// Returns inclusive player range from first player to `stop`.
     pub fn up_to(stop: Player) -> Self {
         Self::new(Player::Player1, stop)

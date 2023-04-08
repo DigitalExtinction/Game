@@ -2,14 +2,16 @@ use std::{io, net::IpAddr};
 
 use ahash::AHashMap;
 use async_std::net::{SocketAddr, UdpSocket};
+use bincode::{encode_into_slice, Encode};
 use de_core::player::Player;
 use local_ip_address::list_afinet_netifas;
 use thiserror::Error;
 
-const MAX_DATAGRAM_SIZE: usize = 1024;
+pub(crate) const MAX_DATAGRAM_SIZE: usize = 1024;
 
 pub(crate) struct Network {
     socket: UdpSocket,
+    /// Reusable input buffer.
     buffer: [u8; MAX_DATAGRAM_SIZE],
     addrs: AddrBook,
 }

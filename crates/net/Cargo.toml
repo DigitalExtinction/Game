@@ -19,6 +19,7 @@ de_core.workspace = true
 ahash.workspace = true
 async-std.workspace = true
 bevy.workspace = true
+bincode.workspace = true
 futures-lite.workspace = true
 local-ip-address.workspace = true
 thiserror.workspace = true
