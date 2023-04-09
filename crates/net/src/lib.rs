@@ -3,6 +3,7 @@
 use bevy::{app::PluginGroupBuilder, prelude::PluginGroup};
 use io::IoPlugin;
 
+mod accounting;
 mod buffer;
 mod io;
 mod msg;
