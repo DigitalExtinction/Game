@@ -70,6 +70,7 @@ de_behaviour = { path = "crates/behaviour", version = "0.1.0-dev" }
 de_camera = { path = "crates/camera", version = "0.1.0-dev" }
 de_combat = { path = "crates/combat", version = "0.1.0-dev" }
 de_conf = { path = "crates/conf", version = "0.1.0-dev" }
+de_connector = { path = "crates/connector", version = "0.1.0-dev" }
 de_construction = { path = "crates/construction", version = "0.1.0-dev" }
 de_controller = { path = "crates/controller", version = "0.1.0-dev" }
 de_core = { path = "crates/core", version = "0.1.0-dev" }
@@ -81,6 +82,7 @@ de_lobby_model = { path = "crates/lobby_model", version = "0.1.0-dev" }
 de_map = { path = "crates/map", version = "0.1.0-dev" }
 de_menu = { path = "crates/menu", version = "0.1.0-dev" }
 de_movement = { path = "crates/movement", version = "0.1.0-dev" }
+de_net = { path = "crates/net", version = "0.1.0-dev" }
 de_objects = { path = "crates/objects", version = "0.1.0-dev" }
 de_pathing = { path = "crates/pathing", version = "0.1.0-dev" }
 de_signs = { path = "crates/signs", version = "0.1.0-dev" }
@@ -92,6 +94,7 @@ de_uom = { path = "crates/uom", version = "0.1.0-dev" }
 ahash = "0.7.6"
 anyhow = "1.0"
 approx = "0.5.1"
+assert_cmd = "2.0.10"
 async-compat = "0.2.1"
 async-std = "1.11"
 async-tar = "0.4.2"
@@ -101,12 +104,14 @@ criterion = "0.4"
 dirs = "4.0.0"
 enum-iterator = "1.4.0"
 enum-map = "2.3.0"
+futures = "0.3.28"
 futures-lite = "1.11"
 glam = "0.23"
 gltf = "1.0"
 itertools = "0.10.5"
 iyes_progress = "0.8.0"
 nalgebra = { version = "0.32.2", features = ["convert-glam023"] }
+nix = "0.26.2"
 ntest = "0.9.0"
 parry2d = "0.13.1"
 parry3d = "0.13.1"
@@ -119,5 +124,7 @@ sha3 = "0.10.6"
 spade = "2.0.0"
 thiserror = "1.0"
 tinyvec = { version = "1.6.0", features = ["rustc_1_40", "alloc"] }
+tracing = "0.1.37"
+tracing-subscriber = "0.3.16"
 url = { version = "2.3.1", features = ["serde"] }
 urlencoding = "2.1.2"
