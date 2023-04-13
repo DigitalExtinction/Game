@@ -13,5 +13,9 @@ categories.workspace = true
 
 [dependencies]
 # Other
+ahash.workspace = true
 async-std.workspace = true
+fastrand.workspace = true
+futures.workspace = true
+priority-queue.workspace = true
 thiserror.workspace = true
