@@ -12,17 +12,19 @@ use futures::future::FutureExt;
 
 use self::{
     buffer::DatagramBuffer,
-    pending::PendingDatagrams,
+    pending::PendingRouter,
     queue::{DatagramQueue, RescheduleError},
+    types::Datagram,
 };
 use crate::Network;
 
 mod buffer;
 mod pending;
 mod queue;
+mod types;
 
-pub(crate) async fn start(mut network: Network, requests: Receiver<(SocketAddr, &[u8])>) {
-    let mut pending = PendingDatagrams::new();
+pub(crate) async fn start(mut network: Network, requests: Receiver<Datagram<'_>>) {
+    let mut pending = PendingRouter::new();
     let mut buff = [0u8; 1024]; // TODO
 
     'outer: loop {
@@ -30,16 +32,16 @@ pub(crate) async fn start(mut network: Network, requests: Receiver<(SocketAddr, 
 
         'recv: loop {
             match requests.try_recv() {
-                Ok((target, data)) => {
+                Ok(datagram) => {
                     // TODO only if reliability was requested
-                    let id = pending.push(data, now);
+                    let id = pending.push(datagram, now);
                     // TODO move to another method
 
                     buff[0..4].copy_from_slice(&id.get().to_be_bytes());
-                    buff[4..4 + data.len()].copy_from_slice(data);
+                    buff[4..4 + datagram.data().len()].copy_from_slice(datagram.data());
 
                     // TODO handle result
-                    network.send(target, &buff).await.unwrap();
+                    network.send(datagram.target(), &buff).await.unwrap();
                 }
                 Err(err) => match err {
                     TryRecvError::Empty => break 'recv,
@@ -48,20 +50,24 @@ pub(crate) async fn start(mut network: Network, requests: Receiver<(SocketAddr, 
             }
         }
 
-        'pending: loop {
-            match pending.reschedule(now) {
-                Ok((id, data)) => {
-                    // TODO
-                }
-                Err(err) => match err {
-                    RescheduleError::None => break 'pending,
-                    RescheduleError::DatagramFailed(id) => {
-                        // TODO
-                        panic!("TODO");
-                    }
-                },
-            }
-        }
+        for result in pending.reschedule(now) {}
+
+        // 'pending: loop {
+        //     match pending.reschedule(now) {
+        //         Ok((id, data)) => {
+        //             // TODO
+        //         }
+        //         Err(err) => match err {
+        //             RescheduleError::None => break 'pending,
+        //             RescheduleError::DatagramFailed(id) => {
+        //                 // TODO
+        //                 panic!("TODO");
+        //             }
+        //         },
+        //     }
+        // }
+
+        // TODO cleanup
 
         // TODO make sure that no data is skipped like this
         while let Some(result) = network.recv(&mut buff).now_or_never() {

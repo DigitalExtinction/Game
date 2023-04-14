@@ -41,8 +41,13 @@ impl DatagramQueue {
         }
     }
 
-    pub(super) fn remove(&mut self, datagram: NonZeroU32) {
-        self.queue.remove(&datagram);
+    pub(super) fn remove(&mut self, datagram: NonZeroU32) -> bool {
+        let result = self.queue.remove(&datagram);
+        result.is_some() && self.queue.is_empty()
+    }
+
+    pub(super) fn is_empty(&self) -> bool {
+        self.queue.is_empty()
     }
 }
 
