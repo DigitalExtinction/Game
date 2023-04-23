@@ -1,21 +1,9 @@
-use std::{
-    net::SocketAddr,
-    num::NonZeroU32,
-    time::{Duration, Instant},
-};
+use std::time::Instant;
 
-use async_std::{
-    channel::{Receiver, TryRecvError},
-    prelude::*,
-};
+use async_std::channel::{Receiver, TryRecvError};
 use futures::future::FutureExt;
 
-use self::{
-    buffer::DatagramBuffer,
-    pending::PendingRouter,
-    queue::{DatagramQueue, RescheduleError},
-    types::Datagram,
-};
+use self::{pending::PendingRouter, types::Datagram};
 use crate::Network;
 
 mod buffer;
@@ -50,24 +38,12 @@ pub(crate) async fn start(mut network: Network, requests: Receiver<Datagram<'_>>
             }
         }
 
-        for result in pending.reschedule(now) {}
+        let mut reschedules = pending.reschedule(now);
+        while let Some(result) = reschedules.next() {
+            // TODO resend or fail the connection
+        }
 
-        // 'pending: loop {
-        //     match pending.reschedule(now) {
-        //         Ok((id, data)) => {
-        //             // TODO
-        //         }
-        //         Err(err) => match err {
-        //             RescheduleError::None => break 'pending,
-        //             RescheduleError::DatagramFailed(id) => {
-        //                 // TODO
-        //                 panic!("TODO");
-        //             }
-        //         },
-        //     }
-        // }
-
-        // TODO cleanup
+        pending.cleanup(now);
 
         // TODO make sure that no data is skipped like this
         while let Some(result) = network.recv(&mut buff).now_or_never() {

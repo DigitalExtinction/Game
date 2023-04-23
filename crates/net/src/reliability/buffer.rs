@@ -66,7 +66,7 @@ impl<const ITEMS: usize, const SIZE: usize> DatagramBuffer<ITEMS, SIZE> {
         Ok(())
     }
 
-    pub(super) fn get(&mut self, id: NonZeroU32) -> Option<&[u8]> {
+    pub(super) fn get(&self, id: NonZeroU32) -> Option<&[u8]> {
         self.indices
             .get(&id)
             .map(|&index| &self.data[self.items[index].range(self.data.len())])

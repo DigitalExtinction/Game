@@ -1,16 +1,12 @@
 use std::{
     cmp::Ordering,
-    collections::{
-        hash_map::{Entry, IterMut},
-        VecDeque,
-    },
-    iter::Peekable,
+    collections::{hash_map::Entry, hash_set::Iter},
     net::SocketAddr,
     num::NonZeroU32,
     time::{Duration, Instant},
 };
 
-use ahash::AHashMap;
+use ahash::{AHashMap, AHashSet};
 use priority_queue::PriorityQueue;
 use thiserror::Error;
 
@@ -21,31 +17,39 @@ use super::{
 };
 
 pub(super) struct PendingRouter {
-    clients: AHashMap<SocketAddr, PendingDatagrams>,
+    clients: AHashSet<SocketAddr>,
+    pending: AHashMap<SocketAddr, PendingDatagrams>,
     empty: PriorityQueue<SocketAddr, Died>,
 }
 
 impl PendingRouter {
     pub(super) fn new() -> Self {
         Self {
-            clients: AHashMap::new(),
+            clients: AHashSet::new(),
+            pending: AHashMap::new(),
             empty: PriorityQueue::new(),
         }
     }
 
     pub(super) fn push(&mut self, datagram: Datagram, now: Instant) -> NonZeroU32 {
-        let entry = self.clients.entry(datagram.target());
+        let entry = self.pending.entry(datagram.target());
 
-        if matches!(entry, Entry::Occupied(_)) {
-            self.empty.remove(&datagram.target());
-        }
+        let pending = match entry {
+            Entry::Occupied(entry) => {
+                self.empty.remove(&datagram.target());
+                entry.into_mut()
+            }
+            Entry::Vacant(entry) => {
+                self.clients.insert(datagram.target());
+                entry.insert(PendingDatagrams::new(now))
+            }
+        };
 
-        let pending = entry.or_insert_with(|| PendingDatagrams::new(now));
         pending.push(datagram.data(), now)
     }
 
     pub(super) fn remove(&mut self, source: SocketAddr, id: NonZeroU32, now: Instant) {
-        if let Some(pending) = self.clients.get_mut(&source) {
+        if let Some(pending) = self.pending.get_mut(&source) {
             let emptied = pending.remove(id);
             if emptied {
                 self.empty.push(source, Died(now));
@@ -61,43 +65,63 @@ impl PendingRouter {
             .unwrap_or(false)
         {
             let (addr, _) = self.empty.pop().unwrap();
-            self.clients.remove(&addr).unwrap();
+            self.pending.remove(&addr).unwrap();
+            let removed = self.clients.remove(&addr);
+            debug_assert!(removed);
         }
     }
 
     pub(super) fn reschedule(&mut self, now: Instant) -> Reschedules<'_> {
-        Reschedules {
-            now,
-            clients: self.clients.iter_mut().peekable(),
-        }
+        Reschedules::new(self.clients.iter(), &mut self.pending, now)
     }
 }
 
-struct Reschedules<'a> {
+pub(super) struct Reschedules<'a> {
     now: Instant,
-    clients: Peekable<IterMut<'a, SocketAddr, PendingDatagrams>>,
+    current: Option<SocketAddr>,
+    clients: Iter<'a, SocketAddr>,
+    pending: &'a mut AHashMap<SocketAddr, PendingDatagrams>,
 }
 
-impl<'a> Iterator for Reschedules<'a> {
-    type Item = Result<(NonZeroU32, Datagram<'a>), RouterError>;
+impl<'a> Reschedules<'a> {
+    fn new(
+        clients: Iter<'a, SocketAddr>,
+        pending: &'a mut AHashMap<SocketAddr, PendingDatagrams>,
+        now: Instant,
+    ) -> Self {
+        Self {
+            now,
+            current: None,
+            clients,
+            pending,
+        }
+    }
 
-    fn next(&mut self) -> Option<Self::Item> {
+    pub(super) fn next<'b>(
+        &'b mut self,
+    ) -> Option<Result<(NonZeroU32, Datagram<'b>), RouterError>> {
         loop {
-            if let Some((&addr, pending)) = self.clients.peek_mut() {
-                match pending.reschedule(self.now) {
-                    Ok((id, data)) => return Some(Ok((id, Datagram::new(addr, true, data)))),
-                    Err(err) => match err {
-                        RescheduleError::DatagramFailed(id) => {
-                            return Some(Err(RouterError::DatagramFailed(addr, id)));
-                        }
-                        RescheduleError::None => {}
-                    },
-                }
-            } else {
-                break None;
+            if self.current.is_none() {
+                self.current = self.clients.next().copied();
             }
+            let Some(addr) = self.current else { return None };
+            let rescheduled = self.pending.get_mut(&addr).unwrap().reschedule(self.now);
 
-            self.clients.next();
+            match rescheduled {
+                Ok(id) => {
+                    let data = self.pending.get(&addr).unwrap().data(id).unwrap();
+                    return Some(Ok((id, Datagram::new(addr, true, data))));
+                }
+                Err(err) => match err {
+                    RescheduleError::DatagramFailed(id) => {
+                        self.current = None;
+                        return Some(Err(RouterError::DatagramFailed(addr, id)));
+                    }
+                    RescheduleError::None => {
+                        self.current = None;
+                    }
+                },
+            }
         }
     }
 }
@@ -152,9 +176,12 @@ impl PendingDatagrams {
         self.queue.remove(id)
     }
 
-    fn reschedule(&mut self, now: Instant) -> Result<(NonZeroU32, &[u8]), RescheduleError> {
-        let id = self.queue.reschedule(now)?;
-        Ok((id, self.buffer.get(id).unwrap()))
+    fn reschedule(&mut self, now: Instant) -> Result<NonZeroU32, RescheduleError> {
+        self.queue.reschedule(now)
+    }
+
+    fn data(&self, id: NonZeroU32) -> Option<&[u8]> {
+        self.buffer.get(id)
     }
 
     fn next_id(&mut self) -> NonZeroU32 {
