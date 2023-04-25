@@ -4,7 +4,7 @@ use async_std::channel::{bounded, Receiver, RecvError, SendError, Sender, TryRec
 use futures::{future::try_join_all, FutureExt};
 use tracing::info;
 
-use crate::Network;
+use crate::{Network, MAX_DATAGRAM_SIZE};
 
 const CHANNEL_CAPACITY: usize = 1024;
 
@@ -15,7 +15,11 @@ pub struct OutMessage {
 }
 
 impl OutMessage {
+    /// # Panics
+    ///
+    /// Panics if data is longer than [`MAX_DATAGRAM_SIZE`].
     pub fn new(data: Vec<u8>, targets: Vec<SocketAddr>) -> Self {
+        assert!(data.len() < MAX_DATAGRAM_SIZE);
         Self { data, targets }
     }
 }
