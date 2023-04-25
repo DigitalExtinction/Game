@@ -14,4 +14,6 @@ categories.workspace = true
 [dependencies]
 # Other
 async-std.workspace = true
+futures.workspace = true
 thiserror.workspace = true
+tracing.workspace = true
