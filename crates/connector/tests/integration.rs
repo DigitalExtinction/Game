@@ -1,5 +1,6 @@
-use async_std::{prelude::*, task};
+use async_std::task;
 use de_net::Network;
+use futures::join;
 use ntest::timeout;
 
 use crate::common::{spawn_and_wait, term_and_wait};
@@ -51,9 +52,7 @@ fn test() {
             .await
             .unwrap();
 
-        first(&mut first_client)
-            .join(second(&mut second_client))
-            .await;
+        join!(first(&mut first_client), second(&mut second_client));
     }));
 
     term_and_wait(child);
