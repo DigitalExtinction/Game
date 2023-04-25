@@ -2358,7 +2358,9 @@ name = "de_net"
 version = "0.1.0-dev"
 dependencies = [
  "async-std",
+ "futures",
  "thiserror",
+ "tracing",
 ]
 
 [[package]]
