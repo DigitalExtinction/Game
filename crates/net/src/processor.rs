@@ -2,11 +2,12 @@ use std::net::SocketAddr;
 
 use async_std::channel::{bounded, Receiver, RecvError, SendError, Sender, TryRecvError};
 use futures::{future::try_join_all, FutureExt};
-use tracing::{info, trace};
+use thiserror::Error;
+use tracing::{error, info, trace, warn};
 
 use crate::{
-    header::{DatagramCounter, DatagramHeader, HEADER_SIZE},
-    Network, MAX_DATAGRAM_SIZE,
+    header::{DatagramCounter, DatagramHeader, HeaderError, HEADER_SIZE},
+    net, Network, MAX_DATAGRAM_SIZE,
 };
 
 /// Maximum number of bytes of a single message.
@@ -122,9 +123,23 @@ impl Processor {
                 info!("Output finished...");
                 break;
             }
-            if self.handle_input(&mut buf).await {
-                info!("Input finished...");
-                break;
+
+            if let Err(err) = self.handle_input(&mut buf).await {
+                match err {
+                    InputHandlingError::InputsError(err) => {
+                        info!("Input finished: {err:?}");
+                        break;
+                    }
+                    InputHandlingError::RecvError(err) => {
+                        error!("Datagram receiving error: {err:?}");
+                        break;
+                    }
+                    InputHandlingError::InvalidHeader(err) => {
+                        warn!("Invalid header received: {err:?}");
+                        // Do not break the loop for all because just of a
+                        // single malformed datagram.
+                    }
+                }
             }
         }
     }
@@ -169,38 +184,38 @@ impl Processor {
         }
     }
 
-    async fn handle_input(&mut self, buf: &mut [u8]) -> bool {
-        match self.network.recv(buf).now_or_never() {
-            Some(recv_result) => match recv_result {
-                Ok((stop, source)) => {
-                    let header = match DatagramHeader::read(&buf[0..stop]) {
-                        Ok(header) => header,
-                        Err(err) => panic!("Header parsing failed: {err:?}"),
-                    };
+    async fn handle_input(&mut self, buf: &mut [u8]) -> Result<(), InputHandlingError> {
+        let Some(recv_result) = self.network.recv(buf).now_or_never() else { return Ok(()) };
+        let (stop, source) = recv_result.map_err(InputHandlingError::from)?;
+        let header = DatagramHeader::read(&buf[0..stop]).map_err(InputHandlingError::from)?;
+        trace!("Received datagram with ID {header}");
 
-                    trace!("Received datagram with ID {header}");
+        let reliable = match header {
+            DatagramHeader::Anonymous => false,
+            DatagramHeader::Reliable(_) => true,
+        };
 
-                    let reliable = match header {
-                        DatagramHeader::Anonymous => false,
-                        DatagramHeader::Reliable(_) => true,
-                    };
+        self.inputs
+            .send(InMessage {
+                data: buf[HEADER_SIZE..stop].to_vec(),
+                reliable,
+                source,
+            })
+            .await
+            .map_err(InputHandlingError::from)?;
 
-                    self.inputs
-                        .send(InMessage {
-                            data: buf[HEADER_SIZE..stop].to_vec(),
-                            reliable,
-                            source,
-                        })
-                        .await
-                        .is_err()
-                }
-                Err(err) => {
-                    panic!("Receive error to: {:?}", err);
-                }
-            },
-            None => false,
-        }
+        Ok(())
     }
+}
+
+#[derive(Error, Debug)]
+enum InputHandlingError {
+    #[error(transparent)]
+    InvalidHeader(#[from] HeaderError),
+    #[error("error while receiving data from the socket")]
+    RecvError(#[from] net::RecvError),
+    #[error("inputs channel error")]
+    InputsError(#[from] SendError<InMessage>),
 }
 
 /// Setups a communicator and network processor couple.
