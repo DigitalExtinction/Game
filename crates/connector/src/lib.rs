@@ -32,6 +32,7 @@ async fn main_loop() -> anyhow::Result<()> {
     loop {
         let input = communicator.recv().await.context("Data receiving failed")?;
         clients.insert(input.source());
+        let reliable = input.reliable();
 
         let targets = clients
             .iter()
@@ -40,7 +41,7 @@ async fn main_loop() -> anyhow::Result<()> {
             .collect();
 
         communicator
-            .send(OutMessage::new(input.data(), targets))
+            .send(OutMessage::new(input.data(), reliable, targets))
             .await
             .context("Data sending failed")?;
     }
