@@ -46,9 +46,14 @@ de_pathing.workspace = true
 de_signs.workspace = true
 de_spawner.workspace = true
 de_terrain.workspace = true
+de_log.workspace = true
 
 # Other
 bevy.workspace = true
+tracing-subscriber.workspace = true
+tracing-appender.workspace = true
+tracing.workspace = true
+chrono.workspace = true
 
 [workspace]
 members = ["crates/*"]
@@ -89,6 +94,7 @@ de_signs = { path = "crates/signs", version = "0.1.0-dev" }
 de_spawner = { path = "crates/spawner", version = "0.1.0-dev" }
 de_terrain = { path = "crates/terrain", version = "0.1.0-dev" }
 de_uom = { path = "crates/uom", version = "0.1.0-dev" }
+de_log = { path = "crates/log", version = "0.1.0-dev" }
 
 # Other
 ahash = "0.7.6"
@@ -124,7 +130,12 @@ sha3 = "0.10.6"
 spade = "2.0.0"
 thiserror = "1.0"
 tinyvec = { version = "1.6.0", features = ["rustc_1_40", "alloc"] }
-tracing = "0.1.37"
-tracing-subscriber = "0.3.16"
+tracing = "0.1.26"
+tracing-subscriber = { version = "0.3.17" }
+tracing-appender = "0.2.2"
 url = { version = "2.3.1", features = ["serde"] }
 urlencoding = "2.1.2"
+fern = "0.6.2"
+log = "0.4.17"
+chrono = "0.4.24"
+flate2 = "1.0.26"
