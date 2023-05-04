@@ -1,0 +1,22 @@
+[package]
+name = "de_log"
+description = "Digital Extinction logging to file."
+
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+repository.workspace = true
+keywords.workspace = true
+homepage.workspace = true
+license.workspace = true
+categories.workspace = true
+
+[dependencies]
+# DE
+de_core.workspace = true
+
+# Other
+bevy.workspace = true
+tracing-subscriber.workspace = true
+tracing-appender.workspace = true
+flate2.workspace = true
