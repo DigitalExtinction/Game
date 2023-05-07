@@ -33,6 +33,7 @@ const CARGO_PKG_VERSION: &str = env!("CARGO_PKG_VERSION");
 const GIT_SHA: &str = env!("GIT_SHA");
 
 fn main() {
+    // TODO: move log init to de_log crate
     // for file name
     let dt = chrono::Local::now();
 
@@ -72,9 +73,7 @@ fn main() {
 
         app = App::new();
         app.insert_resource(Msaa::Sample4)
-            .add_plugins(LogPluginGroup {
-                current_log_file: file_name,
-            })
+            .add_plugins(LogPluginGroup)
             .add_plugins(
                 DefaultPlugins
                     .set(WindowPlugin {
