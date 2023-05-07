@@ -1,6 +1,7 @@
 mod setup;
-use crate::setup::LogPlugin;
 use bevy::{app::PluginGroupBuilder, prelude::PluginGroup};
+
+use crate::setup::LogPlugin;
 
 pub struct LogPluginGroup {
     pub current_log_file: String,

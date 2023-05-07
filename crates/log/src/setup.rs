@@ -1,8 +1,8 @@
-use bevy::prelude::*;
-use flate2::{Compression, GzBuilder};
 use std::fs::File;
 use std::path::PathBuf;
 
+use bevy::prelude::*;
+use flate2::{Compression, GzBuilder};
 
 pub(crate) struct LogPlugin {
     pub(crate) current_log_file: String,
@@ -69,8 +69,10 @@ fn compress_old_logs(current_log_file: Res<CurrentLogFile>) {
 #[cfg(test)]
 mod log_tests {
     use std::io::Write;
-    use super::*;
+
     use bevy::utils::tracing;
+
+    use super::*;
 
     // does the compression system work?
     #[test]
@@ -102,7 +104,7 @@ mod log_tests {
 
         let large_test_bytes = b"test".repeat(300000);
         uncompressed_log_file_2
-            .write_all(&*large_test_bytes)
+            .write_all(&large_test_bytes)
             .unwrap();
 
         compressed_log_file.write_all(b"test").unwrap();

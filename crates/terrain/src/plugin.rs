@@ -65,7 +65,7 @@ fn setup_textures(
             // processing. This is however not yet supported by Bevy.
             //
             // https://github.com/bevyengine/bevy/discussions/3972
-            let mut image = images.get_mut(&textures.0).unwrap();
+            let image = images.get_mut(&textures.0).unwrap();
             image.sampler_descriptor = ImageSampler::Descriptor(SamplerDescriptor {
                 address_mode_u: AddressMode::Repeat,
                 address_mode_v: AddressMode::Repeat,
