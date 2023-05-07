@@ -50,9 +50,6 @@ de_terrain.workspace = true
 
 # Other
 bevy.workspace = true
-chrono.workspace = true
-tracing-appender.workspace = true
-tracing-subscriber.workspace = true
 tracing.workspace = true
 
 [workspace]

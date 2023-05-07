@@ -2256,7 +2256,6 @@ name = "de_game"
 version = "0.1.0-dev"
 dependencies = [
  "bevy",
- "chrono",
  "de_behaviour",
  "de_camera",
  "de_combat",
@@ -2277,8 +2276,6 @@ dependencies = [
  "de_spawner",
  "de_terrain",
  "tracing",
- "tracing-appender",
- "tracing-subscriber",
 ]
 
 [[package]]
@@ -2373,8 +2370,10 @@ name = "de_log"
 version = "0.1.0-dev"
 dependencies = [
  "bevy",
+ "chrono",
  "de_core",
  "flate2",
+ "tracing",
  "tracing-appender",
  "tracing-subscriber",
 ]
