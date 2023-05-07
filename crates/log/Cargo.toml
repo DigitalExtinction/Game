@@ -17,6 +17,6 @@ de_core.workspace = true
 
 # Other
 bevy.workspace = true
-tracing-subscriber.workspace = true
-tracing-appender.workspace = true
 flate2.workspace = true
+tracing-appender.workspace = true
+tracing-subscriber.workspace = true
