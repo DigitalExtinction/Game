@@ -57,8 +57,6 @@ fn main() {
         .with(fmt::layer().with_writer(non_blocking_log_writer));
     tracing::subscriber::set_global_default(collector).expect("Unable to set a global collector");
 
-    info!("Logger initialized");
-
     info!(
         "Starting Digital Extinction {{ \"Version\": \"{}\", \"GitSha\": \"{}\" }}",
         CARGO_PKG_VERSION, GIT_SHA
