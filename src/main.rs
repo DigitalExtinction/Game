@@ -34,12 +34,11 @@ fn main() {
     let mut app = App::new();
     // we want logging as early as possible
     app.add_plugins(LogPluginGroup);
-    
+
     info!(
         "Starting Digital Extinction {{ \"Version\": \"{}\", \"GitSha\": \"{}\" }}",
         CARGO_PKG_VERSION, GIT_SHA
     );
-
 
     {
         let span = span!(Level::TRACE, "Startup");

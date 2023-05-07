@@ -1,16 +1,16 @@
 use bevy::prelude::*;
 use tracing::Level;
 use tracing_appender::non_blocking::WorkerGuard;
-use tracing_subscriber::{EnvFilter, fmt};
 use tracing_subscriber::layer::SubscriberExt;
+use tracing_subscriber::{fmt, EnvFilter};
 
 pub(crate) struct LogPlugin {}
 
 /// the handle for the guard (dropping it will disable the log writer)
 #[derive(Resource)]
-pub(crate) struct CurrentLogHandle{
+pub(crate) struct CurrentLogHandle {
     #[allow(dead_code)]
-    guard: WorkerGuard
+    guard: WorkerGuard,
 }
 
 impl Plugin for LogPlugin {
@@ -36,10 +36,9 @@ impl Plugin for LogPlugin {
             )
             .with(fmt::layer().with_writer(std::io::stdout))
             .with(fmt::layer().with_writer(non_blocking_log_writer));
-        tracing::subscriber::set_global_default(collector).expect("Unable to set a global collector");
+        tracing::subscriber::set_global_default(collector)
+            .expect("Unable to set a global collector");
 
-        app.insert_resource(CurrentLogHandle {
-            guard:_guard
-        });
+        app.insert_resource(CurrentLogHandle { guard: _guard });
     }
 }
