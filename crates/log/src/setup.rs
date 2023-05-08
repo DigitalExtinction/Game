@@ -25,14 +25,10 @@ impl Plugin for LogPlugin {
 
         let collector = tracing_subscriber::registry()
             .with(
-                EnvFilter::from_default_env()
-                    .add_directive(Level::TRACE.into())
-                    .add_directive("async_io=info".parse().unwrap())
-                    .add_directive("bevy_ecs=info".parse().unwrap())
-                    .add_directive("naga=info".parse().unwrap())
-                    .add_directive("polling=debug".parse().unwrap())
-                    .add_directive("wgpu_core=warn".parse().unwrap())
-                    .add_directive("wgpu_hal=info".parse().unwrap()),
+                EnvFilter::builder()
+                    // defaults to INFO if RUST_LOG not set
+                    .with_default_directive(Level::INFO.into())
+                    .from_env_lossy(),
             )
             .with(fmt::layer().with_writer(std::io::stdout))
             .with(fmt::layer().with_writer(non_blocking_log_writer));
