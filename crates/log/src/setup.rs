@@ -1,4 +1,5 @@
 use bevy::prelude::*;
+use std::path::PathBuf;
 use tracing::Level;
 use tracing_appender::non_blocking::WorkerGuard;
 use tracing_subscriber::layer::SubscriberExt;
@@ -17,9 +18,9 @@ impl Plugin for LogPlugin {
     fn build(&self, app: &mut App) {
         // for file name
         let dt = chrono::Local::now();
+        let path: PathBuf = dt.format("%Y-%m-%d_%H-%M-%S.log").to_string().into();
 
-        let file_name = dt.format("%Y-%m-%d %H:%M:%S.log").to_string();
-        let file_appender = tracing_appender::rolling::never("logs", &*file_name);
+        let file_appender = tracing_appender::rolling::never("logs", path);
 
         let (non_blocking_log_writer, _guard) = tracing_appender::non_blocking(file_appender);
 
