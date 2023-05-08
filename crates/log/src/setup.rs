@@ -1,5 +1,6 @@
-use bevy::prelude::*;
 use std::path::PathBuf;
+
+use bevy::prelude::*;
 use tracing::Level;
 use tracing_appender::non_blocking::WorkerGuard;
 use tracing_subscriber::layer::SubscriberExt;
