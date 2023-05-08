@@ -4,7 +4,7 @@ use tracing_appender::non_blocking::WorkerGuard;
 use tracing_subscriber::layer::SubscriberExt;
 use tracing_subscriber::{fmt, EnvFilter};
 
-pub(crate) struct LogPlugin {}
+pub(crate) struct LogPlugin;
 
 /// the handle for the guard (dropping it will disable the log writer)
 #[derive(Resource)]
