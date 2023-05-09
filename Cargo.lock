@@ -2434,6 +2434,7 @@ dependencies = [
 name = "de_net"
 version = "0.1.0-dev"
 dependencies = [
+ "ahash 0.7.6",
  "async-std",
  "futures",
  "thiserror",

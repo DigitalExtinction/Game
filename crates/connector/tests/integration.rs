@@ -25,8 +25,12 @@ fn test() {
         let mut buffer = [0u8; 1024];
         let (n, _) = client.recv(&mut buffer).await.unwrap();
 
-        // First 4 bytes are interpreted as datagram ID.
-        assert_eq!(&buffer[4..n], &[81; 78]);
+        // First 4 bytes are interpreted as (anonymous) datagram header.
+        assert_eq!(&buffer[0..n], &[128, 0, 0, 0, 82, 83, 84]);
+
+        // Confirmation
+        let (n, _) = client.recv(&mut buffer).await.unwrap();
+        assert_eq!(&buffer[0..n], &[128, 0, 0, 1, 1, 3, 3, 7, 22, 22, 22, 22]);
     }
 
     async fn second(client: &mut Network) {
@@ -37,9 +41,17 @@ fn test() {
         assert_eq!(&buffer[4..n], &[22; 408]);
 
         client
-            .send("127.0.0.1:8082".parse().unwrap(), &[81; 82])
+            .send(
+                "127.0.0.1:8082".parse().unwrap(),
+                // Anonymous message
+                &[128, 0, 0, 0, 82, 83, 84],
+            )
             .await
             .unwrap();
+
+        // Confirmation
+        let (n, _) = client.recv(&mut buffer).await.unwrap();
+        assert_eq!(&buffer[0..n], &[128, 0, 0, 1, 7, 0, 8, 7]);
     }
 
     task::block_on(task::spawn(async {

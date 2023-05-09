@@ -13,6 +13,7 @@ categories.workspace = true
 
 [dependencies]
 # Other
+ahash.workspace = true
 async-std.workspace = true
 futures.workspace = true
 thiserror.workspace = true

@@ -8,6 +8,7 @@ use tracing::{error, info, warn};
 use crate::{
     header::{DatagramCounter, DatagramHeader},
     messages::{Messages, MsgRecvError},
+    reliability::Reliability,
     Network, MAX_MESSAGE_SIZE,
 };
 
@@ -90,6 +91,7 @@ impl Communicator {
 pub struct Processor {
     messages: Messages,
     counter: DatagramCounter,
+    reliability: Reliability,
     outputs: Receiver<OutMessage>,
     inputs: Sender<InMessage>,
 }
@@ -99,6 +101,7 @@ impl Processor {
         Self {
             messages,
             counter: DatagramCounter::zero(),
+            reliability: Reliability::new(),
             outputs,
             inputs,
         }
@@ -138,6 +141,11 @@ impl Processor {
                     }
                 }
             }
+
+            if let Err(err) = self.reliability.send_confirms(&mut self.messages).await {
+                error!("Message confirmation error: {err:?}");
+                break;
+            }
         }
     }
 
@@ -173,8 +181,12 @@ impl Processor {
         let (source, header, data) = recv_result.map_err(InputHandlingError::from)?;
 
         let reliable = match header {
+            DatagramHeader::Confirmation => return Ok(()),
             DatagramHeader::Anonymous => false,
-            DatagramHeader::Reliable(_) => true,
+            DatagramHeader::Reliable(id) => {
+                self.reliability.received(source, id);
+                true
+            }
         };
 
         self.inputs
