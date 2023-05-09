@@ -19,9 +19,11 @@ pub fn asset_path<P: AsRef<Path>>(path: P) -> PathBuf {
     assert!(path.is_relative(), "Asset path is not relative: {path:?}");
     let mut new_path = match env::var("CARGO_MANIFEST_DIR") {
         Ok(path) => PathBuf::from(path),
-        Err(_) => {
-            current_exe().expect("Failed to retrieve current executable path during map loading")
-        }
+        Err(_) => current_exe()
+            .expect("Failed to retrieve current executable path during map loading")
+            .parent()
+            .unwrap()
+            .to_path_buf(),
     };
     new_path.push("assets");
     new_path.push(path);
