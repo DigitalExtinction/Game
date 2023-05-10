@@ -105,7 +105,7 @@ bevy = "0.10"
 chrono = "0.4.24"
 clap = { version = "4.0", features = ["derive"] }
 criterion = "0.4"
-dirs = "4.0.0"
+dirs = "5.0.0"
 enum-iterator = "1.4.0"
 enum-map = "2.3.0"
 fern = "0.6.2"

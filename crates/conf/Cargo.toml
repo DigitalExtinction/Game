@@ -21,7 +21,6 @@ de_uom.workspace = true
 anyhow.workspace = true
 async-std.workspace = true
 bevy.workspace = true
-dirs.workspace = true
 futures-lite.workspace = true
 iyes_progress.workspace = true
 serde.workspace = true
