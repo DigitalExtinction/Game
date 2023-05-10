@@ -6,6 +6,7 @@ use thiserror::Error;
 pub(crate) const HEADER_SIZE: usize = 4;
 const SPECIAL_BIT: u32 = 1 << 31;
 const ANONYMOUS: u32 = SPECIAL_BIT;
+const CONFIRMATION: u32 = SPECIAL_BIT + 1;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub(crate) enum DatagramHeader {
@@ -13,6 +14,7 @@ pub(crate) enum DatagramHeader {
     Reliable(u32),
     /// An anonymous datagram (without an ID) delivered unreliably.
     Anonymous,
+    Confirmation,
 }
 
 impl DatagramHeader {
@@ -26,6 +28,7 @@ impl DatagramHeader {
         let bytes = match self {
             Self::Reliable(id) => id.to_be_bytes(),
             Self::Anonymous => ANONYMOUS.to_be_bytes(),
+            Self::Confirmation => CONFIRMATION.to_be_bytes(),
         };
 
         buf[0..HEADER_SIZE].copy_from_slice(&bytes);
@@ -44,6 +47,8 @@ impl DatagramHeader {
         if value >= SPECIAL_BIT {
             if value == ANONYMOUS {
                 Ok(Self::Anonymous)
+            } else if value == CONFIRMATION {
+                Ok(Self::Confirmation)
             } else {
                 Err(HeaderError::Invalid)
             }
@@ -58,6 +63,7 @@ impl fmt::Display for DatagramHeader {
         match self {
             Self::Reliable(id) => write!(f, "Reliable({})", id),
             Self::Anonymous => write!(f, "Anonymous"),
+            Self::Confirmation => write!(f, "Confirmation"),
         }
     }
 }
