@@ -5,9 +5,9 @@ sort_by = "weight"
 +++
 
 Game configuration is stored into and loaded from a YAML file located at
-`{user_conf_dir}/DigitalExtinction/conf.yaml`. `{user_conf_dir}` is obtained with
-[dirs::config_dir()](https://docs.rs/dirs/4.0.0/dirs/fn.config_dir.html) and
-conforms to the following table:
+`{user_conf_dir}/DigitalExtinction/conf.yaml`. `{user_conf_dir}` is obtained
+with [dirs::config_dir()](https://docs.rs/dirs/latest/dirs/fn.config_dir.html)
+and conforms to the following table:
 
 |Platform | Value                                 | Example                                  |
 | ------- | ------------------------------------- | ---------------------------------------- |
