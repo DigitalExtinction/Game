@@ -1,10 +1,9 @@
-use anyhow::{bail, Result};
-use async_std::path::PathBuf;
+use anyhow::Result;
 use bevy::{
     prelude::*,
     tasks::{IoTaskPool, Task},
 };
-use de_core::{log_full_error, state::AppState};
+use de_core::{fs::conf_dir, log_full_error, state::AppState};
 use de_gui::ToastEvent;
 use futures_lite::future;
 use iyes_progress::prelude::*;
@@ -34,14 +33,7 @@ fn cleanup(mut commands: Commands) {
 
 fn start_loading(mut commands: Commands) {
     let task = IoTaskPool::get().spawn(async {
-        let Some(base_conf_dir) = dirs::config_dir() else {
-            bail!(
-                "User's configuration directory cannot be established."
-            )
-        };
-        let path = PathBuf::from(base_conf_dir)
-            .join("DigitalExtinction")
-            .join("conf.yaml");
+        let path = conf_dir()?.join("conf.yaml");
         load_conf(path.as_path()).await
     });
     commands.insert_resource(LoadingTask(task));

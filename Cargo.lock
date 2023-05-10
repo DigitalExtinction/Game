@@ -2170,7 +2170,6 @@ dependencies = [
  "de_core",
  "de_gui",
  "de_uom",
- "dirs",
  "futures-lite",
  "iyes_progress",
  "serde",
@@ -2240,7 +2239,9 @@ dependencies = [
 name = "de_core"
 version = "0.1.0-dev"
 dependencies = [
+ "async-std",
  "bevy",
+ "dirs",
  "enum-iterator",
  "enum-map",
  "glam",
@@ -2249,6 +2250,7 @@ dependencies = [
  "parry2d",
  "parry3d",
  "serde",
+ "thiserror",
 ]
 
 [[package]]
