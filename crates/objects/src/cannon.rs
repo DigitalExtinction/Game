@@ -47,7 +47,7 @@ impl LaserCannon {
 ///
 /// [`Self::tick`] must be called during every frame. After that,
 /// [`Self::hold`] or [`Self::fire`] must be called in a loop while
-/// [`Self::changed`] returns true.
+/// [`Self::charged`] returns true.
 ///
 /// LaserTimer implements total ordering based on elapsed time since reaching
 /// charge for at least one fire.
