@@ -9,7 +9,7 @@ use crate::{
     header::{DatagramCounter, DatagramHeader},
     messages::{Messages, MsgRecvError},
     reliability::Reliability,
-    Network, MAX_MESSAGE_SIZE,
+    Network, MAX_DATAGRAM_SIZE, MAX_MESSAGE_SIZE,
 };
 
 const CHANNEL_CAPACITY: usize = 1024;
@@ -89,6 +89,7 @@ impl Communicator {
 /// This struct implements an async loop which handles the network
 /// communication.
 pub struct Processor {
+    buf: [u8; MAX_DATAGRAM_SIZE],
     messages: Messages,
     counter: DatagramCounter,
     reliability: Reliability,
@@ -99,6 +100,7 @@ pub struct Processor {
 impl Processor {
     fn new(messages: Messages, outputs: Receiver<OutMessage>, inputs: Sender<InMessage>) -> Self {
         Self {
+            buf: [0; MAX_DATAGRAM_SIZE],
             messages,
             counter: DatagramCounter::zero(),
             reliability: Reliability::new(),
@@ -142,7 +144,11 @@ impl Processor {
                 }
             }
 
-            if let Err(err) = self.reliability.send_confirms(&mut self.messages).await {
+            if let Err(err) = self
+                .reliability
+                .send_confirms(&mut self.buf, &mut self.messages)
+                .await
+            {
                 error!("Message confirmation error: {err:?}");
                 break;
             }
@@ -161,7 +167,7 @@ impl Processor {
 
                 if let Err(err) = self
                     .messages
-                    .send(header, &message.data, &message.targets)
+                    .send(&mut self.buf, header, &message.data, &message.targets)
                     .await
                 {
                     panic!("Send error: {:?}", err);
@@ -177,7 +183,7 @@ impl Processor {
     }
 
     async fn handle_input(&mut self) -> Result<(), InputHandlingError> {
-        let Some(recv_result) = self.messages.recv().now_or_never() else { return Ok(()) };
+        let Some(recv_result) = self.messages.recv(&mut self.buf).now_or_never() else { return Ok(()) };
         let (source, header, data) = recv_result.map_err(InputHandlingError::from)?;
 
         let reliable = match header {
