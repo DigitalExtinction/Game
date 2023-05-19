@@ -37,7 +37,23 @@ impl Reliability {
     }
 
     /// Send message confirmation packets which are ready to be send.
-    pub(crate) async fn send_confirms(&mut self, messages: &mut Messages) -> Result<(), SendError> {
+    ///
+    /// # Arguments
+    ///
+    /// * `buf` - buffer for message construction. Must be at least
+    ///   [`crate::MAX_DATAGRAM_SIZE`] long.
+    ///
+    /// * `messages` - message connection to be used for delivery of the
+    ///   confirmations.
+    ///
+    /// # Panics
+    ///
+    /// May panic if `buf` is not large enough.
+    pub(crate) async fn send_confirms(
+        &mut self,
+        buf: &mut [u8],
+        messages: &mut Messages,
+    ) -> Result<(), SendError> {
         let time = Instant::now();
 
         for (addr, connection) in self.connections.iter_mut() {
@@ -47,7 +63,7 @@ impl Reliability {
 
             while let Some(data) = connection.confirms.flush(MAX_MESSAGE_SIZE) {
                 messages
-                    .send(DatagramHeader::Confirmation, data, &[*addr])
+                    .send(buf, DatagramHeader::Confirmation, data, &[*addr])
                     .await?;
             }
         }

@@ -39,8 +39,18 @@ impl Network {
     ///
     /// The returned data are guaranteed to be at most [`MAX_DATAGRAM_SIZE`]
     /// bytes long.
+    ///
+    /// # Panics
+    ///
+    /// Panics if len of `buf` is smaller than [`MAX_DATAGRAM_SIZE`].
     pub async fn recv(&mut self, buf: &mut [u8]) -> Result<(usize, SocketAddr), RecvError> {
-        self.socket.recv_from(buf).await.map_err(RecvError::from)
+        assert!(buf.len() >= MAX_DATAGRAM_SIZE);
+
+        self.socket
+            .recv_from(buf)
+            .await
+            .map(|(len, source)| (len.min(MAX_DATAGRAM_SIZE), source))
+            .map_err(RecvError::from)
     }
 
     /// Send data to a single target.
