@@ -1,6 +1,8 @@
-use std::net::SocketAddr;
+use std::{net::SocketAddr, time::Instant};
 
-use async_std::channel::{bounded, Receiver, RecvError, SendError, Sender, TryRecvError};
+use async_std::channel::{
+    bounded, Receiver, RecvError, SendError, Sender, TryRecvError, TrySendError,
+};
 use futures::FutureExt;
 use thiserror::Error;
 use tracing::{error, info, warn};
@@ -65,16 +67,35 @@ impl InMessage {
     }
 }
 
+pub struct ConnectionError {
+    target: SocketAddr,
+}
+
+impl ConnectionError {
+    pub fn target(&self) -> SocketAddr {
+        self.target
+    }
+}
+
 /// This struct handles communication with a side async loop with the network
 /// communication.
 pub struct Communicator {
     outputs: Sender<OutMessage>,
     inputs: Receiver<InMessage>,
+    errors: Receiver<ConnectionError>,
 }
 
 impl Communicator {
-    fn new(outputs: Sender<OutMessage>, inputs: Receiver<InMessage>) -> Self {
-        Self { outputs, inputs }
+    fn new(
+        outputs: Sender<OutMessage>,
+        inputs: Receiver<InMessage>,
+        errors: Receiver<ConnectionError>,
+    ) -> Self {
+        Self {
+            outputs,
+            inputs,
+            errors,
+        }
     }
 
     pub async fn recv(&mut self) -> Result<InMessage, RecvError> {
@@ -83,6 +104,10 @@ impl Communicator {
 
     pub async fn send(&mut self, message: OutMessage) -> Result<(), SendError<OutMessage>> {
         self.outputs.send(message).await
+    }
+
+    pub async fn errors(&mut self) -> Result<ConnectionError, RecvError> {
+        self.errors.recv().await
     }
 }
 
@@ -95,10 +120,16 @@ pub struct Processor {
     reliability: Reliability,
     outputs: Receiver<OutMessage>,
     inputs: Sender<InMessage>,
+    errors: Sender<ConnectionError>,
 }
 
 impl Processor {
-    fn new(messages: Messages, outputs: Receiver<OutMessage>, inputs: Sender<InMessage>) -> Self {
+    fn new(
+        messages: Messages,
+        outputs: Receiver<OutMessage>,
+        inputs: Sender<InMessage>,
+        errors: Sender<ConnectionError>,
+    ) -> Self {
         Self {
             buf: [0; MAX_DATAGRAM_SIZE],
             messages,
@@ -106,6 +137,7 @@ impl Processor {
             reliability: Reliability::new(),
             outputs,
             inputs,
+            errors,
         }
     }
 
@@ -146,10 +178,15 @@ impl Processor {
 
             if let Err(err) = self
                 .reliability
-                .send_confirms(&mut self.buf, &mut self.messages)
+                .send_confirms(&mut self.buf, &mut self.messages, Instant::now())
                 .await
             {
                 error!("Message confirmation error: {err:?}");
+                break;
+            }
+
+            if self.handle_resends().await {
+                info!("Errors finished...");
                 break;
             }
         }
@@ -165,12 +202,20 @@ impl Processor {
                     DatagramHeader::Anonymous
                 };
 
-                if let Err(err) = self
+                match self
                     .messages
-                    .send(&mut self.buf, header, &message.data, &message.targets)
+                    .send_separate(&mut self.buf, header, &message.data, &message.targets)
                     .await
                 {
-                    panic!("Send error: {:?}", err);
+                    Ok(()) => {
+                        if let DatagramHeader::Reliable(id) = header {
+                            let time = Instant::now();
+                            for target in message.targets {
+                                self.reliability.sent(target, id, &message.data, time);
+                            }
+                        }
+                    }
+                    Err(err) => panic!("Send error: {:?}", err),
                 }
 
                 false
@@ -187,10 +232,13 @@ impl Processor {
         let (source, header, data) = recv_result.map_err(InputHandlingError::from)?;
 
         let reliable = match header {
-            DatagramHeader::Confirmation => return Ok(()),
+            DatagramHeader::Confirmation => {
+                self.reliability.confirmed(source, data, Instant::now());
+                return Ok(());
+            }
             DatagramHeader::Anonymous => false,
             DatagramHeader::Reliable(id) => {
-                self.reliability.received(source, id);
+                self.reliability.received(source, id, Instant::now());
                 true
             }
         };
@@ -206,6 +254,30 @@ impl Processor {
 
         Ok(())
     }
+
+    async fn handle_resends(&mut self) -> bool {
+        if let Err(err) = self
+            .reliability
+            .resend(&mut self.buf, &mut self.messages, Instant::now())
+            .await
+        {
+            for &target in err.targets() {
+                if let Err(send_err) = self.errors.try_send(ConnectionError { target }) {
+                    match send_err {
+                        TrySendError::Closed(_) => {
+                            return true;
+                        }
+                        TrySendError::Full(_) => {
+                            warn!("Connection error channel is full.");
+                            continue;
+                        }
+                    }
+                }
+            }
+        }
+
+        false
+    }
 }
 
 #[derive(Error, Debug)]
@@ -220,8 +292,10 @@ enum InputHandlingError {
 pub fn setup_processor(network: Network) -> (Communicator, Processor) {
     let (outputs_sender, outputs_receiver) = bounded(CHANNEL_CAPACITY);
     let (inputs_sender, inputs_receiver) = bounded(CHANNEL_CAPACITY);
-    let communicator = Communicator::new(outputs_sender, inputs_receiver);
+    let (errors_sender, errors_receiver) = bounded(CHANNEL_CAPACITY);
+
+    let communicator = Communicator::new(outputs_sender, inputs_receiver, errors_receiver);
     let messages = Messages::new(network);
-    let processor = Processor::new(messages, outputs_receiver, inputs_sender);
+    let processor = Processor::new(messages, outputs_receiver, inputs_sender, errors_sender);
     (communicator, processor)
 }

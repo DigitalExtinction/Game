@@ -1,4 +1,9 @@
-use async_std::task;
+use std::{
+    net::{Ipv4Addr, SocketAddr, SocketAddrV4},
+    time::Duration,
+};
+
+use async_std::{prelude::FutureExt, task};
 use de_net::Network;
 use futures::join;
 use ntest::timeout;
@@ -8,8 +13,9 @@ use crate::common::{spawn_and_wait, term_and_wait};
 mod common;
 
 #[test]
-#[timeout(2000)]
+#[timeout(5000)]
 fn test() {
+    const ADDR: SocketAddr = SocketAddr::V4(SocketAddrV4::new(Ipv4Addr::LOCALHOST, 8082));
     let child = spawn_and_wait();
 
     async fn first(client: &mut Network) {
@@ -17,10 +23,10 @@ fn test() {
         let (n, _) = client.recv(&mut buffer).await.unwrap();
         assert_eq!(&buffer[4..n], &[5, 6, 7, 8]);
 
-        client
-            .send("127.0.0.1:8082".parse().unwrap(), &[22; 412])
-            .await
-            .unwrap();
+        let mut first_id = [0; 4];
+        first_id.copy_from_slice(&buffer[..4]);
+
+        client.send(ADDR, &[22; 412]).await.unwrap();
 
         let mut buffer = [0u8; 1024];
         let (n, _) = client.recv(&mut buffer).await.unwrap();
@@ -31,6 +37,40 @@ fn test() {
         // Confirmation
         let (n, _) = client.recv(&mut buffer).await.unwrap();
         assert_eq!(&buffer[0..n], &[128, 0, 0, 1, 1, 3, 3, 7, 22, 22, 22, 22]);
+
+        // Try to send invalid data -- wrong header
+        client
+            .send(ADDR, &[128, 255, 0, 1, 1, 2, 3, 4])
+            .await
+            .unwrap();
+        // Try to send invalid data -- wrong ID
+        client
+            .send(ADDR, &[128, 0, 0, 1, 255, 2, 3, 4])
+            .await
+            .unwrap();
+
+        // Two retries before we confirm.
+        let (n, _) = client.recv(&mut buffer).await.unwrap();
+        assert_eq!(&buffer[..4], &first_id);
+        assert_eq!(&buffer[4..n], &[5, 6, 7, 8]);
+        let (n, _) = client.recv(&mut buffer).await.unwrap();
+        assert_eq!(&buffer[..4], &first_id);
+        assert_eq!(&buffer[4..n], &[5, 6, 7, 8]);
+        // And send a confirmation
+        client
+            .send(
+                ADDR,
+                &[128, 0, 0, 1, buffer[0], buffer[1], buffer[2], buffer[3]],
+            )
+            .await
+            .unwrap();
+
+        // No more redeliveries expected.
+        assert!(client
+            .recv(&mut buffer)
+            .timeout(Duration::from_secs(2))
+            .await
+            .is_err());
     }
 
     async fn second(client: &mut Network) {
@@ -40,9 +80,18 @@ fn test() {
         // First 4 bytes are interpreted as datagram ID.
         assert_eq!(&buffer[4..n], &[22; 408]);
 
+        // Sending confirmation
         client
             .send(
-                "127.0.0.1:8082".parse().unwrap(),
+                ADDR,
+                &[128, 0, 0, 1, buffer[0], buffer[1], buffer[2], buffer[3]],
+            )
+            .await
+            .unwrap();
+
+        client
+            .send(
+                ADDR,
                 // Anonymous message
                 &[128, 0, 0, 0, 82, 83, 84],
             )
@@ -52,6 +101,12 @@ fn test() {
         // Confirmation
         let (n, _) = client.recv(&mut buffer).await.unwrap();
         assert_eq!(&buffer[0..n], &[128, 0, 0, 1, 7, 0, 8, 7]);
+
+        assert!(client
+            .recv(&mut buffer)
+            .timeout(Duration::from_secs(2))
+            .await
+            .is_err());
     }
 
     task::block_on(task::spawn(async {
@@ -59,12 +114,12 @@ fn test() {
         let mut second_client = Network::bind(None).await.unwrap();
 
         first_client
-            .send("127.0.0.1:8082".parse().unwrap(), &[1, 3, 3, 7, 1, 2, 3, 4])
+            .send(ADDR, &[1, 3, 3, 7, 1, 2, 3, 4])
             .await
             .unwrap();
 
         second_client
-            .send("127.0.0.1:8082".parse().unwrap(), &[7, 0, 8, 7, 5, 6, 7, 8])
+            .send(ADDR, &[7, 0, 8, 7, 5, 6, 7, 8])
             .await
             .unwrap();
 
