@@ -1,9 +1,10 @@
-use std::net::SocketAddr;
+use std::{net::SocketAddr, time::Duration};
 
 use ahash::AHashSet;
 use anyhow::Context;
-use async_std::task;
+use async_std::{prelude::FutureExt as StdFutureExt, task};
 use de_net::{setup_processor, Network, OutMessage};
+use futures::FutureExt;
 use tracing::info;
 
 const PORT: u16 = 8082;
@@ -30,19 +31,30 @@ async fn main_loop() -> anyhow::Result<()> {
     task::spawn(processor.run());
 
     loop {
-        let input = communicator.recv().await.context("Data receiving failed")?;
-        clients.insert(input.source());
-        let reliable = input.reliable();
-
-        let targets = clients
-            .iter()
-            .cloned()
-            .filter(|&target| target != input.source())
-            .collect();
-
-        communicator
-            .send(OutMessage::new(input.data(), reliable, targets))
+        if let Ok(input_result) = communicator
+            .recv()
+            .timeout(Duration::from_millis(1000))
             .await
-            .context("Data sending failed")?;
+        {
+            let input = input_result.context("Data receiving failed")?;
+            clients.insert(input.source());
+            let reliable = input.reliable();
+
+            let targets = clients
+                .iter()
+                .cloned()
+                .filter(|&target| target != input.source())
+                .collect();
+
+            communicator
+                .send(OutMessage::new(input.data(), reliable, targets))
+                .await
+                .context("Data sending failed")?;
+        };
+
+        if let Some(result) = communicator.errors().now_or_never() {
+            let error = result.context("Errors receiving failed")?;
+            clients.remove(&error.target());
+        }
     }
 }

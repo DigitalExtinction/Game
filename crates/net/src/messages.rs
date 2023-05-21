@@ -23,34 +23,44 @@ impl Messages {
         Self { network }
     }
 
-    /// Send a message (a datagram) to a list of targets.
+    /// Send a message whose data are not already stored in the given buffer.
     ///
-    /// The sending is done in parallel.
-    ///
-    /// # Arguments
-    ///
-    /// * `buf` - buffer to be used for datagram construction. The buffer must
-    ///   be at least [`MAX_DATAGRAM_SIZE`] long.
-    ///
-    /// # Panics
-    ///
-    /// Panics if `buf` is smaller than the constructed datagram size.
-    pub(crate) async fn send(
+    /// Consult [`Self::send`] for more info.
+    pub(crate) async fn send_separate(
         &mut self,
         buf: &mut [u8],
         header: DatagramHeader,
         data: &[u8],
         targets: &[SocketAddr],
     ) -> Result<(), SendError> {
-        trace!("Going to send datagram {}", header);
-
         let len = HEADER_SIZE + data.len();
         assert!(buf.len() >= len);
-
-        header.write(buf);
+        let buf = &mut buf[..len];
         buf[HEADER_SIZE..len].copy_from_slice(data);
-        let data = &buf[..len];
+        self.send(buf, header, targets).await
+    }
 
+    /// Send message to a list of targets.
+    ///
+    /// The sending is done in parallel.
+    ///
+    /// # Arguments
+    ///
+    /// * `data` - to be modified data slice containing the data of the message
+    ///   to be send. The data must start at position [`HEADER_SIZE`] and span
+    ///   across the rest of the slice.
+    ///
+    /// * `header` - header of the message.
+    ///
+    /// * `targets` - recipients of the message.
+    pub(crate) async fn send(
+        &mut self,
+        data: &mut [u8],
+        header: DatagramHeader,
+        targets: &[SocketAddr],
+    ) -> Result<(), SendError> {
+        trace!("Going to send datagram {}", header);
+        header.write(data);
         try_join_all(
             targets
                 .iter()

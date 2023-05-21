@@ -4,10 +4,11 @@ use std::{
 };
 
 use ahash::AHashMap;
+use thiserror::Error;
 
-use crate::messages::Messages;
-use crate::{confirmbuf::ConfirmBuffer, MAX_MESSAGE_SIZE};
+use crate::{confirmbuf::ConfirmBuffer, header::HEADER_SIZE, MAX_MESSAGE_SIZE};
 use crate::{header::DatagramHeader, SendError};
+use crate::{messages::Messages, resend::ResendQueue};
 
 /// Connection info should be tossed away after this time.
 const MAX_CONN_AGE: Duration = Duration::from_secs(600);
@@ -26,14 +27,34 @@ impl Reliability {
         }
     }
 
+    pub(crate) fn sent(&mut self, addr: SocketAddr, id: u32, data: &[u8], time: Instant) {
+        let connection = self.update(time, addr);
+        connection.resends.push(id, data, time);
+    }
+
     /// This method marks a message with `id` from `addr` as received.
     ///
     /// This method should be called exactly once after each reliable message
     /// is delivered.
-    pub(crate) fn received(&mut self, addr: SocketAddr, id: u32) {
-        let time = Instant::now();
+    pub(crate) fn received(&mut self, addr: SocketAddr, id: u32, time: Instant) {
         let connection = self.update(time, addr);
         connection.confirms.push(time, id);
+    }
+
+    /// Processes message with datagram confirmations.
+    ///
+    /// The data encode IDs of delivered (and confirmed) messages so that they
+    /// can be forgotten.
+    pub(crate) fn confirmed(&mut self, addr: SocketAddr, data: &[u8], time: Instant) {
+        let connection = self.update(time, addr);
+
+        let mut bytes = [0; 4];
+        for i in 0..data.len() / 4 {
+            let offset = i * 4;
+            bytes.copy_from_slice(&data[offset..offset + 4]);
+            let id = u32::from_be_bytes(bytes);
+            connection.resends.resolve(id);
+        }
     }
 
     /// Send message confirmation packets which are ready to be send.
@@ -46,6 +67,8 @@ impl Reliability {
     /// * `messages` - message connection to be used for delivery of the
     ///   confirmations.
     ///
+    /// * `time` - current time.
+    ///
     /// # Panics
     ///
     /// May panic if `buf` is not large enough.
@@ -53,9 +76,8 @@ impl Reliability {
         &mut self,
         buf: &mut [u8],
         messages: &mut Messages,
+        time: Instant,
     ) -> Result<(), SendError> {
-        let time = Instant::now();
-
         for (addr, connection) in self.connections.iter_mut() {
             if !connection.confirms.ready(time) {
                 continue;
@@ -63,13 +85,63 @@ impl Reliability {
 
             while let Some(data) = connection.confirms.flush(MAX_MESSAGE_SIZE) {
                 messages
-                    .send(buf, DatagramHeader::Confirmation, data, &[*addr])
+                    .send_separate(buf, DatagramHeader::Confirmation, data, &[*addr])
                     .await?;
             }
         }
 
         self.clean(time);
         Ok(())
+    }
+
+    /// Re-send all messages already due for re-sending.
+    pub(crate) async fn resend(
+        &mut self,
+        buf: &mut [u8],
+        messages: &mut Messages,
+        time: Instant,
+    ) -> Result<(), DeliveryErrors> {
+        let mut errors = Vec::new();
+
+        let mut index = 0;
+        while index < self.addrs.len() {
+            let addr = self.addrs[index];
+            let connection = self.connections.get_mut(&addr).unwrap();
+
+            let failed = loop {
+                match connection.resends.reschedule(&mut buf[HEADER_SIZE..], time) {
+                    Ok(Some((len, id))) => {
+                        let result = messages
+                            .send(
+                                &mut buf[..len + HEADER_SIZE],
+                                DatagramHeader::Reliable(id),
+                                &[addr],
+                            )
+                            .await;
+
+                        if result.is_err() {
+                            break true;
+                        }
+                    }
+
+                    Ok(None) => break false,
+                    Err(_) => break true,
+                }
+            };
+
+            if failed {
+                self.remove(index);
+                errors.push(addr);
+            } else {
+                index += 1;
+            }
+        }
+
+        if errors.is_empty() {
+            Ok(())
+        } else {
+            Err(DeliveryErrors(errors))
+        }
     }
 
     /// Ensure that a connection object exists and set its last contact time to
@@ -83,6 +155,7 @@ impl Reliability {
                 Connection {
                     last_contact: time,
                     confirms: ConfirmBuffer::new(),
+                    resends: ResendQueue::new(),
                 }
             })
     }
@@ -96,12 +169,16 @@ impl Reliability {
             let connection = self.connections.get_mut(&addr).unwrap();
 
             if time - connection.last_contact > MAX_CONN_AGE {
-                self.addrs.swap_remove(index);
-                self.connections.remove(&addr).unwrap();
+                self.remove(index);
             } else {
                 index += 1;
             }
         }
+    }
+
+    fn remove(&mut self, index: usize) {
+        let addr = self.addrs.swap_remove(index);
+        self.connections.remove(&addr).unwrap();
     }
 }
 
@@ -110,4 +187,15 @@ impl Reliability {
 struct Connection {
     last_contact: Instant,
     confirms: ConfirmBuffer,
+    resends: ResendQueue,
+}
+
+#[derive(Error, Debug)]
+#[error("connection failed with {0:?}")]
+pub(crate) struct DeliveryErrors(Vec<SocketAddr>);
+
+impl DeliveryErrors {
+    pub(crate) fn targets(&self) -> &[SocketAddr] {
+        self.0.as_slice()
+    }
 }
