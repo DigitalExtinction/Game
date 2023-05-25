@@ -7,7 +7,7 @@
 
 mod conf;
 mod io;
-mod persisted;
+mod macros;
 mod plugin;
 
 use bevy::{app::PluginGroupBuilder, prelude::PluginGroup};

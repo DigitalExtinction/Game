@@ -1,0 +1,5 @@
+error: expected a closure with one argument
+ --> tests/fails/bad_check_closure_too_many_args.rs:6:14
+  |
+6 |     #[check(|foo: u32, bar:u32| todo!())]
+  |              ^^^^^^^^^^^^^^^^^

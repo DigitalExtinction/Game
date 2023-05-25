@@ -1,0 +1,5 @@
+error: expected a struct, not a union
+ --> tests/fails/bad_type_union.rs:4:1
+  |
+4 | union TestConfig {
+  | ^^^^^

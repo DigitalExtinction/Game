@@ -17,12 +17,20 @@ de_core.workspace = true
 de_gui.workspace = true
 de_uom.workspace = true
 
+
+conf_macros = { path = "macros", version = "0.1.0-dev" }
+
 # Other
 anyhow.workspace = true
 async-std.workspace = true
 bevy.workspace = true
+dirs.workspace = true
 futures-lite.workspace = true
 iyes_progress.workspace = true
+paste.workspace = true
 serde.workspace = true
 serde_yaml.workspace = true
+thiserror.workspace = true
+tracing-subscriber.workspace = true
+tracing.workspace = true
 url.workspace = true

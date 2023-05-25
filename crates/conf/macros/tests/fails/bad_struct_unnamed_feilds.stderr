@@ -1,0 +1,8 @@
+error: expected a struct with named fields
+ --> tests/fails/bad_struct_unnamed_feilds.rs:4:19
+  |
+4 |   struct TestConfig (
+  |  ___________________^
+5 | |     f32,i32
+6 | | );
+  | |_^
