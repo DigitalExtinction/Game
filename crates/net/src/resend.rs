@@ -3,10 +3,14 @@ use std::{
     time::{Duration, Instant},
 };
 
+use ahash::AHashMap;
 use priority_queue::PriorityQueue;
 use thiserror::Error;
 
-use crate::{databuf::DataBuf, header::DatagramId};
+use crate::{
+    databuf::DataBuf,
+    header::{DatagramId, Destination},
+};
 
 const START_BACKOFF_MS: u64 = 220;
 const MAX_TRIES: u8 = 6;
@@ -15,6 +19,7 @@ const MAX_TRIES: u8 = 6;
 /// confirmed).
 pub(crate) struct ResendQueue {
     queue: PriorityQueue<DatagramId, Timing>,
+    meta: AHashMap<DatagramId, Destination>,
     data: DataBuf,
 }
 
@@ -22,13 +27,21 @@ impl ResendQueue {
     pub(crate) fn new() -> Self {
         Self {
             queue: PriorityQueue::new(),
+            meta: AHashMap::new(),
             data: DataBuf::new(),
         }
     }
 
     /// Registers new message for re-sending until it is resolved.
-    pub(crate) fn push(&mut self, id: DatagramId, data: &[u8], now: Instant) {
+    pub(crate) fn push(
+        &mut self,
+        id: DatagramId,
+        destination: Destination,
+        data: &[u8],
+        now: Instant,
+    ) {
         self.queue.push(id, Timing::new(now));
+        self.meta.insert(id, destination);
         self.data.push(id, data);
     }
 
@@ -37,6 +50,7 @@ impl ResendQueue {
     pub(crate) fn resolve(&mut self, id: DatagramId) {
         let result = self.queue.remove(&id);
         if result.is_some() {
+            self.meta.remove(&id);
             self.data.remove(id);
         }
     }
@@ -66,14 +80,16 @@ impl ResendQueue {
         &mut self,
         buf: &mut [u8],
         now: Instant,
-    ) -> Result<Option<(usize, DatagramId)>, RescheduleError> {
+    ) -> Result<Option<(usize, DatagramId, Destination)>, RescheduleError> {
         match self.queue.peek() {
             Some((&id, timing)) => {
                 if timing.expired(now) {
                     match timing.another(now) {
                         Some(backoff) => {
                             self.queue.change_priority(&id, backoff);
-                            Ok(Some((self.data.get(id, buf).unwrap(), id)))
+                            let len = self.data.get(id, buf).unwrap();
+                            let destination = *self.meta.get(&id).unwrap();
+                            Ok(Some((len, id, destination)))
                         }
                         None => Err(RescheduleError::DatagramFailed(id)),
                     }

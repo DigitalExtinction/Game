@@ -8,7 +8,7 @@ use thiserror::Error;
 
 use crate::{
     confirmbuf::ConfirmBuffer,
-    header::{DatagramId, HEADER_SIZE},
+    header::{DatagramId, Destination, HEADER_SIZE},
     MAX_MESSAGE_SIZE,
 };
 use crate::{header::DatagramHeader, SendError};
@@ -31,9 +31,16 @@ impl Reliability {
         }
     }
 
-    pub(crate) fn sent(&mut self, addr: SocketAddr, id: DatagramId, data: &[u8], time: Instant) {
+    pub(crate) fn sent(
+        &mut self,
+        addr: SocketAddr,
+        id: DatagramId,
+        destination: Destination,
+        data: &[u8],
+        time: Instant,
+    ) {
         let connection = self.update(time, addr);
-        connection.resends.push(id, data, time);
+        connection.resends.push(id, destination, data, time);
     }
 
     /// This method marks a message with `id` from `addr` as received.
@@ -112,11 +119,11 @@ impl Reliability {
 
             let failed = loop {
                 match connection.resends.reschedule(&mut buf[HEADER_SIZE..], time) {
-                    Ok(Some((len, id))) => {
+                    Ok(Some((len, id, destination))) => {
                         let result = messages
                             .send(
                                 &mut buf[..len + HEADER_SIZE],
-                                DatagramHeader::new_data(true, id),
+                                DatagramHeader::new_data(true, destination, id),
                                 &[addr],
                             )
                             .await;
