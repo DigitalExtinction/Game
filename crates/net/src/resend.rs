@@ -6,7 +6,7 @@ use std::{
 use priority_queue::PriorityQueue;
 use thiserror::Error;
 
-use crate::databuf::DataBuf;
+use crate::{databuf::DataBuf, header::DatagramId};
 
 const START_BACKOFF_MS: u64 = 220;
 const MAX_TRIES: u8 = 6;
@@ -14,7 +14,7 @@ const MAX_TRIES: u8 = 6;
 /// This struct governs reliable message re-sending (until each message is
 /// confirmed).
 pub(crate) struct ResendQueue {
-    queue: PriorityQueue<u32, Timing>,
+    queue: PriorityQueue<DatagramId, Timing>,
     data: DataBuf,
 }
 
@@ -27,14 +27,14 @@ impl ResendQueue {
     }
 
     /// Registers new message for re-sending until it is resolved.
-    pub(crate) fn push(&mut self, id: u32, data: &[u8], now: Instant) {
+    pub(crate) fn push(&mut self, id: DatagramId, data: &[u8], now: Instant) {
         self.queue.push(id, Timing::new(now));
         self.data.push(id, data);
     }
 
     /// Marks a message as delivered. No more re-sends will be scheduled and
     /// message data will be dropped.
-    pub(crate) fn resolve(&mut self, id: u32) {
+    pub(crate) fn resolve(&mut self, id: DatagramId) {
         let result = self.queue.remove(&id);
         if result.is_some() {
             self.data.remove(id);
@@ -56,8 +56,8 @@ impl ResendQueue {
     ///
     /// # Returns
     ///
-    /// Returns a tuple with number of bytes of retrieved data and ID of the
-    /// retrieved message.
+    /// Returns a tuple with number of bytes of retrieved data and header of
+    /// the retrieved message.
     ///
     /// # Panics
     ///
@@ -66,7 +66,7 @@ impl ResendQueue {
         &mut self,
         buf: &mut [u8],
         now: Instant,
-    ) -> Result<Option<(usize, u32)>, RescheduleError> {
+    ) -> Result<Option<(usize, DatagramId)>, RescheduleError> {
         match self.queue.peek() {
             Some((&id, timing)) => {
                 if timing.expired(now) {
@@ -88,8 +88,8 @@ impl ResendQueue {
 
 #[derive(Error, Debug)]
 pub(crate) enum RescheduleError {
-    #[error("datagram with ID {0} failed")]
-    DatagramFailed(u32),
+    #[error("datagram {0} failed")]
+    DatagramFailed(DatagramId),
 }
 
 #[derive(Eq)]

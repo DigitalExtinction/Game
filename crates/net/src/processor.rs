@@ -8,7 +8,7 @@ use thiserror::Error;
 use tracing::{error, info, warn};
 
 use crate::{
-    header::{DatagramCounter, DatagramHeader},
+    header::{DatagramHeader, DatagramId},
     messages::{Messages, MsgRecvError},
     reliability::Reliability,
     Network, MAX_DATAGRAM_SIZE, MAX_MESSAGE_SIZE,
@@ -116,7 +116,7 @@ impl Communicator {
 pub struct Processor {
     buf: [u8; MAX_DATAGRAM_SIZE],
     messages: Messages,
-    counter: DatagramCounter,
+    counter: DatagramId,
     reliability: Reliability,
     outputs: Receiver<OutMessage>,
     inputs: Sender<InMessage>,
@@ -133,7 +133,7 @@ impl Processor {
         Self {
             buf: [0; MAX_DATAGRAM_SIZE],
             messages,
-            counter: DatagramCounter::zero(),
+            counter: DatagramId::zero(),
             reliability: Reliability::new(),
             outputs,
             inputs,
@@ -195,12 +195,8 @@ impl Processor {
     async fn handle_output(&mut self) -> bool {
         match self.outputs.try_recv() {
             Ok(message) => {
-                let header = if message.reliable {
-                    self.counter.increment();
-                    self.counter.to_header()
-                } else {
-                    DatagramHeader::Anonymous
-                };
+                let header = DatagramHeader::new_data(message.reliable, self.counter);
+                self.counter = self.counter.incremented();
 
                 match self
                     .messages
@@ -208,10 +204,17 @@ impl Processor {
                     .await
                 {
                     Ok(()) => {
-                        if let DatagramHeader::Reliable(id) = header {
-                            let time = Instant::now();
-                            for target in message.targets {
-                                self.reliability.sent(target, id, &message.data, time);
+                        if let DatagramHeader::Data(data_header) = header {
+                            if data_header.reliable() {
+                                let time = Instant::now();
+                                for target in message.targets {
+                                    self.reliability.sent(
+                                        target,
+                                        data_header.id(),
+                                        &message.data,
+                                        time,
+                                    );
+                                }
                             }
                         }
                     }
@@ -236,10 +239,14 @@ impl Processor {
                 self.reliability.confirmed(source, data, Instant::now());
                 return Ok(());
             }
-            DatagramHeader::Anonymous => false,
-            DatagramHeader::Reliable(id) => {
-                self.reliability.received(source, id, Instant::now());
-                true
+            DatagramHeader::Data(data_header) => {
+                if data_header.reliable() {
+                    self.reliability
+                        .received(source, data_header.id(), Instant::now());
+                    true
+                } else {
+                    false
+                }
             }
         };
 

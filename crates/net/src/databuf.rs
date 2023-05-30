@@ -2,6 +2,8 @@ use std::collections::VecDeque;
 
 use ahash::AHashMap;
 
+use crate::header::DatagramId;
+
 /// Data buffer based on a ring-buffer.
 ///
 /// The underling data structures are optimized with the assumption that data
@@ -10,7 +12,7 @@ pub(crate) struct DataBuf {
     data: VecDeque<u8>,
     slots: VecDeque<Slot>,
     /// Mapping from datagram ID to datagram ordinal. See [`Slot::ordinal`].
-    ordinals: AHashMap<u32, usize>,
+    ordinals: AHashMap<DatagramId, usize>,
 }
 
 impl DataBuf {
@@ -26,8 +28,8 @@ impl DataBuf {
     ///
     /// # Panics
     ///
-    /// Panics if data with ID `id` is already stored.
-    pub(crate) fn push(&mut self, id: u32, data: &[u8]) {
+    /// Panics if data with the same `id` is already stored.
+    pub(crate) fn push(&mut self, id: DatagramId, data: &[u8]) {
         let (ordinal, data_offset) = match self.slots.back() {
             Some(back) => (
                 back.ordinal.wrapping_add(1),
@@ -55,7 +57,7 @@ impl DataBuf {
     /// # Panics
     ///
     /// Panics if `buf` len is smaller than length of found data.
-    pub(crate) fn get(&self, id: u32, buf: &mut [u8]) -> Option<usize> {
+    pub(crate) fn get(&self, id: DatagramId, buf: &mut [u8]) -> Option<usize> {
         let Some(slot_index) = self.slot_index(id) else { return None };
 
         let front = self.slots.front().unwrap();
@@ -74,7 +76,7 @@ impl DataBuf {
 
     /// Removes data stored with ID `id` or does nothing if such data do not
     /// exist.
-    pub(crate) fn remove(&mut self, id: u32) {
+    pub(crate) fn remove(&mut self, id: DatagramId) {
         let Some(slot_index) = self.slot_index(id) else { return };
         self.slots.get_mut(slot_index).unwrap().used = false;
 
@@ -91,7 +93,7 @@ impl DataBuf {
     }
 
     /// Get index (withing slots deque) of the slot with ID `id`.
-    fn slot_index(&self, id: u32) -> Option<usize> {
+    fn slot_index(&self, id: DatagramId) -> Option<usize> {
         let Some(&ordinal) = self.ordinals.get(&id) else { return None };
         // Slots can't be empty since the ordinal was found.
         let front = self.slots.front().unwrap();
@@ -140,27 +142,43 @@ mod tests {
         let mut buf = [0u8; 512];
         let mut data = DataBuf::new();
 
-        assert!(data.get(1, &mut buf).is_none());
+        assert!(data
+            .get(DatagramId::try_from(1).unwrap(), &mut buf)
+            .is_none());
 
-        data.push(12, &[1, 2, 3, 4, 5, 6]);
-        data.push(8, &[21, 22, 23]);
-        assert!(data.get(1, &mut buf).is_none());
-        assert_eq!(data.get(8, &mut buf).unwrap(), 3);
+        data.push(DatagramId::try_from(12).unwrap(), &[1, 2, 3, 4, 5, 6]);
+        data.push(DatagramId::try_from(8).unwrap(), &[21, 22, 23]);
+        assert!(data
+            .get(DatagramId::try_from(1).unwrap(), &mut buf)
+            .is_none());
+        assert_eq!(
+            data.get(DatagramId::try_from(8).unwrap(), &mut buf)
+                .unwrap(),
+            3
+        );
         assert_eq!(&buf[..3], &[21, 22, 23]);
-        assert_eq!(data.get(12, &mut buf).unwrap(), 6);
+        assert_eq!(
+            data.get(DatagramId::try_from(12).unwrap(), &mut buf)
+                .unwrap(),
+            6
+        );
         assert_eq!(&buf[..6], &[1, 2, 3, 4, 5, 6]);
 
         for i in 100..150 {
             for j in (0..20).rev() {
-                let id = i as u32 * 100 + j as u32;
+                let id = DatagramId::try_from(i as u32 * 100 + j as u32).unwrap();
                 data.push(id, &[i, j, 23]);
             }
 
             for j in 0..20 {
                 let id = i as u32 * 100 + j as u32;
-                assert_eq!(data.get(id, &mut buf).unwrap(), 3);
+                assert_eq!(
+                    data.get(DatagramId::try_from(id).unwrap(), &mut buf)
+                        .unwrap(),
+                    3
+                );
                 assert_eq!(&buf[..3], &[i, j, 23]);
-                data.remove(id);
+                data.remove(DatagramId::try_from(id).unwrap());
             }
         }
     }
