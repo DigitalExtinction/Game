@@ -1,8 +1,10 @@
 use std::time::{Duration, Instant};
 
+use crate::header::DatagramId;
+
 /// The buffer is flushed after it grows beyond this number of bytes.
-// Each ID is u32, thus this must be a multiple of 4.
-const MAX_BUFF_SIZE: usize = 128;
+// Each ID is 3 bytes, thus this must be a multiple of 3.
+const MAX_BUFF_SIZE: usize = 96;
 /// The buffer is flushed after the oldest part is older than this.
 const MAX_BUFF_AGE: Duration = Duration::from_millis(100);
 
@@ -23,11 +25,11 @@ impl ConfirmBuffer {
     }
 
     /// Pushes another datagram ID to the buffer.
-    pub(crate) fn push(&mut self, time: Instant, id: u32) {
+    pub(crate) fn push(&mut self, time: Instant, id: DatagramId) {
         if self.buffer.is_empty() {
             self.oldest = time;
         }
-        self.buffer.extend_from_slice(&id.to_be_bytes());
+        self.buffer.extend_from_slice(&id.to_bytes());
         self.flushed = self.buffer.len();
     }
 
@@ -71,21 +73,21 @@ mod tests {
         assert!(buf.flush(13).is_none());
         assert!(!buf.ready(now));
 
-        buf.push(now, 1042);
+        buf.push(now, 1042.try_into().unwrap());
         assert!(!buf.ready(now));
-        assert_eq!(buf.flush(13).unwrap(), &[0, 0, 4, 18]);
+        assert_eq!(buf.flush(13).unwrap(), &[0, 4, 18]);
         assert!(!buf.ready(now));
         assert!(buf.flush(13).is_none());
         assert!(!buf.ready(now));
 
-        buf.push(now, 43);
+        buf.push(now, 43.try_into().unwrap());
         assert!(!buf.ready(now));
         assert!(buf.ready(now + Duration::from_secs(10)));
-        assert_eq!(buf.flush(13).unwrap(), &[0, 0, 0, 43]);
+        assert_eq!(buf.flush(13).unwrap(), &[0, 0, 43]);
         assert!(buf.flush(13).is_none());
 
         for i in 0..32 {
-            buf.push(now, 100 + i);
+            buf.push(now, (100 + i).try_into().unwrap());
 
             if i < 31 {
                 assert!(!buf.ready(now));
@@ -96,21 +98,17 @@ mod tests {
 
         for i in 0..8 {
             assert_eq!(
-                buf.flush(16 + (i as usize) % 4).unwrap(),
+                buf.flush(12 + (i as usize) % 3).unwrap(),
                 &[
-                    0,
                     0,
                     0,
                     128 - i * 4,
                     0,
                     0,
-                    0,
                     129 - i * 4,
                     0,
                     0,
-                    0,
                     130 - i * 4,
-                    0,
                     0,
                     0,
                     131 - i * 4

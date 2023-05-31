@@ -8,7 +8,7 @@ use thiserror::Error;
 use tracing::{error, info, warn};
 
 use crate::{
-    header::{DatagramCounter, DatagramHeader},
+    header::{DatagramHeader, DatagramId, Destination},
     messages::{Messages, MsgRecvError},
     reliability::Reliability,
     Network, MAX_DATAGRAM_SIZE, MAX_MESSAGE_SIZE,
@@ -20,6 +20,7 @@ const CHANNEL_CAPACITY: usize = 1024;
 pub struct OutMessage {
     data: Vec<u8>,
     reliable: bool,
+    destination: Destination,
     targets: Vec<SocketAddr>,
 }
 
@@ -35,11 +36,17 @@ impl OutMessage {
     /// # Panics
     ///
     /// Panics if data is longer than [`MAX_MESSAGE_SIZE`].
-    pub fn new(data: Vec<u8>, reliable: bool, targets: Vec<SocketAddr>) -> Self {
+    pub fn new(
+        data: Vec<u8>,
+        reliable: bool,
+        destination: Destination,
+        targets: Vec<SocketAddr>,
+    ) -> Self {
         assert!(data.len() < MAX_MESSAGE_SIZE);
         Self {
             data,
             reliable,
+            destination,
             targets,
         }
     }
@@ -49,6 +56,7 @@ impl OutMessage {
 pub struct InMessage {
     data: Vec<u8>,
     reliable: bool,
+    destination: Destination,
     source: SocketAddr,
 }
 
@@ -64,6 +72,10 @@ impl InMessage {
 
     pub fn source(&self) -> SocketAddr {
         self.source
+    }
+
+    pub fn destination(&self) -> Destination {
+        self.destination
     }
 }
 
@@ -116,7 +128,7 @@ impl Communicator {
 pub struct Processor {
     buf: [u8; MAX_DATAGRAM_SIZE],
     messages: Messages,
-    counter: DatagramCounter,
+    counter: DatagramId,
     reliability: Reliability,
     outputs: Receiver<OutMessage>,
     inputs: Sender<InMessage>,
@@ -133,7 +145,7 @@ impl Processor {
         Self {
             buf: [0; MAX_DATAGRAM_SIZE],
             messages,
-            counter: DatagramCounter::zero(),
+            counter: DatagramId::zero(),
             reliability: Reliability::new(),
             outputs,
             inputs,
@@ -195,12 +207,9 @@ impl Processor {
     async fn handle_output(&mut self) -> bool {
         match self.outputs.try_recv() {
             Ok(message) => {
-                let header = if message.reliable {
-                    self.counter.increment();
-                    self.counter.to_header()
-                } else {
-                    DatagramHeader::Anonymous
-                };
+                let header =
+                    DatagramHeader::new_data(message.reliable, message.destination, self.counter);
+                self.counter = self.counter.incremented();
 
                 match self
                     .messages
@@ -208,10 +217,18 @@ impl Processor {
                     .await
                 {
                     Ok(()) => {
-                        if let DatagramHeader::Reliable(id) = header {
-                            let time = Instant::now();
-                            for target in message.targets {
-                                self.reliability.sent(target, id, &message.data, time);
+                        if let DatagramHeader::Data(data_header) = header {
+                            if data_header.reliable() {
+                                let time = Instant::now();
+                                for target in message.targets {
+                                    self.reliability.sent(
+                                        target,
+                                        data_header.id(),
+                                        data_header.destination(),
+                                        &message.data,
+                                        time,
+                                    );
+                                }
                             }
                         }
                     }
@@ -231,22 +248,27 @@ impl Processor {
         let Some(recv_result) = self.messages.recv(&mut self.buf).now_or_never() else { return Ok(()) };
         let (source, header, data) = recv_result.map_err(InputHandlingError::from)?;
 
-        let reliable = match header {
+        let data_header = match header {
             DatagramHeader::Confirmation => {
                 self.reliability.confirmed(source, data, Instant::now());
                 return Ok(());
             }
-            DatagramHeader::Anonymous => false,
-            DatagramHeader::Reliable(id) => {
-                self.reliability.received(source, id, Instant::now());
-                true
-            }
+            DatagramHeader::Data(data_header) => data_header,
+        };
+
+        let reliable = if data_header.reliable() {
+            self.reliability
+                .received(source, data_header.id(), Instant::now());
+            true
+        } else {
+            false
         };
 
         self.inputs
             .send(InMessage {
                 data: data.to_vec(),
                 reliable,
+                destination: data_header.destination(),
                 source,
             })
             .await

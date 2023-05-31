@@ -6,7 +6,11 @@ use std::{
 use ahash::AHashMap;
 use thiserror::Error;
 
-use crate::{confirmbuf::ConfirmBuffer, header::HEADER_SIZE, MAX_MESSAGE_SIZE};
+use crate::{
+    confirmbuf::ConfirmBuffer,
+    header::{DatagramId, Destination, HEADER_SIZE},
+    MAX_MESSAGE_SIZE,
+};
 use crate::{header::DatagramHeader, SendError};
 use crate::{messages::Messages, resend::ResendQueue};
 
@@ -27,16 +31,23 @@ impl Reliability {
         }
     }
 
-    pub(crate) fn sent(&mut self, addr: SocketAddr, id: u32, data: &[u8], time: Instant) {
+    pub(crate) fn sent(
+        &mut self,
+        addr: SocketAddr,
+        id: DatagramId,
+        destination: Destination,
+        data: &[u8],
+        time: Instant,
+    ) {
         let connection = self.update(time, addr);
-        connection.resends.push(id, data, time);
+        connection.resends.push(id, destination, data, time);
     }
 
     /// This method marks a message with `id` from `addr` as received.
     ///
     /// This method should be called exactly once after each reliable message
     /// is delivered.
-    pub(crate) fn received(&mut self, addr: SocketAddr, id: u32, time: Instant) {
+    pub(crate) fn received(&mut self, addr: SocketAddr, id: DatagramId, time: Instant) {
         let connection = self.update(time, addr);
         connection.confirms.push(time, id);
     }
@@ -48,11 +59,9 @@ impl Reliability {
     pub(crate) fn confirmed(&mut self, addr: SocketAddr, data: &[u8], time: Instant) {
         let connection = self.update(time, addr);
 
-        let mut bytes = [0; 4];
-        for i in 0..data.len() / 4 {
+        for i in 0..data.len() / 3 {
             let offset = i * 4;
-            bytes.copy_from_slice(&data[offset..offset + 4]);
-            let id = u32::from_be_bytes(bytes);
+            let id = DatagramId::from_bytes(&data[offset..offset + 3]);
             connection.resends.resolve(id);
         }
     }
@@ -110,11 +119,11 @@ impl Reliability {
 
             let failed = loop {
                 match connection.resends.reschedule(&mut buf[HEADER_SIZE..], time) {
-                    Ok(Some((len, id))) => {
+                    Ok(Some((len, id, destination))) => {
                         let result = messages
                             .send(
                                 &mut buf[..len + HEADER_SIZE],
-                                DatagramHeader::Reliable(id),
+                                DatagramHeader::new_data(true, destination, id),
                                 &[addr],
                             )
                             .await;
