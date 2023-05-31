@@ -135,6 +135,6 @@ thiserror = "1.0"
 tinyvec = { version = "1.6.0", features = ["rustc_1_40", "alloc"] }
 tracing = "0.1.26"
 tracing-appender = "0.2.2"
-tracing-subscriber = { version = "0.3.17" }
+tracing-subscriber = { version = "0.3.17", features = ["json"] }
 url = { version = "2.3.1", features = ["serde"] }
 urlencoding = "2.1.2"
