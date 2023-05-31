@@ -1,127 +1,19 @@
-use std::{net::SocketAddr, time::Instant};
+use std::time::Instant;
 
-use async_std::channel::{
-    bounded, Receiver, RecvError, SendError, Sender, TryRecvError, TrySendError,
-};
+use async_std::channel::{bounded, Receiver, SendError, Sender, TryRecvError, TrySendError};
 use futures::FutureExt;
 use thiserror::Error;
 use tracing::{error, info, warn};
 
 use crate::{
-    header::{DatagramHeader, DatagramId, Destination},
+    communicator::{Communicator, ConnectionError, InMessage, OutMessage},
+    header::{DatagramHeader, DatagramId},
     messages::{Messages, MsgRecvError},
     reliability::Reliability,
-    Network, MAX_DATAGRAM_SIZE, MAX_MESSAGE_SIZE,
+    Network, MAX_DATAGRAM_SIZE,
 };
 
 const CHANNEL_CAPACITY: usize = 1024;
-
-/// A message / datagram to be delivered.
-pub struct OutMessage {
-    data: Vec<u8>,
-    reliable: bool,
-    destination: Destination,
-    targets: Vec<SocketAddr>,
-}
-
-impl OutMessage {
-    /// # Arguments
-    ///
-    /// * `data` - data to be send.
-    ///
-    /// * `reliable` - whether to deliver the data reliably.
-    ///
-    /// * `targets` - list of message recipients.
-    ///
-    /// # Panics
-    ///
-    /// Panics if data is longer than [`MAX_MESSAGE_SIZE`].
-    pub fn new(
-        data: Vec<u8>,
-        reliable: bool,
-        destination: Destination,
-        targets: Vec<SocketAddr>,
-    ) -> Self {
-        assert!(data.len() < MAX_MESSAGE_SIZE);
-        Self {
-            data,
-            reliable,
-            destination,
-            targets,
-        }
-    }
-}
-
-/// A received message / datagram.
-pub struct InMessage {
-    data: Vec<u8>,
-    reliable: bool,
-    destination: Destination,
-    source: SocketAddr,
-}
-
-impl InMessage {
-    pub fn data(self) -> Vec<u8> {
-        self.data
-    }
-
-    /// Whether the datagram was delivered reliably.
-    pub fn reliable(&self) -> bool {
-        self.reliable
-    }
-
-    pub fn source(&self) -> SocketAddr {
-        self.source
-    }
-
-    pub fn destination(&self) -> Destination {
-        self.destination
-    }
-}
-
-pub struct ConnectionError {
-    target: SocketAddr,
-}
-
-impl ConnectionError {
-    pub fn target(&self) -> SocketAddr {
-        self.target
-    }
-}
-
-/// This struct handles communication with a side async loop with the network
-/// communication.
-pub struct Communicator {
-    outputs: Sender<OutMessage>,
-    inputs: Receiver<InMessage>,
-    errors: Receiver<ConnectionError>,
-}
-
-impl Communicator {
-    fn new(
-        outputs: Sender<OutMessage>,
-        inputs: Receiver<InMessage>,
-        errors: Receiver<ConnectionError>,
-    ) -> Self {
-        Self {
-            outputs,
-            inputs,
-            errors,
-        }
-    }
-
-    pub async fn recv(&mut self) -> Result<InMessage, RecvError> {
-        self.inputs.recv().await
-    }
-
-    pub async fn send(&mut self, message: OutMessage) -> Result<(), SendError<OutMessage>> {
-        self.outputs.send(message).await
-    }
-
-    pub async fn errors(&mut self) -> Result<ConnectionError, RecvError> {
-        self.errors.recv().await
-    }
-}
 
 /// This struct implements an async loop which handles the network
 /// communication.
@@ -207,25 +99,28 @@ impl Processor {
     async fn handle_output(&mut self) -> bool {
         match self.outputs.try_recv() {
             Ok(message) => {
-                let header =
-                    DatagramHeader::new_data(message.reliable, message.destination, self.counter);
+                let header = DatagramHeader::new_data(
+                    message.reliable(),
+                    message.destination(),
+                    self.counter,
+                );
                 self.counter = self.counter.incremented();
 
                 match self
                     .messages
-                    .send_separate(&mut self.buf, header, &message.data, &message.targets)
+                    .send_separate(&mut self.buf, header, message.data(), message.targets())
                     .await
                 {
                     Ok(()) => {
                         if let DatagramHeader::Data(data_header) = header {
                             if data_header.reliable() {
                                 let time = Instant::now();
-                                for target in message.targets {
+                                for &target in message.targets() {
                                     self.reliability.sent(
                                         target,
                                         data_header.id(),
                                         data_header.destination(),
-                                        &message.data,
+                                        message.data(),
                                         time,
                                     );
                                 }
@@ -265,12 +160,12 @@ impl Processor {
         };
 
         self.inputs
-            .send(InMessage {
-                data: data.to_vec(),
+            .send(InMessage::new(
+                data.to_vec(),
                 reliable,
-                destination: data_header.destination(),
+                data_header.destination(),
                 source,
-            })
+            ))
             .await
             .map_err(InputHandlingError::from)?;
 
@@ -284,7 +179,7 @@ impl Processor {
             .await
         {
             for &target in err.targets() {
-                if let Err(send_err) = self.errors.try_send(ConnectionError { target }) {
+                if let Err(send_err) = self.errors.try_send(ConnectionError::new(target)) {
                     match send_err {
                         TrySendError::Closed(_) => {
                             return true;
