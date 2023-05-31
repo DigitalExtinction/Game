@@ -24,7 +24,7 @@ impl Plugin for LogPlugin {
 
         // for file name
         let dt = chrono::Local::now();
-        let path: PathBuf = dt.format("%Y-%m-%d_%H-%M-%S.log").to_string().into();
+        let path: PathBuf = dt.format("%Y-%m-%d_%H-%M-%S.jsonl").to_string().into();
 
         let file_appender = tracing_appender::rolling::never(dir.as_path(), path.as_path());
 
@@ -38,7 +38,7 @@ impl Plugin for LogPlugin {
                     .from_env_lossy(),
             )
             .with(fmt::layer().with_writer(std::io::stdout))
-            .with(fmt::layer().with_writer(non_blocking_log_writer));
+            .with(fmt::layer().json().with_writer(non_blocking_log_writer));
         tracing::subscriber::set_global_default(collector)
             .expect("Unable to set a global collector");
 
