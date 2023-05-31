@@ -1,4 +1,4 @@
-pub use communicator::{Communicator, InMessage, OutMessage};
+pub use communicator::{Communicator, InMessage, OutMessage, OutMessageBuilder};
 pub use header::Destination;
 pub use messages::MAX_MESSAGE_SIZE;
 pub use net::{Network, RecvError, SendError, MAX_DATAGRAM_SIZE};

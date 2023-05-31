@@ -1,8 +1,94 @@
-use std::net::SocketAddr;
+use std::{mem, net::SocketAddr};
 
 use async_std::channel::{Receiver, RecvError, SendError, Sender};
+use bincode::{
+    config::{BigEndian, Configuration, Limit, Varint},
+    encode_into_slice,
+    error::EncodeError,
+};
 
 use crate::{header::Destination, messages::MAX_MESSAGE_SIZE};
+
+const BINCODE_CONF: Configuration<BigEndian, Varint, Limit<MAX_MESSAGE_SIZE>> =
+    bincode::config::standard()
+        .with_big_endian()
+        .with_variable_int_encoding()
+        .with_limit::<MAX_MESSAGE_SIZE>();
+
+/// It cumulatively builds output messages from encodable data items.
+pub struct OutMessageBuilder {
+    reliable: bool,
+    destination: Destination,
+    targets: Vec<SocketAddr>,
+    buffer: Vec<u8>,
+    used: usize,
+    messages: Vec<OutMessage>,
+}
+
+impl OutMessageBuilder {
+    pub fn new(reliable: bool, destination: Destination, targets: Vec<SocketAddr>) -> Self {
+        Self {
+            reliable,
+            destination,
+            targets,
+            buffer: vec![0; MAX_MESSAGE_SIZE],
+            used: 0,
+            messages: Vec::new(),
+        }
+    }
+
+    /// Build output messages from all pushed data items. Data items are split
+    /// among the messages in order.
+    pub fn build(mut self) -> Vec<OutMessage> {
+        let mut messages = self.messages;
+
+        if self.used > 0 {
+            self.buffer.truncate(self.used);
+            let message = OutMessage::new(
+                self.buffer,
+                self.reliable,
+                self.destination,
+                self.targets.clone(),
+            );
+            messages.push(message);
+        }
+
+        messages
+    }
+
+    /// Push another data item to the builder so that it is included in one of
+    /// the resulting messages.
+    pub fn push<E>(&mut self, payload: &E) -> Result<(), EncodeError>
+    where
+        E: bincode::Encode,
+    {
+        match self.push_inner(payload) {
+            Err(EncodeError::UnexpectedEnd) => {
+                let mut data = vec![0; MAX_MESSAGE_SIZE];
+                mem::swap(&mut data, &mut self.buffer);
+                data.truncate(self.used);
+                self.used = 0;
+
+                let message =
+                    OutMessage::new(data, self.reliable, self.destination, self.targets.clone());
+                self.messages.push(message);
+
+                self.push_inner(payload)
+            }
+            Err(err) => Err(err),
+            Ok(()) => Ok(()),
+        }
+    }
+
+    fn push_inner<E>(&mut self, payload: &E) -> Result<(), EncodeError>
+    where
+        E: bincode::Encode,
+    {
+        let len = encode_into_slice(payload, &mut self.buffer[self.used..], BINCODE_CONF)?;
+        self.used += len;
+        Ok(())
+    }
+}
 
 /// A message / datagram to be delivered.
 pub struct OutMessage {
@@ -143,5 +229,48 @@ impl Communicator {
 
     pub async fn errors(&mut self) -> Result<ConnectionError, RecvError> {
         self.errors.recv().await
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_out_message_builder() {
+        #[derive(bincode::Encode)]
+        struct TestData {
+            values: [u64; 16], // up to 128 bytes
+        }
+
+        let mut builder = OutMessageBuilder::new(
+            true,
+            Destination::Players,
+            vec!["127.0.0.1:1111".parse().unwrap()],
+        );
+
+        for i in 0..10 {
+            builder
+                .push(&TestData {
+                    // Use large u64 so that the value cannot be shrunk.
+                    values: [u64::MAX - (i as u64); 16],
+                })
+                .unwrap();
+        }
+
+        let messages = builder.build();
+        assert_eq!(messages.len(), 4);
+        // 3 items + something extra for the encoding
+        assert!(messages[0].data().len() >= 128 * 3);
+        // less then 4 items
+        assert!(messages[0].data().len() < 128 * 4);
+
+        assert!(messages[1].data().len() >= 128 * 3);
+        assert!(messages[1].data().len() < 128 * 4);
+        assert!(messages[2].data().len() >= 128 * 3);
+        assert!(messages[2].data().len() < 128 * 4);
+        // last one contains only one leftover item
+        assert!(messages[3].data().len() >= 128);
+        assert!(messages[3].data().len() < 128 * 2);
     }
 }
