@@ -1,78 +1,95 @@
+#![allow(unused_variables)]
 //! This module implements final (i.e. parsed and validated) game configuration
-//! objects and their building from persistent configuration objects.
+//! objects and their building from persistent configuration.
 
-use anyhow::{bail, ensure, Context, Error, Result};
-use bevy::prelude::Resource;
+use anyhow::{ensure, Context, Error, Result};
+use async_std::path::Path;
+use conf_macros::Config;
 use de_uom::{LogicalPixel, Metre};
+use serde::Deserialize;
 use url::Url;
 
-use crate::persisted::{self, *};
+use crate::bundle_config;
 
-/// Top-level game configuration object.
-#[derive(Resource)]
-pub struct Configuration {
-    multiplayer: MultiplayerConf,
-    camera: CameraConf,
+// --------------------
+// Config structs hold deserialized and validated data before
+// further processing or packaging into Configuration
+
+#[derive(Deserialize, Config, Debug, Clone)]
+pub struct MultiplayerConf {
+    #[ensure(server.scheme() == "http", "Only `http` scheme is allowed for `server`.")]
+    pub server: Url,
 }
 
-impl Configuration {
-    pub fn multiplayer(&self) -> &MultiplayerConf {
-        &self.multiplayer
-    }
+#[derive(Deserialize, Config, Debug, Clone)]
+pub struct Camera {
+    #[is_finite]
+    #[ensure(*move_margin > 0., "`move_margin` must be positive.")]
+    pub move_margin: f32,
 
-    pub fn camera(&self) -> &CameraConf {
-        &self.camera
-    }
+    #[ensure(*min_distance >= 10., "`min_distance` must be larger or equal to 10.0.")]
+    pub min_distance: f32,
+
+    #[ensure(*max_distance <= 300., "`max_distance` must be smaller or equal to 300.0.")]
+    #[ensure(*max_distance > *min_distance, "`max_distance` must be larger than `min_distance`.")]
+    pub max_distance: f32,
+
+    #[ensure(*wheel_zoom_sensitivity > 1., "`wheel_zoom_sensitivity` must be greater than 1.0.")]
+    pub wheel_zoom_sensitivity: f32,
+
+    #[ensure(*touchpad_zoom_sensitivity > 1., "`touchpad_zoom_sensitivity` must be greater than 1.0.")]
+    pub touchpad_zoom_sensitivity: f32,
+
+    #[ensure(*rotation_sensitivity > 0., "`rotation_sensitivity` must be greater than 0.0.")]
+    pub rotation_sensitivity: f32,
 }
+// --------------------
 
-impl Default for Configuration {
+// ---- default implementations ----
+
+impl Default for MultiplayerConf {
     fn default() -> Self {
-        persisted::Configuration::default().try_into().unwrap()
+        Self {
+            server: Url::parse("http://lobby.de_game.org").unwrap(),
+        }
     }
 }
 
-impl TryFrom<persisted::Configuration> for Configuration {
+impl Default for Camera {
+    fn default() -> Self {
+        Self {
+            move_margin: 40.,
+            min_distance: 20.,
+            max_distance: 80.,
+            wheel_zoom_sensitivity: 1.1,
+            touchpad_zoom_sensitivity: 1.1,
+            rotation_sensitivity: 0.01,
+        }
+    }
+}
+
+// --------------------
+
+// for this more complicated data structure, we need to
+// implement TryInto so that the macro can convert it
+// into its desired data structure before packing into
+// Configuration
+impl TryInto<CameraConf> for Camera {
     type Error = Error;
 
-    fn try_from(conf: persisted::Configuration) -> Result<Self> {
-        Ok(Self {
-            multiplayer: conf
-                .multiplayer
-                .try_into()
-                .context("`multiplayer` validation failed")?,
-            camera: conf
-                .camera
-                .try_into()
-                .context("`camera` validation failed")?,
+    fn try_into(self) -> Result<CameraConf> {
+        Ok(CameraConf {
+            move_margin: LogicalPixel::new(self.move_margin),
+            min_distance: Metre::new(self.min_distance),
+            max_distance: Metre::new(self.max_distance),
+            wheel_zoom_sensitivity: self.wheel_zoom_sensitivity,
+            touchpad_zoom_sensitivity: self.touchpad_zoom_sensitivity,
+            rotation_sensitivity: self.rotation_sensitivity,
         })
     }
 }
 
-pub struct MultiplayerConf {
-    server: Url,
-}
-
-impl MultiplayerConf {
-    pub fn server(&self) -> &Url {
-        &self.server
-    }
-}
-
-impl TryFrom<Option<Multiplayer>> for MultiplayerConf {
-    type Error = Error;
-
-    fn try_from(conf: Option<Multiplayer>) -> Result<Self> {
-        let server = conf
-            .and_then(|c| c.server)
-            .unwrap_or_else(|| Url::parse("http://lobby.de-game.org").unwrap());
-        if server.scheme() != "http" {
-            bail!("Only `http` scheme is allowed for `server`.")
-        }
-
-        Ok(Self { server })
-    }
-}
-
+#[derive(Debug, Clone)]
 pub struct CameraConf {
     move_margin: LogicalPixel,
     min_distance: Metre,
@@ -81,6 +98,8 @@ pub struct CameraConf {
     touchpad_zoom_sensitivity: f32,
     rotation_sensitivity: f32,
 }
+
+// ---- config impls ----
 
 impl CameraConf {
     /// Horizontal camera movement is initiated if mouse cursor is within this
@@ -118,73 +137,15 @@ impl CameraConf {
     }
 }
 
-impl TryFrom<Option<Camera>> for CameraConf {
-    type Error = Error;
-
-    fn try_from(conf: Option<Camera>) -> Result<Self> {
-        let conf = conf.as_ref();
-
-        let move_margin = conf.and_then(|c| c.move_margin).unwrap_or(40.);
-        ensure!(move_margin.is_finite(), "`move_margin` must be finite.");
-        ensure!(move_margin > 0., "`move_margin` must be positive.");
-
-        let min_distance = conf.and_then(|c| c.min_distance).unwrap_or(20.);
-        ensure!(min_distance.is_finite(), "`min_distance` must be finite.");
-        ensure!(
-            min_distance >= 10.,
-            "`min_distance` must be larger or equal to 10.0."
-        );
-
-        let max_distance = conf.and_then(|c| c.max_distance).unwrap_or(80.);
-        ensure!(max_distance.is_finite(), "`max_distance` must be finite.");
-        ensure!(
-            max_distance <= 300.,
-            "`max_distance` must be smaller or equal to 300.0."
-        );
-        ensure!(
-            min_distance <= max_distance,
-            "`min_distance` must be smaller or equal to `max_distance`."
-        );
-
-        let wheel_zoom_sensitivity = conf.and_then(|c| c.wheel_zoom_sensitivity).unwrap_or(1.1);
-        ensure!(
-            wheel_zoom_sensitivity.is_finite(),
-            "`wheel_zoom_sensitivity` must be finite."
-        );
-        ensure!(
-            wheel_zoom_sensitivity > 1.,
-            "`wheel_zoom_sensitivity` must be greater than 1.0."
-        );
-
-        let touchpad_zoom_sensitivity = conf
-            .and_then(|c| c.touchpad_zoom_sensitivity)
-            .unwrap_or(1.01);
-        ensure!(
-            touchpad_zoom_sensitivity.is_finite(),
-            "`touchpad_zoom_sensitivity` must be finite."
-        );
-        ensure!(
-            touchpad_zoom_sensitivity > 1.,
-            "`touchpad_zoom_sensitivity` must be greater than 1.0."
-        );
-
-        let rotation_sensitivity = conf.and_then(|c| c.rotation_sensitivity).unwrap_or(0.008);
-        ensure!(
-            rotation_sensitivity.is_finite(),
-            "`rotation_sensitivity` must be finite."
-        );
-        ensure!(
-            rotation_sensitivity > 0.,
-            "`rotation_sensitivity` must be greater than 0.0."
-        );
-
-        Ok(Self {
-            move_margin: LogicalPixel::new(move_margin),
-            min_distance: Metre::new(min_distance),
-            max_distance: Metre::new(max_distance),
-            wheel_zoom_sensitivity,
-            touchpad_zoom_sensitivity,
-            rotation_sensitivity,
-        })
+impl MultiplayerConf {
+    /// Server URL for lobby connections.
+    pub fn server(&self) -> &Url {
+        &self.server
     }
 }
+
+// Bundle configuration neatly into a single struct
+bundle_config!(
+    camera: CameraConf: Camera, // Conf file -> Camera -> CameraConf
+    multiplayer: MultiplayerConf: MultiplayerConf  // Conf file -> MultiplayerConf
+);

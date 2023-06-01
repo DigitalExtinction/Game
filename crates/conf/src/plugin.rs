@@ -1,14 +1,16 @@
-use anyhow::Result;
 use bevy::{
     prelude::*,
     tasks::{IoTaskPool, Task},
 };
-use de_core::{fs::conf_dir, log_full_error, state::AppState};
+use de_core::fs::conf_dir;
+use de_core::state::AppState;
 use de_gui::ToastEvent;
 use futures_lite::future;
 use iyes_progress::prelude::*;
+use tracing::error;
 
-use crate::{io::load_conf, Configuration};
+use crate::macros::ConfigLoadError;
+use crate::Configuration;
 
 pub(super) struct ConfPlugin;
 
@@ -25,7 +27,7 @@ impl Plugin for ConfPlugin {
 }
 
 #[derive(Resource)]
-struct LoadingTask(Task<Result<Configuration>>);
+struct LoadingTask(Task<Result<Configuration, ConfigLoadError>>);
 
 fn cleanup(mut commands: Commands) {
     commands.remove_resource::<LoadingTask>();
@@ -33,8 +35,8 @@ fn cleanup(mut commands: Commands) {
 
 fn start_loading(mut commands: Commands) {
     let task = IoTaskPool::get().spawn(async {
-        let path = conf_dir()?.join("conf.yaml");
-        load_conf(path.as_path()).await
+        let path = conf_dir().map_err(ConfigLoadError::from)?.join("conf.yaml");
+        Configuration::load(path.as_path()).await
     });
     commands.insert_resource(LoadingTask(task));
 }
@@ -57,12 +59,8 @@ fn poll_conf(
                     true.into()
                 }
                 Err(err) => {
-                    toasts.send(ToastEvent::new(format!(
-                        "Configuration loading failed: {err}"
-                    )));
-                    let error: &dyn Error = err.as_ref();
-                    log_full_error!(error);
-
+                    error!("{err}");
+                    toasts.send(ToastEvent::new("Configuration loading failed.".to_owned()));
                     commands.init_resource::<Configuration>();
                     true.into()
                 }

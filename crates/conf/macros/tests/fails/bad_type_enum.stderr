@@ -1,0 +1,5 @@
+error: expected a struct, not an enum
+ --> tests/fails/bad_type_enum.rs:4:1
+  |
+4 | enum TestConfig {
+  | ^^^^
