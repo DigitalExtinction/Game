@@ -24,6 +24,10 @@ impl ConfirmBuffer {
         }
     }
 
+    pub(crate) fn is_empty(&self) -> bool {
+        self.buffer.is_empty()
+    }
+
     /// Pushes another datagram ID to the buffer.
     pub(crate) fn push(&mut self, time: Instant, id: DatagramId) {
         if self.buffer.is_empty() {

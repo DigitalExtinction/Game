@@ -32,6 +32,10 @@ impl ResendQueue {
         }
     }
 
+    pub(crate) fn is_empty(&self) -> bool {
+        self.queue.is_empty()
+    }
+
     /// Registers new message for re-sending until it is resolved.
     pub(crate) fn push(
         &mut self,

@@ -169,7 +169,10 @@ impl Reliability {
             })
     }
 
-    /// Forget all connections with last contact older than [`MAX_CONN_AGE`].
+    /// Forget all connections which:
+    ///
+    /// - has not been actively used for longer than [`MAX_CONN_AGE`],
+    /// - have no pending activity.
     fn clean(&mut self, time: Instant) {
         let mut index = 0;
 
@@ -177,7 +180,7 @@ impl Reliability {
             let addr = self.addrs[index];
             let connection = self.connections.get_mut(&addr).unwrap();
 
-            if time - connection.last_contact > MAX_CONN_AGE {
+            if connection.is_inactive(time) {
                 self.remove(index);
             } else {
                 index += 1;
@@ -197,6 +200,16 @@ struct Connection {
     last_contact: Instant,
     confirms: ConfirmBuffer,
     resends: ResendQueue,
+}
+
+impl Connection {
+    fn is_inactive(&self, time: Instant) -> bool {
+        self.is_empty() && time - self.last_contact > MAX_CONN_AGE
+    }
+
+    fn is_empty(&self) -> bool {
+        self.resends.is_empty() && self.confirms.is_empty()
+    }
 }
 
 #[derive(Error, Debug)]
