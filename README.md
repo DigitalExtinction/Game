@@ -190,3 +190,7 @@ All other artwork in this repository, including 3D models, textures,
 animations, UI bitmaps, sounds and music are licensed under
 [Attribution-ShareAlike 4.0 International (CC BY-SA
 4.0)](https://creativecommons.org/licenses/by-sa/4.0/legalcode)
+
+# Sponsors
+
+[@JustinDaleGray](https://github.com/JustinDaleGray)
