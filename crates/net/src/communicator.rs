@@ -1,10 +1,10 @@
-use std::{mem, net::SocketAddr};
+use std::{marker::PhantomData, mem, net::SocketAddr};
 
 use async_std::channel::{Receiver, RecvError, SendError, Sender};
 use bincode::{
     config::{BigEndian, Configuration, Limit, Varint},
-    encode_into_slice,
-    error::EncodeError,
+    decode_from_slice, encode_into_slice,
+    error::{DecodeError, EncodeError},
 };
 
 use crate::{header::Destination, messages::MAX_MESSAGE_SIZE};
@@ -170,6 +170,18 @@ impl InMessage {
         self.data
     }
 
+    /// Interpret the data as a sequence of encoded items.
+    pub fn decode<E>(&self) -> MessageDecoder<E>
+    where
+        E: bincode::Decode,
+    {
+        MessageDecoder {
+            data: self.data.as_slice(),
+            offset: 0,
+            _marker: PhantomData::default(),
+        }
+    }
+
     /// Whether the datagram was delivered reliably.
     pub fn reliable(&self) -> bool {
         self.reliable
@@ -181,6 +193,37 @@ impl InMessage {
 
     pub fn destination(&self) -> Destination {
         self.destination
+    }
+}
+
+/// An iterator which decodes binary input data item by item.
+pub struct MessageDecoder<'a, E>
+where
+    E: bincode::Decode,
+{
+    data: &'a [u8],
+    offset: usize,
+    _marker: PhantomData<E>,
+}
+
+impl<'a, E> Iterator for MessageDecoder<'a, E>
+where
+    E: bincode::Decode,
+{
+    type Item = Result<E, DecodeError>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.offset >= self.data.len() {
+            return None;
+        }
+
+        match decode_from_slice(&self.data[self.offset..], BINCODE_CONF) {
+            Ok((item, len)) => {
+                self.offset += len;
+                Some(Ok(item))
+            }
+            Err(err) => Some(Err(err)),
+        }
     }
 }
 
@@ -234,6 +277,8 @@ impl Communicator {
 
 #[cfg(test)]
 mod tests {
+    use bincode::Decode;
+
     use super::*;
 
     #[test]
@@ -272,5 +317,29 @@ mod tests {
         // last one contains only one leftover item
         assert!(messages[3].data().len() >= 128);
         assert!(messages[3].data().len() < 128 * 2);
+    }
+
+    #[test]
+    fn test_decoding() {
+        #[derive(Decode, Debug, Eq, PartialEq)]
+        enum Message {
+            One(u16),
+            Two([u32; 2]),
+        }
+
+        let message = InMessage {
+            // Message::Two([3, 4]), Message::One(1286)
+            data: vec![1, 3, 4, 0, 251, 5, 6],
+            reliable: false,
+            destination: Destination::Players,
+            source: "127.0.0.1:1111".parse().unwrap(),
+        };
+
+        let mut items: MessageDecoder<Message> = message.decode();
+        let first = items.next().unwrap().unwrap();
+        assert_eq!(first, Message::Two([3, 4]));
+        let second = items.next().unwrap().unwrap();
+        assert_eq!(second, Message::One(1286));
+        assert!(items.next().is_none());
     }
 }
