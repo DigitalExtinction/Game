@@ -7,7 +7,7 @@ use bincode::{
     error::{DecodeError, EncodeError},
 };
 
-use crate::{header::Destination, messages::MAX_MESSAGE_SIZE};
+use crate::{header::Peers, messages::MAX_MESSAGE_SIZE};
 
 const BINCODE_CONF: Configuration<BigEndian, Varint, Limit<MAX_MESSAGE_SIZE>> =
     bincode::config::standard()
@@ -18,7 +18,7 @@ const BINCODE_CONF: Configuration<BigEndian, Varint, Limit<MAX_MESSAGE_SIZE>> =
 /// It cumulatively builds output messages from encodable data items.
 pub struct OutMessageBuilder {
     reliable: bool,
-    destination: Destination,
+    peers: Peers,
     targets: Vec<SocketAddr>,
     buffer: Vec<u8>,
     used: usize,
@@ -26,10 +26,10 @@ pub struct OutMessageBuilder {
 }
 
 impl OutMessageBuilder {
-    pub fn new(reliable: bool, destination: Destination, targets: Vec<SocketAddr>) -> Self {
+    pub fn new(reliable: bool, peers: Peers, targets: Vec<SocketAddr>) -> Self {
         Self {
             reliable,
-            destination,
+            peers,
             targets,
             buffer: vec![0; MAX_MESSAGE_SIZE],
             used: 0,
@@ -44,12 +44,8 @@ impl OutMessageBuilder {
 
         if self.used > 0 {
             self.buffer.truncate(self.used);
-            let message = OutMessage::new(
-                self.buffer,
-                self.reliable,
-                self.destination,
-                self.targets.clone(),
-            );
+            let message =
+                OutMessage::new(self.buffer, self.reliable, self.peers, self.targets.clone());
             messages.push(message);
         }
 
@@ -70,7 +66,7 @@ impl OutMessageBuilder {
                 self.used = 0;
 
                 let message =
-                    OutMessage::new(data, self.reliable, self.destination, self.targets.clone());
+                    OutMessage::new(data, self.reliable, self.peers, self.targets.clone());
                 self.messages.push(message);
 
                 self.push_inner(payload)
@@ -94,7 +90,7 @@ impl OutMessageBuilder {
 pub struct OutMessage {
     data: Vec<u8>,
     reliable: bool,
-    destination: Destination,
+    peers: Peers,
     targets: Vec<SocketAddr>,
 }
 
@@ -105,14 +101,14 @@ impl OutMessage {
     pub fn encode_single<E>(
         message: &E,
         reliable: bool,
-        destination: Destination,
+        peers: Peers,
         targets: Vec<SocketAddr>,
     ) -> Result<Self, EncodeError>
     where
         E: bincode::Encode,
     {
         let data = encode_to_vec(message, BINCODE_CONF)?;
-        Ok(Self::new(data, reliable, destination, targets))
+        Ok(Self::new(data, reliable, peers, targets))
     }
 
     /// # Arguments
@@ -126,17 +122,12 @@ impl OutMessage {
     /// # Panics
     ///
     /// Panics if data is longer than [`MAX_MESSAGE_SIZE`].
-    pub fn new(
-        data: Vec<u8>,
-        reliable: bool,
-        destination: Destination,
-        targets: Vec<SocketAddr>,
-    ) -> Self {
+    pub fn new(data: Vec<u8>, reliable: bool, peers: Peers, targets: Vec<SocketAddr>) -> Self {
         assert!(data.len() < MAX_MESSAGE_SIZE);
         Self {
             data,
             reliable,
-            destination,
+            peers,
             targets,
         }
     }
@@ -149,8 +140,8 @@ impl OutMessage {
         self.reliable
     }
 
-    pub(crate) fn destination(&self) -> Destination {
-        self.destination
+    pub(crate) fn peers(&self) -> Peers {
+        self.peers
     }
 
     pub(crate) fn targets(&self) -> &[SocketAddr] {
@@ -162,21 +153,16 @@ impl OutMessage {
 pub struct InMessage {
     data: Vec<u8>,
     reliable: bool,
-    destination: Destination,
+    peers: Peers,
     source: SocketAddr,
 }
 
 impl InMessage {
-    pub(crate) fn new(
-        data: Vec<u8>,
-        reliable: bool,
-        destination: Destination,
-        source: SocketAddr,
-    ) -> Self {
+    pub(crate) fn new(data: Vec<u8>, reliable: bool, peers: Peers, source: SocketAddr) -> Self {
         Self {
             data,
             reliable,
-            destination,
+            peers,
             source,
         }
     }
@@ -206,8 +192,8 @@ impl InMessage {
         self.source
     }
 
-    pub fn destination(&self) -> Destination {
-        self.destination
+    pub fn peers(&self) -> Peers {
+        self.peers
     }
 }
 
@@ -305,7 +291,7 @@ mod tests {
 
         let mut builder = OutMessageBuilder::new(
             true,
-            Destination::Players,
+            Peers::Players,
             vec!["127.0.0.1:1111".parse().unwrap()],
         );
 
@@ -346,7 +332,7 @@ mod tests {
             // Message::Two([3, 4]), Message::One(1286)
             data: vec![1, 3, 4, 0, 251, 5, 6],
             reliable: false,
-            destination: Destination::Players,
+            peers: Peers::Players,
             source: "127.0.0.1:1111".parse().unwrap(),
         };
 
