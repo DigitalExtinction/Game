@@ -110,7 +110,6 @@ impl OutMessage {
     /// # Panics
     ///
     /// Panics if data is longer than [`MAX_MESSAGE_SIZE`].
-
     pub fn new(
         data: Vec<u8>,
         reliable: bool,
