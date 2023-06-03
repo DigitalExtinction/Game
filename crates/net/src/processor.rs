@@ -99,11 +99,8 @@ impl Processor {
     async fn handle_output(&mut self) -> bool {
         match self.outputs.try_recv() {
             Ok(message) => {
-                let header = DatagramHeader::new_data(
-                    message.reliable(),
-                    message.destination(),
-                    self.counter,
-                );
+                let header =
+                    DatagramHeader::new_data(message.reliable(), message.peers(), self.counter);
                 self.counter = self.counter.incremented();
 
                 match self
@@ -119,7 +116,7 @@ impl Processor {
                                     self.reliability.sent(
                                         target,
                                         data_header.id(),
-                                        data_header.destination(),
+                                        data_header.peers(),
                                         message.data(),
                                         time,
                                     );
@@ -163,7 +160,7 @@ impl Processor {
             .send(InMessage::new(
                 data.to_vec(),
                 reliable,
-                data_header.destination(),
+                data_header.peers(),
                 source,
             ))
             .await

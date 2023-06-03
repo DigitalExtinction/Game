@@ -9,7 +9,7 @@ use thiserror::Error;
 
 use crate::{
     databuf::DataBuf,
-    header::{DatagramId, Destination},
+    header::{DatagramId, Peers},
 };
 
 const START_BACKOFF_MS: u64 = 220;
@@ -19,7 +19,7 @@ const MAX_TRIES: u8 = 6;
 /// confirmed).
 pub(crate) struct ResendQueue {
     queue: PriorityQueue<DatagramId, Timing>,
-    meta: AHashMap<DatagramId, Destination>,
+    meta: AHashMap<DatagramId, Peers>,
     data: DataBuf,
 }
 
@@ -32,16 +32,14 @@ impl ResendQueue {
         }
     }
 
+    pub(crate) fn is_empty(&self) -> bool {
+        self.queue.is_empty()
+    }
+
     /// Registers new message for re-sending until it is resolved.
-    pub(crate) fn push(
-        &mut self,
-        id: DatagramId,
-        destination: Destination,
-        data: &[u8],
-        now: Instant,
-    ) {
+    pub(crate) fn push(&mut self, id: DatagramId, peers: Peers, data: &[u8], now: Instant) {
         self.queue.push(id, Timing::new(now));
-        self.meta.insert(id, destination);
+        self.meta.insert(id, peers);
         self.data.push(id, data);
     }
 
@@ -80,7 +78,7 @@ impl ResendQueue {
         &mut self,
         buf: &mut [u8],
         now: Instant,
-    ) -> Result<Option<(usize, DatagramId, Destination)>, RescheduleError> {
+    ) -> Result<Option<(usize, DatagramId, Peers)>, RescheduleError> {
         match self.queue.peek() {
             Some((&id, timing)) => {
                 if timing.expired(now) {
@@ -88,8 +86,8 @@ impl ResendQueue {
                         Some(backoff) => {
                             self.queue.change_priority(&id, backoff);
                             let len = self.data.get(id, buf).unwrap();
-                            let destination = *self.meta.get(&id).unwrap();
-                            Ok(Some((len, id, destination)))
+                            let peers = *self.meta.get(&id).unwrap();
+                            Ok(Some((len, id, peers)))
                         }
                         None => Err(RescheduleError::DatagramFailed(id)),
                     }

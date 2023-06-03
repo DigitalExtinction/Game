@@ -8,7 +8,7 @@ use thiserror::Error;
 
 use crate::{
     confirmbuf::ConfirmBuffer,
-    header::{DatagramId, Destination, HEADER_SIZE},
+    header::{DatagramId, Peers, HEADER_SIZE},
     MAX_MESSAGE_SIZE,
 };
 use crate::{header::DatagramHeader, SendError};
@@ -35,12 +35,12 @@ impl Reliability {
         &mut self,
         addr: SocketAddr,
         id: DatagramId,
-        destination: Destination,
+        peers: Peers,
         data: &[u8],
         time: Instant,
     ) {
         let connection = self.update(time, addr);
-        connection.resends.push(id, destination, data, time);
+        connection.resends.push(id, peers, data, time);
     }
 
     /// This method marks a message with `id` from `addr` as received.
@@ -119,11 +119,11 @@ impl Reliability {
 
             let failed = loop {
                 match connection.resends.reschedule(&mut buf[HEADER_SIZE..], time) {
-                    Ok(Some((len, id, destination))) => {
+                    Ok(Some((len, id, peers))) => {
                         let result = messages
                             .send(
                                 &mut buf[..len + HEADER_SIZE],
-                                DatagramHeader::new_data(true, destination, id),
+                                DatagramHeader::new_data(true, peers, id),
                                 &[addr],
                             )
                             .await;
@@ -169,7 +169,10 @@ impl Reliability {
             })
     }
 
-    /// Forget all connections with last contact older than [`MAX_CONN_AGE`].
+    /// Forget all connections which:
+    ///
+    /// - has not been actively used for longer than [`MAX_CONN_AGE`],
+    /// - have no pending activity.
     fn clean(&mut self, time: Instant) {
         let mut index = 0;
 
@@ -177,7 +180,7 @@ impl Reliability {
             let addr = self.addrs[index];
             let connection = self.connections.get_mut(&addr).unwrap();
 
-            if time - connection.last_contact > MAX_CONN_AGE {
+            if connection.is_inactive(time) {
                 self.remove(index);
             } else {
                 index += 1;
@@ -197,6 +200,16 @@ struct Connection {
     last_contact: Instant,
     confirms: ConfirmBuffer,
     resends: ResendQueue,
+}
+
+impl Connection {
+    fn is_inactive(&self, time: Instant) -> bool {
+        self.is_empty() && time - self.last_contact > MAX_CONN_AGE
+    }
+
+    fn is_empty(&self) -> bool {
+        self.resends.is_empty() && self.confirms.is_empty()
+    }
 }
 
 #[derive(Error, Debug)]

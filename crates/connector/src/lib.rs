@@ -2,9 +2,8 @@ use std::{net::SocketAddr, time::Duration};
 
 use ahash::AHashSet;
 use anyhow::Context;
-use async_std::{prelude::FutureExt as StdFutureExt, task};
-use de_net::{setup_processor, Communicator, Destination, InMessage, Network, OutMessage};
-use futures::FutureExt;
+use async_std::{channel::TryRecvError, prelude::FutureExt as StdFutureExt, task};
+use de_net::{setup_processor, Communicator, InMessage, Network, OutMessage, Peers};
 use tracing::info;
 
 const PORT: u16 = 8082;
@@ -53,18 +52,21 @@ impl GameProcessor {
                 let message = input_result.context("Data receiving failed")?;
                 self.players.insert(message.source());
 
-                match message.destination() {
-                    Destination::Players => {
+                match message.peers() {
+                    Peers::Players => {
                         self.handle_players(message).await?;
                     }
-                    Destination::Server => todo!("Not yet implemented"),
+                    Peers::Server => todo!("Not yet implemented"),
                 }
             }
 
-            if let Some(result) = self.communicator.errors().now_or_never() {
-                let error = result.context("Errors receiving failed")?;
-                self.players.remove(&error.target());
+            let error = self.communicator.errors();
+            if matches!(error, Err(TryRecvError::Empty)) {
+                continue;
             }
+
+            let error = error.context("Errors receiving failed")?;
+            self.players.remove(&error.target());
         }
     }
 
@@ -82,7 +84,7 @@ impl GameProcessor {
             .send(OutMessage::new(
                 message.data(),
                 reliable,
-                Destination::Players,
+                Peers::Players,
                 targets,
             ))
             .await

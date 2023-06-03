@@ -11,7 +11,7 @@ const CONTROL_BIT: u8 = 0b1000_0000;
 const RELIABLE_BIT: u8 = 0b0100_0000;
 /// This bit is set on datagrams which are sent to the server instead of other
 /// players.
-const SERVER_DESTINATION_BIT: u8 = 0b0010_0000;
+const SERVER_PEER_BIT: u8 = 0b0010_0000;
 
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub(crate) enum DatagramHeader {
@@ -20,10 +20,10 @@ pub(crate) enum DatagramHeader {
 }
 
 impl DatagramHeader {
-    pub(crate) fn new_data(reliable: bool, destination: Destination, id: DatagramId) -> Self {
+    pub(crate) fn new_data(reliable: bool, peers: Peers, id: DatagramId) -> Self {
         Self::Data(DataHeader {
             reliable,
-            destination,
+            peers,
             id,
         })
     }
@@ -42,8 +42,8 @@ impl DatagramHeader {
                 if data_header.reliable {
                     mask |= RELIABLE_BIT;
                 }
-                if matches!(data_header.destination, Destination::Server) {
-                    mask |= SERVER_DESTINATION_BIT;
+                if matches!(data_header.peers, Peers::Server) {
+                    mask |= SERVER_PEER_BIT;
                 }
                 (mask, data_header.id.to_bytes())
             }
@@ -72,14 +72,14 @@ impl DatagramHeader {
             }
         } else {
             let reliable = mask & RELIABLE_BIT > 0;
-            let destination = if mask & SERVER_DESTINATION_BIT > 0 {
-                Destination::Server
+            let peers = if mask & SERVER_PEER_BIT > 0 {
+                Peers::Server
             } else {
-                Destination::Players
+                Peers::Players
             };
             Ok(Self::Data(DataHeader {
                 reliable,
-                destination,
+                peers,
                 id: DatagramId::from_bytes(&data[1..HEADER_SIZE]),
             }))
         }
@@ -93,8 +93,8 @@ impl fmt::Display for DatagramHeader {
             Self::Data(header) => {
                 write!(
                     f,
-                    "Data {{ reliable: {}, destination: {}, id: {} }}",
-                    header.reliable, header.destination, header.id
+                    "Data {{ reliable: {}, peers: {}, id: {} }}",
+                    header.reliable, header.peers, header.id
                 )
             }
         }
@@ -105,7 +105,7 @@ impl fmt::Display for DatagramHeader {
 pub(crate) struct DataHeader {
     /// True if the datagram is delivered reliably.
     reliable: bool,
-    destination: Destination,
+    peers: Peers,
     /// ID of the datagram.
     id: DatagramId,
 }
@@ -115,8 +115,8 @@ impl DataHeader {
         self.reliable
     }
 
-    pub(crate) fn destination(&self) -> Destination {
-        self.destination
+    pub(crate) fn peers(&self) -> Peers {
+        self.peers
     }
 
     pub(crate) fn id(&self) -> DatagramId {
@@ -125,12 +125,14 @@ impl DataHeader {
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum Destination {
+pub enum Peers {
+    /// Communication between networking server and a player/client.
     Server,
+    /// Communication between a players (one-to-all).
     Players,
 }
 
-impl fmt::Display for Destination {
+impl fmt::Display for Peers {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Self::Server => write!(f, "Server"),
@@ -209,16 +211,14 @@ mod tests {
     fn test_write_header() {
         let mut buf = [0u8; 256];
 
-        DatagramHeader::new_data(false, Destination::Server, DatagramId::zero()).write(&mut buf);
+        DatagramHeader::new_data(false, Peers::Server, DatagramId::zero()).write(&mut buf);
         assert_eq![&buf[0..4], &[0b0010_0000, 0, 0, 0]];
         assert_eq![&buf[4..], &[0; 252]];
-        DatagramHeader::new_data(true, Destination::Server, 256.try_into().unwrap())
-            .write(&mut buf);
+        DatagramHeader::new_data(true, Peers::Server, 256.try_into().unwrap()).write(&mut buf);
         assert_eq![&buf[0..4], &[0b0110_0000, 0, 1, 0]];
         assert_eq![&buf[4..], &[0; 252]];
 
-        DatagramHeader::new_data(true, Destination::Players, 1033.try_into().unwrap())
-            .write(&mut buf);
+        DatagramHeader::new_data(true, Peers::Players, 1033.try_into().unwrap()).write(&mut buf);
         assert_eq![&buf[0..4], &[0b0100_0000, 0, 4, 9]];
         assert_eq![&buf[4..], &[0; 252]];
     }
@@ -230,19 +230,19 @@ mod tests {
         buf[0..4].copy_from_slice(&[64, 0, 0, 0]);
         assert_eq!(
             DatagramHeader::read(&buf).unwrap(),
-            DatagramHeader::new_data(true, Destination::Players, 0.try_into().unwrap())
+            DatagramHeader::new_data(true, Peers::Players, 0.try_into().unwrap())
         );
 
         buf[0..4].copy_from_slice(&[64, 1, 0, 3]);
         assert_eq!(
             DatagramHeader::read(&buf).unwrap(),
-            DatagramHeader::new_data(true, Destination::Players, 65539.try_into().unwrap())
+            DatagramHeader::new_data(true, Peers::Players, 65539.try_into().unwrap())
         );
 
         buf[0..4].copy_from_slice(&[32, 0, 0, 2]);
         assert_eq!(
             DatagramHeader::read(&buf).unwrap(),
-            DatagramHeader::new_data(false, Destination::Server, 2.try_into().unwrap())
+            DatagramHeader::new_data(false, Peers::Server, 2.try_into().unwrap())
         );
     }
 
