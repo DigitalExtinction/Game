@@ -3,7 +3,7 @@ use std::{marker::PhantomData, mem, net::SocketAddr};
 use async_std::channel::{Receiver, RecvError, SendError, Sender, TryRecvError};
 use bincode::{
     config::{BigEndian, Configuration, Limit, Varint},
-    decode_from_slice, encode_into_slice,
+    decode_from_slice, encode_into_slice, encode_to_vec,
     error::{DecodeError, EncodeError},
 };
 
@@ -99,6 +99,22 @@ pub struct OutMessage {
 }
 
 impl OutMessage {
+    /// Creates datagram message from a single encodable item.
+    ///
+    /// See also [`Self::new`].
+    pub fn encode_single<E>(
+        message: &E,
+        reliable: bool,
+        destination: Destination,
+        targets: Vec<SocketAddr>,
+    ) -> Result<Self, EncodeError>
+    where
+        E: bincode::Encode,
+    {
+        let data = encode_to_vec(message, BINCODE_CONF)?;
+        Ok(Self::new(data, reliable, destination, targets))
+    }
+
     /// # Arguments
     ///
     /// * `data` - data to be send.
