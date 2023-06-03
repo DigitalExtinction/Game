@@ -2,9 +2,8 @@ use std::{net::SocketAddr, time::Duration};
 
 use ahash::AHashSet;
 use anyhow::Context;
-use async_std::{prelude::FutureExt as StdFutureExt, task};
+use async_std::{channel::TryRecvError, prelude::FutureExt as StdFutureExt, task};
 use de_net::{setup_processor, Communicator, Destination, InMessage, Network, OutMessage};
-use futures::FutureExt;
 use tracing::info;
 
 const PORT: u16 = 8082;
@@ -61,10 +60,13 @@ impl GameProcessor {
                 }
             }
 
-            if let Some(result) = self.communicator.errors().now_or_never() {
-                let error = result.context("Errors receiving failed")?;
-                self.players.remove(&error.target());
+            let error = self.communicator.errors();
+            if matches!(error, Err(TryRecvError::Empty)) {
+                continue;
             }
+
+            let error = error.context("Errors receiving failed")?;
+            self.players.remove(&error.target());
         }
     }
 

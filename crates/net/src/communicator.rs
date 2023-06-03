@@ -1,6 +1,6 @@
 use std::{marker::PhantomData, mem, net::SocketAddr};
 
-use async_std::channel::{Receiver, RecvError, SendError, Sender};
+use async_std::channel::{Receiver, RecvError, SendError, Sender, TryRecvError};
 use bincode::{
     config::{BigEndian, Configuration, Limit, Varint},
     decode_from_slice, encode_into_slice,
@@ -270,8 +270,8 @@ impl Communicator {
         self.outputs.send(message).await
     }
 
-    pub async fn errors(&mut self) -> Result<ConnectionError, RecvError> {
-        self.errors.recv().await
+    pub fn errors(&mut self) -> Result<ConnectionError, TryRecvError> {
+        self.errors.try_recv()
     }
 }
 
