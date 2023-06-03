@@ -4,7 +4,7 @@ use ahash::AHashSet;
 use anyhow::Context;
 use async_std::{channel::TryRecvError, prelude::FutureExt as StdFutureExt, task};
 use de_net::{setup_processor, Communicator, InMessage, Network, OutMessage, Peers};
-use tracing::info;
+use tracing::{error, info};
 
 const PORT: u16 = 8082;
 
@@ -13,7 +13,7 @@ pub fn start() {
 
     task::block_on(task::spawn(async {
         if let Err(error) = GameProcessor::start().await {
-            eprintln!("{:?}", error);
+            error!("{:?}", error);
         }
     }));
 }
