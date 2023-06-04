@@ -8,7 +8,7 @@ use crate::header::DatagramId;
 ///
 /// The underling data structures are optimized with the assumption that data
 /// are inserted and removed in roughly FIFO manner.
-pub(crate) struct DataBuf {
+pub(super) struct DataBuf {
     data: VecDeque<u8>,
     slots: VecDeque<Slot>,
     /// Mapping from datagram ID to datagram ordinal. See [`Slot::ordinal`].
@@ -16,7 +16,7 @@ pub(crate) struct DataBuf {
 }
 
 impl DataBuf {
-    pub(crate) fn new() -> Self {
+    pub(super) fn new() -> Self {
         Self {
             data: VecDeque::new(),
             slots: VecDeque::new(),
@@ -29,7 +29,7 @@ impl DataBuf {
     /// # Panics
     ///
     /// Panics if data with the same `id` is already stored.
-    pub(crate) fn push(&mut self, id: DatagramId, data: &[u8]) {
+    pub(super) fn push(&mut self, id: DatagramId, data: &[u8]) {
         let (ordinal, data_offset) = match self.slots.back() {
             Some(back) => (
                 back.ordinal.wrapping_add(1),
@@ -57,7 +57,7 @@ impl DataBuf {
     /// # Panics
     ///
     /// Panics if `buf` len is smaller than length of found data.
-    pub(crate) fn get(&self, id: DatagramId, buf: &mut [u8]) -> Option<usize> {
+    pub(super) fn get(&self, id: DatagramId, buf: &mut [u8]) -> Option<usize> {
         let Some(slot_index) = self.slot_index(id) else { return None };
 
         let front = self.slots.front().unwrap();
@@ -76,7 +76,7 @@ impl DataBuf {
 
     /// Removes data stored with ID `id` or does nothing if such data do not
     /// exist.
-    pub(crate) fn remove(&mut self, id: DatagramId) {
+    pub(super) fn remove(&mut self, id: DatagramId) {
         let Some(slot_index) = self.slot_index(id) else { return };
         self.slots.get_mut(slot_index).unwrap().used = false;
 

@@ -6,12 +6,9 @@ pub use processor::setup_processor;
 pub use protocol::{FromGame, FromServer, ToGame, ToServer};
 
 mod communicator;
-mod confirmbuf;
-mod databuf;
+mod connection;
 mod header;
 mod messages;
 mod net;
 mod processor;
 mod protocol;
-mod reliability;
-mod resend;

@@ -1,5 +1,6 @@
 use std::{
     cmp::Ordering,
+    net::SocketAddr,
     time::{Duration, Instant},
 };
 
@@ -7,24 +8,109 @@ use ahash::AHashMap;
 use priority_queue::PriorityQueue;
 use thiserror::Error;
 
-use crate::{
+use super::{
+    book::{Connection, ConnectionBook},
     databuf::DataBuf,
-    header::{DatagramId, Peers},
+};
+use crate::{
+    header::{DatagramHeader, DatagramId, Peers, HEADER_SIZE},
+    messages::Messages,
+    SendError,
 };
 
 const START_BACKOFF_MS: u64 = 220;
 const MAX_TRIES: u8 = 6;
 
+pub(crate) struct Resends {
+    book: ConnectionBook<Queue>,
+}
+
+impl Resends {
+    pub(crate) fn new() -> Self {
+        Self {
+            book: ConnectionBook::new(),
+        }
+    }
+
+    pub(crate) fn sent(
+        &mut self,
+        time: Instant,
+        addr: SocketAddr,
+        id: DatagramId,
+        peers: Peers,
+        data: &[u8],
+    ) {
+        let queue = self.book.update(time, addr, Queue::new);
+        queue.push(id, peers, data, time);
+    }
+
+    /// Processes message with datagram confirmations.
+    ///
+    /// The data encode IDs of delivered (and confirmed) messages so that they
+    /// can be forgotten.
+    pub(crate) fn confirmed(&mut self, time: Instant, addr: SocketAddr, data: &[u8]) {
+        let queue = self.book.update(time, addr, Queue::new);
+
+        for i in 0..data.len() / 3 {
+            let offset = i * 4;
+            let id = DatagramId::from_bytes(&data[offset..offset + 3]);
+            queue.resolve(id);
+        }
+    }
+
+    /// Re-send all messages already due for re-sending.
+    pub(crate) async fn resend(
+        &mut self,
+        time: Instant,
+        buf: &mut [u8],
+        messages: &mut Messages,
+    ) -> Result<Vec<SocketAddr>, SendError> {
+        let mut failures = Vec::new();
+
+        while let Some((addr, queue)) = self.book.next() {
+            let failure = loop {
+                match queue.reschedule(&mut buf[HEADER_SIZE..], time) {
+                    Ok(Some((len, id, peers))) => {
+                        messages
+                            .send(
+                                &mut buf[..len + HEADER_SIZE],
+                                DatagramHeader::new_data(true, peers, id),
+                                &[addr],
+                            )
+                            .await?;
+                    }
+                    Ok(None) => break false,
+                    Err(_) => {
+                        failures.push(addr);
+                        break true;
+                    }
+                }
+            };
+
+            if failure {
+                self.book.remove_current();
+                failures.push(addr);
+            }
+        }
+
+        Ok(failures)
+    }
+
+    pub(crate) fn clean(&mut self, time: Instant) {
+        self.book.clean(time);
+    }
+}
+
 /// This struct governs reliable message re-sending (until each message is
 /// confirmed).
-pub(crate) struct ResendQueue {
+struct Queue {
     queue: PriorityQueue<DatagramId, Timing>,
     meta: AHashMap<DatagramId, Peers>,
     data: DataBuf,
 }
 
-impl ResendQueue {
-    pub(crate) fn new() -> Self {
+impl Queue {
+    fn new() -> Self {
         Self {
             queue: PriorityQueue::new(),
             meta: AHashMap::new(),
@@ -32,12 +118,8 @@ impl ResendQueue {
         }
     }
 
-    pub(crate) fn is_empty(&self) -> bool {
-        self.queue.is_empty()
-    }
-
     /// Registers new message for re-sending until it is resolved.
-    pub(crate) fn push(&mut self, id: DatagramId, peers: Peers, data: &[u8], now: Instant) {
+    fn push(&mut self, id: DatagramId, peers: Peers, data: &[u8], now: Instant) {
         self.queue.push(id, Timing::new(now));
         self.meta.insert(id, peers);
         self.data.push(id, data);
@@ -45,7 +127,7 @@ impl ResendQueue {
 
     /// Marks a message as delivered. No more re-sends will be scheduled and
     /// message data will be dropped.
-    pub(crate) fn resolve(&mut self, id: DatagramId) {
+    fn resolve(&mut self, id: DatagramId) {
         let result = self.queue.remove(&id);
         if result.is_some() {
             self.meta.remove(&id);
@@ -74,7 +156,7 @@ impl ResendQueue {
     /// # Panics
     ///
     /// Panics if `buf` is smaller than the retrieved message.
-    pub(crate) fn reschedule(
+    fn reschedule(
         &mut self,
         buf: &mut [u8],
         now: Instant,
@@ -100,8 +182,14 @@ impl ResendQueue {
     }
 }
 
+impl Connection for Queue {
+    fn pending(&self) -> bool {
+        !self.queue.is_empty()
+    }
+}
+
 #[derive(Error, Debug)]
-pub(crate) enum RescheduleError {
+pub(super) enum RescheduleError {
     #[error("datagram {0} failed")]
     DatagramFailed(DatagramId),
 }
