@@ -1,6 +1,6 @@
 use std::time::Instant;
 
-use async_std::channel::{bounded, Receiver, SendError, Sender, TryRecvError, TrySendError};
+use async_std::channel::{bounded, Receiver, SendError, Sender, TryRecvError};
 use futures::FutureExt;
 use thiserror::Error;
 use tracing::{error, info, warn};
@@ -189,16 +189,9 @@ impl Processor {
         };
 
         for target in failures {
-            if let Err(send_err) = self.errors.try_send(ConnectionError::new(target)) {
-                match send_err {
-                    TrySendError::Closed(_) => {
-                        return true;
-                    }
-                    TrySendError::Full(_) => {
-                        warn!("Connection error channel is full.");
-                        continue;
-                    }
-                }
+            let result = self.errors.send(ConnectionError::new(target)).await;
+            if result.is_err() {
+                return true;
             }
         }
 
