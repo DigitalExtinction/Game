@@ -1,6 +1,9 @@
 use std::time::Instant;
 
-use async_std::channel::{bounded, Receiver, SendError, Sender, TryRecvError};
+use async_std::{
+    channel::{bounded, Receiver, SendError, Sender, TryRecvError},
+    task,
+};
 use futures::FutureExt;
 use thiserror::Error;
 use tracing::{error, info, warn};
@@ -17,7 +20,7 @@ const CHANNEL_CAPACITY: usize = 1024;
 
 /// This struct implements an async loop which handles the network
 /// communication.
-pub struct Processor {
+struct Processor {
     buf: [u8; MAX_DATAGRAM_SIZE],
     messages: Messages,
     counter: DatagramId,
@@ -55,7 +58,7 @@ impl Processor {
     /// # Panics
     ///
     /// Panics on IO errors.
-    pub async fn run(mut self) {
+    async fn run(mut self) {
         info!("Starting network loop...");
 
         loop {
@@ -207,8 +210,8 @@ enum InputHandlingError {
     InputsError(#[from] SendError<InMessage>),
 }
 
-/// Setups a communicator and network processor couple.
-pub fn setup_processor(network: Network) -> (Communicator, Processor) {
+/// Setups and starts communication stack tasks.
+pub fn startup(network: Network) -> Communicator {
     let (outputs_sender, outputs_receiver) = bounded(CHANNEL_CAPACITY);
     let (inputs_sender, inputs_receiver) = bounded(CHANNEL_CAPACITY);
     let (errors_sender, errors_receiver) = bounded(CHANNEL_CAPACITY);
@@ -216,5 +219,8 @@ pub fn setup_processor(network: Network) -> (Communicator, Processor) {
     let communicator = Communicator::new(outputs_sender, inputs_receiver, errors_receiver);
     let messages = Messages::new(network);
     let processor = Processor::new(messages, outputs_receiver, inputs_sender, errors_sender);
-    (communicator, processor)
+
+    task::spawn(processor.run());
+
+    communicator
 }
