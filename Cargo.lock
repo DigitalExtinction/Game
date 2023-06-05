@@ -2114,6 +2114,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0c87e182de0887fd5361989c677c4e8f5000cd9491d6d563161a8f3a5519fc7f"
 
 [[package]]
+name = "de_audio"
+version = "0.1.0-dev"
+dependencies = [
+ "bevy",
+ "de_core",
+ "iyes_progress",
+]
+
+[[package]]
 name = "de_behaviour"
 version = "0.1.0-dev"
 dependencies = [
@@ -2258,6 +2267,7 @@ name = "de_game"
 version = "0.1.0-dev"
 dependencies = [
  "bevy",
+ "de_audio",
  "de_behaviour",
  "de_camera",
  "de_combat",
@@ -4985,6 +4995,7 @@ checksum = "bdf1d4dea18dff2e9eb6dca123724f8b60ef44ad74a9ad283cdfe025df7e73fa"
 dependencies = [
  "cpal",
  "lewton",
+ "symphonia",
 ]
 
 [[package]]
@@ -5516,6 +5527,56 @@ name = "svg_fmt"
 version = "0.4.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8fb1df15f412ee2e9dfc1c504260fa695c1c3f10fe9f4a6ee2d2184d7d6450e2"
+
+[[package]]
+name = "symphonia"
+version = "0.5.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3671dd6f64f4f9d5c87179525054cfc1f60de23ba1f193bd6ceab812737403f1"
+dependencies = [
+ "lazy_static",
+ "symphonia-bundle-mp3",
+ "symphonia-core",
+ "symphonia-metadata",
+]
+
+[[package]]
+name = "symphonia-bundle-mp3"
+version = "0.5.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "55a0846e7a2c9a8081ff799fc83a975170417ad2a143f644a77ec2e3e82a2b73"
+dependencies = [
+ "bitflags",
+ "lazy_static",
+ "log",
+ "symphonia-core",
+ "symphonia-metadata",
+]
+
+[[package]]
+name = "symphonia-core"
+version = "0.5.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6b9567e2d8a5f866b2f94f5d366d811e0c6826babcff6d37de9e1a6690d38869"
+dependencies = [
+ "arrayvec",
+ "bitflags",
+ "bytemuck",
+ "lazy_static",
+ "log",
+]
+
+[[package]]
+name = "symphonia-metadata"
+version = "0.5.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "acd35c263223ef6161000be79b124a75de3e065eea563bf3ef169b3e94c7bb2e"
+dependencies = [
+ "encoding_rs",
+ "lazy_static",
+ "log",
+ "symphonia-core",
+]
 
 [[package]]
 name = "syn"

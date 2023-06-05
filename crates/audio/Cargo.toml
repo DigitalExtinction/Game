@@ -1,0 +1,20 @@
+[package]
+name = "de_audio"
+description = "Digital Extinction audio control."
+
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+repository.workspace = true
+keywords.workspace = true
+homepage.workspace = true
+license.workspace = true
+categories.workspace = true
+
+[dependencies]
+# DE
+de_core.workspace = true
+
+# Other
+bevy.workspace = true
+iyes_progress.workspace = true

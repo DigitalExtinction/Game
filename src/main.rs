@@ -6,6 +6,7 @@ use bevy::{
     prelude::*,
     window::WindowMode,
 };
+use de_audio::AudioPluginGroup;
 use de_behaviour::BehaviourPluginGroup;
 use de_camera::CameraPluginGroup;
 use de_combat::CombatPluginGroup;
@@ -77,7 +78,8 @@ fn main() {
             .add_plugins(CameraPluginGroup)
             .add_plugins(BehaviourPluginGroup)
             .add_plugins(CombatPluginGroup)
-            .add_plugins(ConstructionPluginGroup);
+            .add_plugins(ConstructionPluginGroup)
+            .add_plugins(AudioPluginGroup);
     }
 
     app.run();
