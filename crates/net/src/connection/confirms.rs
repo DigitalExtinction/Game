@@ -1,6 +1,14 @@
-use std::time::{Duration, Instant};
+use std::{
+    net::SocketAddr,
+    time::{Duration, Instant},
+};
 
-use crate::header::DatagramId;
+use super::book::{Connection, ConnectionBook};
+use crate::{
+    header::{DatagramHeader, DatagramId},
+    messages::{Messages, MAX_MESSAGE_SIZE},
+    SendError,
+};
 
 /// The buffer is flushed after it grows beyond this number of bytes.
 // Each ID is 3 bytes, thus this must be a multiple of 3.
@@ -8,15 +16,73 @@ const MAX_BUFF_SIZE: usize = 96;
 /// The buffer is flushed after the oldest part is older than this.
 const MAX_BUFF_AGE: Duration = Duration::from_millis(100);
 
+pub(crate) struct Confirmations {
+    book: ConnectionBook<Buffer>,
+}
+
+impl Confirmations {
+    pub(crate) fn new() -> Self {
+        Self {
+            book: ConnectionBook::new(),
+        }
+    }
+
+    /// This method marks a message with `id` from `addr` as received.
+    ///
+    /// This method should be called exactly once after each reliable message
+    /// is delivered.
+    pub(crate) fn received(&mut self, time: Instant, addr: SocketAddr, id: DatagramId) {
+        self.book.update(time, addr, Buffer::new).push(time, id);
+    }
+
+    /// Send message confirmation packets which are ready to be send.
+    ///
+    /// # Arguments
+    ///
+    /// * `time` - current time.
+    ///
+    /// * `buf` - buffer for message construction. Must be at least
+    ///   [`crate::MAX_DATAGRAM_SIZE`] long.
+    ///
+    /// * `messages` - message connection to be used for delivery of the
+    ///   confirmations.
+    ///
+    /// # Panics
+    ///
+    /// May panic if `buf` is not large enough.
+    pub(crate) async fn send_confirms(
+        &mut self,
+        time: Instant,
+        buf: &mut [u8],
+        messages: &mut Messages,
+    ) -> Result<(), SendError> {
+        while let Some((addr, buffer)) = self.book.next() {
+            if buffer.ready(time) {
+                while let Some(data) = buffer.flush(MAX_MESSAGE_SIZE) {
+                    messages
+                        .send_separate(buf, DatagramHeader::Confirmation, data, &[addr])
+                        .await?;
+                }
+            }
+        }
+
+        Ok(())
+    }
+
+    pub(crate) fn clean(&mut self, time: Instant) {
+        self.book.clean(time);
+    }
+}
+
 /// Buffer with datagram confirmations.
-pub(crate) struct ConfirmBuffer {
+struct Buffer {
     oldest: Instant,
     buffer: Vec<u8>,
     flushed: usize,
 }
 
-impl ConfirmBuffer {
-    pub(crate) fn new() -> Self {
+impl Buffer {
+    fn new() -> Self {
         Self {
             oldest: Instant::now(),
             buffer: Vec::with_capacity(MAX_BUFF_SIZE),
@@ -24,12 +90,8 @@ impl ConfirmBuffer {
         }
     }
 
-    pub(crate) fn is_empty(&self) -> bool {
-        self.buffer.is_empty()
-    }
-
     /// Pushes another datagram ID to the buffer.
-    pub(crate) fn push(&mut self, time: Instant, id: DatagramId) {
+    fn push(&mut self, time: Instant, id: DatagramId) {
         if self.buffer.is_empty() {
             self.oldest = time;
         }
@@ -39,7 +101,7 @@ impl ConfirmBuffer {
 
     /// Returns true if the buffer is ready to be flushed (too old or too
     /// large).
-    pub(crate) fn ready(&self, time: Instant) -> bool {
+    fn ready(&self, time: Instant) -> bool {
         if self.buffer.is_empty() {
             return false;
         }
@@ -50,7 +112,7 @@ impl ConfirmBuffer {
     /// Return accumulated bytes from the buffer if it is not empty. The number
     /// of returned bytes is always smaller than `max_size`. This method should
     /// be called repeatedly until it returns None.
-    pub(crate) fn flush(&mut self, max_size: usize) -> Option<&[u8]> {
+    fn flush(&mut self, max_size: usize) -> Option<&[u8]> {
         self.buffer.truncate(self.flushed);
 
         if self.buffer.is_empty() {
@@ -65,6 +127,12 @@ impl ConfirmBuffer {
     }
 }
 
+impl Connection for Buffer {
+    fn pending(&self) -> bool {
+        !self.buffer.is_empty()
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -72,7 +140,7 @@ mod tests {
     #[test]
     fn test_buffer() {
         let now = Instant::now();
-        let mut buf = ConfirmBuffer::new();
+        let mut buf = Buffer::new();
 
         assert!(buf.flush(13).is_none());
         assert!(!buf.ready(now));

@@ -1,15 +1,15 @@
 use std::time::Instant;
 
-use async_std::channel::{bounded, Receiver, SendError, Sender, TryRecvError, TrySendError};
+use async_std::channel::{bounded, Receiver, SendError, Sender, TryRecvError};
 use futures::FutureExt;
 use thiserror::Error;
 use tracing::{error, info, warn};
 
 use crate::{
     communicator::{Communicator, ConnectionError, InMessage, OutMessage},
+    connection::{Confirmations, Resends},
     header::{DatagramHeader, DatagramId},
     messages::{Messages, MsgRecvError},
-    reliability::Reliability,
     Network, MAX_DATAGRAM_SIZE,
 };
 
@@ -21,7 +21,8 @@ pub struct Processor {
     buf: [u8; MAX_DATAGRAM_SIZE],
     messages: Messages,
     counter: DatagramId,
-    reliability: Reliability,
+    confirms: Confirmations,
+    resends: Resends,
     outputs: Receiver<OutMessage>,
     inputs: Sender<InMessage>,
     errors: Sender<ConnectionError>,
@@ -38,7 +39,8 @@ impl Processor {
             buf: [0; MAX_DATAGRAM_SIZE],
             messages,
             counter: DatagramId::zero(),
-            reliability: Reliability::new(),
+            confirms: Confirmations::new(),
+            resends: Resends::new(),
             outputs,
             inputs,
             errors,
@@ -81,8 +83,8 @@ impl Processor {
             }
 
             if let Err(err) = self
-                .reliability
-                .send_confirms(&mut self.buf, &mut self.messages, Instant::now())
+                .confirms
+                .send_confirms(Instant::now(), &mut self.buf, &mut self.messages)
                 .await
             {
                 error!("Message confirmation error: {err:?}");
@@ -93,6 +95,10 @@ impl Processor {
                 info!("Errors finished...");
                 break;
             }
+
+            let time = Instant::now();
+            self.resends.clean(time);
+            self.confirms.clean(time);
         }
     }
 
@@ -113,12 +119,12 @@ impl Processor {
                             if data_header.reliable() {
                                 let time = Instant::now();
                                 for &target in message.targets() {
-                                    self.reliability.sent(
+                                    self.resends.sent(
+                                        time,
                                         target,
                                         data_header.id(),
                                         data_header.peers(),
                                         message.data(),
-                                        time,
                                     );
                                 }
                             }
@@ -142,15 +148,15 @@ impl Processor {
 
         let data_header = match header {
             DatagramHeader::Confirmation => {
-                self.reliability.confirmed(source, data, Instant::now());
+                self.resends.confirmed(Instant::now(), source, data);
                 return Ok(());
             }
             DatagramHeader::Data(data_header) => data_header,
         };
 
         let reliable = if data_header.reliable() {
-            self.reliability
-                .received(source, data_header.id(), Instant::now());
+            self.confirms
+                .received(Instant::now(), source, data_header.id());
             true
         } else {
             false
@@ -170,23 +176,22 @@ impl Processor {
     }
 
     async fn handle_resends(&mut self) -> bool {
-        if let Err(err) = self
-            .reliability
-            .resend(&mut self.buf, &mut self.messages, Instant::now())
+        let failures = match self
+            .resends
+            .resend(Instant::now(), &mut self.buf, &mut self.messages)
             .await
         {
-            for &target in err.targets() {
-                if let Err(send_err) = self.errors.try_send(ConnectionError::new(target)) {
-                    match send_err {
-                        TrySendError::Closed(_) => {
-                            return true;
-                        }
-                        TrySendError::Full(_) => {
-                            warn!("Connection error channel is full.");
-                            continue;
-                        }
-                    }
-                }
+            Ok(failures) => failures,
+            Err(err) => {
+                error!("Resend error: {err:?}");
+                return true;
+            }
+        };
+
+        for target in failures {
+            let result = self.errors.send(ConnectionError::new(target)).await;
+            if result.is_err() {
+                return true;
             }
         }
 
