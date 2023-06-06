@@ -3,11 +3,13 @@ use std::{
     time::{Duration, Instant},
 };
 
+use async_std::channel::{SendError, Sender};
+
 use super::book::{Connection, ConnectionBook};
 use crate::{
     header::{DatagramHeader, DatagramId},
-    messages::{Messages, MAX_MESSAGE_SIZE},
-    SendError,
+    messages::MAX_MESSAGE_SIZE,
+    tasks::dsender::OutDatagram,
 };
 
 /// The buffer is flushed after it grows beyond this number of bytes.
@@ -53,14 +55,17 @@ impl Confirmations {
     pub(crate) async fn send_confirms(
         &mut self,
         time: Instant,
-        buf: &mut [u8],
-        messages: &mut Messages,
-    ) -> Result<(), SendError> {
+        datagrams: &mut Sender<OutDatagram>,
+    ) -> Result<(), SendError<OutDatagram>> {
         while let Some((addr, buffer)) = self.book.next() {
             if buffer.ready(time) {
                 while let Some(data) = buffer.flush(MAX_MESSAGE_SIZE) {
-                    messages
-                        .send_separate(buf, DatagramHeader::Confirmation, data, addr)
+                    datagrams
+                        .send(OutDatagram::new(
+                            DatagramHeader::Confirmation,
+                            data.to_vec(),
+                            addr,
+                        ))
                         .await?;
                 }
             }

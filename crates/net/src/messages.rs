@@ -1,5 +1,6 @@
-use std::{borrow::Cow, net::SocketAddr};
+use std::{borrow::Cow, io, net::SocketAddr};
 
+use async_std::sync::Arc;
 use futures::future::try_join_all;
 use thiserror::Error;
 use tracing::{error, trace};
@@ -14,33 +15,20 @@ pub const MAX_MESSAGE_SIZE: usize = MAX_DATAGRAM_SIZE - HEADER_SIZE;
 
 /// A thin layer over UDP datagram based network translating UDP datagrams to
 /// messages with headers.
+#[derive(Clone)]
 pub(crate) struct Messages {
-    network: Network,
+    network: Arc<Network>,
 }
 
 impl Messages {
     pub(crate) fn new(network: Network) -> Self {
-        Self { network }
+        Self {
+            network: Arc::new(network),
+        }
     }
 
-    /// Send a message whose data are not already stored in the given buffer.
-    ///
-    /// Consult [`Self::send`] for more info.
-    pub(crate) async fn send_separate<'a, T>(
-        &'a self,
-        buf: &mut [u8],
-        header: DatagramHeader,
-        data: &[u8],
-        targets: T,
-    ) -> Result<(), SendError>
-    where
-        T: Into<Targets<'a>>,
-    {
-        let len = HEADER_SIZE + data.len();
-        assert!(buf.len() >= len);
-        let buf = &mut buf[..len];
-        buf[HEADER_SIZE..len].copy_from_slice(data);
-        self.send(buf, header, targets).await
+    pub(crate) fn port(&self) -> io::Result<u16> {
+        self.network.port()
     }
 
     /// Send message to a list of targets.
@@ -58,27 +46,28 @@ impl Messages {
     /// * `targets` - recipients of the message.
     pub(crate) async fn send<'a, T>(
         &'a self,
-        data: &mut [u8],
+        buf: &mut [u8],
         header: DatagramHeader,
+        data: &[u8],
         targets: T,
     ) -> Result<(), SendError>
     where
         T: Into<Targets<'a>>,
     {
+        let len = HEADER_SIZE + data.len();
+        assert!(buf.len() >= len);
+        let buf = &mut buf[..len];
+        buf[HEADER_SIZE..len].copy_from_slice(data);
+
         trace!("Going to send datagram {}", header);
-        header.write(data);
+        header.write(buf);
 
         match targets.into() {
             Targets::Single(target) => {
-                self.network.send(target, data).await?;
+                self.network.send(target, buf).await?;
             }
             Targets::Many(targets) => {
-                try_join_all(
-                    targets
-                        .iter()
-                        .map(|&target| self.network.send(target, data)),
-                )
-                .await?;
+                try_join_all(targets.iter().map(|&target| self.network.send(target, buf))).await?;
             }
         }
 
@@ -126,6 +115,12 @@ impl<'a> From<SocketAddr> for Targets<'a> {
 
 impl<'a> From<&'a [SocketAddr]> for Targets<'a> {
     fn from(addrs: &'a [SocketAddr]) -> Self {
+        Self::Many(addrs.into())
+    }
+}
+
+impl<'a> From<Vec<SocketAddr>> for Targets<'a> {
+    fn from(addrs: Vec<SocketAddr>) -> Self {
         Self::Many(addrs.into())
     }
 }
