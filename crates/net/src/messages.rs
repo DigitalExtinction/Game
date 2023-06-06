@@ -27,7 +27,7 @@ impl Messages {
     ///
     /// Consult [`Self::send`] for more info.
     pub(crate) async fn send_separate<'a, T>(
-        &'a mut self,
+        &'a self,
         buf: &mut [u8],
         header: DatagramHeader,
         data: &[u8],
@@ -57,7 +57,7 @@ impl Messages {
     ///
     /// * `targets` - recipients of the message.
     pub(crate) async fn send<'a, T>(
-        &'a mut self,
+        &'a self,
         data: &mut [u8],
         header: DatagramHeader,
         targets: T,
@@ -101,7 +101,7 @@ impl Messages {
     ///
     /// Panics if len of `buf` is smaller than [`MAX_DATAGRAM_SIZE`].
     pub(crate) async fn recv<'a>(
-        &mut self,
+        &self,
         buf: &'a mut [u8],
     ) -> Result<(SocketAddr, DatagramHeader, &'a [u8]), MsgRecvError> {
         let (stop, source) = self.network.recv(buf).await.map_err(MsgRecvError::from)?;

@@ -43,7 +43,7 @@ impl Network {
     /// # Panics
     ///
     /// Panics if len of `buf` is smaller than [`MAX_DATAGRAM_SIZE`].
-    pub async fn recv(&mut self, buf: &mut [u8]) -> Result<(usize, SocketAddr), RecvError> {
+    pub async fn recv(&self, buf: &mut [u8]) -> Result<(usize, SocketAddr), RecvError> {
         assert!(buf.len() >= MAX_DATAGRAM_SIZE);
 
         self.socket
