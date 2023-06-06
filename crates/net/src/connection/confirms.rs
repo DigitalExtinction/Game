@@ -60,7 +60,7 @@ impl Confirmations {
             if buffer.ready(time) {
                 while let Some(data) = buffer.flush(MAX_MESSAGE_SIZE) {
                     messages
-                        .send_separate(buf, DatagramHeader::Confirmation, data, &[addr])
+                        .send_separate(buf, DatagramHeader::Confirmation, data, addr)
                         .await?;
                 }
             }

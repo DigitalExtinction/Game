@@ -1,4 +1,4 @@
-use std::net::SocketAddr;
+use std::{borrow::Cow, net::SocketAddr};
 
 use futures::future::try_join_all;
 use thiserror::Error;
@@ -26,13 +26,16 @@ impl Messages {
     /// Send a message whose data are not already stored in the given buffer.
     ///
     /// Consult [`Self::send`] for more info.
-    pub(crate) async fn send_separate(
-        &mut self,
+    pub(crate) async fn send_separate<'a, T>(
+        &'a mut self,
         buf: &mut [u8],
         header: DatagramHeader,
         data: &[u8],
-        targets: &[SocketAddr],
-    ) -> Result<(), SendError> {
+        targets: T,
+    ) -> Result<(), SendError>
+    where
+        T: Into<Targets<'a>>,
+    {
         let len = HEADER_SIZE + data.len();
         assert!(buf.len() >= len);
         let buf = &mut buf[..len];
@@ -53,20 +56,31 @@ impl Messages {
     /// * `header` - header of the message.
     ///
     /// * `targets` - recipients of the message.
-    pub(crate) async fn send(
-        &mut self,
+    pub(crate) async fn send<'a, T>(
+        &'a mut self,
         data: &mut [u8],
         header: DatagramHeader,
-        targets: &[SocketAddr],
-    ) -> Result<(), SendError> {
+        targets: T,
+    ) -> Result<(), SendError>
+    where
+        T: Into<Targets<'a>>,
+    {
         trace!("Going to send datagram {}", header);
         header.write(data);
-        try_join_all(
-            targets
-                .iter()
-                .map(|&target| self.network.send(target, data)),
-        )
-        .await?;
+
+        match targets.into() {
+            Targets::Single(target) => {
+                self.network.send(target, data).await?;
+            }
+            Targets::Many(targets) => {
+                try_join_all(
+                    targets
+                        .iter()
+                        .map(|&target| self.network.send(target, data)),
+                )
+                .await?;
+            }
+        }
 
         Ok(())
     }
@@ -96,6 +110,23 @@ impl Messages {
         trace!("Received datagram with ID {header}");
 
         Ok((source, header, &buf[HEADER_SIZE..stop]))
+    }
+}
+
+pub(crate) enum Targets<'a> {
+    Single(SocketAddr),
+    Many(Cow<'a, [SocketAddr]>),
+}
+
+impl<'a> From<SocketAddr> for Targets<'a> {
+    fn from(addr: SocketAddr) -> Self {
+        Self::Single(addr)
+    }
+}
+
+impl<'a> From<&'a [SocketAddr]> for Targets<'a> {
+    fn from(addrs: &'a [SocketAddr]) -> Self {
+        Self::Many(addrs.into())
     }
 }
 

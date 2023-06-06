@@ -75,7 +75,7 @@ impl Resends {
                             .send(
                                 &mut buf[..len + HEADER_SIZE],
                                 DatagramHeader::new_data(true, peers, id),
-                                &[addr],
+                                addr,
                             )
                             .await?;
                     }
