@@ -1,15 +1,22 @@
 use std::time::Instant;
 
-use async_std::channel::{bounded, Receiver, SendError, Sender, TryRecvError};
+use async_std::{
+    channel::{bounded, Receiver, SendError, Sender, TryRecvError},
+    task,
+};
 use futures::FutureExt;
 use thiserror::Error;
-use tracing::{error, info, warn};
+use tracing::{error, info};
 
 use crate::{
     communicator::{Communicator, ConnectionError, InMessage, OutMessage},
     connection::{Confirmations, Resends},
     header::{DatagramHeader, DatagramId},
     messages::{Messages, MsgRecvError},
+    tasks::{
+        dreceiver::{self, InDatagram},
+        dsender::{self, OutDatagram},
+    },
     Network, MAX_DATAGRAM_SIZE,
 };
 
@@ -17,10 +24,11 @@ const CHANNEL_CAPACITY: usize = 1024;
 
 /// This struct implements an async loop which handles the network
 /// communication.
-pub struct Processor {
+struct Processor {
     buf: [u8; MAX_DATAGRAM_SIZE],
-    messages: Messages,
     counter: DatagramId,
+    out_datagrams: Sender<OutDatagram>,
+    in_datagrams: Receiver<InDatagram>,
     confirms: Confirmations,
     resends: Resends,
     outputs: Receiver<OutMessage>,
@@ -30,14 +38,16 @@ pub struct Processor {
 
 impl Processor {
     fn new(
-        messages: Messages,
+        out_datagrams: Sender<OutDatagram>,
+        in_datagrams: Receiver<InDatagram>,
         outputs: Receiver<OutMessage>,
         inputs: Sender<InMessage>,
         errors: Sender<ConnectionError>,
     ) -> Self {
         Self {
             buf: [0; MAX_DATAGRAM_SIZE],
-            messages,
+            out_datagrams,
+            in_datagrams,
             counter: DatagramId::zero(),
             confirms: Confirmations::new(),
             resends: Resends::new(),
@@ -55,7 +65,7 @@ impl Processor {
     /// # Panics
     ///
     /// Panics on IO errors.
-    pub async fn run(mut self) {
+    async fn run(mut self) {
         info!("Starting network loop...");
 
         loop {
@@ -64,27 +74,14 @@ impl Processor {
                 break;
             }
 
-            if let Err(err) = self.handle_input().await {
-                match err {
-                    InputHandlingError::InputsError(err) => {
-                        info!("Input finished: {err:?}");
-                        break;
-                    }
-                    InputHandlingError::MsgRecvError(MsgRecvError::RecvError(err)) => {
-                        error!("Message receiving error: {err:?}");
-                        break;
-                    }
-                    InputHandlingError::MsgRecvError(MsgRecvError::InvalidHeader(err)) => {
-                        warn!("Invalid header received: {err:?}");
-                        // Do not break the loop for all because just of a
-                        // single malformed datagram.
-                    }
-                }
+            if self.handle_input().await {
+                info!("Input finished...");
+                break;
             }
 
             if let Err(err) = self
                 .confirms
-                .send_confirms(Instant::now(), &mut self.buf, &mut self.messages)
+                .send_confirms(Instant::now(), &mut self.out_datagrams)
                 .await
             {
                 error!("Message confirmation error: {err:?}");
@@ -109,31 +106,32 @@ impl Processor {
                     DatagramHeader::new_data(message.reliable(), message.peers(), self.counter);
                 self.counter = self.counter.incremented();
 
-                match self
-                    .messages
-                    .send_separate(&mut self.buf, header, message.data(), message.targets())
-                    .await
-                {
-                    Ok(()) => {
-                        if let DatagramHeader::Data(data_header) = header {
-                            if data_header.reliable() {
-                                let time = Instant::now();
-                                for &target in message.targets() {
-                                    self.resends.sent(
-                                        time,
-                                        target,
-                                        data_header.id(),
-                                        data_header.peers(),
-                                        message.data(),
-                                    );
-                                }
-                            }
+                if let DatagramHeader::Data(data_header) = header {
+                    if data_header.reliable() {
+                        let time = Instant::now();
+                        for &target in &message.targets {
+                            self.resends.sent(
+                                time,
+                                target,
+                                data_header.id(),
+                                data_header.peers(),
+                                &message.data,
+                            );
                         }
                     }
-                    Err(err) => panic!("Send error: {:?}", err),
                 }
 
-                false
+                let closed = self
+                    .out_datagrams
+                    .send(OutDatagram::new(header, message.data, message.targets))
+                    .await
+                    .is_err();
+
+                if closed {
+                    error!("Datagram output channel is unexpectedly closed.");
+                }
+
+                closed
             }
             Err(err) => match err {
                 TryRecvError::Empty => false,
@@ -142,21 +140,28 @@ impl Processor {
         }
     }
 
-    async fn handle_input(&mut self) -> Result<(), InputHandlingError> {
-        let Some(recv_result) = self.messages.recv(&mut self.buf).now_or_never() else { return Ok(()) };
-        let (source, header, data) = recv_result.map_err(InputHandlingError::from)?;
+    async fn handle_input(&mut self) -> bool {
+        let Some(recv_result) = self.in_datagrams.recv().now_or_never() else {
+            return false;
+        };
 
-        let data_header = match header {
+        let Ok(datagram) = recv_result else {
+            error!("Datagram input channel is unexpectedly closed.");
+            return true;
+        };
+
+        let data_header = match datagram.header {
             DatagramHeader::Confirmation => {
-                self.resends.confirmed(Instant::now(), source, data);
-                return Ok(());
+                self.resends
+                    .confirmed(Instant::now(), datagram.source, &datagram.data);
+                return false;
             }
             DatagramHeader::Data(data_header) => data_header,
         };
 
         let reliable = if data_header.reliable() {
             self.confirms
-                .received(Instant::now(), source, data_header.id());
+                .received(Instant::now(), datagram.source, data_header.id());
             true
         } else {
             false
@@ -164,21 +169,19 @@ impl Processor {
 
         self.inputs
             .send(InMessage::new(
-                data.to_vec(),
+                datagram.data,
                 reliable,
                 data_header.peers(),
-                source,
+                datagram.source,
             ))
             .await
-            .map_err(InputHandlingError::from)?;
-
-        Ok(())
+            .is_err()
     }
 
     async fn handle_resends(&mut self) -> bool {
         let failures = match self
             .resends
-            .resend(Instant::now(), &mut self.buf, &mut self.messages)
+            .resend(Instant::now(), &mut self.buf, &mut self.out_datagrams)
             .await
         {
             Ok(failures) => failures,
@@ -207,14 +210,30 @@ enum InputHandlingError {
     InputsError(#[from] SendError<InMessage>),
 }
 
-/// Setups a communicator and network processor couple.
-pub fn setup_processor(network: Network) -> (Communicator, Processor) {
+/// Setups and starts communication stack tasks.
+pub fn startup(network: Network) -> Communicator {
+    let messages = Messages::new(network);
+
+    let (out_datagrams_sender, out_datagrams_receiver) = bounded(16);
+    task::spawn(dsender::run(out_datagrams_receiver, messages.clone()));
+
+    let (in_datagrams_sender, in_datagrams_receiver) = bounded(16);
+    task::spawn(dreceiver::run(in_datagrams_sender, messages));
+
     let (outputs_sender, outputs_receiver) = bounded(CHANNEL_CAPACITY);
     let (inputs_sender, inputs_receiver) = bounded(CHANNEL_CAPACITY);
     let (errors_sender, errors_receiver) = bounded(CHANNEL_CAPACITY);
 
     let communicator = Communicator::new(outputs_sender, inputs_receiver, errors_receiver);
-    let messages = Messages::new(network);
-    let processor = Processor::new(messages, outputs_receiver, inputs_sender, errors_sender);
-    (communicator, processor)
+    let processor = Processor::new(
+        out_datagrams_sender,
+        in_datagrams_receiver,
+        outputs_receiver,
+        inputs_sender,
+        errors_sender,
+    );
+
+    task::spawn(processor.run());
+
+    communicator
 }

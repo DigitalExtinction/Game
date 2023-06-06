@@ -5,6 +5,7 @@ use std::{
 };
 
 use ahash::AHashMap;
+use async_std::channel::{SendError, Sender};
 use priority_queue::PriorityQueue;
 use thiserror::Error;
 
@@ -13,9 +14,8 @@ use super::{
     databuf::DataBuf,
 };
 use crate::{
-    header::{DatagramHeader, DatagramId, Peers, HEADER_SIZE},
-    messages::Messages,
-    SendError,
+    header::{DatagramHeader, DatagramId, Peers},
+    tasks::dsender::OutDatagram,
 };
 
 const START_BACKOFF_MS: u64 = 220;
@@ -63,20 +63,20 @@ impl Resends {
         &mut self,
         time: Instant,
         buf: &mut [u8],
-        messages: &mut Messages,
-    ) -> Result<Vec<SocketAddr>, SendError> {
+        datagrams: &mut Sender<OutDatagram>,
+    ) -> Result<Vec<SocketAddr>, SendError<OutDatagram>> {
         let mut failures = Vec::new();
 
         while let Some((addr, queue)) = self.book.next() {
             let failure = loop {
-                match queue.reschedule(&mut buf[HEADER_SIZE..], time) {
+                match queue.reschedule(buf, time) {
                     Ok(Some((len, id, peers))) => {
-                        messages
-                            .send(
-                                &mut buf[..len + HEADER_SIZE],
+                        datagrams
+                            .send(OutDatagram::new(
                                 DatagramHeader::new_data(true, peers, id),
-                                &[addr],
-                            )
+                                buf[..len].to_vec(),
+                                addr,
+                            ))
                             .await?;
                     }
                     Ok(None) => break false,

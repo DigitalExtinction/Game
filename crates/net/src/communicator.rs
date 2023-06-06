@@ -88,10 +88,10 @@ impl OutMessageBuilder {
 
 /// A message / datagram to be delivered.
 pub struct OutMessage {
-    data: Vec<u8>,
+    pub(crate) data: Vec<u8>,
     reliable: bool,
     peers: Peers,
-    targets: Vec<SocketAddr>,
+    pub(crate) targets: Vec<SocketAddr>,
 }
 
 impl OutMessage {
@@ -132,20 +132,12 @@ impl OutMessage {
         }
     }
 
-    pub(crate) fn data(&self) -> &[u8] {
-        self.data.as_slice()
-    }
-
     pub(crate) fn reliable(&self) -> bool {
         self.reliable
     }
 
     pub(crate) fn peers(&self) -> Peers {
         self.peers
-    }
-
-    pub(crate) fn targets(&self) -> &[SocketAddr] {
-        self.targets.as_slice()
     }
 }
 
@@ -307,17 +299,17 @@ mod tests {
         let messages = builder.build();
         assert_eq!(messages.len(), 4);
         // 3 items + something extra for the encoding
-        assert!(messages[0].data().len() >= 128 * 3);
+        assert!(messages[0].data.len() >= 128 * 3);
         // less then 4 items
-        assert!(messages[0].data().len() < 128 * 4);
+        assert!(messages[0].data.len() < 128 * 4);
 
-        assert!(messages[1].data().len() >= 128 * 3);
-        assert!(messages[1].data().len() < 128 * 4);
-        assert!(messages[2].data().len() >= 128 * 3);
-        assert!(messages[2].data().len() < 128 * 4);
+        assert!(messages[1].data.len() >= 128 * 3);
+        assert!(messages[1].data.len() < 128 * 4);
+        assert!(messages[2].data.len() >= 128 * 3);
+        assert!(messages[2].data.len() < 128 * 4);
         // last one contains only one leftover item
-        assert!(messages[3].data().len() >= 128);
-        assert!(messages[3].data().len() < 128 * 2);
+        assert!(messages[3].data.len() >= 128);
+        assert!(messages[3].data.len() < 128 * 2);
     }
 
     #[test]

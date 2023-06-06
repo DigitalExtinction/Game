@@ -2,8 +2,8 @@ use std::{net::SocketAddr, time::Duration};
 
 use ahash::AHashSet;
 use anyhow::Context;
-use async_std::{channel::TryRecvError, prelude::FutureExt as StdFutureExt, task};
-use de_net::{setup_processor, Communicator, InMessage, Network, OutMessage, Peers};
+use async_std::{channel::TryRecvError, prelude::FutureExt as StdFutureExt};
+use de_net::{self, Communicator, InMessage, Network, OutMessage, Peers};
 use tracing::info;
 
 pub(crate) struct GameProcessor {
@@ -18,11 +18,8 @@ impl GameProcessor {
             .with_context(|| format!("Failed to bind on port {port}"))?;
         info!("Listening on port {}", port);
 
-        let (communicator, processor) = setup_processor(net);
-        task::spawn(processor.run());
-
         let processor = Self {
-            communicator,
+            communicator: de_net::startup(net),
             players: AHashSet::new(),
         };
 
