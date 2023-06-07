@@ -1,3 +1,5 @@
+use std::time::Duration;
+
 use bevy::{
     pbr::{MaterialPipeline, MaterialPipelineKey, NotShadowCaster, NotShadowReceiver},
     prelude::*,
@@ -19,11 +21,14 @@ use de_core::{
 };
 use de_objects::SolidObjects;
 
-use crate::{DISTANCE_FLAG_BIT, MAX_VISIBILITY_DISTANCE};
+use crate::{DISTANCE_FLAG_BIT, MAX_VISIBILITY_DISTANCE, UPDATE_TIMER_FLAG_BIT};
 
 /// Vertical distance in meters between the bar center and the top of the
 /// parent entity collider.
 const BAR_HEIGHT: f32 = 2.;
+
+/// Duration that a bar is visible when its value is updated.
+const UPDATE_VISIBILITY_DURATION: Duration = Duration::from_secs(3);
 
 const ATTRIBUTE_POSITION: MeshVertexAttribute =
     MeshVertexAttribute::new("Position", 732918835, VertexFormat::Float32x2);
@@ -59,6 +64,12 @@ impl Plugin for BarsPlugin {
                     .run_if(in_state(AppState::InGame))
                     .before(VisibilitySet::Update)
                     .after(DistanceSet::Update),
+            )
+            .add_system(
+                update_visibility_timer
+                    .in_base_set(GameSet::PostUpdate)
+                    .run_if(in_state(AppState::InGame))
+                    .before(VisibilitySet::Update),
             );
     }
 }
@@ -182,6 +193,18 @@ impl Material for BarMaterial {
 #[derive(Component)]
 struct BarChild(Entity);
 
+#[derive(Component)]
+struct BarUpdateTimer(Timer);
+
+impl Default for BarUpdateTimer {
+    fn default() -> Self {
+        let mut timer = Timer::new(UPDATE_VISIBILITY_DURATION, TimerMode::Once);
+        // Avoid triggering visibility after spawning.
+        timer.tick(UPDATE_VISIBILITY_DURATION);
+        Self(timer)
+    }
+}
+
 fn setup(mut commans: Commands, mut meshes: ResMut<Assets<Mesh>>) {
     commans.insert_resource(BarMesh(meshes.add(bar_mesh(1.5, 0.3))));
 }
@@ -215,6 +238,7 @@ fn spawn(
                 NotShadowCaster,
                 NotShadowReceiver,
                 VisibilityFlags::default(),
+                BarUpdateTimer::default(),
             ))
             .id();
 
@@ -228,14 +252,16 @@ fn spawn(
 fn update_value(
     mut materials: ResMut<Assets<BarMaterial>>,
     parents: Query<&BarChild, With<Active>>,
-    bars: Query<&Handle<BarMaterial>>,
+    mut bars: Query<(&Handle<BarMaterial>, &mut BarUpdateTimer)>,
     mut events: EventReader<UpdateBarValueEvent>,
 ) {
     for event in events.iter() {
         if let Ok(child) = parents.get(event.entity()) {
-            let handle = bars.get(child.0).unwrap();
+            let (handle, mut timer) = bars.get_mut(child.0).unwrap();
             let material = materials.get_mut(handle).unwrap();
             material.value = event.value();
+
+            timer.0.reset();
         }
     }
 }
@@ -265,6 +291,23 @@ fn update_visibility_distance(
         // Do not trigger change detection unnecessarily.
         if flags.invisible_value(DISTANCE_FLAG_BIT) != invisible {
             flags.update_invisible(DISTANCE_FLAG_BIT, invisible);
+        }
+    }
+}
+
+fn update_visibility_timer(
+    mut bars: Query<(&mut VisibilityFlags, &mut BarUpdateTimer)>,
+    time: Res<Time>,
+) {
+    for (mut flags, mut timer) in bars.iter_mut() {
+        if timer.0.elapsed().is_zero() && !flags.visible_value(UPDATE_TIMER_FLAG_BIT) {
+            flags.update_visible(UPDATE_TIMER_FLAG_BIT, true);
+        }
+
+        timer.0.tick(time.delta());
+
+        if timer.0.just_finished() {
+            flags.update_visible(UPDATE_TIMER_FLAG_BIT, false);
         }
     }
 }
