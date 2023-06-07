@@ -1,6 +1,6 @@
-use std::net::SocketAddr;
+use std::{net::SocketAddr, time::Duration};
 
-use async_std::channel::Sender;
+use async_std::{channel::Sender, future::timeout};
 use tracing::{error, info, log::warn};
 
 use crate::{
@@ -28,7 +28,15 @@ pub(crate) async fn run(datagrams: Sender<InDatagram>, messages: Messages) {
     let mut buffer = [0u8; MAX_DATAGRAM_SIZE];
 
     loop {
-        let (addr, header, data) = match messages.recv(&mut buffer).await {
+        let Ok(result) = timeout(Duration::from_millis(500), messages.recv(&mut buffer)).await else {
+            if datagrams.is_closed() {
+                break;
+            } else {
+                continue;
+            }
+        };
+
+        let (addr, header, data) = match result {
             Ok(msg) => msg,
             Err(err @ MsgRecvError::InvalidHeader(_)) => {
                 warn!("Invalid message received on port {port}: {err:?}");
