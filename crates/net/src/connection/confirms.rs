@@ -3,7 +3,10 @@ use std::{
     time::{Duration, Instant},
 };
 
-use async_std::channel::{SendError, Sender};
+use async_std::{
+    channel::{SendError, Sender},
+    sync::{Arc, Mutex},
+};
 
 use super::book::{Connection, ConnectionBook};
 use crate::{
@@ -18,14 +21,15 @@ const MAX_BUFF_SIZE: usize = 96;
 /// The buffer is flushed after the oldest part is older than this.
 const MAX_BUFF_AGE: Duration = Duration::from_millis(100);
 
+#[derive(Clone)]
 pub(crate) struct Confirmations {
-    book: ConnectionBook<Buffer>,
+    book: Arc<Mutex<ConnectionBook<Buffer>>>,
 }
 
 impl Confirmations {
     pub(crate) fn new() -> Self {
         Self {
-            book: ConnectionBook::new(),
+            book: Arc::new(Mutex::new(ConnectionBook::new())),
         }
     }
 
@@ -33,8 +37,12 @@ impl Confirmations {
     ///
     /// This method should be called exactly once after each reliable message
     /// is delivered.
-    pub(crate) fn received(&mut self, time: Instant, addr: SocketAddr, id: DatagramId) {
-        self.book.update(time, addr, Buffer::new).push(time, id);
+    pub(crate) async fn received(&mut self, time: Instant, addr: SocketAddr, id: DatagramId) {
+        self.book
+            .lock()
+            .await
+            .update(time, addr, Buffer::new)
+            .push(time, id);
     }
 
     /// Send message confirmation packets which are ready to be send.
@@ -57,7 +65,9 @@ impl Confirmations {
         time: Instant,
         datagrams: &mut Sender<OutDatagram>,
     ) -> Result<(), SendError<OutDatagram>> {
-        while let Some((addr, buffer)) = self.book.next() {
+        let mut book = self.book.lock().await;
+
+        while let Some((addr, buffer)) = book.next() {
             if buffer.ready(time) {
                 while let Some(data) = buffer.flush(MAX_MESSAGE_SIZE) {
                     datagrams
@@ -74,8 +84,8 @@ impl Confirmations {
         Ok(())
     }
 
-    pub(crate) fn clean(&mut self, time: Instant) {
-        self.book.clean(time);
+    pub(crate) async fn clean(&mut self, time: Instant) {
+        self.book.lock().await.clean(time);
     }
 }
 

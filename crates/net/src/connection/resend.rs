@@ -5,7 +5,10 @@ use std::{
 };
 
 use ahash::AHashMap;
-use async_std::channel::{SendError, Sender};
+use async_std::{
+    channel::{SendError, Sender},
+    sync::{Arc, Mutex},
+};
 use priority_queue::PriorityQueue;
 use thiserror::Error;
 
@@ -21,18 +24,19 @@ use crate::{
 const START_BACKOFF_MS: u64 = 220;
 const MAX_TRIES: u8 = 6;
 
+#[derive(Clone)]
 pub(crate) struct Resends {
-    book: ConnectionBook<Queue>,
+    book: Arc<Mutex<ConnectionBook<Queue>>>,
 }
 
 impl Resends {
     pub(crate) fn new() -> Self {
         Self {
-            book: ConnectionBook::new(),
+            book: Arc::new(Mutex::new(ConnectionBook::new())),
         }
     }
 
-    pub(crate) fn sent(
+    pub(crate) async fn sent(
         &mut self,
         time: Instant,
         addr: SocketAddr,
@@ -40,7 +44,8 @@ impl Resends {
         peers: Peers,
         data: &[u8],
     ) {
-        let queue = self.book.update(time, addr, Queue::new);
+        let mut book = self.book.lock().await;
+        let queue = book.update(time, addr, Queue::new);
         queue.push(id, peers, data, time);
     }
 
@@ -48,8 +53,9 @@ impl Resends {
     ///
     /// The data encode IDs of delivered (and confirmed) messages so that they
     /// can be forgotten.
-    pub(crate) fn confirmed(&mut self, time: Instant, addr: SocketAddr, data: &[u8]) {
-        let queue = self.book.update(time, addr, Queue::new);
+    pub(crate) async fn confirmed(&mut self, time: Instant, addr: SocketAddr, data: &[u8]) {
+        let mut book = self.book.lock().await;
+        let queue = book.update(time, addr, Queue::new);
 
         for i in 0..data.len() / 3 {
             let offset = i * 4;
@@ -66,8 +72,9 @@ impl Resends {
         datagrams: &mut Sender<OutDatagram>,
     ) -> Result<Vec<SocketAddr>, SendError<OutDatagram>> {
         let mut failures = Vec::new();
+        let mut book = self.book.lock().await;
 
-        while let Some((addr, queue)) = self.book.next() {
+        while let Some((addr, queue)) = book.next() {
             let failure = loop {
                 match queue.reschedule(buf, time) {
                     Ok(Some((len, id, peers))) => {
@@ -88,7 +95,7 @@ impl Resends {
             };
 
             if failure {
-                self.book.remove_current();
+                book.remove_current();
                 failures.push(addr);
             }
         }
@@ -96,8 +103,8 @@ impl Resends {
         Ok(failures)
     }
 
-    pub(crate) fn clean(&mut self, time: Instant) {
-        self.book.clean(time);
+    pub(crate) async fn clean(&mut self, time: Instant) {
+        self.book.lock().await.clean(time);
     }
 }
 
