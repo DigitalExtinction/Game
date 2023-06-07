@@ -2,7 +2,7 @@ use std::time::Instant;
 
 use async_std::{
     channel::{bounded, Receiver, SendError, Sender, TryRecvError},
-    task,
+    io, task,
 };
 use futures::FutureExt;
 use thiserror::Error;
@@ -211,14 +211,15 @@ enum InputHandlingError {
 }
 
 /// Setups and starts communication stack tasks.
-pub fn startup(network: Network) -> Communicator {
+pub fn startup(network: Network) -> io::Result<Communicator> {
+    let port = network.port()?;
     let messages = Messages::new(network);
 
     let (out_datagrams_sender, out_datagrams_receiver) = bounded(16);
-    task::spawn(dsender::run(out_datagrams_receiver, messages.clone()));
+    task::spawn(dsender::run(port, out_datagrams_receiver, messages.clone()));
 
     let (in_datagrams_sender, in_datagrams_receiver) = bounded(16);
-    task::spawn(dreceiver::run(in_datagrams_sender, messages));
+    task::spawn(dreceiver::run(port, in_datagrams_sender, messages));
 
     let (outputs_sender, outputs_receiver) = bounded(CHANNEL_CAPACITY);
     let (inputs_sender, inputs_receiver) = bounded(CHANNEL_CAPACITY);
@@ -235,5 +236,5 @@ pub fn startup(network: Network) -> Communicator {
 
     task::spawn(processor.run());
 
-    communicator
+    Ok(communicator)
 }

@@ -15,15 +15,7 @@ pub(crate) struct InDatagram {
     pub(crate) data: Vec<u8>,
 }
 
-pub(crate) async fn run(datagrams: Sender<InDatagram>, messages: Messages) {
-    let port = match messages.port() {
-        Ok(port) => port,
-        Err(err) => {
-            error!("Cannot obtain port: {:?}", err);
-            return;
-        }
-    };
-
+pub(crate) async fn run(port: u16, datagrams: Sender<InDatagram>, messages: Messages) {
     info!("Starting datagram receiver on port {port}...");
     let mut buffer = [0u8; MAX_DATAGRAM_SIZE];
 
