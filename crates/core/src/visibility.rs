@@ -42,6 +42,11 @@ impl VisibilityFlags {
         self.invisible.set(bit, value);
     }
 
+    /// Returns value of a specific "visible" flag.
+    pub fn visible_value(&self, bit: u32) -> bool {
+        self.visible.get(bit)
+    }
+
     /// Returns value of a specific "invisible" flag.
     pub fn invisible_value(&self, bit: u32) -> bool {
         self.invisible.get(bit)

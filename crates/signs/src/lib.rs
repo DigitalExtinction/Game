@@ -12,6 +12,7 @@ mod pole;
 /// The 3D signs are not displayed if further than this from the camera.
 const MAX_VISIBILITY_DISTANCE: f32 = 140.;
 const DISTANCE_FLAG_BIT: u32 = 0;
+const UPDATE_TIMER_FLAG_BIT: u32 = 2;
 
 pub struct SignsPluginGroup;
 
