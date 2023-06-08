@@ -30,16 +30,20 @@ fn test() {
         data[0] = 64; // Reliable
         client.send(ADDR, &data).await.unwrap();
 
-        let mut buffer = [0u8; 1024];
-        let (n, _) = client.recv(&mut buffer).await.unwrap();
+        let mut num_anonymous = 0;
+        let mut num_confirms = 0;
+        for _ in 0..2 {
+            let (n, _) = client.recv(&mut buffer).await.unwrap();
 
-        // Anonymous datagram (last header byte skipped)
-        assert_eq!(&buffer[0..3], &[0, 0, 0]);
-        assert_eq!(&buffer[4..n], &[82, 83, 84]);
-
-        // Confirmation
-        let (n, _) = client.recv(&mut buffer).await.unwrap();
-        assert_eq!(&buffer[0..n], &[128, 0, 0, 0, 3, 3, 7, 22, 22, 22]);
+            // Anonymous datagram (last header byte skipped)
+            if buffer[0..3] == [0, 0, 0] && buffer[4..n] == [82, 83, 84] {
+                num_anonymous += 1;
+            } else if buffer[0..n] == [128, 0, 0, 0, 3, 3, 7, 22, 22, 22] {
+                num_confirms += 1;
+            }
+        }
+        assert_eq!(num_anonymous, 1);
+        assert_eq!(num_confirms, 1);
 
         // Try to send invalid data -- wrong header
         client
@@ -74,17 +78,30 @@ fn test() {
     }
 
     async fn second(client: &mut Network) {
+        let mut num_confirms = 0;
+        let mut num_messages_22 = 0;
+
         let mut buffer = [0u8; 1024];
-        let (n, _) = client.recv(&mut buffer).await.unwrap();
 
-        // First 4 bytes are interpreted as datagram ID.
-        assert_eq!(&buffer[4..n], &[22; 408]);
+        for _ in 0..2 {
+            let (n, _) = client.recv(&mut buffer).await.unwrap();
 
-        // Sending confirmation
-        client
-            .send(ADDR, &[128, 0, 0, 0, buffer[1], buffer[2], buffer[3]])
-            .await
-            .unwrap();
+            // First 4 bytes are interpreted as datagram ID.
+            if buffer[4..n] == [22; 408] {
+                num_messages_22 += 1;
+
+                // Sending confirmation
+                client
+                    .send(ADDR, &[128, 0, 0, 0, buffer[1], buffer[2], buffer[3]])
+                    .await
+                    .unwrap();
+            } else if buffer[0..n] == [128, 0, 0, 0, 0, 8, 7] {
+                num_confirms += 1;
+            }
+        }
+
+        assert_eq!(num_confirms, 1);
+        assert_eq!(num_messages_22, 1);
 
         client
             .send(
@@ -94,10 +111,6 @@ fn test() {
             )
             .await
             .unwrap();
-
-        // Confirmation
-        let (n, _) = client.recv(&mut buffer).await.unwrap();
-        assert_eq!(&buffer[0..n], &[128, 0, 0, 0, 0, 8, 7]);
 
         assert!(client
             .recv(&mut buffer)
