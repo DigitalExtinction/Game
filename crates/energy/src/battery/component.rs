@@ -1,4 +1,5 @@
 use bevy::prelude::*;
+
 use crate::battery::{MIN_ATTACK_ENERGY, MIN_MOVE_ENERGY};
 
 /// The battery component is used to store the energy level of an entity.
@@ -9,7 +10,7 @@ use crate::battery::{MIN_ATTACK_ENERGY, MIN_MOVE_ENERGY};
 #[derive(Component, Debug, Clone, Copy, PartialEq, PartialOrd)]
 pub struct Battery {
     capacity: f32, // in kilojoules
-    energy: f32, // in kilojoules
+    energy: f32,   // in kilojoules
 }
 
 impl Battery {
@@ -109,4 +110,3 @@ impl Battery {
         self.energy / self.capacity
     }
 }
-

@@ -1,7 +1,7 @@
 mod battery;
 
-use bevy::{app::PluginGroupBuilder, prelude::PluginGroup};
 pub use battery::component::Battery;
+use bevy::{app::PluginGroupBuilder, prelude::PluginGroup};
 
 pub struct EnergyPluginGroup;
 

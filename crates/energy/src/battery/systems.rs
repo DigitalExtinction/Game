@@ -1,8 +1,7 @@
 use bevy::prelude::*;
 
 use crate::battery::component::Battery;
-use crate::battery::{DISCHARGE_RATE};
-
+use crate::battery::DISCHARGE_RATE;
 
 /// Discharges the battery of a unit.
 ///

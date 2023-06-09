@@ -22,6 +22,7 @@ const MIN_ATTACK_ENERGY: f32 = 20_000.; // google said that a rail-gun takes 25 
 mod tests {
     use bevy::prelude::*;
     use bevy::time::TimePlugin;
+
     use crate::battery::{component, DISCHARGE_RATE};
 
     #[test]
@@ -29,9 +30,12 @@ mod tests {
         // make new bevy app
         let mut app = App::new();
         // add entity and battery
-        let entity = app.world.spawn((
-            component::Battery::new(100_000., 100_000.), // 100 kJ capacity, 100 kJ energy
-            )).id();
+        let entity = app
+            .world
+            .spawn((
+                component::Battery::new(100_000., 100_000.), // 100 kJ capacity, 100 kJ energy
+            ))
+            .id();
 
         // add the plugin
         app.add_plugin(super::BatteryPlugin);
