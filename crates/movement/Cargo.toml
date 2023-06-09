@@ -1,0 +1,26 @@
+[package]
+name = "de_movement"
+description = "Digital Extinction entity movement, local dynamic obstacle avoidance, kinematics and similar."
+
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+repository.workspace = true
+keywords.workspace = true
+homepage.workspace = true
+license.workspace = true
+categories.workspace = true
+
+[dependencies]
+# DE
+de_core.workspace = true
+de_objects.workspace = true
+de_map.workspace = true
+de_pathing.workspace = true
+de_index.workspace = true
+
+# Other
+bevy.workspace = true
+parry3d.workspace = true
+parry2d.workspace = true
+glam.workspace = true

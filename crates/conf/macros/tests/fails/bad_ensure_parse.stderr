@@ -1,0 +1,11 @@
+error: expected inputs like: `#[ensure(move_margin > 0., "`move_margin` must be positive.")]`
+  --> tests/fails/bad_ensure_parse.rs:12:13
+   |
+12 |     #[ensure(Man I love rust!)]
+   |             ^^^^^^^^^^^^^^^^^^
+
+error: expected `,`
+  --> tests/fails/bad_ensure_parse.rs:12:18
+   |
+12 |     #[ensure(Man I love rust!)]
+   |                  ^

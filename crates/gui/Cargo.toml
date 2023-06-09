@@ -1,0 +1,19 @@
+[package]
+name = "de_gui"
+description = "Extensions on top of Bevy UI for Digital Extinction."
+
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+repository.workspace = true
+keywords.workspace = true
+homepage.workspace = true
+license.workspace = true
+categories.workspace = true
+
+[dependencies]
+# DE
+de_core.workspace = true
+
+# Other
+bevy.workspace = true

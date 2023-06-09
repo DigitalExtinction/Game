@@ -1,0 +1,26 @@
+[package]
+name = "de_menu"
+description = "Digital Extinction menu."
+
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+repository.workspace = true
+keywords.workspace = true
+homepage.workspace = true
+license.workspace = true
+categories.workspace = true
+
+[dependencies]
+# DE
+de_core.workspace = true
+de_gui.workspace = true
+de_lobby_client.workspace = true
+de_lobby_model.workspace = true
+de_map.workspace = true
+
+# Other
+async-std.workspace = true
+bevy.workspace = true
+futures-lite.workspace = true
+thiserror.workspace = true

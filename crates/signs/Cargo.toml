@@ -1,0 +1,24 @@
+[package]
+name = "de_signs"
+description = "Various world space UI signs in Digital Extinction."
+
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+repository.workspace = true
+keywords.workspace = true
+homepage.workspace = true
+license.workspace = true
+categories.workspace = true
+
+[dependencies]
+# DE
+de_camera.workspace = true
+de_core.workspace = true
+de_objects.workspace = true
+de_terrain.workspace = true
+
+# Other
+ahash.workspace = true
+bevy.workspace = true
+glam.workspace = true

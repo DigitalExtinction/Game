@@ -1,0 +1,38 @@
+[package]
+name = "de_pathing"
+description = "Global path finding and path (re)scheduling in Digital Extinction."
+
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+repository.workspace = true
+keywords.workspace = true
+homepage.workspace = true
+license.workspace = true
+categories.workspace = true
+
+[dependencies]
+# DE
+de_core.workspace = true
+de_map.workspace = true
+de_objects.workspace = true
+
+# Other
+bevy.workspace = true
+glam.workspace = true
+parry2d.workspace = true
+nalgebra.workspace = true
+ahash.workspace = true
+approx.workspace = true
+rstar.workspace = true
+tinyvec.workspace = true
+spade.workspace = true
+futures-lite.workspace = true
+
+[dev-dependencies]
+ntest.workspace = true
+criterion.workspace = true
+
+[[bench]]
+name = "pathing"
+harness = false

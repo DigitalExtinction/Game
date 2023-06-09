@@ -1,0 +1,23 @@
+[package]
+name = "de_behaviour"
+description = "Digital Extinction unit level behaviour and AI."
+
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+repository.workspace = true
+keywords.workspace = true
+homepage.workspace = true
+license.workspace = true
+categories.workspace = true
+
+[dependencies]
+# DE
+de_core.workspace = true
+de_objects.workspace = true
+de_pathing.workspace = true
+
+# Other
+bevy.workspace = true
+glam.workspace = true
+parry3d.workspace = true

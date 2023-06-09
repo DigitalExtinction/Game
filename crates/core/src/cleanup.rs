@@ -1,0 +1,22 @@
+use bevy::prelude::*;
+
+use crate::state::AppState;
+
+pub(crate) struct CleanupPlugin;
+
+impl Plugin for CleanupPlugin {
+    fn build(&self, app: &mut App) {
+        app.add_system(cleanup.in_schedule(OnExit(AppState::InGame)));
+    }
+}
+
+/// Mark all entities which should be recursively despawned after the game is
+/// exited with this component.
+#[derive(Component)]
+pub struct DespawnOnGameExit;
+
+fn cleanup(mut commands: Commands, query: Query<Entity, With<DespawnOnGameExit>>) {
+    for entity in query.iter() {
+        commands.entity(entity).despawn_recursive();
+    }
+}

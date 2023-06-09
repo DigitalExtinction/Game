@@ -1,0 +1,23 @@
+[package]
+name = "de_net"
+description = "Digital Extinction low latency networking."
+
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+repository.workspace = true
+keywords.workspace = true
+homepage.workspace = true
+license.workspace = true
+categories.workspace = true
+
+[dependencies]
+# Other
+ahash.workspace = true
+async-std.workspace = true
+bincode.workspace = true
+fastrand.workspace = true
+futures.workspace = true
+priority-queue.workspace = true
+thiserror.workspace = true
+tracing.workspace = true

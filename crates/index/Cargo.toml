@@ -1,0 +1,32 @@
+[package]
+name = "de_index"
+description = "Spatial index of all solid entities in Digital Extinction."
+
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+repository.workspace = true
+keywords.workspace = true
+homepage.workspace = true
+license.workspace = true
+categories.workspace = true
+
+[dependencies]
+# DE
+de_core.workspace = true
+de_objects.workspace = true
+
+# Other
+bevy.workspace = true
+glam.workspace = true
+parry3d.workspace = true
+parry2d.workspace = true
+ahash.workspace = true
+nalgebra.workspace = true
+
+[dev-dependencies]
+criterion.workspace = true
+
+[[bench]]
+name = "ray"
+harness = false

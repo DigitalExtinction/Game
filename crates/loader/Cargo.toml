@@ -1,0 +1,26 @@
+[package]
+name = "de_loader"
+description = "Map loading logic in Digital Extinction."
+
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+repository.workspace = true
+keywords.workspace = true
+homepage.workspace = true
+license.workspace = true
+categories.workspace = true
+
+[dependencies]
+# DE
+de_core.workspace = true
+de_map.workspace = true
+de_terrain.workspace = true
+de_spawner.workspace = true
+de_camera.workspace = true
+de_conf.workspace = true
+
+# Other
+bevy.workspace = true
+iyes_progress.workspace = true
+futures-lite.workspace = true

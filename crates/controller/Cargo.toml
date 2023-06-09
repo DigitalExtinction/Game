@@ -1,0 +1,37 @@
+[package]
+name = "de_controller"
+description = "Handling of user input in Digital Extinction."
+
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+repository.workspace = true
+keywords.workspace = true
+homepage.workspace = true
+license.workspace = true
+categories.workspace = true
+
+[dependencies]
+# DE
+de_behaviour.workspace = true
+de_camera.workspace = true
+de_combat.workspace = true
+de_conf.workspace = true
+de_construction.workspace = true
+de_core.workspace = true
+de_gui.workspace = true
+de_index.workspace = true
+de_map.workspace = true
+de_objects.workspace = true
+de_pathing.workspace = true
+de_signs.workspace = true
+de_spawner.workspace = true
+de_terrain.workspace = true
+
+# Other
+ahash.workspace = true
+bevy.workspace = true
+enum-map.workspace = true
+glam.workspace = true
+parry2d.workspace = true
+parry3d.workspace = true

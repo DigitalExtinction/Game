@@ -1,0 +1,10 @@
+base_url = "https://docs.de-game.org"
+compile_sass = true
+build_search_index = true
+theme = "book"
+
+[markdown]
+highlight_code = true
+
+[extra]
+book_number_chapters = false

@@ -1,0 +1,11 @@
+error: expected a closure like: `#[check(|v| v > 0)]`
+ --> tests/fails/bad_check_closure_parse.rs:6:5
+  |
+6 |     #[check(foobar)]
+  |     ^^^^^^^^^^^^^^^^
+
+error: expected `|`
+ --> tests/fails/bad_check_closure_parse.rs:6:13
+  |
+6 |     #[check(foobar)]
+  |             ^^^^^^

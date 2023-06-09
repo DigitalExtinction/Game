@@ -1,0 +1,26 @@
+[package]
+name = "de_spawner"
+description = "Object spawning, drafting and construction in Digital Extinction."
+
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+repository.workspace = true
+keywords.workspace = true
+homepage.workspace = true
+license.workspace = true
+categories.workspace = true
+
+[dependencies]
+# DE
+de_core.workspace = true
+de_index.workspace = true
+de_map.workspace = true
+de_objects.workspace = true
+de_terrain.workspace = true
+
+# Other
+ahash.workspace = true
+bevy.workspace = true
+parry2d.workspace = true
+parry3d.workspace = true

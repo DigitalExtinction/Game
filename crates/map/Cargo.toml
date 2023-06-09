@@ -1,0 +1,32 @@
+[package]
+name = "de_map"
+description = "Digital Extinction map (de)serialization, validation and representation functionalities."
+
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+repository.workspace = true
+keywords.workspace = true
+homepage.workspace = true
+license.workspace = true
+categories.workspace = true
+
+[dependencies]
+# DE
+de_core.workspace = true
+
+# other
+ahash.workspace = true
+async-std = { workspace = true, features = ["default", "unstable", "attributes"] }
+async-tar.workspace = true
+bevy.workspace = true
+enum-map.workspace = true
+glam.workspace = true
+parry2d.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+sha3.workspace = true
+thiserror.workspace = true
+
+[dev-dependencies]
+tempfile = "3.3"

@@ -1,0 +1,24 @@
+[package]
+name = "de_camera"
+description = "Camera related functionality in Digital Extinction."
+
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+repository.workspace = true
+keywords.workspace = true
+homepage.workspace = true
+license.workspace = true
+categories.workspace = true
+
+[dependencies]
+# DE
+de_conf.workspace = true
+de_uom.workspace = true
+de_core.workspace = true
+de_map.workspace = true
+de_terrain.workspace = true
+
+# Other
+bevy.workspace = true
+parry3d.workspace = true

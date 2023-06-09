@@ -1,0 +1,18 @@
+[package]
+name = "de_uom"
+description = "Type safe units of measurements."
+
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+repository.workspace = true
+keywords.workspace = true
+homepage.workspace = true
+license.workspace = true
+categories.workspace = true
+
+[dependencies]
+thiserror.workspace = true
+
+[dev-dependencies]
+approx.workspace = true

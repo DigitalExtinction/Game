@@ -1,0 +1,27 @@
+[package]
+name = "de_combat"
+description = "Attacking, projectile & laser simulation and similar in Digital Extinction."
+
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+repository.workspace = true
+keywords.workspace = true
+homepage.workspace = true
+license.workspace = true
+categories.workspace = true
+
+[dependencies]
+# DE
+de_core.workspace = true
+de_objects.workspace = true
+de_terrain.workspace = true
+de_index.workspace = true
+de_spawner.workspace = true
+de_behaviour.workspace = true
+de_signs.workspace = true
+
+# Other
+bevy.workspace = true
+glam.workspace = true
+parry3d.workspace = true

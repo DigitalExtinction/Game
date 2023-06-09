@@ -1,0 +1,67 @@
+name: Docs
+
+on: [push, pull_request, merge_group]
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build:
+    name: Build
+    if: github.event.pull_request.draft == false
+
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          submodules: true
+      - name: Install Linux Dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install --no-install-recommends -y libasound2-dev libudev-dev
+      - name: Install Zola
+        run: |
+          wget -q -O - \
+          "https://github.com/getzola/zola/releases/download/v0.16.1/zola-v0.16.1-x86_64-unknown-linux-gnu.tar.gz" \
+          | sudo tar xzf - -C /usr/bin
+      - name: Rust Toolchain
+        uses: dtolnay/rust-toolchain@stable
+      - name: Versions
+        run: rustc --version && cargo --version && zola --version
+      - name: Build Rust Docs
+        run: cargo doc --no-deps --all-features --workspace --document-private-items
+      - name: Move Rust Docs
+        run: mv target/doc/ docs/static/rust
+      - name: Build Zola Docs
+        working-directory: docs
+        run: zola build
+      - name: Upload Artifact
+        uses: actions/upload-pages-artifact@v1
+        with:
+          path: docs/public/
+
+  deploy:
+    name: Deploy
+    if: github.ref == 'refs/heads/main'
+
+    concurrency:
+      group: "pages"
+      cancel-in-progress: true
+
+    needs: build
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v1

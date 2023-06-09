@@ -1,0 +1,31 @@
+[package]
+name = "de_lobby_client"
+description = "Bevy based client to Digital Extinction lobby server."
+
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+repository.workspace = true
+keywords.workspace = true
+homepage.workspace = true
+license.workspace = true
+categories.workspace = true
+
+[dependencies]
+# DE
+de_conf.workspace = true
+de_core.workspace = true
+de_lobby_model.workspace = true
+
+# Other
+ahash.workspace = true
+anyhow.workspace = true
+async-compat.workspace = true
+bevy.workspace = true
+futures-lite.workspace = true
+iyes_progress.workspace = true
+reqwest.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+url.workspace = true
+urlencoding.workspace = true
