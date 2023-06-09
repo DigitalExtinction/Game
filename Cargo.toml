@@ -36,6 +36,7 @@ de_conf.workspace = true
 de_construction.workspace = true
 de_controller.workspace = true
 de_core.workspace = true
+de_energy.workspace = true
 de_gui.workspace = true
 de_index.workspace = true
 de_loader.workspace = true
@@ -78,6 +79,7 @@ de_connector = { path = "crates/connector", version = "0.1.0-dev" }
 de_construction = { path = "crates/construction", version = "0.1.0-dev" }
 de_controller = { path = "crates/controller", version = "0.1.0-dev" }
 de_core = { path = "crates/core", version = "0.1.0-dev" }
+de_energy = { path = "crates/energy", version = "0.1.0-dev" }
 de_gui = { path = "crates/gui", version = "0.1.0-dev" }
 de_index = { path = "crates/index", version = "0.1.0-dev" }
 de_loader = { path = "crates/loader", version = "0.1.0-dev" }

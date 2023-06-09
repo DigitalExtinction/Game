@@ -33,6 +33,7 @@ pub struct SpawnBundle {
     visibility: Visibility,
     computed_visibility: ComputedVisibility,
     spawn: Spawn,
+    battery: de_energy::Battery,
 }
 
 impl SpawnBundle {
@@ -44,6 +45,7 @@ impl SpawnBundle {
             visibility: Visibility::Inherited,
             computed_visibility: ComputedVisibility::HIDDEN,
             spawn: Spawn,
+            battery: de_energy::Battery::new(100_000.0, 100_000.0),
         }
     }
 }
