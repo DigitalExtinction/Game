@@ -8,6 +8,7 @@ use de_core::{
     objects::{Active, ActiveObjectType, MovableSolid, ObjectType, Playable, StaticSolid},
     player::Player,
 };
+use de_energy::Battery;
 use de_objects::{AssetCollection, InitialHealths, SceneType, Scenes, SolidObjects};
 use de_terrain::CircleMarker;
 
@@ -33,7 +34,7 @@ pub struct SpawnBundle {
     visibility: Visibility,
     computed_visibility: ComputedVisibility,
     spawn: Spawn,
-    battery: de_energy::Battery,
+    battery: Battery,
 }
 
 impl SpawnBundle {
@@ -45,7 +46,7 @@ impl SpawnBundle {
             visibility: Visibility::Inherited,
             computed_visibility: ComputedVisibility::HIDDEN,
             spawn: Spawn,
-            battery: de_energy::Battery::new(100_000.0, 100_000.0),
+            battery: Battery::default(),
         }
     }
 }
