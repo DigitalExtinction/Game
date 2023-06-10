@@ -6,8 +6,8 @@ mod terrain;
 
 use bevy::{app::PluginGroupBuilder, prelude::*};
 pub use collider::TerrainCollider;
-pub use marker::CircleMarker;
 use marker::MarkerPlugin;
+pub use marker::{CircleMarker, MarkerVisibility, RectangleMarker};
 use plugin::TerrainPlugin;
 pub use terrain::TerrainBundle;
 

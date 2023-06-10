@@ -9,7 +9,7 @@ use de_core::{
     player::Player,
 };
 use de_objects::{AssetCollection, InitialHealths, SceneType, Scenes, SolidObjects};
-use de_terrain::CircleMarker;
+use de_terrain::{CircleMarker, MarkerVisibility, RectangleMarker};
 
 use crate::ObjectCounter;
 
@@ -58,9 +58,9 @@ fn spawn(
     solids: SolidObjects,
     healths: Res<InitialHealths>,
     mut counter: ResMut<ObjectCounter>,
-    to_spawn: Query<(Entity, &ObjectType, Option<&Player>), With<Spawn>>,
+    to_spawn: Query<(Entity, &ObjectType, &GlobalTransform, Option<&Player>), With<Spawn>>,
 ) {
-    for (entity, &object_type, player) in to_spawn.iter() {
+    for (entity, &object_type, transform, player) in to_spawn.iter() {
         info!("Spawning object {}", object_type);
 
         let mut entity_commands = commands.entity(entity);
@@ -83,6 +83,10 @@ fn spawn(
                 match active_type {
                     ActiveObjectType::Building(_) => {
                         entity_commands.insert(StaticSolid);
+
+                        let local_aabb = solid.ichnography().local_aabb();
+                        entity_commands
+                            .insert(RectangleMarker::from_aabb_transform(local_aabb, transform));
                     }
                     ActiveObjectType::Unit(_) => {
                         entity_commands.insert(MovableSolid);
@@ -91,6 +95,8 @@ fn spawn(
                         entity_commands.insert(CircleMarker::new(radius));
                     }
                 }
+
+                entity_commands.insert(MarkerVisibility::default());
 
                 entity_commands.insert(healths.health(active_type).clone());
                 if let Some(cannon) = solid.cannon() {

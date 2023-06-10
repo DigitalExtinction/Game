@@ -2,7 +2,7 @@ use ahash::AHashSet;
 use bevy::{ecs::system::SystemParam, prelude::*};
 use de_core::{baseset::GameSet, gamestate::GameState};
 use de_signs::{UpdateBarVisibilityEvent, UpdatePoleVisibilityEvent};
-use de_terrain::CircleMarker;
+use de_terrain::MarkerVisibility;
 
 use crate::SELECTION_BAR_ID;
 
@@ -164,15 +164,13 @@ fn update_selection(mut events: EventReader<SelectEvent>, selector_builder: Sele
 
 fn selected_system(
     mut events: EventReader<SelectedEvent>,
-    mut markers: Query<&mut CircleMarker>,
+    mut markers: Query<&mut MarkerVisibility>,
     mut bars: EventWriter<UpdateBarVisibilityEvent>,
     mut poles: EventWriter<UpdatePoleVisibilityEvent>,
 ) {
     for event in events.iter() {
-        if let Ok(mut marker) = markers.get_mut(event.0) {
-            marker
-                .visibility_mut()
-                .update_visible(SELECTION_BAR_ID, true);
+        if let Ok(mut visibility) = markers.get_mut(event.0) {
+            visibility.0.update_visible(SELECTION_BAR_ID, true);
         }
 
         bars.send(UpdateBarVisibilityEvent::new(
@@ -187,15 +185,13 @@ fn selected_system(
 
 fn deselected_system(
     mut events: EventReader<DeselectedEvent>,
-    mut markers: Query<&mut CircleMarker>,
+    mut markers: Query<&mut MarkerVisibility>,
     mut bars: EventWriter<UpdateBarVisibilityEvent>,
     mut poles: EventWriter<UpdatePoleVisibilityEvent>,
 ) {
     for event in events.iter() {
-        if let Ok(mut marker) = markers.get_mut(event.0) {
-            marker
-                .visibility_mut()
-                .update_visible(SELECTION_BAR_ID, false);
+        if let Ok(mut visibility) = markers.get_mut(event.0) {
+            visibility.0.update_visible(SELECTION_BAR_ID, false);
         }
 
         bars.send(UpdateBarVisibilityEvent::new(
