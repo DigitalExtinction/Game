@@ -2,7 +2,7 @@
 //! various 3D objects and mappings between 3D world space and 2D map
 //! coordinate system.
 
-use glam::{Vec2, Vec3};
+use glam::{Mat3, Mat4, Vec2, Vec3};
 use nalgebra::{Const, OPoint};
 use parry2d::{bounding_volume::Aabb as Aabb2D, math::Point as Point2D};
 use parry3d::{bounding_volume::Aabb as Aabb3D, math::Point as Point3D};
@@ -65,6 +65,16 @@ impl ToFlat<Aabb2D> for Aabb3D {
             Point2D::new(self.mins.x, -self.maxs.z),
             Point2D::new(self.maxs.x, -self.mins.z),
         )
+    }
+}
+
+impl ToFlat<Mat3> for Mat4 {
+    fn to_flat(self) -> Mat3 {
+        Mat3::from_cols_array_2d(&[
+            [self.x_axis.x, self.x_axis.z, 0.],
+            [-self.z_axis.x, -self.z_axis.z, 0.],
+            [self.w_axis.x, self.w_axis.z, 1.],
+        ])
     }
 }
 

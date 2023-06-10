@@ -14,8 +14,9 @@
 const TEXTURE_SIZE = 16.;
 const SHAPE_COLOR = vec4<f32>(1., 1., 1., 0.75);
 const SHAPE_THICKNESS = 0.15;
-// Keep thie array lenght in sync with /crates/terrain/src/shader.rs.
+// Keep these array lengths in sync with /crates/terrain/src/shader.rs.
 const MAX_KD_TREE_SIZE = 127u;
+const MAX_RECTANGLE_ARRAY_SIZE = 31u;
 
 struct KdTreeNode {
     @align(16) location: vec2<f32>,
@@ -27,11 +28,23 @@ struct KdTree {
     count: u32,
 };
 
+struct Rectangle {
+    inverse_transform: mat3x3<f32>,
+    half_size: vec2<f32>,
+};
+
+struct Rectangles {
+    items: array<Rectangle, MAX_RECTANGLE_ARRAY_SIZE>,
+    count: u32,
+};
+
 @group(1) @binding(0)
 var<uniform> circles: KdTree;
 @group(1) @binding(1)
-var terrain_texture: texture_2d<f32>;
+var<uniform> rectangles: Rectangles;
 @group(1) @binding(2)
+var terrain_texture: texture_2d<f32>;
+@group(1) @binding(3)
 var terrain_sampler: sampler;
 
 struct FragmentInput {
@@ -146,6 +159,18 @@ fn draw_circles(base: vec4<f32>, uv: vec2<f32>) -> vec4<f32> {
     return output_color;
 }
 
+fn draw_rectangles(base: vec4<f32>, uv: vec2<f32>) -> vec4<f32> {
+    for (var i = 0u; i < rectangles.count; i++) {
+        let rectangle = rectangles.items[i];
+        let local_uv = (rectangle.inverse_transform * vec3(uv, 1.0)).xy;
+        if all(abs(local_uv) <= rectangle.half_size + SHAPE_THICKNESS) && any(rectangle.half_size <= abs(local_uv)) {
+            return mix_colors(base, SHAPE_COLOR);
+        }
+    }
+
+    return base;
+}
+
 @fragment
 fn fragment(in: FragmentInput) -> @location(0) vec4<f32> {
     var pbr_input: PbrInput = pbr_input_new();
@@ -195,5 +220,6 @@ fn fragment(in: FragmentInput) -> @location(0) vec4<f32> {
 #endif
 
     output_color = draw_circles(output_color, in.uv);
+    output_color = draw_rectangles(output_color, in.uv);
     return output_color;
 }

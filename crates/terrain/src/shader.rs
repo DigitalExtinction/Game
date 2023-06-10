@@ -5,19 +5,24 @@ use bevy::{
     reflect::TypeUuid,
     render::render_resource::{AsBindGroup, ShaderRef, ShaderType},
 };
-use glam::Vec2;
+use glam::{Mat3, Vec2};
 
 // * Keep this in sync with terrain.wgsl.
 // * Keep this smaller or equal to de_core::objects::PLAYER_MAX_UNITS.
 pub(crate) const CIRCLE_CAPACITY: usize = 127;
+// * Keep this in sync with terrain.wgsl.
+// * Keep this smaller or equal to de_core::objects::PLAYER_MAX_BUILDINGS.
+pub(crate) const RECTANGLE_CAPACITY: usize = 31;
 
 #[derive(AsBindGroup, TypeUuid, Debug, Clone)]
 #[uuid = "9e124e04-fdf1-4836-b82d-fa2f01fddb62"]
 pub struct TerrainMaterial {
     #[uniform(0)]
     circles: KdTree,
-    #[texture(1)]
-    #[sampler(2)]
+    #[uniform(1)]
+    rectangles: Rectangles,
+    #[texture(2)]
+    #[sampler(3)]
     texture: Handle<Image>,
 }
 
@@ -25,12 +30,17 @@ impl TerrainMaterial {
     pub(crate) fn new(texture: Handle<Image>) -> Self {
         Self {
             circles: KdTree::empty(),
+            rectangles: Rectangles::default(),
             texture,
         }
     }
 
-    pub(crate) fn set_markers(&mut self, circles: Vec<Circle>) {
+    pub(crate) fn set_circle_markers(&mut self, circles: Vec<Circle>) {
         self.circles.rebuild(circles);
+    }
+
+    pub(crate) fn set_rectangle_markers(&mut self, rectangles: Vec<Rectangle>) {
+        self.rectangles.set_rectangles(rectangles);
     }
 }
 
@@ -184,6 +194,57 @@ impl KdTree {
                     range: item.range.start..(item.range.start + split_index),
                 });
             }
+        }
+    }
+}
+
+#[derive(ShaderType, Debug, Clone, Copy, Default)]
+pub(crate) struct Rectangle {
+    pub(crate) inverse_transform: Mat3,
+    pub(crate) half_size: Vec2,
+}
+
+impl Rectangle {
+    pub(crate) fn new(inverse_transform: Mat3, half_size: Vec2) -> Self {
+        Self {
+            inverse_transform,
+            half_size,
+        }
+    }
+}
+
+#[derive(ShaderType, Debug, Clone)]
+struct Rectangles {
+    items: [Rectangle; RECTANGLE_CAPACITY],
+    count: u32,
+}
+
+impl Rectangles {
+    /// Sets the rectangles held in the list.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the number of rectangles is larger than maximum allowed
+    /// capacity.
+    fn set_rectangles(&mut self, rectangles: Vec<Rectangle>) {
+        if rectangles.len() > RECTANGLE_CAPACITY {
+            panic!(
+                "Number of rectangles {} is greater than shader capacity {}.",
+                rectangles.len(),
+                RECTANGLE_CAPACITY
+            );
+        }
+
+        self.items[..rectangles.len()].copy_from_slice(&rectangles);
+        self.count = rectangles.len() as u32;
+    }
+}
+
+impl Default for Rectangles {
+    fn default() -> Self {
+        Self {
+            items: [Rectangle::default(); RECTANGLE_CAPACITY],
+            count: 0,
         }
     }
 }

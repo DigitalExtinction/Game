@@ -2532,6 +2532,7 @@ dependencies = [
  "glam",
  "itertools",
  "iyes_progress",
+ "parry2d",
  "parry3d",
 ]
 
