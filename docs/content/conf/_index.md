@@ -46,3 +46,5 @@ est as if all properties are missing.
     during camera tilting and rotation. Mouse drag by `delta` logical pixels
     leads to the change of elevation and azimuth by `delta *
     rotation_sensitivity` radians. It must be a positive finite number.
+  * `scroll_inverted` (bool; default: `false`) – if `true`, mouse wheel and
+    touchpad scrolling is inverted.
