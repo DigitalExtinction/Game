@@ -10,7 +10,6 @@ use async_std::{
     sync::{Arc, Mutex},
 };
 use priority_queue::PriorityQueue;
-use thiserror::Error;
 
 use super::{
     book::{Connection, ConnectionBook},
@@ -70,14 +69,18 @@ impl Resends {
         time: Instant,
         buf: &mut [u8],
         datagrams: &mut Sender<OutDatagram>,
-    ) -> Result<Vec<SocketAddr>, SendError<OutDatagram>> {
-        let mut failures = Vec::new();
+    ) -> Result<ResendResult, SendError<OutDatagram>> {
+        let mut result = ResendResult {
+            failures: Vec::new(),
+            next: time + Duration::from_millis(START_BACKOFF_MS),
+        };
+
         let mut book = self.book.lock().await;
 
         while let Some((addr, queue)) = book.next() {
             let failure = loop {
                 match queue.reschedule(buf, time) {
-                    Ok(Some((len, id, peers))) => {
+                    RescheduleResult::Resend { len, id, peers } => {
                         datagrams
                             .send(OutDatagram::new(
                                 DatagramHeader::new_data(true, peers, id),
@@ -86,9 +89,15 @@ impl Resends {
                             ))
                             .await?;
                     }
-                    Ok(None) => break false,
-                    Err(_) => {
-                        failures.push(addr);
+                    RescheduleResult::Waiting(until) => {
+                        result.next = result.next.min(until);
+                        break false;
+                    }
+                    RescheduleResult::Empty => {
+                        break false;
+                    }
+                    RescheduleResult::Failed => {
+                        result.failures.push(addr);
                         break true;
                     }
                 }
@@ -96,16 +105,23 @@ impl Resends {
 
             if failure {
                 book.remove_current();
-                failures.push(addr);
+                result.failures.push(addr);
             }
         }
 
-        Ok(failures)
+        Ok(result)
     }
 
     pub(crate) async fn clean(&mut self, time: Instant) {
         self.book.lock().await.clean(time);
     }
+}
+
+pub(crate) struct ResendResult {
+    /// Vec of failed connections.
+    pub(crate) failures: Vec<SocketAddr>,
+    /// Soonest possible time of the next datagram resend.
+    pub(crate) next: Instant,
 }
 
 /// This struct governs reliable message re-sending (until each message is
@@ -155,36 +171,28 @@ impl Queue {
     ///
     /// * `now` - current time, used for the retry scheduling.
     ///
-    /// # Returns
-    ///
-    /// Returns a tuple with number of bytes of retrieved data and header of
-    /// the retrieved message.
-    ///
     /// # Panics
     ///
     /// Panics if `buf` is smaller than the retrieved message.
-    fn reschedule(
-        &mut self,
-        buf: &mut [u8],
-        now: Instant,
-    ) -> Result<Option<(usize, DatagramId, Peers)>, RescheduleError> {
+    fn reschedule(&mut self, buf: &mut [u8], now: Instant) -> RescheduleResult {
         match self.queue.peek() {
             Some((&id, timing)) => {
-                if timing.expired(now) {
+                let until = timing.expiration();
+                if until <= now {
                     match timing.another(now) {
                         Some(backoff) => {
                             self.queue.change_priority(&id, backoff);
                             let len = self.data.get(id, buf).unwrap();
                             let peers = *self.meta.get(&id).unwrap();
-                            Ok(Some((len, id, peers)))
+                            RescheduleResult::Resend { len, id, peers }
                         }
-                        None => Err(RescheduleError::DatagramFailed(id)),
+                        None => RescheduleResult::Failed,
                     }
                 } else {
-                    Ok(None)
+                    RescheduleResult::Waiting(until)
                 }
             }
-            None => Ok(None),
+            None => RescheduleResult::Empty,
         }
     }
 }
@@ -195,10 +203,24 @@ impl Connection for Queue {
     }
 }
 
-#[derive(Error, Debug)]
-pub(super) enum RescheduleError {
-    #[error("datagram {0} failed")]
-    DatagramFailed(DatagramId),
+/// Rescheduling result.
+pub(crate) enum RescheduleResult {
+    /// A datagram is scheduled for an immediate resend.
+    Resend {
+        /// Length of the datagram data (written to a buffer) in bytes.
+        len: usize,
+        id: DatagramId,
+        peers: Peers,
+    },
+    /// No datagram is currently scheduled for an immediate resent. This
+    /// variant holds soonest possible time of a next resend.
+    Waiting(Instant),
+    /// There is currently no datagram scheduled for resending (immediate or
+    /// future).
+    Empty,
+    /// A datagram expired. Id est the maximum number of resends has been
+    /// reached.
+    Failed,
 }
 
 #[derive(Eq)]
@@ -215,8 +237,8 @@ impl Timing {
         }
     }
 
-    fn expired(&self, now: Instant) -> bool {
-        self.expiration <= now
+    fn expiration(&self) -> Instant {
+        self.expiration
     }
 
     fn another(&self, now: Instant) -> Option<Self> {
@@ -241,7 +263,7 @@ impl Timing {
     }
 
     fn jitter(millis: u64) -> u64 {
-        millis + fastrand::u64(0..millis / 2) - millis / 4
+        millis + fastrand::u64(0..millis / 2)
     }
 }
 
