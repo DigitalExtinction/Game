@@ -1,4 +1,4 @@
-use std::{borrow::Cow, io, net::SocketAddr};
+use std::{borrow::Cow, net::SocketAddr};
 
 use async_std::sync::Arc;
 use futures::future::try_join_all;
@@ -25,10 +25,6 @@ impl Messages {
         Self {
             network: Arc::new(network),
         }
-    }
-
-    pub(crate) fn port(&self) -> io::Result<u16> {
-        self.network.port()
     }
 
     /// Send message to a list of targets.

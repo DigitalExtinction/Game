@@ -19,7 +19,7 @@ impl GameProcessor {
         info!("Listening on port {}", port);
 
         let processor = Self {
-            communicator: de_net::startup(net),
+            communicator: de_net::startup(net).context("Failed to startup message handling")?,
             players: AHashSet::new(),
         };
 
