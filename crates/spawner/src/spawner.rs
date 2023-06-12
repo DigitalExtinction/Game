@@ -9,7 +9,6 @@ use de_core::{
     player::Player,
 };
 use de_energy::Battery;
-use de_energy::EnergyUnit::{Megajoules};
 use de_objects::{AssetCollection, InitialHealths, SceneType, Scenes, SolidObjects};
 use de_terrain::CircleMarker;
 
@@ -34,7 +33,8 @@ pub struct SpawnBundle {
     global_transform: GlobalTransform,
     visibility: Visibility,
     computed_visibility: ComputedVisibility,
-    spawn: Spawn, }
+    spawn: Spawn,
+}
 
 impl SpawnBundle {
     pub fn new(object_type: ObjectType, transform: Transform) -> Self {
