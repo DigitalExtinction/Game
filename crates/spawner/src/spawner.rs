@@ -9,6 +9,7 @@ use de_core::{
     player::Player,
 };
 use de_energy::Battery;
+use de_energy::EnergyUnit::{Megajoules};
 use de_objects::{AssetCollection, InitialHealths, SceneType, Scenes, SolidObjects};
 use de_terrain::CircleMarker;
 
@@ -33,9 +34,7 @@ pub struct SpawnBundle {
     global_transform: GlobalTransform,
     visibility: Visibility,
     computed_visibility: ComputedVisibility,
-    spawn: Spawn,
-    battery: Battery,
-}
+    spawn: Spawn, }
 
 impl SpawnBundle {
     pub fn new(object_type: ObjectType, transform: Transform) -> Self {
@@ -46,7 +45,6 @@ impl SpawnBundle {
             visibility: Visibility::Inherited,
             computed_visibility: ComputedVisibility::HIDDEN,
             spawn: Spawn,
-            battery: Battery::default(),
         }
     }
 }
@@ -75,6 +73,7 @@ fn spawn(
         match object_type {
             ObjectType::Active(active_type) => {
                 entity_commands.insert(Active);
+                entity_commands.insert(Battery::default()); // a bit of a placeholder as final solution is likely going to be in `SolidObject` configured though the object config
 
                 let player = *player.expect("Active object without an associated was spawned.");
                 counter.player_mut(player).unwrap().update(active_type, 1);

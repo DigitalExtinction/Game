@@ -69,7 +69,9 @@ impl Default for Battery {
 
 
 impl Battery {
-    pub fn new(capacity: f64, energy: f64) -> Self {
+    pub fn new(capacity: EnergyUnit, energy: EnergyUnit) -> Self {
+        let capacity = capacity.to_joules();
+        let energy = energy.to_joules();
         debug_assert!(capacity.is_finite());
         debug_assert!(capacity > 0.);
         debug_assert!(energy.is_finite());
@@ -131,26 +133,8 @@ impl Battery {
         true
     }
 
-    /// Tries to charge the battery by the given amount of energy.
-    ///
-    /// # Returns
-    ///
-    /// `true` if the battery was charged, `false` otherwise.
-    pub fn try_charge(&mut self, energy: EnergyUnit) -> bool {
-        let energy = energy.to_joules();
-        debug_assert!(energy.is_finite());
-        debug_assert!(energy >= 0.);
-
-        if energy >= self.capacity - self.energy {
-            return false;
-        }
-
-        self.change(energy);
-        true
-    }
-
     /// Directly changes the energy level of the battery by the given amount of energy.
-    pub fn `change(&mut self, delta: f64)` {
+    pub fn change(&mut self, delta: f64) {
         debug_assert!(delta.is_finite());
 
         self.energy = (self.energy + delta).clamp(0., self.capacity);
