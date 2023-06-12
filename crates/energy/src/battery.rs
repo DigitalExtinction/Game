@@ -11,9 +11,9 @@ impl Plugin for BatteryPlugin {
 /// The rate at which the battery discharges in Joules per second.
 const DISCHARGE_RATE: f64 = 30_000.;
 /// The minimum energy level in Joules at which the unit can still move.
-const MIN_MOVE_ENERGY: f64 = 74_000.; // based on how many a car uses per second
+const MIN_MOVE_ENERGY: f64 = 0.;
 /// The minimum energy level in Joules at which the unit can still attack.
-const MIN_ATTACK_ENERGY: f64 = 20_000_000.; // google said that a rail-gun takes 25 Mj
+const MIN_ATTACK_ENERGY: f64 = 20_000.;
 /// The minimum energy level in Joules at which factories can still produce units.
 const MIN_FACTORY_ENERGY: f64 = 10_000_000.;
 /// The default capacity of the battery in Joules.
