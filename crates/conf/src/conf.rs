@@ -23,6 +23,8 @@ pub struct MultiplayerConf {
 
 #[derive(Deserialize, Config, Debug, Clone)]
 pub struct Camera {
+    pub scroll_inverted: bool,
+
     #[is_finite]
     #[ensure(*move_margin > 0., "`move_margin` must be positive.")]
     pub move_margin: f32,
@@ -64,6 +66,7 @@ impl Default for Camera {
             wheel_zoom_sensitivity: 1.1,
             touchpad_zoom_sensitivity: 1.1,
             rotation_sensitivity: 0.01,
+            scroll_inverted: false,
         }
     }
 }
@@ -85,6 +88,7 @@ impl TryInto<CameraConf> for Camera {
             wheel_zoom_sensitivity: self.wheel_zoom_sensitivity,
             touchpad_zoom_sensitivity: self.touchpad_zoom_sensitivity,
             rotation_sensitivity: self.rotation_sensitivity,
+            scroll_inverted: self.scroll_inverted,
         })
     }
 }
@@ -97,6 +101,7 @@ pub struct CameraConf {
     wheel_zoom_sensitivity: f32,
     touchpad_zoom_sensitivity: f32,
     rotation_sensitivity: f32,
+    scroll_inverted: bool,
 }
 
 // ---- config impls ----
@@ -134,6 +139,11 @@ impl CameraConf {
     /// rotation_sensitivity` radians.
     pub fn rotation_sensitivity(&self) -> f32 {
         self.rotation_sensitivity
+    }
+
+    /// Whether scrolling should be inverted.
+    pub fn scroll_inverted(&self) -> bool {
+        self.scroll_inverted
     }
 }
 

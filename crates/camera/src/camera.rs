@@ -274,7 +274,12 @@ impl DesiredDistance {
     }
 
     fn zoom_clamped(&mut self, conf: &CameraConf, factor: f32) {
-        self.0 = (self.0 * factor).clamp(conf.min_distance(), conf.max_distance());
+        self.0 = (if conf.scroll_inverted() {
+            self.0 / factor
+        } else {
+            self.0 * factor
+        })
+        .clamp(conf.min_distance(), conf.max_distance())
     }
 }
 
