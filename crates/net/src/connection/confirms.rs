@@ -51,15 +51,8 @@ impl Confirmations {
     ///
     /// * `time` - current time.
     ///
-    /// * `buf` - buffer for message construction. Must be at least
-    ///   [`crate::MAX_DATAGRAM_SIZE`] long.
-    ///
-    /// * `messages` - message connection to be used for delivery of the
-    ///   confirmations.
-    ///
-    /// # Panics
-    ///
-    /// May panic if `buf` is not large enough.
+    /// * `datagrams` - output datagrams with the confirmations will be send to
+    ///   this channel.
     pub(crate) async fn send_confirms(
         &mut self,
         time: Instant,
