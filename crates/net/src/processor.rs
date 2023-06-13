@@ -8,16 +8,16 @@ use thiserror::Error;
 use tracing::{error, info};
 
 use crate::{
-    communicator::{Communicator, ConnectionError, InMessage, OutMessage},
+    communicator::{Communicator, InMessage, OutMessage},
     connection::{Confirmations, Resends},
     header::{DatagramHeader, DatagramId},
     messages::{Messages, MsgRecvError},
     tasks::{
         dreceiver,
         dsender::{self, OutDatagram},
-        sreceiver, ureceiver,
+        resender, sreceiver, ureceiver,
     },
-    Network, MAX_DATAGRAM_SIZE,
+    Network,
 };
 
 const CHANNEL_CAPACITY: usize = 1024;
@@ -25,13 +25,11 @@ const CHANNEL_CAPACITY: usize = 1024;
 /// This struct implements an async loop which handles the network
 /// communication.
 struct Processor {
-    buf: [u8; MAX_DATAGRAM_SIZE],
     counter: DatagramId,
     out_datagrams: Sender<OutDatagram>,
     confirms: Confirmations,
     resends: Resends,
     outputs: Receiver<OutMessage>,
-    errors: Sender<ConnectionError>,
 }
 
 impl Processor {
@@ -40,16 +38,13 @@ impl Processor {
         resends: Resends,
         out_datagrams: Sender<OutDatagram>,
         outputs: Receiver<OutMessage>,
-        errors: Sender<ConnectionError>,
     ) -> Self {
         Self {
-            buf: [0; MAX_DATAGRAM_SIZE],
             out_datagrams,
             counter: DatagramId::zero(),
             confirms,
             resends,
             outputs,
-            errors,
         }
     }
 
@@ -76,11 +71,6 @@ impl Processor {
                 .await
             {
                 error!("Message confirmation error: {err:?}");
-                break;
-            }
-
-            if self.handle_resends().await {
-                info!("Errors finished...");
                 break;
             }
 
@@ -132,29 +122,6 @@ impl Processor {
             },
         }
     }
-
-    async fn handle_resends(&mut self) -> bool {
-        let failures = match self
-            .resends
-            .resend(Instant::now(), &mut self.buf, &mut self.out_datagrams)
-            .await
-        {
-            Ok(failures) => failures,
-            Err(err) => {
-                error!("Resend error: {err:?}");
-                return true;
-            }
-        };
-
-        for target in failures {
-            let result = self.errors.send(ConnectionError::new(target)).await;
-            if result.is_err() {
-                return true;
-            }
-        }
-
-        false
-    }
 }
 
 #[derive(Error, Debug)]
@@ -200,15 +167,15 @@ pub fn startup(network: Network) -> io::Result<Communicator> {
 
     let (outputs_sender, outputs_receiver) = bounded(CHANNEL_CAPACITY);
     let (errors_sender, errors_receiver) = bounded(CHANNEL_CAPACITY);
+    task::spawn(resender::run(
+        port,
+        out_datagrams_sender.clone(),
+        errors_sender,
+        resends.clone(),
+    ));
 
     let communicator = Communicator::new(outputs_sender, inputs_receiver, errors_receiver);
-    let processor = Processor::new(
-        confirms,
-        resends,
-        out_datagrams_sender,
-        outputs_receiver,
-        errors_sender,
-    );
+    let processor = Processor::new(confirms, resends, out_datagrams_sender, outputs_receiver);
 
     task::spawn(processor.run());
 
