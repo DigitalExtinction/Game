@@ -17,6 +17,8 @@ pub(crate) async fn run(
 
     let mut buf = [0u8; MAX_DATAGRAM_SIZE];
     loop {
+        resends.clean(Instant::now()).await;
+
         let Ok(resend_result) = resends
             .resend(Instant::now(), &mut buf, &mut datagrams)
             .await

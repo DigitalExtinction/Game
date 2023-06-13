@@ -74,9 +74,7 @@ impl Processor {
                 break;
             }
 
-            let time = Instant::now();
-            self.resends.clean(time).await;
-            self.confirms.clean(time).await;
+            self.confirms.clean(Instant::now()).await;
         }
     }
 
