@@ -1,6 +1,7 @@
 use async_std::{channel::bounded, io, task};
 pub use communicator::{Communicator, InMessage, OutMessage, OutMessageBuilder};
 pub(crate) use dsender::OutDatagram;
+use tracing::info;
 
 use crate::{
     connection::{Confirmations, Resends},
@@ -22,6 +23,8 @@ const CHANNEL_CAPACITY: usize = 1024;
 /// Setups and starts communication stack tasks.
 pub fn startup(network: Network) -> io::Result<Communicator> {
     let port = network.port()?;
+    info!("Starting up network stack on port {port}...");
+
     let messages = Messages::new(network);
 
     let (out_datagrams_sender, out_datagrams_receiver) = bounded(16);
