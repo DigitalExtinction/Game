@@ -15,7 +15,7 @@ use crate::{connection::Confirmations, InMessage};
 ///
 /// The handler runs a loop which finishes when `datagrams` or `messages`
 /// channel is closed.
-pub(crate) async fn run(
+pub(super) async fn run(
     port: u16,
     datagrams: Receiver<InUserDatagram>,
     messages: Sender<InMessage>,

@@ -7,7 +7,7 @@ use super::dsender::OutDatagram;
 use crate::connection::Confirmations;
 
 /// Scheduler of datagram confirmations.
-pub(crate) async fn run(
+pub(super) async fn run(
     port: u16,
     mut datagrams: Sender<OutDatagram>,
     mut confirms: Confirmations,

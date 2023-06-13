@@ -11,7 +11,7 @@ use crate::connection::Resends;
 /// Handler of system (protocol) datagrams.
 ///
 /// The handler runs a loop which finishes when `datagrams` channel is closed.
-pub(crate) async fn run(port: u16, datagrams: Receiver<InSystemDatagram>, mut resends: Resends) {
+pub(super) async fn run(port: u16, datagrams: Receiver<InSystemDatagram>, mut resends: Resends) {
     info!("Starting system message receiver on port {port}...");
 
     loop {

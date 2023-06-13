@@ -9,12 +9,12 @@ use crate::{
     MAX_DATAGRAM_SIZE,
 };
 
-pub(crate) struct InSystemDatagram {
+pub(super) struct InSystemDatagram {
     pub(super) source: SocketAddr,
     pub(super) data: Vec<u8>,
 }
 
-pub(crate) struct InUserDatagram {
+pub(super) struct InUserDatagram {
     pub(super) source: SocketAddr,
     pub(super) header: DataHeader,
     pub(super) data: Vec<u8>,
@@ -24,7 +24,7 @@ pub(crate) struct InUserDatagram {
 ///
 /// The handler runs a loop which finishes when `system_datagrams` or
 /// `user_datagrams` channel is closed.
-pub(crate) async fn run(
+pub(super) async fn run(
     port: u16,
     system_datagrams: Sender<InSystemDatagram>,
     user_datagrams: Sender<InUserDatagram>,

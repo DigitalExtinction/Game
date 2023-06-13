@@ -3,11 +3,11 @@ use std::time::Instant;
 use async_std::{channel::Sender, task};
 use tracing::info;
 
-use super::dsender::OutDatagram;
-use crate::{communicator::ConnectionError, connection::Resends, MAX_DATAGRAM_SIZE};
+use super::{communicator::ConnectionError, dsender::OutDatagram};
+use crate::{connection::Resends, MAX_DATAGRAM_SIZE};
 
 /// Handler & scheduler of datagram resends.
-pub(crate) async fn run(
+pub(super) async fn run(
     port: u16,
     mut datagrams: Sender<OutDatagram>,
     errors: Sender<ConnectionError>,

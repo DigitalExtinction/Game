@@ -88,10 +88,10 @@ impl OutMessageBuilder {
 
 /// A message / datagram to be delivered.
 pub struct OutMessage {
-    pub(crate) data: Vec<u8>,
+    pub(super) data: Vec<u8>,
     reliable: bool,
     peers: Peers,
-    pub(crate) targets: Vec<SocketAddr>,
+    pub(super) targets: Vec<SocketAddr>,
 }
 
 impl OutMessage {
@@ -132,11 +132,11 @@ impl OutMessage {
         }
     }
 
-    pub(crate) fn reliable(&self) -> bool {
+    pub(super) fn reliable(&self) -> bool {
         self.reliable
     }
 
-    pub(crate) fn peers(&self) -> Peers {
+    pub(super) fn peers(&self) -> Peers {
         self.peers
     }
 }
@@ -150,7 +150,7 @@ pub struct InMessage {
 }
 
 impl InMessage {
-    pub(crate) fn new(data: Vec<u8>, reliable: bool, peers: Peers, source: SocketAddr) -> Self {
+    pub(super) fn new(data: Vec<u8>, reliable: bool, peers: Peers, source: SocketAddr) -> Self {
         Self {
             data,
             reliable,
@@ -225,7 +225,7 @@ pub struct ConnectionError {
 }
 
 impl ConnectionError {
-    pub(crate) fn new(target: SocketAddr) -> Self {
+    pub(super) fn new(target: SocketAddr) -> Self {
         Self { target }
     }
 
@@ -243,7 +243,7 @@ pub struct Communicator {
 }
 
 impl Communicator {
-    pub(crate) fn new(
+    pub(super) fn new(
         outputs: Sender<OutMessage>,
         inputs: Receiver<InMessage>,
         errors: Receiver<ConnectionError>,

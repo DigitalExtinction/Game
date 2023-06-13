@@ -17,7 +17,7 @@ use super::{
 };
 use crate::{
     header::{DatagramHeader, DatagramId, Peers},
-    tasks::dsender::OutDatagram,
+    tasks::OutDatagram,
 };
 
 const START_BACKOFF_MS: u64 = 220;

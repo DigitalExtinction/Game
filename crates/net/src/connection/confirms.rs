@@ -12,7 +12,7 @@ use super::book::{Connection, ConnectionBook};
 use crate::{
     header::{DatagramHeader, DatagramId},
     messages::MAX_MESSAGE_SIZE,
-    tasks::dsender::OutDatagram,
+    tasks::OutDatagram,
 };
 
 /// The buffer is flushed after it grows beyond this number of bytes.

@@ -27,7 +27,7 @@ impl OutDatagram {
     }
 }
 
-pub(crate) async fn run(port: u16, datagrams: Receiver<OutDatagram>, messages: Messages) {
+pub(super) async fn run(port: u16, datagrams: Receiver<OutDatagram>, messages: Messages) {
     info!("Starting datagram sender on port {port}...");
     let mut buffer = [0u8; MAX_DATAGRAM_SIZE];
 
