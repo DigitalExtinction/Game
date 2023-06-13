@@ -1,17 +1,16 @@
 use std::time::Instant;
 
 use async_std::{
-    channel::{bounded, Receiver, SendError, Sender, TryRecvError},
+    channel::{bounded, Receiver, Sender, TryRecvError},
     io, task,
 };
-use thiserror::Error;
 use tracing::{error, info};
 
 use crate::{
-    communicator::{Communicator, InMessage, OutMessage},
+    communicator::{Communicator, OutMessage},
     connection::{Confirmations, Resends},
     header::{DatagramHeader, DatagramId},
-    messages::{Messages, MsgRecvError},
+    messages::Messages,
     tasks::{
         confirmer, dreceiver,
         dsender::{self, OutDatagram},
@@ -106,14 +105,6 @@ impl Processor {
             },
         }
     }
-}
-
-#[derive(Error, Debug)]
-enum InputHandlingError {
-    #[error(transparent)]
-    MsgRecvError(#[from] MsgRecvError),
-    #[error("inputs channel error")]
-    InputsError(#[from] SendError<InMessage>),
 }
 
 /// Setups and starts communication stack tasks.
