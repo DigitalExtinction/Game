@@ -12,7 +12,7 @@ use super::book::{Connection, ConnectionBook};
 use crate::{
     header::{DatagramHeader, DatagramId},
     messages::MAX_MESSAGE_SIZE,
-    tasks::dsender::OutDatagram,
+    tasks::OutDatagram,
 };
 
 /// The buffer is flushed after it grows beyond this number of bytes.
@@ -51,37 +51,39 @@ impl Confirmations {
     ///
     /// * `time` - current time.
     ///
-    /// * `buf` - buffer for message construction. Must be at least
-    ///   [`crate::MAX_DATAGRAM_SIZE`] long.
+    /// * `datagrams` - output datagrams with the confirmations will be send to
+    ///   this channel.
     ///
-    /// * `messages` - message connection to be used for delivery of the
-    ///   confirmations.
+    /// # Returns
     ///
-    /// # Panics
-    ///
-    /// May panic if `buf` is not large enough.
+    /// On success, it returns an estimation of the next resend schedule time.
     pub(crate) async fn send_confirms(
         &mut self,
         time: Instant,
         datagrams: &mut Sender<OutDatagram>,
-    ) -> Result<(), SendError<OutDatagram>> {
+    ) -> Result<Instant, SendError<OutDatagram>> {
+        let mut next = Instant::now() + MAX_BUFF_AGE;
         let mut book = self.book.lock().await;
 
         while let Some((addr, buffer)) = book.next() {
-            if buffer.ready(time) {
-                while let Some(data) = buffer.flush(MAX_MESSAGE_SIZE) {
-                    datagrams
-                        .send(OutDatagram::new(
-                            DatagramHeader::Confirmation,
-                            data.to_vec(),
-                            addr,
-                        ))
-                        .await?;
+            if let Some(expiration) = buffer.expiration() {
+                if expiration <= time || buffer.full() {
+                    while let Some(data) = buffer.flush(MAX_MESSAGE_SIZE) {
+                        datagrams
+                            .send(OutDatagram::new(
+                                DatagramHeader::Confirmation,
+                                data.to_vec(),
+                                addr,
+                            ))
+                            .await?;
+                    }
+                } else {
+                    next = next.min(expiration);
                 }
             }
         }
 
-        Ok(())
+        Ok(next)
     }
 
     pub(crate) async fn clean(&mut self, time: Instant) {
@@ -114,14 +116,18 @@ impl Buffer {
         self.flushed = self.buffer.len();
     }
 
-    /// Returns true if the buffer is ready to be flushed (too old or too
-    /// large).
-    fn ready(&self, time: Instant) -> bool {
-        if self.buffer.is_empty() {
-            return false;
+    /// Returns time when the buffer expires, i.e. time when it becomes
+    /// necessary to flush the buffer and send the confirmations.
+    fn expiration(&self) -> Option<Instant> {
+        if self.flushed == 0 {
+            None
+        } else {
+            Some(self.oldest + MAX_BUFF_AGE)
         }
+    }
 
-        (self.oldest + MAX_BUFF_AGE) <= time || self.buffer.len() >= MAX_BUFF_SIZE
+    fn full(&self) -> bool {
+        self.buffer.len() >= MAX_BUFF_SIZE
     }
 
     /// Return accumulated bytes from the buffer if it is not empty. The number
@@ -158,28 +164,36 @@ mod tests {
         let mut buf = Buffer::new();
 
         assert!(buf.flush(13).is_none());
-        assert!(!buf.ready(now));
+        assert!(buf.expiration().is_none());
+        assert!(!buf.full());
 
         buf.push(now, 1042.try_into().unwrap());
-        assert!(!buf.ready(now));
+        assert!(buf.expiration().unwrap() > now);
+        assert!(!buf.full());
+
         assert_eq!(buf.flush(13).unwrap(), &[0, 4, 18]);
-        assert!(!buf.ready(now));
+        assert!(buf.expiration().is_none());
+        assert!(!buf.full());
+
         assert!(buf.flush(13).is_none());
-        assert!(!buf.ready(now));
+        assert!(buf.expiration().is_none());
+        assert!(!buf.full());
 
         buf.push(now, 43.try_into().unwrap());
-        assert!(!buf.ready(now));
-        assert!(buf.ready(now + Duration::from_secs(10)));
+        assert_eq!(buf.expiration(), Some(now + MAX_BUFF_AGE));
+        assert!(!buf.full());
+
         assert_eq!(buf.flush(13).unwrap(), &[0, 0, 43]);
         assert!(buf.flush(13).is_none());
+        assert!(!buf.full());
 
         for i in 0..32 {
             buf.push(now, (100 + i).try_into().unwrap());
 
             if i < 31 {
-                assert!(!buf.ready(now));
+                assert!(!buf.full());
             } else {
-                assert!(buf.ready(now));
+                assert!(buf.full());
             }
         }
 
