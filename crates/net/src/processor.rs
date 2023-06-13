@@ -13,7 +13,7 @@ use crate::{
     header::{DatagramHeader, DatagramId},
     messages::{Messages, MsgRecvError},
     tasks::{
-        dreceiver,
+        confirmer, dreceiver,
         dsender::{self, OutDatagram},
         resender, sreceiver, ureceiver,
     },
@@ -27,14 +27,12 @@ const CHANNEL_CAPACITY: usize = 1024;
 struct Processor {
     counter: DatagramId,
     out_datagrams: Sender<OutDatagram>,
-    confirms: Confirmations,
     resends: Resends,
     outputs: Receiver<OutMessage>,
 }
 
 impl Processor {
     fn new(
-        confirms: Confirmations,
         resends: Resends,
         out_datagrams: Sender<OutDatagram>,
         outputs: Receiver<OutMessage>,
@@ -42,7 +40,6 @@ impl Processor {
         Self {
             out_datagrams,
             counter: DatagramId::zero(),
-            confirms,
             resends,
             outputs,
         }
@@ -64,17 +61,6 @@ impl Processor {
                 info!("Output finished...");
                 break;
             }
-
-            if let Err(err) = self
-                .confirms
-                .send_confirms(Instant::now(), &mut self.out_datagrams)
-                .await
-            {
-                error!("Message confirmation error: {err:?}");
-                break;
-            }
-
-            self.confirms.clean(Instant::now()).await;
         }
     }
 
@@ -172,8 +158,10 @@ pub fn startup(network: Network) -> io::Result<Communicator> {
         resends.clone(),
     ));
 
+    task::spawn(confirmer::run(port, out_datagrams_sender.clone(), confirms));
+
     let communicator = Communicator::new(outputs_sender, inputs_receiver, errors_receiver);
-    let processor = Processor::new(confirms, resends, out_datagrams_sender, outputs_receiver);
+    let processor = Processor::new(resends, out_datagrams_sender, outputs_receiver);
 
     task::spawn(processor.run());
 
