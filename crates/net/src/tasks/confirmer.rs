@@ -15,6 +15,10 @@ pub(super) async fn run(
     info!("Starting confirmer on port {port}...");
 
     loop {
+        if datagrams.is_closed() {
+            break;
+        }
+
         confirms.clean(Instant::now()).await;
 
         let Ok(next) = confirms
