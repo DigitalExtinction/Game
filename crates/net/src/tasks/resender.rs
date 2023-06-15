@@ -17,6 +17,10 @@ pub(super) async fn run(
 
     let mut buf = [0u8; MAX_DATAGRAM_SIZE];
     loop {
+        if datagrams.is_closed() || errors.is_closed() {
+            break;
+        }
+
         resends.clean(Instant::now()).await;
 
         let Ok(resend_result) = resends
