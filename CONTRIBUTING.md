@@ -39,17 +39,17 @@
 
 ## Pull Requests & Git
 
-* Try to split your work into separate and atomic commits. Put any non-obvious
-  reasoning behind any change to the commit description. Separate “preparatory”
-  changes and modifications from new features & improvements. [Hide the sausage
-  making](https://sethrobertson.github.io/GitBestPractices/#sausage).
+* Try to split your work into separate and atomic pull requests. Put any
+  non-obvious reasoning behind any change to the pull request description.
+  Separate “preparatory” changes and modifications from new features &
+  improvements.
 
 * Do not push any binary files larger than 32KiB directly to the repository,
   use [Git LFS](https://git-lfs.github.com/) instead. For consistency reasons,
   you may track even smaller binary files with Git LFS.
 
-* [Link](https://docs.github.com/en/issues/tracking-your-work-with-issues/linking-a-pull-request-to-an-issue#linking-a-pull-request-to-an-issue-using-a-keyword)
-  relevant issues from your commits.
+* [Mention](https://docs.github.com/en/issues/tracking-your-work-with-issues/linking-a-pull-request-to-an-issue#linking-a-pull-request-to-an-issue-using-a-keyword)
+  relevant issues in your pull request description.
 
 ## Development Process
 
