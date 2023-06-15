@@ -155,6 +155,8 @@ jobs:
       - name: Install cargo-auditable
         run: cargo install --force cargo-auditable
       - name: Build
+        env:
+          RUSTFLAGS: '-C target-feature=+sse3,+avx'
         run: cargo auditable build --release
 
       - name: Prepare Build Files
