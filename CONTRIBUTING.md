@@ -49,7 +49,7 @@
   you may track even smaller binary files with Git LFS.
 
 * [Mention](https://docs.github.com/en/issues/tracking-your-work-with-issues/linking-a-pull-request-to-an-issue#linking-a-pull-request-to-an-issue-using-a-keyword)
-  relevant issues from your pull request description.
+  relevant issues in your pull request description.
 
 ## Development Process
 
