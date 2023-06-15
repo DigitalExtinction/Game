@@ -73,7 +73,16 @@
 * Rustfmt configured by [rustfmt.toml](./rustfmt.toml) is used for Rust code
   formatting. Note that nightly version of the tool is required.
 
-* Maximum line length of Markdown files is 79 characters.
+* Maximum width of each line is 100.
+
+* Source lines which are entirely a comment should be limited to 80 characters
+  in length (including comment sigils, but excluding indentation) or the
+  maximum width of the line (including comment sigils and indentation),
+  whichever is smaller.
+
+* By default, make modules, functions, and data structures private. Limit `pub`
+  visibility when possible by using `pub(super)` or `pub(crate)` instead of
+  plain `pub`.
 
 * Keep individual Bevy system complexity and the number of its parameters low.
   When the complexity grows, split the system and use events for inter-system
@@ -81,6 +90,22 @@
 
 * SystemSet enum names end with `Set` (for example `CameraSet`). Event struct
   names end with `Event` (for example `DoubleClickEvent`).
+
+* Place Bevy plugins in the same module as their respective events, resources,
+  other structs and systems. If a plugin is large, split it into multiple
+  smaller plugins instead of dividing it across several modules.
+
+* Decouple individual Bevy plugins as much as possible and limit assumptions
+  about the precise functioning of other plugins. Ensure that the
+  implementation is resilient to subtle changes in the rest of the codebase.
+
+  For instance, when processing events originating from another plugin, avoid
+  making assumptions about their timing or the absence of duplicate or
+  accumulated events.
+
+### Non Rust Text Files
+
+* Maximum line width of Markdown files is 79 characters.
 
 ### Crate Structure
 
