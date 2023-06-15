@@ -138,48 +138,6 @@ The game is split into multiple [crates](/crates), each implementing part of
 the game logic. This repository contains a Cargo workspace which consists of
 all the sub-crates. The crate inter-dependencies form an orderly DAG.
 
-Topologically sorted crates:
-
-* [de_lobby](/crates/lobby) – lobby server.
-
-* [de_uom](/crates/uom) – type safe units of measurements.
-
-* [core](/crates/core) – various simple core utilities, structs, and so on.
-  These are used across many different crates.
-
-* [map](/crates/map) – map (de)serialization, validation and representation
-  functionalities.
-
-* [menu](/crates/menu) – game menu and related functionality.
-
-* [terrain](/crates/terrain) – functionality related to game terrain.
-
-* [objects](/crates/objects) – caching of object on the game map.
-
-* [index](/crates/index) – spatial index of all solid entities in the game.
-
-* [signs](/crates/signs) – various world space UI signs in Digital Extinction.
-  For example health bars, arrows, and so on.
-
-* [spawner](/crates/spawner) – object spawning, drafting and construction.
-
-* [camera](/crates/camera)
-
-* [loader](/crates/loader) – map loading logic.
-
-* [pathing](/crates/pathing) – global path finding and path (re)scheduling.
-
-* [movement](/crates/movement) – entity movement, local dynamic obstacle
-  avoidance, kinematics and similar.
-
-* [behaviour](/crates/behaviour) – unit level behaviour and AI.
-
-* [combat](/crates/combat) – attacking, projectile & laser simulation and
-  similar.
-
-* [controller](/crates/controller) – handling of user input and containing
-  head-up display with 2D in-game UI.
-
 ### Repository Structure
 
 * [/assets](/assets) — all game assets are located here. These are distributed
