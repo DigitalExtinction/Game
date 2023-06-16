@@ -3,11 +3,15 @@ use std::{net::SocketAddr, time::Duration};
 use ahash::AHashSet;
 use anyhow::Context;
 use async_std::{channel::TryRecvError, prelude::FutureExt as StdFutureExt};
-use de_net::{self, Communicator, InMessage, Network, OutMessage, Peers};
+use de_net::{
+    self, ConnErrorReceiver, InMessage, MessageReceiver, MessageSender, Network, OutMessage, Peers,
+};
 use tracing::info;
 
 pub(crate) struct GameProcessor {
-    communicator: Communicator,
+    outs: MessageSender,
+    ins: MessageReceiver,
+    conn_errs: ConnErrorReceiver,
     players: AHashSet<SocketAddr>,
 }
 
@@ -18,8 +22,12 @@ impl GameProcessor {
             .with_context(|| format!("Failed to bind on port {port}"))?;
         info!("Listening on port {}", port);
 
+        let (outs, ins, conn_errs) =
+            de_net::startup(net).context("Failed to startup message handling")?;
         let processor = Self {
-            communicator: de_net::startup(net).context("Failed to startup message handling")?,
+            outs,
+            ins,
+            conn_errs,
             players: AHashSet::new(),
         };
 
@@ -28,12 +36,7 @@ impl GameProcessor {
 
     async fn run(mut self) -> anyhow::Result<()> {
         loop {
-            if let Ok(input_result) = self
-                .communicator
-                .recv()
-                .timeout(Duration::from_millis(1000))
-                .await
-            {
+            if let Ok(input_result) = self.ins.recv().timeout(Duration::from_millis(1000)).await {
                 let message = input_result.context("Data receiving failed")?;
                 self.players.insert(message.source());
 
@@ -45,7 +48,7 @@ impl GameProcessor {
                 }
             }
 
-            let error = self.communicator.errors();
+            let error = self.conn_errs.try_recv();
             if matches!(error, Err(TryRecvError::Empty)) {
                 continue;
             }
@@ -65,7 +68,7 @@ impl GameProcessor {
             .filter(|&target| target != message.source())
             .collect();
 
-        self.communicator
+        self.outs
             .send(OutMessage::new(
                 message.data(),
                 reliable,
