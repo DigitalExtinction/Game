@@ -36,13 +36,13 @@ pub(super) async fn run(
         };
 
         if !errors.is_closed() {
-            for target in resend_result.failures {
+            'failures: for target in resend_result.failures {
                 let result = errors.send(ConnectionError::new(target)).await;
                 if result.is_err() {
                     if cancellation.cancelled() {
                         break 'main;
                     } else {
-                        continue 'main;
+                        break 'failures;
                     }
                 }
             }
