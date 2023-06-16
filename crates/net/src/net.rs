@@ -11,7 +11,7 @@ use thiserror::Error;
 /// This is the maximum datagram size "guaranteed" to be deliverable over any
 /// reasonable network.
 ///
-/// https://stackoverflow.com/a/35697810/4448708
+/// <https://stackoverflow.com/a/35697810/4448708>
 pub const MAX_DATAGRAM_SIZE: usize = 508;
 
 /// This struct represents a low level network connection. The connection is
