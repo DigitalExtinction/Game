@@ -7,7 +7,7 @@ use async_std::{
 };
 use tracing::{error, info};
 
-use super::dreceiver::InUserDatagram;
+use super::{cancellation::CancellationSender, dreceiver::InUserDatagram};
 use crate::{connection::Confirmations, InMessage};
 
 /// Handler of user datagrams, i.e. datagrams with user data targeted to
@@ -17,6 +17,7 @@ use crate::{connection::Confirmations, InMessage};
 /// channel is closed.
 pub(super) async fn run(
     port: u16,
+    _cancellation: CancellationSender,
     datagrams: Receiver<InUserDatagram>,
     messages: Sender<InMessage>,
     mut confirms: Confirmations,
