@@ -1,7 +1,7 @@
 use std::time::Instant;
 
 use async_std::{channel::Sender, task};
-use tracing::info;
+use tracing::{error, info};
 
 use super::{cancellation::CancellationRecv, communicator::ConnectionError, dsender::OutDatagram};
 use crate::{connection::Resends, MAX_DATAGRAM_SIZE};
@@ -18,10 +18,6 @@ pub(super) async fn run(
 
     let mut buf = [0u8; MAX_DATAGRAM_SIZE];
     'main: loop {
-        if datagrams.is_closed() {
-            break;
-        }
-
         if cancellation.cancelled() && errors.is_closed() {
             break;
         }
@@ -32,6 +28,7 @@ pub(super) async fn run(
             .resend(Instant::now(), &mut buf, &mut datagrams)
             .await
         else {
+            error!("Datagram sender channel on port {port} is unexpectedly closed.");
             break;
         };
 
