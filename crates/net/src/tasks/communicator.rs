@@ -220,6 +220,7 @@ where
     }
 }
 
+/// This error indicates failure to deliver a message to the target.
 pub struct ConnectionError {
     target: SocketAddr,
 }
@@ -234,6 +235,10 @@ impl ConnectionError {
     }
 }
 
+/// Channel into networking stack tasks, used for data sending.
+///
+/// The data-sending components of the networking stack are halted when this
+/// channel is closed (dropped).
 pub struct MessageSender(pub(crate) Sender<OutMessage>);
 
 impl Deref for MessageSender {
@@ -244,6 +249,13 @@ impl Deref for MessageSender {
     }
 }
 
+/// Channel into networking stack tasks, used for data receiving.
+///
+/// This is based on a bounded queue, so non-receiving of messages can
+/// eventually block the networking stack.
+///
+/// The data-receiving components of the networking stack are halted when this
+/// channel is closed or dropped.
 pub struct MessageReceiver(pub(crate) Receiver<InMessage>);
 
 impl Deref for MessageReceiver {
@@ -254,6 +266,15 @@ impl Deref for MessageReceiver {
     }
 }
 
+/// Channel into networking stack tasks, used for receiving connection errors.
+///
+/// This channel is based on a bounded queue; therefore, the non-receiving of
+/// errors can eventually block the networking stack.
+///
+/// If the connection errors are not needed, this channel can be safely
+/// dropped. Its closure does not stop or block any part of the networking
+/// stack. Although it must be dropped for the networking stack to fully
+/// terminate.
 pub struct ConnErrorReceiver(pub(crate) Receiver<ConnectionError>);
 
 impl Deref for ConnErrorReceiver {
