@@ -10,6 +10,7 @@ use focus::FocusPlugin;
 pub use focus::SetFocusEvent;
 pub use label::LabelCommands;
 pub use style::OuterStyle;
+pub use text::TextProps;
 use text::TextPlugin;
 use textbox::TextBoxPlugin;
 pub use textbox::{TextBoxCommands, TextBoxQuery};

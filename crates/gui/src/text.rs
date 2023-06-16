@@ -10,7 +10,7 @@ impl Plugin for TextPlugin {
 
 /// Resource handling text properties throughout the app.
 #[derive(Resource)]
-pub struct TextProps(Handle<Font>);
+pub struct TextProps(pub Handle<Font>);
 
 impl TextProps {
     pub(crate) fn button_text_style(&self) -> TextStyle {
@@ -21,7 +21,7 @@ impl TextProps {
         }
     }
 
-    pub(crate) fn label_text_style(&self) -> TextStyle {
+    pub fn label_text_style(&self) -> TextStyle {
         TextStyle {
             font: self.font(),
             font_size: 35.0,

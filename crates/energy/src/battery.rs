@@ -40,8 +40,13 @@ impl Battery {
         Self { capacity, energy }
     }
 
+    /// The maximum capacity of the battery in joules.
+    pub fn capacity(&self) -> f64 {
+        self.capacity
+    }
+
     /// The current energy level of the battery in joules.
-    fn energy(&self) -> f64 {
+    pub fn energy(&self) -> f64 {
         self.energy
     }
 

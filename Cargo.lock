@@ -2230,6 +2230,7 @@ dependencies = [
  "de_conf",
  "de_construction",
  "de_core",
+ "de_energy",
  "de_gui",
  "de_index",
  "de_map",
