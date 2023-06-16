@@ -53,11 +53,11 @@ pub fn startup(
     ));
 
     let (inputs_sender, inputs_receiver) = bounded(CHANNEL_CAPACITY);
-    let (cancellation_sender, cancellation_receiver) = cancellation();
+    let (confirmer_cancellation_sender, confirmer_cancellation_receiver) = cancellation();
     let confirms = Confirmations::new();
     task::spawn(ureceiver::run(
         port,
-        cancellation_sender,
+        confirmer_cancellation_sender,
         in_user_datagrams_receiver,
         inputs_sender,
         confirms.clone(),
@@ -65,8 +65,10 @@ pub fn startup(
 
     let (outputs_sender, outputs_receiver) = bounded(CHANNEL_CAPACITY);
     let (errors_sender, errors_receiver) = bounded(CHANNEL_CAPACITY);
+    let (resender_cancellation_sender, resender_cancellation_receiver) = cancellation();
     task::spawn(resender::run(
         port,
+        resender_cancellation_receiver,
         out_datagrams_sender.clone(),
         errors_sender,
         resends.clone(),
@@ -74,12 +76,13 @@ pub fn startup(
 
     task::spawn(confirmer::run(
         port,
-        cancellation_receiver,
+        confirmer_cancellation_receiver,
         out_datagrams_sender.clone(),
         confirms,
     ));
     task::spawn(usender::run(
         port,
+        resender_cancellation_sender,
         out_datagrams_sender,
         outputs_receiver,
         resends,
