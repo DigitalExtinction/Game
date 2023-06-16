@@ -34,7 +34,7 @@ pub(super) async fn run(
         };
 
         let Ok(datagram) = result else {
-            error!("Datagram input channel is unexpectedly closed.");
+            error!("Datagram receiver channel is unexpectedly closed.");
             break;
         };
 

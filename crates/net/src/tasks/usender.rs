@@ -1,7 +1,7 @@
 use std::time::Instant;
 
 use async_std::channel::{Receiver, Sender};
-use tracing::info;
+use tracing::{error, info};
 
 use super::{cancellation::CancellationSender, dsender::OutDatagram};
 use crate::{
@@ -53,6 +53,7 @@ pub(super) async fn run(
             .is_err();
 
         if closed {
+            error!("Datagram sender channel on port {port} is unexpectedly closed. ");
             break;
         }
     }
