@@ -73,7 +73,7 @@ fn spawn(
         match object_type {
             ObjectType::Active(active_type) => {
                 entity_commands.insert(Active);
-                entity_commands.insert(Battery::default()); // a bit of a placeholder as final solution is likely going to be in `SolidObject` configured though the object config
+                entity_commands.insert(Battery::default());
 
                 let player = *player.expect("Active object without an associated was spawned.");
                 counter.player_mut(player).unwrap().update(active_type, 1);
