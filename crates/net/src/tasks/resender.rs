@@ -3,12 +3,13 @@ use std::time::Instant;
 use async_std::{channel::Sender, task};
 use tracing::info;
 
-use super::{communicator::ConnectionError, dsender::OutDatagram};
+use super::{cancellation::CancellationRecv, communicator::ConnectionError, dsender::OutDatagram};
 use crate::{connection::Resends, MAX_DATAGRAM_SIZE};
 
 /// Handler & scheduler of datagram resends.
 pub(super) async fn run(
     port: u16,
+    cancellation: CancellationRecv,
     mut datagrams: Sender<OutDatagram>,
     errors: Sender<ConnectionError>,
     mut resends: Resends,
@@ -16,8 +17,12 @@ pub(super) async fn run(
     info!("Starting resender on port {port}...");
 
     let mut buf = [0u8; MAX_DATAGRAM_SIZE];
-    loop {
-        if datagrams.is_closed() || errors.is_closed() {
+    'main: loop {
+        if datagrams.is_closed() {
+            break;
+        }
+
+        if cancellation.cancelled() && errors.is_closed() {
             break;
         }
 
@@ -30,10 +35,16 @@ pub(super) async fn run(
             break;
         };
 
-        for target in resend_result.failures {
-            let result = errors.send(ConnectionError::new(target)).await;
-            if result.is_err() {
-                break;
+        if !errors.is_closed() {
+            for target in resend_result.failures {
+                let result = errors.send(ConnectionError::new(target)).await;
+                if result.is_err() {
+                    if cancellation.cancelled() {
+                        break 'main;
+                    } else {
+                        continue 'main;
+                    }
+                }
             }
         }
 

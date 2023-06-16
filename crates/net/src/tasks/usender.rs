@@ -3,7 +3,7 @@ use std::time::Instant;
 use async_std::channel::{Receiver, Sender};
 use tracing::info;
 
-use super::dsender::OutDatagram;
+use super::{cancellation::CancellationSender, dsender::OutDatagram};
 use crate::{
     connection::Resends,
     header::{DatagramHeader, DatagramId},
@@ -13,6 +13,7 @@ use crate::{
 /// Handler & scheduler of datagram resends.
 pub(super) async fn run(
     port: u16,
+    _cancellation: CancellationSender,
     datagrams: Sender<OutDatagram>,
     messages: Receiver<OutMessage>,
     mut resends: Resends,
