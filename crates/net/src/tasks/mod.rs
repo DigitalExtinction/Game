@@ -1,5 +1,7 @@
 use async_std::{channel::bounded, io, task};
-pub use communicator::{Communicator, InMessage, OutMessage, OutMessageBuilder};
+pub use communicator::{
+    ConnErrorReceiver, InMessage, MessageReceiver, MessageSender, OutMessage, OutMessageBuilder,
+};
 pub(crate) use dsender::OutDatagram;
 use tracing::info;
 
@@ -23,7 +25,9 @@ mod usender;
 const CHANNEL_CAPACITY: usize = 1024;
 
 /// Setups and starts communication stack tasks.
-pub fn startup(network: Network) -> io::Result<Communicator> {
+pub fn startup(
+    network: Network,
+) -> io::Result<(MessageSender, MessageReceiver, ConnErrorReceiver)> {
     let port = network.port()?;
     info!("Starting up network stack on port {port}...");
 
@@ -81,9 +85,9 @@ pub fn startup(network: Network) -> io::Result<Communicator> {
         resends,
     ));
 
-    Ok(Communicator::new(
-        outputs_sender,
-        inputs_receiver,
-        errors_receiver,
+    Ok((
+        MessageSender(outputs_sender),
+        MessageReceiver(inputs_receiver),
+        ConnErrorReceiver(errors_receiver),
     ))
 }

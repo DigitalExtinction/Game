@@ -1,6 +1,6 @@
-use std::{marker::PhantomData, mem, net::SocketAddr};
+use std::{marker::PhantomData, mem, net::SocketAddr, ops::Deref};
 
-use async_std::channel::{Receiver, RecvError, SendError, Sender, TryRecvError};
+use async_std::channel::{Receiver, Sender};
 use bincode::{
     config::{BigEndian, Configuration, Limit, Varint},
     decode_from_slice, encode_into_slice, encode_to_vec,
@@ -234,37 +234,33 @@ impl ConnectionError {
     }
 }
 
-/// This struct handles communication with a side async loop with the network
-/// communication.
-pub struct Communicator {
-    outputs: Sender<OutMessage>,
-    inputs: Receiver<InMessage>,
-    errors: Receiver<ConnectionError>,
+pub struct MessageSender(pub(crate) Sender<OutMessage>);
+
+impl Deref for MessageSender {
+    type Target = Sender<OutMessage>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
 }
 
-impl Communicator {
-    pub(super) fn new(
-        outputs: Sender<OutMessage>,
-        inputs: Receiver<InMessage>,
-        errors: Receiver<ConnectionError>,
-    ) -> Self {
-        Self {
-            outputs,
-            inputs,
-            errors,
-        }
-    }
+pub struct MessageReceiver(pub(crate) Receiver<InMessage>);
 
-    pub async fn recv(&mut self) -> Result<InMessage, RecvError> {
-        self.inputs.recv().await
-    }
+impl Deref for MessageReceiver {
+    type Target = Receiver<InMessage>;
 
-    pub async fn send(&mut self, message: OutMessage) -> Result<(), SendError<OutMessage>> {
-        self.outputs.send(message).await
+    fn deref(&self) -> &Self::Target {
+        &self.0
     }
+}
 
-    pub fn errors(&mut self) -> Result<ConnectionError, TryRecvError> {
-        self.errors.try_recv()
+pub struct ConnErrorReceiver(pub(crate) Receiver<ConnectionError>);
+
+impl Deref for ConnErrorReceiver {
+    type Target = Receiver<ConnectionError>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
     }
 }
 
