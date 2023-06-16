@@ -51,6 +51,8 @@ impl Confirmations {
     ///
     /// * `time` - current time.
     ///
+    /// * `force` - if true, all pending confirmations will be sent.
+    ///
     /// * `datagrams` - output datagrams with the confirmations will be send to
     ///   this channel.
     ///
@@ -60,6 +62,7 @@ impl Confirmations {
     pub(crate) async fn send_confirms(
         &mut self,
         time: Instant,
+        force: bool,
         datagrams: &mut Sender<OutDatagram>,
     ) -> Result<Instant, SendError<OutDatagram>> {
         let mut next = Instant::now() + MAX_BUFF_AGE;
@@ -67,7 +70,7 @@ impl Confirmations {
 
         while let Some((addr, buffer)) = book.next() {
             if let Some(expiration) = buffer.expiration() {
-                if expiration <= time || buffer.full() {
+                if force || expiration <= time || buffer.full() {
                     while let Some(data) = buffer.flush(MAX_MESSAGE_SIZE) {
                         datagrams
                             .send(OutDatagram::new(

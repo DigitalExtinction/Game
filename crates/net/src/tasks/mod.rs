@@ -6,9 +6,11 @@ use tracing::info;
 use crate::{
     connection::{Confirmations, Resends},
     messages::Messages,
+    tasks::cancellation::cancellation,
     Network,
 };
 
+mod cancellation;
 mod communicator;
 mod confirmer;
 mod dreceiver;
@@ -47,9 +49,11 @@ pub fn startup(network: Network) -> io::Result<Communicator> {
     ));
 
     let (inputs_sender, inputs_receiver) = bounded(CHANNEL_CAPACITY);
+    let (cancellation_sender, cancellation_receiver) = cancellation();
     let confirms = Confirmations::new();
     task::spawn(ureceiver::run(
         port,
+        cancellation_sender,
         in_user_datagrams_receiver,
         inputs_sender,
         confirms.clone(),
@@ -64,7 +68,12 @@ pub fn startup(network: Network) -> io::Result<Communicator> {
         resends.clone(),
     ));
 
-    task::spawn(confirmer::run(port, out_datagrams_sender.clone(), confirms));
+    task::spawn(confirmer::run(
+        port,
+        cancellation_receiver,
+        out_datagrams_sender.clone(),
+        confirms,
+    ));
     task::spawn(usender::run(
         port,
         out_datagrams_sender,
