@@ -61,7 +61,7 @@ impl GameProcessor {
     async fn handle_players(&mut self, message: InMessage) -> anyhow::Result<()> {
         let reliable = message.reliable();
 
-        let targets = self
+        let targets: Vec<SocketAddr> = self
             .players
             .iter()
             .cloned()

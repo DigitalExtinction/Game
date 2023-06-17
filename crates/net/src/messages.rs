@@ -98,7 +98,8 @@ impl Messages {
     }
 }
 
-pub(crate) enum Targets<'a> {
+#[derive(Clone)]
+pub enum Targets<'a> {
     Single(SocketAddr),
     Many(Cow<'a, [SocketAddr]>),
 }
