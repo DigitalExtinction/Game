@@ -11,7 +11,6 @@ pub use focus::SetFocusEvent;
 pub use label::LabelCommands;
 pub use style::OuterStyle;
 use text::TextPlugin;
-pub use text::TextProps;
 use textbox::TextBoxPlugin;
 pub use textbox::{TextBoxCommands, TextBoxQuery};
 use toast::ToastPlugin;
