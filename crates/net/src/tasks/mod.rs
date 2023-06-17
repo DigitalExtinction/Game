@@ -4,7 +4,7 @@
 //! Bellow, `--->` lines represent channels and `* * >` represent task
 //! cancellation tokens.
 //!
-//! ```
+//! ```text
 //!                         +-------------+
 //!                         |             |
 //!           +-----------+ |   usender   | * * *
