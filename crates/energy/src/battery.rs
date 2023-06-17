@@ -67,13 +67,13 @@ impl Battery {
 /// * `battery` - The battery.
 pub(crate) fn discharge_battery(time: Res<Time>, mut battery: Query<&mut Battery>) {
     let delta = time.delta_seconds();
+    let discharge_delta = DISCHARGE_RATE * delta as f64;
     for mut battery in battery.iter_mut() {
         let energy = battery.energy();
         if energy == 0. {
             continue;
         }
 
-        let discharge_delta = DISCHARGE_RATE * delta as f64;
 
         battery.change(-discharge_delta);
     }
@@ -84,7 +84,7 @@ mod tests {
     use bevy::prelude::*;
     use bevy::time::TimePlugin;
 
-    use crate::battery::{Battery, DISCHARGE_RATE};
+    use crate::battery::{Battery, DEFAULT_CAPACITY, DISCHARGE_RATE};
 
     #[test]
     fn test_discharge() {
@@ -111,7 +111,7 @@ mod tests {
         let battery = app.world.get::<Battery>(entity).unwrap();
         println!("battery: {:?}", battery);
 
-        assert!(battery.energy() <= 100_000_000. - (DISCHARGE_RATE));
-        assert!(battery.energy() >= 100_000_000. - (DISCHARGE_RATE) * 1.5);
+        assert!(battery.energy() <= DEFAULT_CAPACITY - DISCHARGE_RATE);
+        assert!(battery.energy() >= DEFAULT_CAPACITY - DISCHARGE_RATE * 1.5);
     }
 }

@@ -7,11 +7,11 @@ pub(crate) struct DetailsPlugin;
 
 impl Plugin for DetailsPlugin {
     fn build(&self, app: &mut App) {
-        app.add_system(setup.in_schedule(OnEnter(GameState::Playing)));
+        app.add_system(spawn_details.in_schedule(OnEnter(GameState::Playing)));
     }
 }
 
-fn setup(mut commands: Commands) {
+fn spawn_details(mut commands: Commands) {
     commands.spawn((
         NodeBundle {
             style: Style {
