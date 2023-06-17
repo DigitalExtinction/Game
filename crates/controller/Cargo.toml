@@ -27,7 +27,6 @@ de_pathing.workspace = true
 de_signs.workspace = true
 de_spawner.workspace = true
 de_terrain.workspace = true
-de_energy.workspace = true
 
 # Other
 ahash.workspace = true
