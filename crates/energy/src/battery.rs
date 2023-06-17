@@ -50,23 +50,6 @@ impl Battery {
         self.energy
     }
 
-    /// Tries to discharge the battery by the given amount of energy.
-    ///
-    /// # Returns
-    ///
-    /// `true` if the battery was discharged, `false` otherwise.
-    fn try_discharge(&mut self, energy: f64) -> bool {
-        debug_assert!(energy.is_finite());
-        debug_assert!(energy >= 0.);
-
-        if energy >= self.energy {
-            return false;
-        }
-
-        self.change(-energy);
-        true
-    }
-
     /// Directly changes the energy level of the battery by the given amount of energy.
     fn change(&mut self, delta: f64) {
         debug_assert!(delta.is_finite());
@@ -83,16 +66,16 @@ impl Battery {
 ///
 /// * `battery` - The battery.
 pub(crate) fn discharge_battery(time: Res<Time>, mut battery: Query<&mut Battery>) {
+    let delta = time.delta_seconds();
     for mut battery in battery.iter_mut() {
         let energy = battery.energy();
         if energy == 0. {
             continue;
         }
 
-        let delta = time.delta_seconds();
-        let discharge = DISCHARGE_RATE * delta as f64;
+        let discharge_delta = DISCHARGE_RATE * delta as f64;
 
-        battery.try_discharge(discharge);
+        battery.change(-discharge_delta);
     }
 }
 
