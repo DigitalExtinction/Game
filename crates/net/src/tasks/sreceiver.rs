@@ -1,21 +1,35 @@
 //! System message receiver
 
-use std::time::Instant;
+use std::time::{Duration, Instant};
 
-use async_std::channel::Receiver;
-use tracing::info;
+use async_std::{channel::Receiver, future::timeout};
+use tracing::{error, info};
 
-use super::dreceiver::InSystemDatagram;
+use super::{cancellation::CancellationRecv, dreceiver::InSystemDatagram};
 use crate::connection::Resends;
 
 /// Handler of system (protocol) datagrams.
 ///
 /// The handler runs a loop which finishes when `datagrams` channel is closed.
-pub(super) async fn run(port: u16, datagrams: Receiver<InSystemDatagram>, mut resends: Resends) {
+pub(super) async fn run(
+    port: u16,
+    cancellation: CancellationRecv,
+    datagrams: Receiver<InSystemDatagram>,
+    mut resends: Resends,
+) {
     info!("Starting system message receiver on port {port}...");
 
     loop {
-        let Ok(datagram) = datagrams.recv().await else {
+        if cancellation.cancelled() {
+            break;
+        }
+
+        let Ok(result) = timeout(Duration::from_millis(500), datagrams.recv()).await else {
+            continue;
+        };
+
+        let Ok(datagram) = result else {
+            error!("Datagram receiver channel on port {port} is unexpectedly closed.");
             break;
         };
 

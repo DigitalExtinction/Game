@@ -34,12 +34,7 @@ pub(super) async fn run(
     let mut buffer = [0u8; MAX_DATAGRAM_SIZE];
 
     loop {
-        if user_datagrams.is_closed() {
-            break;
-        }
-
-        if system_datagrams.is_closed() {
-            error!("System message receiver channel on port {port} is unexpectedly closed.");
+        if user_datagrams.is_closed() || system_datagrams.is_closed() {
             break;
         }
 
