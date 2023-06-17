@@ -1,3 +1,60 @@
+//! This module implements full networking stack. The stack is implemented as a
+//! set of asynchronous tasks communicating via channels.
+//!
+//! Bellow, `--->` lines represent channels and `* * >` represent task
+//! cancellation tokens.
+//!
+//! ```text
+//!                         +-------------+
+//!                         |             |
+//!           +-----------+ |   usender   | * * *
+//!           |             |             |     *
+//!           |             +-------------+     *
+//!           v                                 *
+//! +-------------+         +-------------+     *
+//! |             |         |             | < * *
+//! |   dsender   | <-----+ |   resender  |
+//! |             |         |             | * * * *
+//! +-------------+         +-------------+       *
+//!           ^                                   *
+//!           |             +-------------+       *
+//!           |             |             |       *
+//!           +-----------+ |  confirmer  | < *   *
+//!                         |             |   *   *
+//!                         +-------------+   *   *
+//!                                           *   *
+//! +-------------+         +-------------+   *   *
+//! |             |         |             |   *   *
+//! |  dreceiver  | +-----> |  ureceiver  | * *   *
+//! |             |         |             |       *
+//! +-------------+         +-------------+       *
+//!           +                                   *
+//!           |             +-------------+       *
+//!           |             |             |       *
+//!           +-----------> |  sreceiver  | < * * *
+//!                         |             |
+//!                         +-------------+
+//! ```
+//!
+//! `dsender` and `dreceiver` are responsible for sending and receiving UDP
+//! datagrams. Both are terminated soon after all their channels are closed.
+//!
+//! `resender` is responsible for redelivery of reliably sent datagrams whose
+//! confirmation was not received within a time limit. If all attempts fail,
+//! the user is informed via [`ConnErrorReceiver`].
+//!
+//! `sreceiver` is responsible for processing of system / protocol datagrams.
+//! These include delivery confirmations.
+//!
+//! `confirmer` is responsible for sending of datagram delivery confirmations.
+//!
+//! `resender`, `sreceiver`, and `confirmer` are terminated soon after their
+//! cancellation token is canceled.
+//!
+//! `usender` and `ureceiver` are responsible for sending and reception of user
+//! data. The user communicates with these via [`MessageSender`] and
+//! [`MessageReceiver`] respectively.
+
 use async_std::{channel::bounded, io, task};
 pub use communicator::{
     ConnErrorReceiver, InMessage, MessageReceiver, MessageSender, OutMessage, OutMessageBuilder,
@@ -24,7 +81,13 @@ mod usender;
 
 const CHANNEL_CAPACITY: usize = 1024;
 
-/// Setups and starts communication stack tasks.
+/// Setups and starts communication stack tasks and returns communication
+/// channels for data sending, data retrieval, and error retrieval.
+///
+/// All tasks in the network stack keep running until the returned channels are
+/// closed. Once the [`MessageSender`], [`MessageReceiver`], and
+/// [`ConnErrorReceiver`] are all dropped, the networking stack will terminate
+/// completely.
 pub fn startup(
     network: Network,
 ) -> io::Result<(MessageSender, MessageReceiver, ConnErrorReceiver)> {
