@@ -7,7 +7,10 @@ use bincode::{
     error::{DecodeError, EncodeError},
 };
 
-use crate::{header::Peers, messages::MAX_MESSAGE_SIZE};
+use crate::{
+    header::Peers,
+    messages::{Targets, MAX_MESSAGE_SIZE},
+};
 
 const BINCODE_CONF: Configuration<BigEndian, Varint, Limit<MAX_MESSAGE_SIZE>> =
     bincode::config::standard()
@@ -19,18 +22,21 @@ const BINCODE_CONF: Configuration<BigEndian, Varint, Limit<MAX_MESSAGE_SIZE>> =
 pub struct OutMessageBuilder {
     reliable: bool,
     peers: Peers,
-    targets: Vec<SocketAddr>,
+    targets: Targets<'static>,
     buffer: Vec<u8>,
     used: usize,
     messages: Vec<OutMessage>,
 }
 
 impl OutMessageBuilder {
-    pub fn new(reliable: bool, peers: Peers, targets: Vec<SocketAddr>) -> Self {
+    pub fn new<T>(reliable: bool, peers: Peers, targets: T) -> Self
+    where
+        T: Into<Targets<'static>>,
+    {
         Self {
             reliable,
             peers,
-            targets,
+            targets: targets.into(),
             buffer: vec![0; MAX_MESSAGE_SIZE],
             used: 0,
             messages: Vec::new(),
@@ -91,21 +97,22 @@ pub struct OutMessage {
     pub(super) data: Vec<u8>,
     reliable: bool,
     peers: Peers,
-    pub(super) targets: Vec<SocketAddr>,
+    pub(super) targets: Targets<'static>,
 }
 
 impl OutMessage {
     /// Creates datagram message from a single encodable item.
     ///
     /// See also [`Self::new`].
-    pub fn encode_single<E>(
+    pub fn encode_single<E, T>(
         message: &E,
         reliable: bool,
         peers: Peers,
-        targets: Vec<SocketAddr>,
+        targets: T,
     ) -> Result<Self, EncodeError>
     where
         E: bincode::Encode,
+        T: Into<Targets<'static>>,
     {
         let data = encode_to_vec(message, BINCODE_CONF)?;
         Ok(Self::new(data, reliable, peers, targets))
@@ -117,18 +124,21 @@ impl OutMessage {
     ///
     /// * `reliable` - whether to deliver the data reliably.
     ///
-    /// * `targets` - list of message recipients.
+    /// * `targets` - message recipients.
     ///
     /// # Panics
     ///
     /// Panics if data is longer than [`MAX_MESSAGE_SIZE`].
-    pub fn new(data: Vec<u8>, reliable: bool, peers: Peers, targets: Vec<SocketAddr>) -> Self {
+    pub fn new<T>(data: Vec<u8>, reliable: bool, peers: Peers, targets: T) -> Self
+    where
+        T: Into<Targets<'static>>,
+    {
         assert!(data.len() < MAX_MESSAGE_SIZE);
         Self {
             data,
             reliable,
             peers,
-            targets,
+            targets: targets.into(),
         }
     }
 
@@ -301,7 +311,7 @@ mod tests {
         let mut builder = OutMessageBuilder::new(
             true,
             Peers::Players,
-            vec!["127.0.0.1:1111".parse().unwrap()],
+            "127.0.0.1:1111".parse::<SocketAddr>().unwrap(),
         );
 
         for i in 0..10 {
