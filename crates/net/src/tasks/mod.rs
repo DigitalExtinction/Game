@@ -46,8 +46,10 @@ pub fn startup(
     ));
 
     let resends = Resends::new();
+    let (sreceiver_cancellation_sender, sreceiver_cancellation_receiver) = cancellation();
     task::spawn(sreceiver::run(
         port,
+        sreceiver_cancellation_receiver,
         in_system_datagrams_receiver,
         resends.clone(),
     ));
@@ -69,6 +71,7 @@ pub fn startup(
     task::spawn(resender::run(
         port,
         resender_cancellation_receiver,
+        sreceiver_cancellation_sender,
         out_datagrams_sender.clone(),
         errors_sender,
         resends.clone(),
