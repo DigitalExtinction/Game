@@ -74,7 +74,6 @@ pub(crate) fn discharge_battery(time: Res<Time>, mut battery: Query<&mut Battery
             continue;
         }
 
-
         battery.change(-discharge_delta);
     }
 }
