@@ -2263,6 +2263,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "de_energy"
+version = "0.1.0-dev"
+dependencies = [
+ "bevy",
+]
+
+[[package]]
 name = "de_game"
 version = "0.1.0-dev"
 dependencies = [
@@ -2275,6 +2282,7 @@ dependencies = [
  "de_construction",
  "de_controller",
  "de_core",
+ "de_energy",
  "de_gui",
  "de_index",
  "de_loader",
@@ -2512,6 +2520,7 @@ dependencies = [
  "ahash 0.7.6",
  "bevy",
  "de_core",
+ "de_energy",
  "de_index",
  "de_map",
  "de_objects",

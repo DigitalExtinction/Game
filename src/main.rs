@@ -14,6 +14,7 @@ use de_conf::ConfigPluginGroup;
 use de_construction::ConstructionPluginGroup;
 use de_controller::ControllerPluginGroup;
 use de_core::{state::AppState, transition::DeStateTransition, CorePluginGroup};
+use de_energy::EnergyPluginGroup;
 use de_gui::GuiPluginGroup;
 use de_index::IndexPluginGroup;
 use de_loader::LoaderPluginGroup;
@@ -66,6 +67,7 @@ fn main() {
             .add_plugins(LobbyClientPluginGroup)
             .add_plugins(MenuPluginGroup)
             .add_plugins(CorePluginGroup)
+            .add_plugins(EnergyPluginGroup)
             .add_plugins(ObjectsPluginGroup)
             .add_plugins(TerrainPluginGroup)
             .add_plugins(LoaderPluginGroup)
