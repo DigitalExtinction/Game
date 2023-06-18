@@ -47,7 +47,7 @@ pub struct Camera {
 }
 
 #[derive(Deserialize, Config, Debug, Clone)]
-pub struct Audio {
+pub struct AudioConf {
     pub music_enabled: bool,
 
     #[is_finite]
@@ -80,7 +80,7 @@ impl Default for Camera {
     }
 }
 
-impl Default for Audio {
+impl Default for AudioConf {
     fn default() -> Self {
         Self {
             music_enabled: true,
@@ -172,7 +172,7 @@ impl MultiplayerConf {
     }
 }
 
-impl Audio {
+impl AudioConf {
     /// Whether music is enabled.
     pub fn music_enabled(&self) -> bool {
         self.music_enabled
@@ -188,5 +188,5 @@ impl Audio {
 bundle_config!(
     camera: CameraConf: Camera, // Conf file -> Camera -> CameraConf
     multiplayer: MultiplayerConf: MultiplayerConf,  // Conf file -> MultiplayerConf
-    audio: Audio: Audio
+    audio: AudioConf: AudioConf
 );
