@@ -67,7 +67,7 @@ fn check_battery(mut objects: Query<(&mut DesiredVelocity<PathVelocity>, &Batter
     for (mut movement, battery) in objects.iter_mut() {
         if battery.energy() <= 0. {
             movement.pause();
-        } else {
+        } else if movement.paused() {
             movement.resume();
         }
     }
