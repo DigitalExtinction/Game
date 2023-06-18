@@ -7,7 +7,7 @@ use super::{cancellation::CancellationSender, dsender::OutDatagram};
 use crate::{
     connection::Resends,
     header::{DatagramHeader, DatagramId},
-    OutMessage, Targets,
+    OutMessage,
 };
 
 /// Handler & scheduler of datagram resends.
@@ -33,32 +33,16 @@ pub(super) async fn run(
         if let DatagramHeader::Data(data_header) = header {
             if data_header.reliable() {
                 let time = Instant::now();
-
-                match &message.targets {
-                    Targets::Single(target) => {
-                        resends
-                            .sent(
-                                time,
-                                *target,
-                                data_header.id(),
-                                data_header.peers(),
-                                &message.data,
-                            )
-                            .await;
-                    }
-                    Targets::Many(targets) => {
-                        for &target in targets.as_ref() {
-                            resends
-                                .sent(
-                                    time,
-                                    target,
-                                    data_header.id(),
-                                    data_header.peers(),
-                                    &message.data,
-                                )
-                                .await;
-                        }
-                    }
+                for target in &message.targets {
+                    resends
+                        .sent(
+                            time,
+                            target,
+                            data_header.id(),
+                            data_header.peers(),
+                            &message.data,
+                        )
+                        .await;
                 }
             }
         }

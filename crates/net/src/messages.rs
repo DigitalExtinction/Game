@@ -122,6 +122,49 @@ impl<'a> From<Vec<SocketAddr>> for Targets<'a> {
     }
 }
 
+impl<'a> IntoIterator for &Targets<'a> {
+    type Item = SocketAddr;
+    type IntoIter = TargetsIter<'a>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        TargetsIter {
+            targets: self.clone(),
+            offset: 0,
+        }
+    }
+}
+
+pub struct TargetsIter<'a> {
+    targets: Targets<'a>,
+    offset: usize,
+}
+
+impl<'a> Iterator for TargetsIter<'a> {
+    type Item = SocketAddr;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        match self.targets {
+            Targets::Single(single) => {
+                if self.offset > 0 {
+                    None
+                } else {
+                    self.offset += 1;
+                    Some(single)
+                }
+            }
+            Targets::Many(ref many) => {
+                if self.offset >= many.len() {
+                    None
+                } else {
+                    let addr = many[self.offset];
+                    self.offset += 1;
+                    Some(addr)
+                }
+            }
+        }
+    }
+}
+
 #[derive(Error, Debug)]
 pub(crate) enum MsgRecvError {
     #[error(transparent)]
