@@ -1,5 +1,6 @@
 use bevy::prelude::*;
 use de_core::{baseset::GameSet, gamestate::GameState, projection::ToFlat, state::AppState};
+use de_energy::Battery;
 use de_pathing::ScheduledPath;
 
 use crate::{
@@ -15,6 +16,11 @@ impl Plugin for PathingPlugin {
     fn build(&self, app: &mut App) {
         app.add_system(
             finish_paths
+                .in_base_set(GameSet::PreMovement)
+                .run_if(in_state(GameState::Playing)),
+        )
+        .add_system(
+            check_battery
                 .in_base_set(GameSet::PreMovement)
                 .run_if(in_state(GameState::Playing)),
         )
@@ -57,6 +63,16 @@ fn finish_paths(
     }
 }
 
+fn check_battery(mut objects: Query<(&mut DesiredVelocity<PathVelocity>, &Battery)>) {
+    for (mut movement, battery) in objects.iter_mut() {
+        if battery.energy() <= 0. {
+            movement.pause();
+        } else {
+            movement.resume();
+        }
+    }
+}
+
 fn follow_path(
     mut objects: Query<(
         &Transform,
@@ -67,6 +83,9 @@ fn follow_path(
     objects
         .par_iter_mut()
         .for_each_mut(|(transform, mut path, mut movement)| {
+            if movement.paused() {
+                return;
+            }
             let location = transform.translation.to_flat();
             let remaining = path.destination().distance(location);
             let advancement = path.advance(location, MAX_H_SPEED * 0.5);

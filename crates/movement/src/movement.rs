@@ -36,12 +36,17 @@ pub(crate) enum MovementSet {
 /// Velocity is computed in stages, this is a generic over all of them.
 #[derive(Component)]
 pub(crate) struct DesiredVelocity<T> {
+    paused: bool,
     velocity: Vec2,
     // PhantomData<fn() -> T> gives this safe Send/Sync impls
     _m: PhantomData<fn() -> T>,
 }
 
 impl<T> DesiredVelocity<T> {
+    pub fn paused(&self) -> bool {
+        self.paused
+    }
+
     pub(crate) fn velocity(&self) -> Vec2 {
         self.velocity
     }
@@ -55,6 +60,15 @@ impl<T> DesiredVelocity<T> {
         self.velocity = Vec2::ZERO;
     }
 
+    pub fn pause(&mut self) {
+        self.stop();
+        self.paused = true;
+    }
+
+    pub fn resume(&mut self) {
+        self.paused = false;
+    }
+
     pub(crate) fn update(&mut self, velocity: Vec2) {
         self.velocity = velocity;
     }
@@ -63,6 +77,7 @@ impl<T> DesiredVelocity<T> {
 impl<T> Default for DesiredVelocity<T> {
     fn default() -> Self {
         Self {
+            paused: false,
             velocity: Vec2::ZERO,
             _m: PhantomData,
         }

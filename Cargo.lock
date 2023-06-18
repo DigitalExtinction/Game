@@ -2438,6 +2438,7 @@ version = "0.1.0-dev"
 dependencies = [
  "bevy",
  "de_core",
+ "de_energy",
  "de_index",
  "de_map",
  "de_objects",
