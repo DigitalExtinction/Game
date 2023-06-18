@@ -43,8 +43,6 @@ impl<'w, 's> BodyTextCommands<'w, 's> for GuiCommands<'w, 's> {
             builder.spawn(TextBundle::from_section(caption, text_style));
         });
 
-        info!("spawned body text");
-
         commands
     }
 }
@@ -62,7 +60,6 @@ impl<'w, 's> BodyTextOps<'w, 's> {
     /// [`Text`] component. The text must consist of a single section. If such
     /// a child is found, its text is changed.
     pub fn set_text(&mut self, entity: Entity, text: String) -> Result<(), &str> {
-        info!("setting body text");
         let children = match self.body_text_query.get(entity) {
             Ok(children) => children,
             Err(e) => {
