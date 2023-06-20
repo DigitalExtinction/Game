@@ -15,7 +15,9 @@ use de_core::{
 use de_index::SpatialQuery;
 use de_objects::SolidObjects;
 use de_pathing::{PathQueryProps, PathTarget, UpdateEntityPath};
-use de_signs::{UpdateLineEndEvent, UpdateLineLocationEvent, UpdatePoleLocationEvent};
+use de_signs::{
+    LineLocation, UpdateLineEndEvent, UpdateLineLocationEvent, UpdatePoleLocationEvent,
+};
 use de_spawner::{ObjectCounter, SpawnBundle};
 use parry2d::bounding_volume::Aabb;
 use parry3d::math::Isometry;
@@ -319,7 +321,10 @@ fn configure(
             let delivery_location = DeliveryLocation::initial(local_aabb, transform);
             pole_events.send(UpdatePoleLocationEvent::new(entity, delivery_location.0));
             let end = delivery_location.0.to_msl();
-            line_events.send(UpdateLineLocationEvent::new(entity, start, end));
+            line_events.send(UpdateLineLocationEvent::new(
+                entity,
+                LineLocation::new(start, end),
+            ));
             commands
                 .entity(entity)
                 .insert((AssemblyLine::default(), delivery_location));

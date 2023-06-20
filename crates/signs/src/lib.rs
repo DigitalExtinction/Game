@@ -2,7 +2,9 @@ use bars::BarsPlugin;
 pub use bars::{UpdateBarValueEvent, UpdateBarVisibilityEvent};
 use bevy::{app::PluginGroupBuilder, prelude::*};
 use line::LinePlugin;
-pub use line::{UpdateLineEndEvent, UpdateLineLocationEvent, UpdateLineVisibilityEvent};
+pub use line::{
+    LineLocation, UpdateLineEndEvent, UpdateLineLocationEvent, UpdateLineVisibilityEvent,
+};
 use markers::MarkersPlugin;
 use pole::PolePlugin;
 pub use pole::{UpdatePoleLocationEvent, UpdatePoleVisibilityEvent};
