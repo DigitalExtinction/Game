@@ -89,8 +89,8 @@ impl LineLocation {
         Self { start, end }
     }
 
-    /// A transform matrix from a plane with points at `(-0.5, 0. -0.5),(0.5, 0. -0.5),(0.5, 0. 0.5),(-0.5, 0.-0.5)`
-    /// to the line start and end with the `LINE_WIDTH`.
+    /// A transform matrix from a plane with points at `(-0.5, 0. -0.5), (0.5, 0. -0.5),
+    /// (0.5, 0., 0.5), (-0.5, 0., -0.5)` to the line start and end with the `LINE_WIDTH`.
     fn transform(&self) -> Transform {
         let line_direction = self.end - self.start;
         let perpendicular_direction =
