@@ -4,6 +4,7 @@ use bevy::reflect::TypeUuid;
 use bevy::render::render_resource::{AsBindGroup, ShaderRef};
 use de_core::baseset::GameSet;
 use de_core::cleanup::DespawnOnGameExit;
+use de_core::objects::Active;
 use de_core::state::AppState;
 
 /// Width of the line that goes to the pole.
@@ -223,13 +224,14 @@ fn update_line_visibility(
     }
 }
 
-fn owner_despawn(mut commands: Commands, mut lines: ResMut<LineEntities>) {
-    lines.0.retain(|&owner, &mut line| {
-        if commands.get_entity(owner).is_some() {
-            return true;
+fn owner_despawn(
+    mut commands: Commands,
+    mut lines: ResMut<LineEntities>,
+    mut removed: RemovedComponents<Active>,
+) {
+    for owner in removed.iter() {
+        if let Some(line) = lines.0.remove(&owner) {
+            commands.entity(line).despawn_recursive();
         }
-
-        commands.entity(line).despawn();
-        false
-    });
+    }
 }
