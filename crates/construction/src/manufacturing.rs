@@ -15,7 +15,9 @@ use de_core::{
 use de_index::SpatialQuery;
 use de_objects::SolidObjects;
 use de_pathing::{PathQueryProps, PathTarget, UpdateEntityPath};
-use de_signs::UpdatePoleLocationEvent;
+use de_signs::{
+    LineLocation, UpdateLineEndEvent, UpdateLineLocationEvent, UpdatePoleLocationEvent,
+};
 use de_spawner::{ObjectCounter, SpawnBundle};
 use parry2d::bounding_volume::Aabb;
 use parry3d::math::Isometry;
@@ -309,13 +311,20 @@ fn configure(
     solids: SolidObjects,
     new: Query<(Entity, &Transform, &ObjectType), Added<Active>>,
     mut pole_events: EventWriter<UpdatePoleLocationEvent>,
+    mut line_events: EventWriter<UpdateLineLocationEvent>,
 ) {
     for (entity, transform, &object_type) in new.iter() {
         let solid = solids.get(object_type);
-        if solid.factory().is_some() {
+        if let Some(factory) = solid.factory() {
+            let start = transform.transform_point(factory.position().to_msl());
             let local_aabb = solid.ichnography().local_aabb();
             let delivery_location = DeliveryLocation::initial(local_aabb, transform);
             pole_events.send(UpdatePoleLocationEvent::new(entity, delivery_location.0));
+            let end = delivery_location.0.to_msl();
+            line_events.send(UpdateLineLocationEvent::new(
+                entity,
+                LineLocation::new(start, end),
+            ));
             commands
                 .entity(entity)
                 .insert((AssemblyLine::default(), delivery_location));
@@ -327,14 +336,15 @@ fn change_locations(
     mut events: EventReader<ChangeDeliveryLocationEvent>,
     mut locations: Query<&mut DeliveryLocation>,
     mut pole_events: EventWriter<UpdatePoleLocationEvent>,
+    mut line_events: EventWriter<UpdateLineEndEvent>,
 ) {
     for event in events.iter() {
         if let Ok(mut location) = locations.get_mut(event.factory()) {
+            let owner = event.factory();
             location.0 = event.position();
-            pole_events.send(UpdatePoleLocationEvent::new(
-                event.factory(),
-                event.position(),
-            ));
+            pole_events.send(UpdatePoleLocationEvent::new(owner, event.position()));
+            let end = event.position().to_msl();
+            line_events.send(UpdateLineEndEvent::new(owner, end));
         }
     }
 }

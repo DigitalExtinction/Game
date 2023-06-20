@@ -1,11 +1,16 @@
 use bars::BarsPlugin;
 pub use bars::{UpdateBarValueEvent, UpdateBarVisibilityEvent};
 use bevy::{app::PluginGroupBuilder, prelude::*};
+use line::LinePlugin;
+pub use line::{
+    LineLocation, UpdateLineEndEvent, UpdateLineLocationEvent, UpdateLineVisibilityEvent,
+};
 use markers::MarkersPlugin;
 use pole::PolePlugin;
 pub use pole::{UpdatePoleLocationEvent, UpdatePoleVisibilityEvent};
 
 mod bars;
+mod line;
 mod markers;
 mod pole;
 
@@ -22,5 +27,6 @@ impl PluginGroup for SignsPluginGroup {
             .add(BarsPlugin)
             .add(MarkersPlugin)
             .add(PolePlugin)
+            .add(LinePlugin)
     }
 }
