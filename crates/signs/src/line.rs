@@ -200,8 +200,7 @@ fn update_line_visibility(
     line_mesh: Res<LineMesh>,
 ) {
     for event in &mut events {
-        let line_entity = lines.0.entry(event.owner);
-        if event.visible && matches!(line_entity, Entry::Vacant(_)) {
+        if event.visible && !lines.0.contains_key(&event.owner) {
             let transform = line_locations
                 .0
                 .get(&event.owner)
