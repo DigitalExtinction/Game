@@ -43,7 +43,8 @@ impl Plugin for LinePlugin {
                     .in_base_set(GameSet::PostUpdate)
                     .run_if(in_state(AppState::InGame))
                     .run_if(on_event::<UpdateLineVisibilityEvent>())
-                    .in_set(LinesSet::VisibilityEvents),
+                    .in_set(LinesSet::VisibilityEvents)
+                    .after(LinesSet::LocationEvents),
             )
             .add_system(
                 owner_despawn
