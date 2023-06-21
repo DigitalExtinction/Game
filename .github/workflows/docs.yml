@@ -36,6 +36,8 @@ jobs:
       - name: Build Zola Docs
         working-directory: docs
         run: zola build
+      # https://github.com/actions/upload-pages-artifact#file-permissions
+      - run:  chmod -c -R +rX docs/public/
       - name: Upload Artifact
         uses: actions/upload-pages-artifact@v1
         with:
