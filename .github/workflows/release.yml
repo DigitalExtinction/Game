@@ -76,8 +76,8 @@ jobs:
       - name: Set up SSH
         run: |
           mkdir -p ~/.ssh/
-          echo "${{ secrets.SSH_KEY }}" > ~/.ssh/id_rsa
-          chmod 600 ~/.ssh/id_rsa
+          echo "${{ secrets.DOWNLOADS_SSH_KEY }}" > ~/.ssh/downloads_id_rsa
+          chmod 600 ~/.ssh/downloads_id_rsa
           ssh-keyscan github.com >> ~/.ssh/known_hosts
 
       - name: Git clone and push
