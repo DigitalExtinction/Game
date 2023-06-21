@@ -26,14 +26,18 @@ Feedback, bug reports, and other [contributions](#contributing) are welcome.
 
 Game controls & gameplay tutorial is at [TUTORIAL.md](/TUTORIAL.md).
 
-## Using Build from `main` Branch
+## Downloading Nightly Builds
 
-A ZIP file with a binary and all assets is produced by a GitHub Action which is
-run on every push to `main` branch. You can browse the actions
-[here](https://github.com/DigitalExtinction/Game/actions).
+1. Download nightly ZIP file for your OS and CPU:
 
-On a “usual setup,” it is sufficient to extract the ZIP file and execute the
-binary called `de` or `de.exe`.
+   * [Linux (`x86_64-unknown-linux-gnu`)](https://download.de-game.org/x86_64-unknown-linux-gnu/nightly.zip)
+   * [Windows (`x86_64-pc-windows-gnu`)](https://download.de-game.org/x86_64-pc-windows-gnu/nightly.zip)
+   * [macOS with M series (`aarch64-apple-darwin`)](https://download.de-game.org/aarch64-apple-darwin/nightly.zip)
+   * [macOS with Intel (`x86_64-apple-darwin`)](https://download.de-game.org/x86_64-apple-darwin/nightly.zip)
+
+2. Extract the ZIP file.
+
+3. Execute binary file called `de` or `de.exe`.
 
 ## Building from Source
 
