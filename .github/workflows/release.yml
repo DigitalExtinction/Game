@@ -10,6 +10,7 @@ on:
 jobs:
   build:
     name: Build
+    environment: nightly
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -81,8 +82,10 @@ jobs:
 
       - name: Git clone and push
         run: |
-          git clone git@github.com-downloads:DigitalExtinction/Downloads.git
+          git clone git@github.com:DigitalExtinction/Downloads.git
           cd Downloads
+          git config --global user.email "martin.indra@mgn.cz"
+          git config --global user.name "Martin Indra"
           mv ../de-${{ runner.os }}.zip .
           git add .
           git commit --amend
