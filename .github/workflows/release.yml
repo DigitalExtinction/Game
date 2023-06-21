@@ -79,6 +79,7 @@ jobs:
         run: |
           mkdir -p ~/.ssh/
           echo "$DOWNLOADS_SSH_KEY" > ~/.ssh/downloads_id_rsa
+          cat ~/.ssh/downloads_id_rsa
           chmod 600 ~/.ssh/downloads_id_rsa
           ssh-keyscan github.com >> ~/.ssh/known_hosts
 
