@@ -80,9 +80,14 @@ jobs:
           chmod 600 ~/.ssh/downloads_id_rsa
           ssh-keyscan github.com >> ~/.ssh/known_hosts
 
+          echo "" >> ~/.ssh/config
+          echo "Host github.com-downloads" >> ~/.ssh/config
+          echo "        Hostname github.com" >> ~/.ssh/config
+          echo "        IdentityFile=~/.ssh/downloads_id_rsa" >> ~/.ssh/config
+
       - name: Git clone and push
         run: |
-          git clone git@github.com:DigitalExtinction/Downloads.git
+          git clone git@github.com-downloads:DigitalExtinction/Downloads.git
           cd Downloads
           mv ../de-${{ runner.os }}.zip .
           git add .
