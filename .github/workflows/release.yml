@@ -1,0 +1,123 @@
+name: Nightly Release
+
+on:
+  schedule:
+    - cron: '30 5 * * *'
+
+jobs:
+  build:
+    name: Build
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            target: 'x86_64-unknown-linux-gnu'
+          - os: ubuntu-latest
+            target: 'x86_64-pc-windows-gnu'
+          - os: macos-latest
+            target: 'x86_64-apple-darwin'
+          - os: macos-latest
+            target: 'aarch64-apple-darwin'
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Create LFS File List
+        run: git lfs ls-files -l | cut -d' ' -f1 | sort > .lfs-assets-id
+      - name: Restore LFS Cache
+        uses: actions/cache@v2
+        id: lfs-cache
+        with:
+          path: .git/lfs
+          key: nightly-lfs-${{ hashFiles('.lfs-assets-id') }}-v1
+      - name: Git LFS Pull
+        run: git lfs pull
+
+      - uses: dtolnay/rust-toolchain@stable
+        id: rust-toolchain
+        with:
+          targets: ${{ matrix.target }}
+
+      - name: Rust Cache
+        uses: actions/cache@v3
+        id: rust-cache
+        with:
+          path: |
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            target/
+          key: nightly-${{ steps.rust-toolchain.outputs.cachekey }}-${{ matrix.target }}-${{ hashFiles('**/Cargo.lock') }}
+
+      - name: Install x86_64-unknown-linux-gnu
+        if: ${{ matrix.target == 'x86_64-unknown-linux-gnu' }}
+        run: |
+          sudo apt-get update
+          sudo apt-get install --no-install-recommends -y libasound2-dev libudev-dev
+
+      - name: Install x86_64-pc-windows-gnu
+        if: ${{ matrix.target == 'x86_64-pc-windows-gnu' }}
+        run: |
+          sudo apt-get update
+          sudo apt-get install --no-install-recommends -y mingw-w64
+
+      - run: rustc --version && cargo --version
+
+      - name: Install cargo-auditable
+        run: cargo install --force cargo-auditable
+
+      - name: Set RUSTFLAGS
+        run: echo "RUSTFLAGS=-C target-feature=+sse3,+avx" >> $GITHUB_ENV
+        if: matrix.os == 'ubuntu-latest'
+
+      - name: Build
+        run: cargo build --release --target ${{ matrix.target }}
+
+      - name: Pack
+        shell: bash
+        run: |
+          mkdir DigitalExtinction
+          mv target/${{ matrix.target }}/release/de_game DigitalExtinction/de || :
+          mv target/${{ matrix.target }}/release/de_game.exe DigitalExtinction/de.exe || :
+          mv assets DigitalExtinction/
+          mkdir -p ${{ matrix.target }}
+          zip -r ${{ matrix.target }}/nightly.zip DigitalExtinction
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: ${{ matrix.target }}
+          path: ${{ matrix.target }}/nightly.zip
+
+
+  process:
+    name: Upload
+    environment: nightly
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download All Artifacts
+        uses: actions/download-artifact@v3
+        with:
+          path: nightly-builds
+
+      - name: Set up SSH
+        uses: webfactory/ssh-agent@v0.7.0
+        with:
+          ssh-private-key: ${{ secrets.DOWNLOADS_SSH_KEY }}
+
+      - name: Git clone and push
+        run: |
+          git clone git@github.com:DigitalExtinction/Downloads.git
+          rsync -avh nightly-builds/ Downloads/
+          cd Downloads
+          git config core.fileMode false
+          git config user.email "martin.indra@mgn.cz"
+          git config user.name "Martin Indra"
+          git status
+          git add .
+          git commit --amend -m "Nightly"
+          git push --force-with-lease origin main
