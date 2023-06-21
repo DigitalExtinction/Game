@@ -2,12 +2,14 @@ name: Nightly release
 
 on:
   schedule:
-  - cron: '30 5 * * *'
+    - cron: '30 5 * * *'
+  pull_request:
+    branches:
+      - main
 
 jobs:
   build:
     name: Build
-    if: github.ref == 'refs/heads/main'
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -28,40 +30,47 @@ jobs:
       - name: Git LFS Pull
         run: git lfs pull
 
-      - uses: dtolnay/rust-toolchain@stable
-      - name: Rust Cache
-        uses: actions/cache@v3
-        id: rust-cache
-        with:
-          path: |
-            ~/.cargo/bin/
-            ~/.cargo/registry/index/
-            ~/.cargo/registry/cache/
-            ~/.cargo/git/db/
-            target/
-          key: build-release-${{ runner.os }}-${{ hashFiles('**/Cargo.lock') }}
+      # - uses: dtolnay/rust-toolchain@stable
+      # - name: Rust Cache
+      #   uses: actions/cache@v3
+      #   id: rust-cache
+      #   with:
+      #     path: |
+      #       ~/.cargo/bin/
+      #       ~/.cargo/registry/index/
+      #       ~/.cargo/registry/cache/
+      #       ~/.cargo/git/db/
+      #       target/
+      #     key: build-release-${{ runner.os }}-${{ hashFiles('**/Cargo.lock') }}
 
-      - name: Install Linux Dependencies
-        if: ${{ matrix.os == 'ubuntu-latest' }}
-        run: |
-          sudo apt-get update
-          sudo apt-get install --no-install-recommends -y libasound2-dev libudev-dev
+      # - name: Install Linux Dependencies
+      #   if: ${{ matrix.os == 'ubuntu-latest' }}
+      #   run: |
+      #     sudo apt-get update
+      #     sudo apt-get install --no-install-recommends -y libasound2-dev libudev-dev
 
-      - run: rustc --version && cargo --version
-      - name: Install cargo-auditable
-        run: cargo install --force cargo-auditable
-      - name: Build
-        env:
-          RUSTFLAGS: '-C target-feature=+sse3,+avx'
-        run: cargo auditable build --release
+      # - run: rustc --version && cargo --version
+      # - name: Install cargo-auditable
+      #   run: cargo install --force cargo-auditable
+      # - name: Build
+      #   env:
+      #     RUSTFLAGS: '-C target-feature=+sse3,+avx'
+      #   run: cargo auditable build --release
+
+      # - name: Pack
+      #   shell: bash
+      #   run: |
+      #     mkdir pack
+      #     mv target/release/de_game pack/de || :
+      #     mv target/release/de_game.exe pack/de.exe || :
+      #     mv assets pack/
+      #     zip -r de-${{ runner.os }}.zip pack
 
       - name: Pack
         shell: bash
         run: |
           mkdir pack
-          mv target/release/de_game pack/de || :
-          mv target/release/de_game.exe pack/de.exe || :
-          mv assets pack/
+          echo "test" > pack/test.txt
           zip -r de-${{ runner.os }}.zip pack
 
       - name: Set up SSH
