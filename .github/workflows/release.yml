@@ -1,0 +1,81 @@
+name: Nightly release
+
+on:
+  schedule:
+  - cron: '30 5 * * *'
+
+jobs:
+  build:
+    name: Build
+    if: github.ref == 'refs/heads/main'
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Create LFS file list
+        run: git lfs ls-files -l | cut -d' ' -f1 | sort > .lfs-assets-id
+      - name: Restore LFS cache
+        uses: actions/cache@v2
+        id: lfs-cache
+        with:
+          path: .git/lfs
+          key: ${{ runner.os }}-lfs-${{ hashFiles('.lfs-assets-id') }}-v1
+      - name: Git LFS Pull
+        run: git lfs pull
+
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Rust Cache
+        uses: actions/cache@v3
+        id: rust-cache
+        with:
+          path: |
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            target/
+          key: build-release-${{ runner.os }}-${{ hashFiles('**/Cargo.lock') }}
+
+      - name: Install Linux Dependencies
+        if: ${{ matrix.os == 'ubuntu-latest' }}
+        run: |
+          sudo apt-get update
+          sudo apt-get install --no-install-recommends -y libasound2-dev libudev-dev
+
+      - run: rustc --version && cargo --version
+      - name: Install cargo-auditable
+        run: cargo install --force cargo-auditable
+      - name: Build
+        env:
+          RUSTFLAGS: '-C target-feature=+sse3,+avx'
+        run: cargo auditable build --release
+
+      - name: Pack
+        shell: bash
+        run: |
+          mkdir pack
+          mv target/release/de_game pack/de || :
+          mv target/release/de_game.exe pack/de.exe || :
+          mv assets pack/
+          zip -r de-${{ runner.os }}.zip pack
+
+      - name: Set up SSH
+        run: |
+          mkdir -p ~/.ssh/
+          echo "${{ secrets.SSH_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan github.com >> ~/.ssh/known_hosts
+
+      - name: Git clone and push
+        run: |
+          git clone git@github.com:DigitalExtinction/Downloads.git
+          cd Downloads
+          mv ../de-${{ runner.os }}.zip .
+          git add .
+          git commit --amend
+          git push --force-with-lease origin main
