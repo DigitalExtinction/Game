@@ -74,19 +74,9 @@ jobs:
           zip -r de-${{ runner.os }}.zip pack
 
       - name: Set up SSH
-        env:
-          DOWNLOADS_SSH_KEY: ${{ secrets.DOWNLOADS_SSH_KEY }}
-        run: |
-          mkdir -p ~/.ssh/
-          echo "$DOWNLOADS_SSH_KEY" > ~/.ssh/downloads_id_rsa
-          cat ~/.ssh/downloads_id_rsa
-          chmod 600 ~/.ssh/downloads_id_rsa
-          ssh-keyscan github.com >> ~/.ssh/known_hosts
-
-          echo "" >> ~/.ssh/config
-          echo "Host github.com-downloads" >> ~/.ssh/config
-          echo "        Hostname github.com" >> ~/.ssh/config
-          echo "        IdentityFile=~/.ssh/downloads_id_rsa" >> ~/.ssh/config
+        uses: webfactory/ssh-agent@v0.7.0
+        with:
+          ssh-private-key: ${{ secrets.DOWNLOADS_SSH_KEY }}
 
       - name: Git clone and push
         run: |
