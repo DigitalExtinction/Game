@@ -12,6 +12,85 @@ use crate::common::{spawn_and_wait, term_and_wait};
 
 mod common;
 
+struct ReceivedBuffer(Vec<Incomming>);
+
+impl ReceivedBuffer {
+    fn new() -> Self {
+        Self(Vec::new())
+    }
+
+    fn assert_confirmed(&self, id: u32) {
+        assert!(
+            self.0.iter().any(|incomming| {
+                match incomming {
+                    Incomming::Data { .. } => false,
+                    Incomming::Confirm(confirmed) => id == *confirmed,
+                }
+            }),
+            "datagram {id} was not confirmed"
+        );
+    }
+
+    fn find_id(&self, filter_reliable: bool, filter_data: &[u8]) -> Option<u32> {
+        self.0.iter().find_map(|incomming| match incomming {
+            Incomming::Data { reliable, id, data } => {
+                if *reliable == filter_reliable && data == filter_data {
+                    Some(*id)
+                } else {
+                    None
+                }
+            }
+            Incomming::Confirm(_) => None,
+        })
+    }
+
+    async fn load(&mut self, net: &mut Network, buf: &mut [u8; 1024]) {
+        let (n, _) = net.recv(buf).await.unwrap();
+        assert!(n >= 4);
+
+        let mut id_bytes = [0u8; 4];
+
+        if buf[0] & 128 > 0 {
+            assert!(buf[0] == 128);
+            assert!(buf[1] == 0);
+            assert!(buf[2] == 0);
+            assert!(buf[3] == 0);
+
+            for i in (4..n - 2).step_by(3) {
+                id_bytes[0] = 0;
+                id_bytes[1] = buf[i];
+                id_bytes[2] = buf[i + 1];
+                id_bytes[3] = buf[i + 2];
+                let id = u32::from_be_bytes(id_bytes);
+                self.0.push(Incomming::Confirm(id));
+            }
+        } else {
+            let reliable = buf[0] & 64 > 0;
+
+            id_bytes[0] = 0;
+            id_bytes[1] = buf[1];
+            id_bytes[2] = buf[2];
+            id_bytes[3] = buf[3];
+            let id = u32::from_be_bytes(id_bytes);
+
+            self.0.push(Incomming::Data {
+                reliable,
+                id,
+                data: buf[4..n].to_vec(),
+            });
+        }
+    }
+}
+
+enum Incomming {
+    Confirm(u32),
+    Data {
+        reliable: bool,
+        id: u32,
+        data: Vec<u8>,
+    },
+}
+
 #[test]
 #[timeout(5000)]
 fn test() {
@@ -20,30 +99,22 @@ fn test() {
 
     async fn first(client: &mut Network) {
         let mut buffer = [0u8; 1024];
-        let (n, _) = client.recv(&mut buffer).await.unwrap();
-        assert_eq!(&buffer[4..n], &[5, 6, 7, 8]);
 
-        let mut first_header = [0; 4];
-        first_header.copy_from_slice(&buffer[..4]);
+        let mut received = ReceivedBuffer::new();
+        received.load(client, &mut buffer).await;
+        received.load(client, &mut buffer).await;
+        received.assert_confirmed(197383);
+        let first_id = received.find_id(true, &[5, 6, 7, 8]).unwrap();
 
         let mut data = [22; 412];
         data[0] = 64; // Reliable
         client.send(ADDR, &data).await.unwrap();
 
-        let mut num_anonymous = 0;
-        let mut num_confirms = 0;
-        for _ in 0..2 {
-            let (n, _) = client.recv(&mut buffer).await.unwrap();
-
-            // Anonymous datagram (last header byte skipped)
-            if buffer[0..3] == [0, 0, 0] && buffer[4..n] == [82, 83, 84] {
-                num_anonymous += 1;
-            } else if buffer[0..n] == [128, 0, 0, 0, 3, 3, 7, 22, 22, 22] {
-                num_confirms += 1;
-            }
-        }
-        assert_eq!(num_anonymous, 1);
-        assert_eq!(num_confirms, 1);
+        let mut received = ReceivedBuffer::new();
+        received.load(client, &mut buffer).await;
+        received.load(client, &mut buffer).await;
+        received.assert_confirmed(1447446);
+        received.find_id(false, &[82, 83, 84]).unwrap();
 
         // Try to send invalid data -- wrong header
         client
@@ -57,17 +128,26 @@ fn test() {
             .unwrap();
 
         // Two retries before we confirm.
-        let (n, _) = client.recv(&mut buffer).await.unwrap();
-        assert_eq!(&buffer[..4], &first_header);
-        assert_eq!(&buffer[4..n], &[5, 6, 7, 8]);
-        let (n, _) = client.recv(&mut buffer).await.unwrap();
-        assert_eq!(&buffer[..4], &first_header);
-        assert_eq!(&buffer[4..n], &[5, 6, 7, 8]);
+        let mut received = ReceivedBuffer::new();
+        received.load(client, &mut buffer).await;
+        assert_eq!(received.find_id(true, &[5, 6, 7, 8]).unwrap(), first_id);
+        let mut received = ReceivedBuffer::new();
+        received.load(client, &mut buffer).await;
+        assert_eq!(received.find_id(true, &[5, 6, 7, 8]).unwrap(), first_id);
+
+        let first_id = first_id.to_be_bytes();
         // And send a confirmation
         client
-            .send(ADDR, &[128, 0, 0, 0, buffer[1], buffer[2], buffer[3]])
+            .send(ADDR, &[128, 0, 0, 0, first_id[1], first_id[2], first_id[3]])
             .await
             .unwrap();
+
+        client.send(ADDR, &[64, 0, 0, 92, 16]).await.unwrap();
+        client.send(ADDR, &[64, 0, 0, 86, 23]).await.unwrap();
+        let mut received = ReceivedBuffer::new();
+        received.load(client, &mut buffer).await;
+        received.assert_confirmed(92);
+        received.assert_confirmed(86);
 
         // No more redeliveries expected.
         assert!(client
@@ -78,30 +158,19 @@ fn test() {
     }
 
     async fn second(client: &mut Network) {
-        let mut num_confirms = 0;
-        let mut num_messages_22 = 0;
-
         let mut buffer = [0u8; 1024];
 
-        for _ in 0..2 {
-            let (n, _) = client.recv(&mut buffer).await.unwrap();
+        let mut received = ReceivedBuffer::new();
+        received.load(client, &mut buffer).await;
+        received.load(client, &mut buffer).await;
+        received.assert_confirmed(2055);
+        let id = received.find_id(true, &[22; 408]).unwrap().to_be_bytes();
 
-            // First 4 bytes are interpreted as datagram ID.
-            if buffer[4..n] == [22; 408] {
-                num_messages_22 += 1;
-
-                // Sending confirmation
-                client
-                    .send(ADDR, &[128, 0, 0, 0, buffer[1], buffer[2], buffer[3]])
-                    .await
-                    .unwrap();
-            } else if buffer[0..n] == [128, 0, 0, 0, 0, 8, 7] {
-                num_confirms += 1;
-            }
-        }
-
-        assert_eq!(num_confirms, 1);
-        assert_eq!(num_messages_22, 1);
+        // Sending confirmation
+        client
+            .send(ADDR, &[128, 0, 0, 0, id[1], id[2], id[3]])
+            .await
+            .unwrap();
 
         client
             .send(
@@ -109,6 +178,22 @@ fn test() {
                 // Anonymous message
                 &[0, 0, 0, 0, 82, 83, 84],
             )
+            .await
+            .unwrap();
+
+        let mut received = ReceivedBuffer::new();
+        received.load(client, &mut buffer).await;
+        let id = received.find_id(true, &[16]).unwrap().to_be_bytes();
+        client
+            .send(ADDR, &[128, 0, 0, 0, id[1], id[2], id[3]])
+            .await
+            .unwrap();
+
+        let mut received = ReceivedBuffer::new();
+        received.load(client, &mut buffer).await;
+        let id = received.find_id(true, &[23]).unwrap().to_be_bytes();
+        client
+            .send(ADDR, &[128, 0, 0, 0, id[1], id[2], id[3]])
             .await
             .unwrap();
 
