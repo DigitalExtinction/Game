@@ -22,8 +22,7 @@ impl GameProcessor {
             .with_context(|| format!("Failed to bind on port {port}"))?;
         info!("Listening on port {}", port);
 
-        let (outs, ins, conn_errs) =
-            de_net::startup(net).context("Failed to startup message handling")?;
+        let (outs, ins, conn_errs) = de_net::startup(net);
         let processor = Self {
             outs,
             ins,
