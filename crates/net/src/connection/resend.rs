@@ -57,7 +57,7 @@ impl Resends {
         let queue = book.update(time, addr, Queue::new);
 
         for i in 0..data.len() / 3 {
-            let offset = i * 4;
+            let offset = i * 3;
             let id = DatagramId::from_bytes(&data[offset..offset + 3]);
             queue.resolve(id);
         }
