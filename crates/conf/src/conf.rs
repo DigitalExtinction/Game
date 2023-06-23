@@ -48,10 +48,9 @@ pub struct Camera {
 
 #[derive(Deserialize, Config, Debug, Clone)]
 pub struct AudioConf {
-    pub music_enabled: bool,
-
     #[is_finite]
-    #[ensure(*music_volume >= 0., "`music_volume` must be greater than 0.0.")]
+    #[ensure(*music_volume >= 0., "`music_volume` must be greater than or equal to 0.0.")]
+    #[ensure(*music_volume <= 1., "`music_volume` must be smaller or equal to 1.0.")]
     pub music_volume: f32,
 }
 // --------------------
@@ -82,10 +81,7 @@ impl Default for Camera {
 
 impl Default for AudioConf {
     fn default() -> Self {
-        Self {
-            music_enabled: true,
-            music_volume: 1.,
-        }
+        Self { music_volume: 1. }
     }
 }
 
@@ -173,12 +169,11 @@ impl MultiplayerConf {
 }
 
 impl AudioConf {
-    /// Whether music is enabled.
+    // Whether music is enabled (volume is zero).
     pub fn music_enabled(&self) -> bool {
-        self.music_enabled
+        self.music_volume > 0.
     }
 
-    /// Music volume.
     pub fn music_volume(&self) -> f32 {
         self.music_volume
     }

@@ -13,8 +13,8 @@ categories.workspace = true
 
 [dependencies]
 # DE
-de_core.workspace = true
 de_conf.workspace = true
+de_core.workspace = true
 
 # Other
 bevy.workspace = true
