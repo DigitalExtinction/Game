@@ -72,6 +72,7 @@ impl Resends {
     ) -> Result<ResendResult, SendError<OutDatagram>> {
         let mut result = ResendResult {
             failures: Vec::new(),
+            pending: 0,
             next: time + Duration::from_millis(START_BACKOFF_MS),
         };
 
@@ -106,6 +107,8 @@ impl Resends {
             if failure {
                 book.remove_current();
                 result.failures.push(addr);
+            } else {
+                result.pending += queue.len();
             }
         }
 
@@ -120,6 +123,8 @@ impl Resends {
 pub(crate) struct ResendResult {
     /// Vec of failed connections.
     pub(crate) failures: Vec<SocketAddr>,
+    /// Number of pending (not yet confirmed) datagrams.
+    pub(crate) pending: usize,
     /// Soonest possible time of the next datagram resend.
     pub(crate) next: Instant,
 }
@@ -139,6 +144,11 @@ impl Queue {
             meta: AHashMap::new(),
             data: DataBuf::new(),
         }
+    }
+
+    /// Return the number of pending actions.
+    fn len(&self) -> usize {
+        self.queue.len()
     }
 
     /// Registers new message for re-sending until it is resolved.
