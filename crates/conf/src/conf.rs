@@ -18,32 +18,32 @@ use crate::bundle_config;
 #[derive(Deserialize, Config, Debug, Clone)]
 pub struct MultiplayerConf {
     #[ensure(server.scheme() == "http", "Only `http` scheme is allowed for `server`.")]
-    pub server: Url,
+    server: Url,
 }
 
 #[derive(Deserialize, Config, Debug, Clone)]
 pub struct Camera {
-    pub scroll_inverted: bool,
+    scroll_inverted: bool,
 
     #[is_finite]
     #[ensure(*move_margin > 0., "`move_margin` must be positive.")]
-    pub move_margin: f32,
+    move_margin: f32,
 
     #[ensure(*min_distance >= 10., "`min_distance` must be larger or equal to 10.0.")]
-    pub min_distance: f32,
+    min_distance: f32,
 
     #[ensure(*max_distance <= 300., "`max_distance` must be smaller or equal to 300.0.")]
     #[ensure(*max_distance > *min_distance, "`max_distance` must be larger than `min_distance`.")]
-    pub max_distance: f32,
+    max_distance: f32,
 
     #[ensure(*wheel_zoom_sensitivity > 1., "`wheel_zoom_sensitivity` must be greater than 1.0.")]
-    pub wheel_zoom_sensitivity: f32,
+    wheel_zoom_sensitivity: f32,
 
     #[ensure(*touchpad_zoom_sensitivity > 1., "`touchpad_zoom_sensitivity` must be greater than 1.0.")]
-    pub touchpad_zoom_sensitivity: f32,
+    touchpad_zoom_sensitivity: f32,
 
     #[ensure(*rotation_sensitivity > 0., "`rotation_sensitivity` must be greater than 0.0.")]
-    pub rotation_sensitivity: f32,
+    rotation_sensitivity: f32,
 }
 // --------------------
 
