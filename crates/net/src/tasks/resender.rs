@@ -1,4 +1,4 @@
-use std::time::Instant;
+use std::time::{Duration, Instant};
 
 use async_std::{channel::Sender, task};
 use tracing::{error, info};
@@ -9,6 +9,8 @@ use super::{
     dsender::OutDatagram,
 };
 use crate::{connection::Resends, MAX_DATAGRAM_SIZE};
+
+const CANCELLATION_DEADLINE: Duration = Duration::from_secs(5);
 
 /// Handler & scheduler of datagram resends.
 pub(super) async fn run(
@@ -22,9 +24,11 @@ pub(super) async fn run(
     info!("Starting resender on port {port}...");
 
     let mut buf = [0u8; MAX_DATAGRAM_SIZE];
+    let mut deadline = None;
+
     'main: loop {
-        if cancellation_recv.cancelled() && errors.is_closed() {
-            break;
+        if deadline.is_none() && cancellation_recv.cancelled() && errors.is_closed() {
+            deadline = Some(Instant::now() + CANCELLATION_DEADLINE);
         }
 
         resends.clean(Instant::now()).await;
@@ -47,6 +51,12 @@ pub(super) async fn run(
                         break 'failures;
                     }
                 }
+            }
+        }
+
+        if let Some(deadline) = deadline {
+            if deadline < resend_result.next || resend_result.pending == 0 {
+                break;
             }
         }
 
