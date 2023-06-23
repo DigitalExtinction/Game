@@ -18,6 +18,7 @@ pub const MAX_DATAGRAM_SIZE: usize = 508;
 /// based on UDP and is unreliable and unordered.
 pub struct Network {
     socket: UdpSocket,
+    port: u16,
 }
 
 impl Network {
@@ -27,14 +28,22 @@ impl Network {
     ///
     /// * `port` - if None, system assigned port is used.
     pub async fn bind(port: Option<u16>) -> io::Result<Self> {
-        let port = port.unwrap_or(0);
-        let addr = SocketAddr::new(IpAddr::V4(Ipv4Addr::LOCALHOST), port);
+        let addr = SocketAddr::new(IpAddr::V4(Ipv4Addr::LOCALHOST), port.unwrap_or(0));
         let socket = UdpSocket::bind(addr).await?;
-        Ok(Self { socket })
+
+        let obtained_port = socket.local_addr().map(|addr| addr.port())?;
+        if let Some(desired_port) = port {
+            assert_eq!(obtained_port, desired_port);
+        }
+
+        Ok(Self {
+            socket,
+            port: obtained_port,
+        })
     }
 
-    pub fn port(&self) -> io::Result<u16> {
-        self.socket.local_addr().map(|addr| addr.port())
+    pub fn port(&self) -> u16 {
+        self.port
     }
 
     /// Receive a single datagram.

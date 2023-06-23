@@ -55,7 +55,7 @@
 //! data. The user communicates with these via [`MessageSender`] and
 //! [`MessageReceiver`] respectively.
 
-use async_std::{channel::bounded, io, task};
+use async_std::{channel::bounded, task};
 pub use communicator::{
     ConnErrorReceiver, InMessage, MessageReceiver, MessageSender, OutMessage, OutMessageBuilder,
 };
@@ -88,10 +88,8 @@ const CHANNEL_CAPACITY: usize = 1024;
 /// closed. Once the [`MessageSender`], [`MessageReceiver`], and
 /// [`ConnErrorReceiver`] are all dropped, the networking stack will terminate
 /// completely.
-pub fn startup(
-    network: Network,
-) -> io::Result<(MessageSender, MessageReceiver, ConnErrorReceiver)> {
-    let port = network.port()?;
+pub fn startup(network: Network) -> (MessageSender, MessageReceiver, ConnErrorReceiver) {
+    let port = network.port();
     info!("Starting up network stack on port {port}...");
 
     let messages = Messages::new(network);
@@ -154,9 +152,9 @@ pub fn startup(
         resends,
     ));
 
-    Ok((
+    (
         MessageSender(outputs_sender),
         MessageReceiver(inputs_receiver),
         ConnErrorReceiver(errors_receiver),
-    ))
+    )
 }
