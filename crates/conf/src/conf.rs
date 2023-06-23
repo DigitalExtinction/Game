@@ -51,7 +51,7 @@ pub struct AudioConf {
     #[is_finite]
     #[ensure(*music_volume >= 0., "`music_volume` must be greater than or equal to 0.0.")]
     #[ensure(*music_volume <= 1., "`music_volume` must be smaller or equal to 1.0.")]
-    pub music_volume: f32,
+    music_volume: f32,
 }
 // --------------------
 
