@@ -12,6 +12,9 @@ use crate::common::{spawn_and_wait, term_and_wait};
 
 mod common;
 
+const SERVER_ADDR: SocketAddr = SocketAddr::V4(SocketAddrV4::new(Ipv4Addr::LOCALHOST, 8082));
+
+#[derive(Debug)]
 struct ReceivedBuffer(Vec<Incomming>);
 
 impl ReceivedBuffer {
@@ -82,6 +85,7 @@ impl ReceivedBuffer {
     }
 }
 
+#[derive(Debug)]
 enum Incomming {
     Confirm(u32),
     Data {
@@ -94,58 +98,67 @@ enum Incomming {
 #[test]
 #[timeout(5000)]
 fn test() {
-    const ADDR: SocketAddr = SocketAddr::V4(SocketAddrV4::new(Ipv4Addr::LOCALHOST, 8082));
     let child = spawn_and_wait();
 
-    async fn first(client: &mut Network) {
+    async fn first(mut client: Network, game_port: u16) {
+        let server = SocketAddr::V4(SocketAddrV4::new(Ipv4Addr::LOCALHOST, game_port));
+
         let mut buffer = [0u8; 1024];
 
         let mut received = ReceivedBuffer::new();
-        received.load(client, &mut buffer).await;
-        received.load(client, &mut buffer).await;
-        received.assert_confirmed(197383);
+        received.load(&mut client, &mut buffer).await;
+        received.load(&mut client, &mut buffer).await;
+
+        // [3, 1] -> FromGame::PeerJoined(1)
+        let id = received.find_id(true, &[3, 1]).unwrap().to_be_bytes();
+        // And send a confirmation
+        client
+            .send(server, &[128, 0, 0, 0, id[1], id[2], id[3]])
+            .await
+            .unwrap();
+
         let first_id = received.find_id(true, &[5, 6, 7, 8]).unwrap();
 
         let mut data = [22; 412];
         data[0] = 64; // Reliable
-        client.send(ADDR, &data).await.unwrap();
+        client.send(server, &data).await.unwrap();
 
         let mut received = ReceivedBuffer::new();
-        received.load(client, &mut buffer).await;
-        received.load(client, &mut buffer).await;
+        received.load(&mut client, &mut buffer).await;
+        received.load(&mut client, &mut buffer).await;
         received.assert_confirmed(1447446);
         received.find_id(false, &[82, 83, 84]).unwrap();
 
         // Try to send invalid data -- wrong header
         client
-            .send(ADDR, &[128, 255, 0, 1, 1, 2, 3, 4])
+            .send(server, &[128, 255, 0, 1, 1, 2, 3, 4])
             .await
             .unwrap();
         // Try to send invalid data -- wrong ID
         client
-            .send(ADDR, &[128, 0, 0, 1, 255, 2, 3, 4])
+            .send(server, &[128, 0, 0, 1, 255, 2, 3, 4])
             .await
             .unwrap();
 
         // Two retries before we confirm.
         let mut received = ReceivedBuffer::new();
-        received.load(client, &mut buffer).await;
+        received.load(&mut client, &mut buffer).await;
         assert_eq!(received.find_id(true, &[5, 6, 7, 8]).unwrap(), first_id);
         let mut received = ReceivedBuffer::new();
-        received.load(client, &mut buffer).await;
+        received.load(&mut client, &mut buffer).await;
         assert_eq!(received.find_id(true, &[5, 6, 7, 8]).unwrap(), first_id);
 
-        let first_id = first_id.to_be_bytes();
+        let id = first_id.to_be_bytes();
         // And send a confirmation
         client
-            .send(ADDR, &[128, 0, 0, 0, first_id[1], first_id[2], first_id[3]])
+            .send(server, &[128, 0, 0, 0, id[1], id[2], id[3]])
             .await
             .unwrap();
 
-        client.send(ADDR, &[64, 0, 0, 92, 16]).await.unwrap();
-        client.send(ADDR, &[64, 0, 0, 86, 23]).await.unwrap();
+        client.send(server, &[64, 0, 0, 92, 16]).await.unwrap();
+        client.send(server, &[64, 0, 0, 86, 23]).await.unwrap();
         let mut received = ReceivedBuffer::new();
-        received.load(client, &mut buffer).await;
+        received.load(&mut client, &mut buffer).await;
         received.assert_confirmed(92);
         received.assert_confirmed(86);
 
@@ -157,24 +170,32 @@ fn test() {
             .is_err());
     }
 
-    async fn second(client: &mut Network) {
+    async fn second(mut client: Network, game_port: u16) {
+        let server = SocketAddr::V4(SocketAddrV4::new(Ipv4Addr::LOCALHOST, game_port));
+
         let mut buffer = [0u8; 1024];
 
+        client
+            // Reliable
+            .send(server, &[64, 0, 8, 7, 5, 6, 7, 8])
+            .await
+            .unwrap();
+
         let mut received = ReceivedBuffer::new();
-        received.load(client, &mut buffer).await;
-        received.load(client, &mut buffer).await;
+        received.load(&mut client, &mut buffer).await;
+        received.load(&mut client, &mut buffer).await;
         received.assert_confirmed(2055);
         let id = received.find_id(true, &[22; 408]).unwrap().to_be_bytes();
-
         // Sending confirmation
+
         client
-            .send(ADDR, &[128, 0, 0, 0, id[1], id[2], id[3]])
+            .send(server, &[128, 0, 0, 0, id[1], id[2], id[3]])
             .await
             .unwrap();
 
         client
             .send(
-                ADDR,
+                server,
                 // Anonymous message
                 &[0, 0, 0, 0, 82, 83, 84],
             )
@@ -182,18 +203,18 @@ fn test() {
             .unwrap();
 
         let mut received = ReceivedBuffer::new();
-        received.load(client, &mut buffer).await;
+        received.load(&mut client, &mut buffer).await;
         let id = received.find_id(true, &[16]).unwrap().to_be_bytes();
         client
-            .send(ADDR, &[128, 0, 0, 0, id[1], id[2], id[3]])
+            .send(server, &[128, 0, 0, 0, id[1], id[2], id[3]])
             .await
             .unwrap();
 
         let mut received = ReceivedBuffer::new();
-        received.load(client, &mut buffer).await;
+        received.load(&mut client, &mut buffer).await;
         let id = received.find_id(true, &[23]).unwrap().to_be_bytes();
         client
-            .send(ADDR, &[128, 0, 0, 0, id[1], id[2], id[3]])
+            .send(server, &[128, 0, 0, 0, id[1], id[2], id[3]])
             .await
             .unwrap();
 
@@ -205,23 +226,103 @@ fn test() {
     }
 
     task::block_on(task::spawn(async {
-        let mut first_client = Network::bind(None).await.unwrap();
-        let mut second_client = Network::bind(None).await.unwrap();
-
-        first_client
-            // Reliable
-            .send(ADDR, &[64, 3, 3, 7, 1, 2, 3, 4])
-            .await
-            .unwrap();
-
-        second_client
-            // Reliable
-            .send(ADDR, &[64, 0, 8, 7, 5, 6, 7, 8])
-            .await
-            .unwrap();
-
-        join!(first(&mut first_client), second(&mut second_client));
+        let (first_client, game_port) = create_game().await;
+        let second_client = join_game(game_port).await;
+        join!(
+            first(first_client, game_port),
+            second(second_client, game_port)
+        );
     }));
 
     term_and_wait(child);
+}
+
+async fn create_game() -> (Network, u16) {
+    let mut buffer = [0u8; 1024];
+
+    let mut client = Network::bind(None).await.unwrap();
+
+    // [64 + 32] -> reliable + Peers::Server
+    // [0, 0, 7] -> datagram ID = 7
+    // [1] -> ToGame::OpenGame
+    client
+        .send(SERVER_ADDR, &[64 + 32, 0, 0, 7, 1])
+        .await
+        .unwrap();
+
+    let mut received = ReceivedBuffer::new();
+    received.load(&mut client, &mut buffer).await;
+
+    assert_eq!(received.0.len(), 1);
+
+    let port = {
+        let Incomming::Data { reliable, id, data } = &(received.0)[0] else {
+        panic!("Unexpected data received: {:?}", received);
+    };
+
+        assert!(reliable);
+
+        // Confirm
+        let id = id.to_be_bytes();
+        client
+            .send(SERVER_ADDR, &[128, 0, 0, 0, id[1], id[2], id[3]])
+            .await
+            .unwrap();
+
+        // Decode bincode encoded port:
+        // [1] -> FromServer::GameOpened
+        // [p] or [261 p p] -> { port: p }
+        assert_eq!(data[0], 1);
+        if data.len() == 2 {
+            data[1] as u16
+        } else {
+            assert_eq!(data.len(), 4);
+            assert_eq!(data[1], 251);
+            u16::from_be_bytes([data[2], data[3]])
+        }
+    };
+
+    let mut received = ReceivedBuffer::new();
+    received.load(&mut client, &mut buffer).await;
+    received.assert_confirmed(7);
+
+    let server = SocketAddr::V4(SocketAddrV4::new(Ipv4Addr::LOCALHOST, port));
+
+    let mut received = ReceivedBuffer::new();
+    received.load(&mut client, &mut buffer).await;
+
+    // [1, 0] -> FromGame::Joined(0)
+    let id = received.find_id(true, &[1, 0]).unwrap().to_be_bytes();
+    client
+        .send(server, &[128, 0, 0, 0, id[1], id[2], id[3]])
+        .await
+        .unwrap();
+
+    (client, port)
+}
+
+async fn join_game(game_port: u16) -> Network {
+    let mut buffer = [0u8; 1024];
+
+    let server = SocketAddr::V4(SocketAddrV4::new(Ipv4Addr::LOCALHOST, game_port));
+    let mut client = Network::bind(None).await.unwrap();
+
+    // [64 + 32] -> reliable + Peers::Server
+    // [0, 0, 3] -> datagram ID = 3
+    // [1] -> ToGame::Join
+    client.send(server, &[64 + 32, 0, 0, 3, 1]).await.unwrap();
+
+    let mut received = ReceivedBuffer::new();
+    received.load(&mut client, &mut buffer).await;
+    received.load(&mut client, &mut buffer).await;
+    received.assert_confirmed(3);
+
+    // [1, 1] -> FromGame::Joined(1)
+    let id = received.find_id(true, &[1, 1]).unwrap().to_be_bytes();
+    client
+        .send(server, &[128, 0, 0, 0, id[1], id[2], id[3]])
+        .await
+        .unwrap();
+
+    client
 }

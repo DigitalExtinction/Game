@@ -2194,10 +2194,12 @@ dependencies = [
  "anyhow",
  "assert_cmd",
  "async-std",
+ "bincode",
  "de_net",
  "futures",
  "nix 0.26.2",
  "ntest",
+ "thiserror",
  "tracing",
  "tracing-subscriber",
 ]

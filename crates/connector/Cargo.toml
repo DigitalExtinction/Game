@@ -25,7 +25,9 @@ de_net.workspace = true
 ahash.workspace = true
 anyhow.workspace = true
 async-std.workspace = true
+bincode.workspace = true
 futures.workspace = true
+thiserror.workspace = true
 tracing-subscriber.workspace = true
 tracing.workspace = true
 
