@@ -6,7 +6,7 @@ use anyhow::{ensure, Context, Error, Result};
 use async_std::path::Path;
 use conf_macros::Config;
 use de_uom::{LogicalPixel, Metre};
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use url::Url;
 
 use crate::bundle_config;
@@ -15,13 +15,13 @@ use crate::bundle_config;
 // Config structs hold deserialized and validated data before
 // further processing or packaging into Configuration
 
-#[derive(Deserialize, Config, Debug, Clone)]
+#[derive(Deserialize, Serialize, Config, Debug, Clone)]
 pub struct MultiplayerConf {
     #[ensure(server.scheme() == "http", "Only `http` scheme is allowed for `server`.")]
     server: Url,
 }
 
-#[derive(Deserialize, Config, Debug, Clone)]
+#[derive(Deserialize, Serialize, Config, Debug, Clone)]
 pub struct Camera {
     scroll_inverted: bool,
 
