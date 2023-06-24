@@ -30,8 +30,8 @@ jobs:
       - name: Build mdBook
         working-directory: docs
         run: |
-          mdbook test
-          mdbook build
+          ../bin/mdbook test
+          ../bin/mdbook build
       - name: Build Rust Docs
         run: cargo doc --no-deps --all-features --workspace --document-private-items
       - name: Move Rust Docs
