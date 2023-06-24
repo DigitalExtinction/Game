@@ -55,24 +55,26 @@ pub struct BodyTextOps<'w, 's> {
 
 impl<'w, 's> BodyTextOps<'w, 's> {
     /// This method changes text (e.g. caption) of UI body text.
-    ///
-    /// The entity must have [`BodyText`] component and at least one child with
-    /// [`Text`] component. The text must consist of a single section. If such
-    /// a child is found, its text is changed.
-    pub fn set_text(&mut self, entity: Entity, text: String) -> Result<(), &str> {
+    pub fn set_text(&mut self, entity: Entity, text: impl Into<String>) -> Result<(), &str> {
+        let text = text.into();
         let children = match self.body_text_query.get(entity) {
             Ok(children) => children,
             Err(e) => {
-                error!("BodyText does not exist. {:?}", e);
+                trace!("BodyText does not exist. {:?}", e);
                 return Err("BodyText does not exist.");
             }
         };
         for &child in children.iter() {
             if let Ok(mut text_component) = self.text_query.get_mut(child) {
+                if text_component.sections[0].value == text {
+                    // avoid unnecessary update
+                    return Ok(());
+                }
                 text_component.sections[0].value = text;
                 return Ok(());
             }
         }
+        trace!("BodyText does not have a child with Text component.");
         Err("BodyText does not have a child with Text component.")
     }
 }
