@@ -111,11 +111,11 @@ pub fn derive_config(input: TokenStream) -> TokenStream {
     }
 
     /* We need to generate the following code:
-     * - derive the Deserialize & Serialize trait
      * - a function to check all fields
      * - a function to deserialize from config and fill default values while
      *   also checking
      * - a partial struct with all the fields that are options
+     * - derive the Deserialize & Serialize trait for the partial struct
      * - a TryFrom implementation for the partial struct
      */
 
@@ -172,7 +172,7 @@ pub fn derive_config(input: TokenStream) -> TokenStream {
         }
 
         // Create a partial version of the struct with options for every field
-        // for serializing.
+        // for deserializing.
         #[derive(serde::Serialize, serde::Deserialize, Clone, Debug)]
         #struct_publicity struct #partial_struct {
             #(#field_publicity #field_names: Option<#field_types>,)*
