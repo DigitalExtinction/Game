@@ -22,6 +22,7 @@ impl Plugin for PathingPlugin {
         .add_system(
             check_battery
                 .in_base_set(GameSet::PreMovement)
+                .in_set(PathingSet::CheckBattery)
                 .run_if(in_state(GameState::Playing)),
         )
         .add_system(
@@ -33,6 +34,7 @@ impl Plugin for PathingPlugin {
             follow_path
                 .in_base_set(GameSet::Movement)
                 .run_if(in_state(GameState::Playing))
+                .after(PathingSet::CheckBattery)
                 .in_set(PathingSet::FollowPath),
         );
     }
@@ -42,6 +44,7 @@ pub(crate) struct PathVelocity;
 
 #[derive(Copy, Clone, Hash, Debug, PartialEq, Eq, SystemSet)]
 pub(crate) enum PathingSet {
+    CheckBattery,
     FollowPath,
 }
 
