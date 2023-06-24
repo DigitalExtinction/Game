@@ -8,7 +8,6 @@ env:
 jobs:
   build:
     name: Build
-    if: github.event.pull_request.draft == false
 
     runs-on: ubuntu-latest
     steps:
@@ -46,7 +45,6 @@ jobs:
 
   deploy:
     name: Deploy
-    if: github.ref == 'refs/heads/main'
 
     concurrency:
       group: "pages"
