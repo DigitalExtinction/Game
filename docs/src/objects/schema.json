@@ -1,0 +1,168 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.com/product.schema.json",
+  "title": "Object Info",
+  "type": "object",
+  "description": "Description of a game object.",
+  "properties": {
+    "footprint": {
+      "type": "object",
+      "description": "A 2D footprint of the object used for path planning and collision avoidance.",
+      "properties": {
+        "convex_hull": {
+          "type": "array",
+          "description": "A convex polygon fully containing the object.",
+          "items": {
+            "type": "array",
+            "description": "2D coordinates in the object space.",
+            "items": {
+              "type": "number"
+            },
+            "minItems": 2,
+            "maxItems": 2
+          },
+          "minItems": 3
+        }
+      },
+      "required": [
+        "convex_hull"
+      ]
+    },
+    "shape": {
+      "type": "object",
+      "description": "A tri-mesh collider of the object. The object 3D model is fully contained inside the buffer. Due to performance reasons, the number of triangles should be very small.",
+      "properties": {
+        "vertices": {
+          "type": "array",
+          "description": "Array of unique vertices of the tri-mesh.",
+          "items": {
+            "type": "array",
+            "description": "A 3D point in object space.",
+            "items": {
+              "type": "number"
+            },
+            "minItems": 3,
+            "maxItems": 3
+          },
+          "minItems": 4,
+          "uniqueItems": true
+        },
+        "indices": {
+          "type": "array",
+          "description": "Triangle vertex triplets. Each triplets is counter clockwise.",
+          "items": {
+            "type": "array",
+            "description": "An index of `vertices` array.",
+            "items": {
+              "type": "integer"
+            },
+            "minItems": 3,
+            "maxItems": 3,
+            "minimum": 0
+          },
+          "minItems": 4
+        }
+      },
+      "required": [
+        "vertices",
+        "indices"
+      ]
+    },
+    "cannon": {
+      "type": "object",
+      "description": "Properties of a laser cannon.",
+      "properties": {
+        "muzzle": {
+          "type": "array",
+          "description": "3D coordinates of the cannon muzzle in object space.",
+          "items": {
+            "type": "number"
+          },
+          "minItems": 3,
+          "maxItems": 3
+        },
+        "range": {
+          "type": "number",
+          "description": "Maximum firing distance of the cannon.",
+          "exclusiveMinimum": 0
+        },
+        "damage": {
+          "type": "number",
+          "description": "Enemy damage when hit by the gun.",
+          "exclusiveMinimum": 0
+        },
+        "charge_time_sec": {
+          "type": "number",
+          "description": "How long it takes to fully charge the gun.",
+          "exclusiveMinimum": 0
+        },
+        "discharge_time_sec": {
+          "type": "number",
+          "description": "How long it takes until the gun is fully discharged if not actively charged.",
+          "exclusiveMinimum": 0
+        }
+      },
+      "required": [
+        "muzzle",
+        "range",
+        "damage",
+        "charge_time_sec",
+        "discharge_time_sec"
+      ]
+    },
+    "flight": {
+      "type": "object",
+      "description": "Configuration of object flight capabilities. This property is not defined for object with no flight capability.",
+      "properties": {
+        "min_height": {
+          "type": "number",
+          "description": "Minimum flight height (vertical distance from the terrain).",
+          "exclusiveMinimum": 0
+        },
+        "max_height": {
+          "type": "number",
+          "description": "Maximum flight height (vertical distance from the terrain).",
+          "exclusiveMinimum": 0
+        }
+      },
+      "required": [
+        "min_height",
+        "max_height"
+      ]
+    },
+    "factory": {
+      "type": "object",
+      "description": "Configuration of the manufacturing capability of the object.",
+      "properties": {
+        "products": {
+          "type": "array",
+          "description": "List of products which can be manufactured.",
+          "items": {
+            "type": "string",
+            "enum": [
+              "Attacker"
+            ]
+          },
+          "minItems": 1
+        },
+        "position": {
+          "type": "array",
+          "description": "Position of the assembly line, i.e. where the products are manufactured and spawned. A 2D position in the object space.",
+          "items": {
+            "type": "number"
+          },
+          "minItems": 2,
+          "maxItems": 2
+        }
+      },
+      "required": [
+        "products",
+        "position"
+      ]
+    }
+  },
+  "required": [
+    "footprint",
+    "shape"
+  ]
+}
