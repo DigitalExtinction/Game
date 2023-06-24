@@ -45,6 +45,7 @@ jobs:
 
   deploy:
     name: Deploy
+    if: github.ref == 'refs/heads/main'
 
     concurrency:
       group: "pages"
