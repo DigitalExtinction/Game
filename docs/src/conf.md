@@ -44,3 +44,6 @@ est as if all properties are missing.
     rotation_sensitivity` radians. It must be a positive finite number.
   * `scroll_inverted` (bool; default: `false`) – if `true`, mouse wheel and
     touchpad scrolling is inverted.
+* `audio` (object) – audio configuration.
+  * `music_volume` (f32; default: `1.0`) – sets the music volume. It must be a finite
+    number between `0.0` and `1.0`. If set to 0 music will not play.
