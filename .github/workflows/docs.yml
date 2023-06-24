@@ -20,28 +20,29 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install --no-install-recommends -y libasound2-dev libudev-dev
-      - name: Install Zola
+      - name: Install mdBook
         run: |
-          wget -q -O - \
-          "https://github.com/getzola/zola/releases/download/v0.16.1/zola-v0.16.1-x86_64-unknown-linux-gnu.tar.gz" \
-          | sudo tar xzf - -C /usr/bin
+          mkdir bin
+          curl -sSL https://github.com/rust-lang/mdBook/releases/download/v0.4.30/mdbook-v0.4.30-x86_64-unknown-linux-gnu.tar.gz | tar -xz --directory=bin
       - name: Rust Toolchain
         uses: dtolnay/rust-toolchain@stable
       - name: Versions
-        run: rustc --version && cargo --version && zola --version
+        run: rustc --version && cargo --version && bin/mdbook --version
+      - name: Build mdBook
+        working-directory: docs
+        run: |
+          mdbook test
+          mdbook build
       - name: Build Rust Docs
         run: cargo doc --no-deps --all-features --workspace --document-private-items
       - name: Move Rust Docs
-        run: mv target/doc/ docs/static/rust
-      - name: Build Zola Docs
-        working-directory: docs
-        run: zola build
+        run: mv target/doc/ docs/book/rust
       # https://github.com/actions/upload-pages-artifact#file-permissions
-      - run:  chmod -c -R +rX docs/public/
+      - run:  chmod -c -R +rX docs/book/
       - name: Upload Artifact
         uses: actions/upload-pages-artifact@v1
         with:
-          path: docs/public/
+          path: docs/book/
 
   deploy:
     name: Deploy

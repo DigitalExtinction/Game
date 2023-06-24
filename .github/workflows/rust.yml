@@ -71,8 +71,6 @@ jobs:
         run: cargo clippy --all --all-targets --all-features --workspace -- --deny warnings
       - name: Test
         run: cargo test --verbose --all-features --workspace
-      - name: Build Docs
-        run: cargo doc --no-deps --all-features --workspace
 
   format:
     name: Test Formatting
