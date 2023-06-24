@@ -1,8 +1,4 @@
-+++
-title = "DE Configuration"
-weight = 4
-sort_by = "weight"
-+++
+# Configuration
 
 Game configuration is stored into and loaded from a YAML file located at
 `{user_conf_dir}/DigitalExtinction/conf.yaml`. `{user_conf_dir}` is obtained
@@ -15,7 +11,7 @@ and conforms to the following table:
 | macOS   | `$HOME`/Library/Application Support   | /Users/Alice/Library/Application Support |
 | Windows | `{FOLDERID_RoamingAppData}`           | C:\Users\Alice\AppData\Roaming           |
 
-# Configuration YAML
+## Configuration YAML
 
 All properties in the YAML tree are optional, default values are used instead.
 Missing configuration YAML file is treated equally to an empty YAML file, id

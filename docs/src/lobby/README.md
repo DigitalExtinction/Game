@@ -1,8 +1,4 @@
-+++
-title = "DE Lobby Server"
-weight = 3
-sort_by = "weight"
-+++
+# Lobby Server
 
 Multiplayer games are managed and initiated via DE Lobby Server. The lobby
 server implements a simple HTTP API for user and game management.
@@ -14,7 +10,7 @@ Server acts as a rendezvous for the procedure.
 The HTTP API is documented with Open API Specification:
 [openapi.yaml](openapi.yaml).
 
-# Configuration
+## Configuration
 
 The server is configured via environment variables:
 

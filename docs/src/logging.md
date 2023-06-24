@@ -1,8 +1,4 @@
-+++
-title = "DE Logging"
-weight = 5
-sort_by = "weight"
-+++
+# Logging
 
 Game logs are both sent to standard output and persistently stored in text
 files located at `{user_cache_dir}/DigitalExtinction/logs/`. After each game

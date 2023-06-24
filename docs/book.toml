@@ -1,0 +1,14 @@
+[book]
+authors = ["Martin Indra"]
+language = "en"
+multilingual = false
+src = "src"
+title = "Digital Extinction"
+
+[rust]
+edition = "2021"
+
+[output.html]
+git-repository-url = "https://github.com/DigitalExtinction/Game/tree/main/docs"
+site-url = "https://docs.de-game.org/"
+cname = "docs.de-game.org"
