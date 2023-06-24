@@ -21,7 +21,7 @@ impl TextProps {
         }
     }
 
-    pub fn label_text_style(&self) -> TextStyle {
+    pub(crate) fn label_text_style(&self) -> TextStyle {
         TextStyle {
             font: self.font(),
             font_size: 35.0,

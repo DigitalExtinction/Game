@@ -55,12 +55,7 @@ fn setup(mut commands: GuiCommands) {
                     width: Val::Percent(20.),
                     height: Val::Percent(30.),
                 },
-                margin: UiRect {
-                    left: Val::Px(10.),
-                    right: Val::Px(10.),
-                    top: Val::Px(10.),
-                    bottom: Val::Px(10.),
-                },
+                margin: UiRect::all(Val::Percent(5.)),
             },
             "",
         )

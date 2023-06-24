@@ -19,6 +19,7 @@ de_combat.workspace = true
 de_conf.workspace = true
 de_construction.workspace = true
 de_core.workspace = true
+de_energy.workspace = true
 de_gui.workspace = true
 de_index.workspace = true
 de_map.workspace = true
@@ -27,8 +28,6 @@ de_pathing.workspace = true
 de_signs.workspace = true
 de_spawner.workspace = true
 de_terrain.workspace = true
-de_energy.workspace = true
-
 
 # Other
 ahash.workspace = true

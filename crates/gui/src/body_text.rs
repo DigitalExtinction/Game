@@ -7,7 +7,7 @@ use crate::{GuiCommands, OuterStyle};
 
 /// marker component for UI `BasicText`
 #[derive(Component)]
-pub struct BodyText;
+struct BodyText;
 
 pub trait BodyTextCommands<'w, 's> {
     fn spawn_body_text<'a>(
