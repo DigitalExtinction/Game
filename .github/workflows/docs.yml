@@ -4,6 +4,7 @@ on: [push, pull_request, merge_group]
 
 env:
   CARGO_TERM_COLOR: always
+  RUSTDOCFLAGS: --deny warnings
 
 jobs:
   build:
