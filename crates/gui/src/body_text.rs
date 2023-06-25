@@ -23,7 +23,7 @@ impl<'w, 's> BodyTextCommands<'w, 's> for GuiCommands<'w, 's> {
         style: OuterStyle,
         caption: impl Into<String>,
     ) -> EntityCommands<'w, 's, 'a> {
-        let text_style = self.text_props().label_text_style();
+        let text_style = self.text_props().body_text_style();
 
         let mut commands = self.spawn((
             NodeBundle {
