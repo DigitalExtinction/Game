@@ -76,7 +76,7 @@ macro_rules! bundle_config {
             }
         }
 
-        #[derive(MacroDeserialize, Serialize, Debug, Clone, Default)]
+        #[derive(MacroDeserialize, MacroSerialize, Debug, Clone, Default)]
         struct PartialConfiguration {
             $(
                 $name: Option<paste! {[<Partial $type_from>]}>,
@@ -92,7 +92,9 @@ macro_rules! bundle_config {
 
             pub async fn load(path: &Path) ->  Result<Self, ConfigLoadError> {
                 let from = RawConfiguration::load(path).await?;
-                debug!("Loaded raw configuration: \n{}", serde_yaml::to_string(&from).expect("Failed to serialize raw configuration"));
+                let serialized = serde_yaml::to_string(&from)
+                    .expect("Failed to serialize raw configuration");
+                debug!("Loaded raw configuration: \n{serialized}");
                 Ok(from.try_into().unwrap())
             }
         }
