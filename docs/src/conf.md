@@ -59,4 +59,6 @@ camera:
   rotation_sensitivity: 0.01
 multiplayer:
   server: http://lobby.de_game.org/
+audio:
+  music_volume: 1.0
 ```
