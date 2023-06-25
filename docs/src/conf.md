@@ -45,7 +45,6 @@ est as if all properties are missing.
   * `scroll_inverted` (bool; default: `false`) – if `true`, mouse wheel and
     touchpad scrolling is inverted.
 
-
 ## Example Configuration
 
 ```yaml
