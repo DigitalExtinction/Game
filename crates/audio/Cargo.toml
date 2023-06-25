@@ -13,6 +13,7 @@ categories.workspace = true
 
 [dependencies]
 # DE
+de_conf.workspace = true
 de_core.workspace = true
 
 # Other

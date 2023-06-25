@@ -45,6 +45,14 @@ pub struct Camera {
     #[ensure(*rotation_sensitivity > 0., "`rotation_sensitivity` must be greater than 0.0.")]
     rotation_sensitivity: f32,
 }
+
+#[derive(Deserialize, Config, Debug, Clone)]
+pub struct AudioConf {
+    #[is_finite]
+    #[ensure(*music_volume >= 0., "`music_volume` must be greater than or equal to 0.0.")]
+    #[ensure(*music_volume <= 1., "`music_volume` must be smaller or equal to 1.0.")]
+    music_volume: f32,
+}
 // --------------------
 
 // ---- default implementations ----
@@ -68,6 +76,12 @@ impl Default for Camera {
             rotation_sensitivity: 0.01,
             scroll_inverted: false,
         }
+    }
+}
+
+impl Default for AudioConf {
+    fn default() -> Self {
+        Self { music_volume: 1. }
     }
 }
 
@@ -154,8 +168,20 @@ impl MultiplayerConf {
     }
 }
 
+impl AudioConf {
+    // Whether music is enabled (volume is zero).
+    pub fn music_enabled(&self) -> bool {
+        self.music_volume > 0.
+    }
+
+    pub fn music_volume(&self) -> f32 {
+        self.music_volume
+    }
+}
+
 // Bundle configuration neatly into a single struct
 bundle_config!(
     camera: CameraConf: Camera, // Conf file -> Camera -> CameraConf
-    multiplayer: MultiplayerConf: MultiplayerConf  // Conf file -> MultiplayerConf
+    multiplayer: MultiplayerConf: MultiplayerConf,  // Conf file -> MultiplayerConf
+    audio: AudioConf: AudioConf
 );
