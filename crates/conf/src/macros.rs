@@ -44,9 +44,10 @@ macro_rules! bundle_config {
     ($($name:ident : $type_into:ty : $type_from:ty),*) => {
         use $crate::io::load_conf_text;
         use $crate::macros::ConfigLoadError;
-        use tracing::trace;
+        use tracing::{trace, debug};
         use paste::paste;
         use bevy::prelude::Resource;
+        use serde::{Deserialize as MacroDeserialize, Serialize as MacroSerialize};
 
 
         #[derive(Resource, Debug, Clone)]
@@ -56,7 +57,7 @@ macro_rules! bundle_config {
             )*
         }
 
-        #[derive(Debug, Clone)]
+        #[derive(Debug, Clone, MacroSerialize)]
         pub struct RawConfiguration {
             $(
                 $name: $type_from,
@@ -75,7 +76,7 @@ macro_rules! bundle_config {
             }
         }
 
-        #[derive(Deserialize, Debug, Clone, Default)]
+        #[derive(MacroDeserialize, MacroSerialize, Debug, Clone, Default)]
         struct PartialConfiguration {
             $(
                 $name: Option<paste! {[<Partial $type_from>]}>,
@@ -91,6 +92,9 @@ macro_rules! bundle_config {
 
             pub async fn load(path: &Path) ->  Result<Self, ConfigLoadError> {
                 let from = RawConfiguration::load(path).await?;
+                let serialized = serde_yaml::to_string(&from)
+                    .expect("Failed to serialize raw configuration");
+                debug!("Loaded raw configuration: \n{serialized}");
                 Ok(from.try_into().unwrap())
             }
         }
