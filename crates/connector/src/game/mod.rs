@@ -18,8 +18,7 @@ mod state;
 /// * `net` - network interface to use for the game server.
 ///
 /// * `owner` - address of the creator of the game. This client will be
-///   automatically added to the game as if they sent
-///   [`de_net::protocol::ToGame::Connect`].
+///   automatically added to the game as if they sent [`de_net::ToGame::Join`].
 pub(crate) async fn startup(net: Network, owner: SocketAddr) {
     let port = net.port();
     let (outputs, inputs, errors) = de_net::startup(net);
