@@ -7,7 +7,7 @@ use de_gui::{BodyTextCommands, BodyTextOps, GuiCommands, OuterStyle};
 use super::{interaction::InteractionBlocker, HUD_COLOR};
 use crate::selection::Selected;
 
-const PREFIXES: [&'static str; 5] = ["T", "G", "M", "k", ""];
+const PREFIXES: [&str; 5] = ["T", "G", "M", "k", ""];
 
 pub(crate) struct DetailsPlugin;
 
