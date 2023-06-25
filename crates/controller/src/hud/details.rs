@@ -18,7 +18,8 @@ impl Plugin for DetailsPlugin {
                 update
                     .in_base_set(GameSet::PostUpdate)
                     .run_if(in_state(GameState::Playing)),
-            );
+            )
+            .add_system(clean_up.in_schedule(OnExit(GameState::Playing)));
     }
 }
 
@@ -126,6 +127,11 @@ fn update(
     text_ops
         .set_text(ui.0, text)
         .expect("Failed to set text of details");
+}
+
+fn clean_up(mut commands: Commands) {
+    // remove DetailsText
+    commands.remove_resource::<DetailsText>()
 }
 
 #[cfg(test)]
