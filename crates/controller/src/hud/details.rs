@@ -7,7 +7,7 @@ use de_gui::{BodyTextCommands, BodyTextOps, GuiCommands, OuterStyle};
 use super::{interaction::InteractionBlocker, HUD_COLOR};
 use crate::selection::Selected;
 
-const PREFIXES: [&str; 5] = ["T", "G", "M", "k", ""];
+const PREFIXES: [&str; 5] = ["", "k", "M", "G", "T"];
 
 pub(crate) struct DetailsPlugin;
 
@@ -68,16 +68,15 @@ fn setup(mut commands: GuiCommands) {
 }
 
 fn format_units(value: f64, units: &str) -> String {
-    for i in (0..PREFIXES.len()).rev() {
-        let coeff = 1000f64.powi(i as i32);
-        if value > coeff {
-            let rounded = most_significant(value / coeff);
-            return format!("{}{}{units}", rounded, PREFIXES[i]);
-        }
+    let mut value = value;
+    let mut i = 0;
+
+    while value >= 1000.0 && i < PREFIXES.len() - 1 {
+        value /= 1000.0;
+        i += 1;
     }
 
-    let rounded = most_significant(value);
-    format!("{}{}", rounded, units)
+    format!("{}{}{}", most_significant(value), PREFIXES[i], units)
 }
 
 fn most_significant(value: f64) -> f64 {
@@ -117,7 +116,7 @@ fn update(
     }
 
     let text = format!(
-        "Battery: Battery: {} / {} ({:.1}%)\nSelected {}",
+        "Battery: {} / {} ({:.1}%)\nSelected {}",
         format_units(battery_total, "J"),
         format_units(battery_max, "J"),
         battery_total * 100. / battery_max,
@@ -127,4 +126,33 @@ fn update(
     text_ops
         .set_text(ui.0, text)
         .expect("Failed to set text of details");
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_format_units() {
+        assert_eq!(format_units(-1.0, "J"), "-1J");
+        assert_eq!(format_units(0.0, "J"), "0J");
+        assert_eq!(format_units(1.0, "J"), "1J");
+        assert_eq!(format_units(10.0, "J"), "10J");
+        assert_eq!(format_units(100.0, "J"), "100J");
+        assert_eq!(format_units(673.0, "J"), "673J");
+        assert_eq!(format_units(1000.0, "J"), "1kJ");
+        assert_eq!(format_units(10000.0, "J"), "10kJ");
+        assert_eq!(format_units(100000.0, "J"), "100kJ");
+        assert_eq!(format_units(590385.0, "J"), "590kJ");
+        assert_eq!(format_units(1000000.0, "J"), "1MJ");
+        assert_eq!(format_units(10000000.0, "J"), "10MJ");
+        assert_eq!(format_units(100000000.0, "J"), "100MJ");
+        assert_eq!(format_units(339484857.0, "J"), "339MJ");
+        assert_eq!(format_units(1000000000.0, "J"), "1GJ");
+        assert_eq!(format_units(10000000000.0, "J"), "10GJ");
+        assert_eq!(format_units(100000000000.0, "J"), "100GJ");
+        assert_eq!(format_units(1000000000000.0, "J"), "1TJ");
+        assert_eq!(format_units(10000000000000.0, "J"), "10TJ");
+        assert_eq!(format_units(100000000000000.0, "J"), "100TJ");
+    }
 }
