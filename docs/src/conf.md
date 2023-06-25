@@ -47,3 +47,20 @@ est as if all properties are missing.
 * `audio` (object) – audio configuration.
   * `music_volume` (f32; default: `1.0`) – sets the music volume. It must be a finite
     number between `0.0` and `1.0`. If set to 0 music will not play.
+
+## Example Configuration
+
+```yaml
+camera:
+  scroll_inverted: false
+  move_margin: 40.0
+  min_distance: 20.0
+  max_distance: 80.0
+  wheel_zoom_sensitivity: 1.1
+  touchpad_zoom_sensitivity: 1.1
+  rotation_sensitivity: 0.01
+multiplayer:
+  server: http://lobby.de_game.org/
+audio:
+  music_volume: 1.0
+```
