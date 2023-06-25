@@ -46,7 +46,7 @@ pub struct Camera {
     rotation_sensitivity: f32,
 }
 
-#[derive(Deserialize, Config, Debug, Clone)]
+#[derive(Deserialize, Serialize, Config, Debug, Clone)]
 pub struct AudioConf {
     #[is_finite]
     #[ensure(*music_volume >= 0., "`music_volume` must be greater than or equal to 0.0.")]
