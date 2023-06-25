@@ -46,7 +46,7 @@ est as if all properties are missing.
     touchpad scrolling is inverted.
 
 
-## example configuration
+## Example Configuration
 
 ```yaml
 camera:
