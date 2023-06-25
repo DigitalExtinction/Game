@@ -1,4 +1,5 @@
 use bevy::{asset::LoadState, prelude::*};
+use de_conf::Configuration;
 use de_core::state::AppState;
 use iyes_progress::prelude::*;
 
@@ -27,6 +28,12 @@ fn load(server: Res<AssetServer>, tracks: Res<Tracks>) -> Progress {
     }
 }
 
-fn start(audio: Res<Audio>, tracks: Res<Tracks>) {
-    audio.play_with_settings(tracks.0.clone(), PlaybackSettings::LOOP);
+fn start(audio: Res<Audio>, tracks: Res<Tracks>, config: Res<Configuration>) {
+    if !config.audio().music_enabled() {
+        return;
+    }
+    audio.play_with_settings(
+        tracks.0.clone(),
+        PlaybackSettings::LOOP.with_volume(config.audio().music_volume()),
+    );
 }
