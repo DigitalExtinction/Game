@@ -3,6 +3,7 @@
 //! game.
 
 use bevy::{app::PluginGroupBuilder, prelude::PluginGroup};
+pub use body_text::{BodyTextCommands, BodyTextOps};
 use button::ButtonPlugin;
 pub use button::{ButtonCommands, ButtonOps};
 pub use commands::GuiCommands;
@@ -11,11 +12,13 @@ pub use focus::SetFocusEvent;
 pub use label::LabelCommands;
 pub use style::OuterStyle;
 use text::TextPlugin;
+pub use text::TextProps;
 use textbox::TextBoxPlugin;
 pub use textbox::{TextBoxCommands, TextBoxQuery};
 use toast::ToastPlugin;
 pub use toast::{ToastEvent, ToastSet};
 
+mod body_text;
 mod button;
 mod commands;
 mod focus;

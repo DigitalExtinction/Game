@@ -98,6 +98,7 @@ de_terrain = { path = "crates/terrain", version = "0.1.0-dev" }
 de_uom = { path = "crates/uom", version = "0.1.0-dev" }
 
 # Other
+ab_glyph = "0.2.21"
 ahash = "0.7.6"
 anyhow = "1.0"
 approx = "0.5.1"

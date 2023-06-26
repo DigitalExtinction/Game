@@ -45,6 +45,14 @@ impl TextProps {
         }
     }
 
+    pub(crate) fn body_text_style(&self) -> TextStyle {
+        TextStyle {
+            font: self.font(),
+            font_size: 16.0,
+            color: Color::rgb(0.9, 0.9, 0.9),
+        }
+    }
+
     fn font(&self) -> Handle<Font> {
         self.0.clone()
     }
