@@ -72,8 +72,8 @@ impl Default for Camera {
             min_distance: 20.,
             max_distance: 80.,
             wheel_zoom_sensitivity: 1.1,
-            touchpad_zoom_sensitivity: 1.1,
-            rotation_sensitivity: 0.01,
+            touchpad_zoom_sensitivity: 1.01,
+            rotation_sensitivity: 0.008,
             scroll_inverted: false,
         }
     }
