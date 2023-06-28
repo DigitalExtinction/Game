@@ -1,11 +1,7 @@
-# Lobby Server
+# DE Lobby Server
 
 Multiplayer games are managed and initiated via DE Lobby Server. The lobby
 server implements a simple HTTP API for user and game management.
-
-During a multiplayer game initiation, peer-to-peer connections between
-individual clients are established with NAT hole punching technique. DE Lobby
-Server acts as a rendezvous for the procedure.
 
 The HTTP API is documented with Open API Specification:
 [openapi.yaml](openapi.yaml).
