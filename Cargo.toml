@@ -112,6 +112,7 @@ async-compat = "0.2.1"
 async-std = "1.11"
 async-tar = "0.4.2"
 bevy = { version = "0.11", features = ["mp3"] }
+bevy_prototype_debug_lines = { version="0.11", features = ["3d"] }
 bincode = "2.0.0-rc.3"
 chrono = "0.4.24"
 clap = { version = "4.0", features = ["derive"] }
@@ -125,6 +126,7 @@ flate2 = "1.0.26"
 futures = "0.3.28"
 futures-lite = "1.13.0"
 glam = "0.24"
+petgraph = "0.6.3"
 gltf = "1.0"
 itertools = "0.11.0"
 iyes_progress = "0.9.0"
@@ -144,6 +146,7 @@ serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 serde_yaml = "0.9"
 sha3 = "0.10.6"
+smallvec = "1.10.0"
 spade = "2.0.0"
 syn = { version = "1.0.109", features = ["full"] }
 thiserror = "1.0"

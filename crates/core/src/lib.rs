@@ -8,6 +8,7 @@ use visibility::VisibilityPlugin;
 
 pub mod assets;
 pub mod cleanup;
+mod energy_markers;
 mod errors;
 pub mod events;
 pub mod flags;

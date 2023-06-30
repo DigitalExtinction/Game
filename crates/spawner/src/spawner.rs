@@ -7,9 +7,10 @@ use de_core::{
     objects::{Active, ActiveObjectType, MovableSolid, ObjectType, Playable, StaticSolid},
     player::Player,
 };
-use de_energy::Battery;
+use de_energy::{Battery, EnergyReceiver, NearbyUnits};
 use de_objects::{AssetCollection, InitialHealths, SceneType, Scenes, SolidObjects};
 use de_terrain::{CircleMarker, MarkerVisibility, RectangleMarker};
+use smallvec::smallvec;
 
 use crate::ObjectCounter;
 
@@ -69,6 +70,8 @@ fn spawn(
             ObjectType::Active(active_type) => {
                 entity_commands.insert(Active);
                 entity_commands.insert(Battery::default());
+                entity_commands.insert(EnergyReceiver);
+                entity_commands.insert(NearbyUnits::default());
 
                 let player = *player.expect("Active object without an associated was spawned.");
                 counter.player_mut(player).unwrap().update(active_type, 1);

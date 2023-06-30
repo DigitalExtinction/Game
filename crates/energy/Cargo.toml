@@ -15,3 +15,9 @@ categories.workspace = true
 
 [dependencies]
 bevy.workspace = true
+de_core.workspace = true
+smallvec.workspace = true
+de_index.workspace = true
+parry3d.workspace = true
+
+bevy_prototype_debug_lines.workspace = true
