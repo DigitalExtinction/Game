@@ -13,7 +13,7 @@ Windows and potentially other platforms.
 The game is completely written in [Rust](https://www.rust-lang.org/) with
 [Bevy](https://bevyengine.org/) used as the engine.
 
-[![Gameplay video](video.png)](https://youtu.be/_ibNMDgIQDE)
+[![Gameplay video](video.png)](https://youtu.be/aRk65kyIEes)
 
 # Status
 
