@@ -57,8 +57,8 @@
 
 use async_std::{channel::bounded, task};
 pub use communicator::{
-    ConnErrorReceiver, InMessage, MessageDecoder, MessageReceiver, MessageSender, OutMessage,
-    OutMessageBuilder,
+    ConnErrorReceiver, ConnectionError, InMessage, MessageDecoder, MessageReceiver, MessageSender,
+    OutMessage, OutMessageBuilder,
 };
 pub(crate) use dsender::OutDatagram;
 use tracing::info;
