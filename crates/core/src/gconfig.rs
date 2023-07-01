@@ -4,6 +4,8 @@ use bevy::prelude::Resource;
 
 use crate::player::{Player, PlayerRange};
 
+/// This resource is automatically removed when
+/// [`crate::state::AppState::InGame`] is exited.
 #[derive(Resource)]
 pub struct GameConfig {
     map_path: PathBuf,

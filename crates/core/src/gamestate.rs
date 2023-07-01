@@ -2,6 +2,7 @@ use bevy::prelude::*;
 use iyes_progress::prelude::*;
 
 use crate::{
+    gconfig::GameConfig,
     state::AppState,
     transition::{DeStateTransition, StateWithSet},
 };
@@ -43,6 +44,7 @@ fn setup(mut next_state: ResMut<NextState<GameState>>) {
     next_state.set(GameState::Loading);
 }
 
-fn cleanup(mut next_state: ResMut<NextState<GameState>>) {
+fn cleanup(mut commands: Commands, mut next_state: ResMut<NextState<GameState>>) {
+    commands.remove_resource::<GameConfig>();
     next_state.set(GameState::None);
 }
