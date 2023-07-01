@@ -539,7 +539,7 @@ dependencies = [
  "async-lock",
  "async-task",
  "concurrent-queue",
- "fastrand 1.9.0",
+ "fastrand",
  "futures-lite",
  "slab",
 ]
@@ -797,7 +797,7 @@ dependencies = [
  "bevy_winit",
  "crossbeam-channel",
  "downcast-rs",
- "fastrand 1.9.0",
+ "fastrand",
  "js-sys",
  "notify",
  "parking_lot 0.12.1",
@@ -1519,7 +1519,7 @@ dependencies = [
  "async-lock",
  "async-task",
  "atomic-waker",
- "fastrand 1.9.0",
+ "fastrand",
  "futures-lite",
  "log",
 ]
@@ -2159,7 +2159,7 @@ dependencies = [
 name = "de_connector"
 version = "0.1.0-dev"
 dependencies = [
- "ahash 0.8.3",
+ "ahash 0.7.6",
  "anyhow",
  "assert_cmd",
  "async-std",
@@ -2177,7 +2177,7 @@ dependencies = [
 name = "de_construction"
 version = "0.1.0-dev"
 dependencies = [
- "ahash 0.8.3",
+ "ahash 0.7.6",
  "bevy",
  "de_core",
  "de_index",
@@ -2193,7 +2193,7 @@ dependencies = [
 name = "de_controller"
 version = "0.1.0-dev"
 dependencies = [
- "ahash 0.8.3",
+ "ahash 0.7.6",
  "bevy",
  "de_behaviour",
  "de_camera",
@@ -2282,7 +2282,7 @@ dependencies = [
 name = "de_index"
 version = "0.1.0-dev"
 dependencies = [
- "ahash 0.8.3",
+ "ahash 0.7.6",
  "bevy",
  "criterion",
  "de_core",
@@ -2334,7 +2334,7 @@ dependencies = [
 name = "de_lobby_client"
 version = "0.1.0-dev"
 dependencies = [
- "ahash 0.8.3",
+ "ahash 0.7.6",
  "anyhow",
  "async-compat",
  "bevy",
@@ -2374,7 +2374,7 @@ dependencies = [
 name = "de_map"
 version = "0.1.0-dev"
 dependencies = [
- "ahash 0.8.3",
+ "ahash 0.7.6",
  "async-std",
  "async-tar",
  "bevy",
@@ -2423,10 +2423,10 @@ dependencies = [
 name = "de_net"
 version = "0.1.0-dev"
 dependencies = [
- "ahash 0.8.3",
+ "ahash 0.7.6",
  "async-std",
  "bincode",
- "fastrand 2.0.0",
+ "fastrand",
  "futures",
  "priority-queue",
  "thiserror",
@@ -2437,7 +2437,7 @@ dependencies = [
 name = "de_objects"
 version = "0.1.0-dev"
 dependencies = [
- "ahash 0.8.3",
+ "ahash 0.7.6",
  "anyhow",
  "bevy",
  "de_core",
@@ -2455,7 +2455,7 @@ dependencies = [
 name = "de_pathing"
 version = "0.1.0-dev"
 dependencies = [
- "ahash 0.8.3",
+ "ahash 0.7.6",
  "approx",
  "bevy",
  "criterion",
@@ -2476,7 +2476,7 @@ dependencies = [
 name = "de_signs"
 version = "0.1.0-dev"
 dependencies = [
- "ahash 0.8.3",
+ "ahash 0.7.6",
  "bevy",
  "de_camera",
  "de_core",
@@ -2489,7 +2489,7 @@ dependencies = [
 name = "de_spawner"
 version = "0.1.0-dev"
 dependencies = [
- "ahash 0.8.3",
+ "ahash 0.7.6",
  "bevy",
  "de_core",
  "de_energy",
@@ -2505,7 +2505,7 @@ dependencies = [
 name = "de_terrain"
 version = "0.1.0-dev"
 dependencies = [
- "ahash 0.8.3",
+ "ahash 0.7.6",
  "bevy",
  "de_core",
  "de_map",
@@ -2767,12 +2767,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "fastrand"
-version = "2.0.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6999dc1837253364c2ebb0704ba97994bd874e8f195d665c50b7548f6ea92764"
-
-[[package]]
 name = "fdeflate"
 version = "0.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2925,7 +2919,7 @@ version = "1.13.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "49a9d51ce47660b1e808d3c990b4709f2f415d928835a17dfd16991515c46bce"
 dependencies = [
- "fastrand 1.9.0",
+ "fastrand",
  "futures-core",
  "futures-io",
  "memchr",
@@ -5614,7 +5608,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b9fbec84f381d5795b08656e4912bec604d162bff9291d6189a78f4c8ab87998"
 dependencies = [
  "cfg-if",
- "fastrand 1.9.0",
+ "fastrand",
  "redox_syscall 0.3.5",
  "rustix",
  "windows-sys 0.45.0",
