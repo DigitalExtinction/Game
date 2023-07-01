@@ -1,7 +1,7 @@
 use std::{net::SocketAddr, time::Duration};
 
 use async_std::{channel::Sender, future::timeout};
-use tracing::{error, info, log::warn};
+use tracing::{error, info, warn};
 
 use crate::{
     header::{DataHeader, DatagramHeader},
