@@ -21,7 +21,12 @@ mod state;
 ///   automatically added to the game as if they sent [`de_net::ToGame::Join`].
 pub(crate) async fn startup(net: Network, owner: SocketAddr) {
     let port = net.port();
-    let (outputs, inputs, errors) = de_net::startup(net);
+    let (outputs, inputs, errors) = de_net::startup(
+        |t| {
+            task::spawn(t);
+        },
+        net,
+    );
 
     let (server_sender, server_receiver) = bounded(16);
     task::spawn(ereceiver::run(port, errors, server_sender.clone()));
