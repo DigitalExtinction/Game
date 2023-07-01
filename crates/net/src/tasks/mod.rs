@@ -55,12 +55,13 @@
 //! data. The user communicates with these via [`MessageSender`] and
 //! [`MessageReceiver`] respectively.
 
-use async_std::{channel::bounded, task};
+use async_std::channel::bounded;
 pub use communicator::{
     ConnErrorReceiver, InMessage, MessageDecoder, MessageReceiver, MessageSender, OutMessage,
     OutMessageBuilder,
 };
 pub(crate) use dsender::OutDatagram;
+use futures::future::BoxFuture;
 use tracing::info;
 
 use crate::{
@@ -89,69 +90,82 @@ const CHANNEL_CAPACITY: usize = 1024;
 /// closed. Once the [`MessageSender`], [`MessageReceiver`], and
 /// [`ConnErrorReceiver`] are all dropped, the networking stack will terminate
 /// completely.
-pub fn startup(network: Network) -> (MessageSender, MessageReceiver, ConnErrorReceiver) {
+///
+/// # Arguments
+///
+/// * `spawn` - async task spawner.
+///
+/// * `network` - network communication will happen over this socket.
+pub fn startup<S>(spawn: S, network: Network) -> (MessageSender, MessageReceiver, ConnErrorReceiver)
+where
+    S: Fn(BoxFuture<'static, ()>),
+{
     let port = network.port();
     info!("Starting up network stack on port {port}...");
 
     let messages = Messages::new(network);
 
     let (out_datagrams_sender, out_datagrams_receiver) = bounded(16);
-    task::spawn(dsender::run(port, out_datagrams_receiver, messages.clone()));
+    spawn(Box::pin(dsender::run(
+        port,
+        out_datagrams_receiver,
+        messages.clone(),
+    )));
 
     let (in_system_datagrams_sender, in_system_datagrams_receiver) = bounded(16);
     let (in_user_datagrams_sender, in_user_datagrams_receiver) = bounded(16);
-    task::spawn(dreceiver::run(
+    spawn(Box::pin(dreceiver::run(
         port,
         in_system_datagrams_sender,
         in_user_datagrams_sender,
         messages,
-    ));
+    )));
 
     let resends = Resends::new();
     let (sreceiver_cancellation_sender, sreceiver_cancellation_receiver) = cancellation();
-    task::spawn(sreceiver::run(
+    spawn(Box::pin(sreceiver::run(
         port,
         sreceiver_cancellation_receiver,
         in_system_datagrams_receiver,
         resends.clone(),
-    ));
+    )));
 
     let (inputs_sender, inputs_receiver) = bounded(CHANNEL_CAPACITY);
     let (confirmer_cancellation_sender, confirmer_cancellation_receiver) = cancellation();
     let confirms = Confirmations::new();
-    task::spawn(ureceiver::run(
+    spawn(Box::pin(ureceiver::run(
         port,
         confirmer_cancellation_sender,
         in_user_datagrams_receiver,
         inputs_sender,
         confirms.clone(),
-    ));
+    )));
 
     let (outputs_sender, outputs_receiver) = bounded(CHANNEL_CAPACITY);
     let (errors_sender, errors_receiver) = bounded(CHANNEL_CAPACITY);
     let (resender_cancellation_sender, resender_cancellation_receiver) = cancellation();
-    task::spawn(resender::run(
+    spawn(Box::pin(resender::run(
         port,
         resender_cancellation_receiver,
         sreceiver_cancellation_sender,
         out_datagrams_sender.clone(),
         errors_sender,
         resends.clone(),
-    ));
+    )));
 
-    task::spawn(confirmer::run(
+    spawn(Box::pin(confirmer::run(
         port,
         confirmer_cancellation_receiver,
         out_datagrams_sender.clone(),
         confirms,
-    ));
-    task::spawn(usender::run(
+    )));
+    spawn(Box::pin(usender::run(
         port,
         resender_cancellation_sender,
         out_datagrams_sender,
         outputs_receiver,
         resends,
-    ));
+    )));
 
     (
         MessageSender(outputs_sender),

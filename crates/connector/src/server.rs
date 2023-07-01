@@ -1,6 +1,7 @@
 use std::net::SocketAddr;
 
 use anyhow::Context;
+use async_std::task;
 use de_net::{
     self, FromServer, MessageDecoder, MessageReceiver, MessageSender, Network, OutMessage, Peers,
     ToServer,
@@ -19,7 +20,12 @@ pub(crate) struct MainServer {
 impl MainServer {
     /// Setup the server & startup its network stack.
     pub(crate) fn start(net: Network) -> Self {
-        let (outputs, inputs, _) = de_net::startup(net);
+        let (outputs, inputs, _) = de_net::startup(
+            |t| {
+                task::spawn(t);
+            },
+            net,
+        );
         Self { outputs, inputs }
     }
 
