@@ -140,7 +140,9 @@ fn input_system(
     mut characters: EventReader<ReceivedCharacter>,
     mut keyboard: EventReader<KeyboardInput>,
 ) {
-    let Some((mut text_box, children)) = focused.get_current_mut() else { return };
+    let Some((mut text_box, children)) = focused.get_current_mut() else {
+        return;
+    };
 
     let text_id = children
         .iter()

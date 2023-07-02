@@ -162,7 +162,9 @@ fn list_games_system(
     mut events: EventReader<ResponseEvent<ListGamesRequest>>,
     mut toasts: EventWriter<ToastEvent>,
 ) {
-    let Some(event) = events.iter().last() else { return };
+    let Some(event) = events.iter().last() else {
+        return;
+    };
     commands.entity(table.0).despawn_descendants();
 
     match event.result() {

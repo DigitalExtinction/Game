@@ -115,6 +115,8 @@ fn button_system(
 }
 
 fn map_selected_system(mut events: EventReader<MapSelectedEvent>, mut map: ResMut<SelectedMap>) {
-    let Some(event) = events.iter().last() else { return };
+    let Some(event) = events.iter().last() else {
+        return;
+    };
     map.0 = Some(event.path().into());
 }

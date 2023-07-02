@@ -74,8 +74,14 @@ impl TryFrom<&Path> for MapHash {
     type Error = PathError;
 
     fn try_from(path: &Path) -> Result<Self, Self::Error> {
-        let Some(file_name) = path.file_name() else { return Err(PathError::FileNameError("No file name in the path.")) };
-        let Some(file_name) = file_name.to_str() else { return Err(PathError::FileNameError("File name is not a valid UTF-8 string.")) };
+        let Some(file_name) = path.file_name() else {
+            return Err(PathError::FileNameError("No file name in the path."));
+        };
+        let Some(file_name) = file_name.to_str() else {
+            return Err(PathError::FileNameError(
+                "File name is not a valid UTF-8 string.",
+            ));
+        };
 
         if file_name.ends_with(MAP_FILE_SUFFIX) {
             Self::from_hex(&file_name[0..file_name.len() - MAP_FILE_SUFFIX.len()])

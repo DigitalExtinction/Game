@@ -257,8 +257,8 @@ async fn create_game() -> (Network, u16) {
 
     let port = {
         let Incomming::Data { reliable, id, data } = &(received.0)[0] else {
-        panic!("Unexpected data received: {:?}", received);
-    };
+            panic!("Unexpected data received: {:?}", received);
+        };
 
         assert!(reliable);
 

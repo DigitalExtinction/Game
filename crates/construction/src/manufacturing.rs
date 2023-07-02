@@ -355,7 +355,9 @@ fn enqueue(
     mut lines: Query<&mut AssemblyLine>,
 ) {
     for event in events.iter() {
-        let Ok(mut line) = lines.get_mut(event.factory()) else { continue };
+        let Ok(mut line) = lines.get_mut(event.factory()) else {
+            continue;
+        };
         info!(
             "Enqueueing manufacturing of {} in {:?}.",
             event.unit(),
@@ -410,7 +412,9 @@ fn produce(
         loop {
             assembly.blocks_mut().map_capacity = *player_count >= PLAYER_MAX_UNITS;
 
-            let Some(unit_type) = assembly.produce(time.elapsed()) else { break };
+            let Some(unit_type) = assembly.produce(time.elapsed()) else {
+                break;
+            };
             *player_count += 1;
 
             deliver_events.send(DeliverEvent::new(factory, unit_type));

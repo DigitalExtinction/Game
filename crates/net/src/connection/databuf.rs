@@ -58,7 +58,9 @@ impl DataBuf {
     ///
     /// Panics if `buf` len is smaller than length of found data.
     pub(super) fn get(&self, id: DatagramId, buf: &mut [u8]) -> Option<usize> {
-        let Some(slot_index) = self.slot_index(id) else { return None };
+        let Some(slot_index) = self.slot_index(id) else {
+            return None;
+        };
 
         let front = self.slots.front().unwrap();
         let slot = self.slots.get(slot_index).unwrap();
@@ -77,7 +79,9 @@ impl DataBuf {
     /// Removes data stored with ID `id` or does nothing if such data do not
     /// exist.
     pub(super) fn remove(&mut self, id: DatagramId) {
-        let Some(slot_index) = self.slot_index(id) else { return };
+        let Some(slot_index) = self.slot_index(id) else {
+            return;
+        };
         self.slots.get_mut(slot_index).unwrap().used = false;
 
         while let Some(front) = self.slots.front() {
@@ -94,7 +98,9 @@ impl DataBuf {
 
     /// Get index (withing slots deque) of the slot with ID `id`.
     fn slot_index(&self, id: DatagramId) -> Option<usize> {
-        let Some(&ordinal) = self.ordinals.get(&id) else { return None };
+        let Some(&ordinal) = self.ordinals.get(&id) else {
+            return None;
+        };
         // Slots can't be empty since the ordinal was found.
         let front = self.slots.front().unwrap();
         Some(ordinal.wrapping_sub(front.ordinal))

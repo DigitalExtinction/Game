@@ -38,7 +38,8 @@ pub(super) async fn run(
             break;
         }
 
-        let Ok(result) = timeout(Duration::from_millis(500), messages.recv(&mut buffer)).await else {
+        let Ok(result) = timeout(Duration::from_millis(500), messages.recv(&mut buffer)).await
+        else {
             continue;
         };
 

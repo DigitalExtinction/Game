@@ -105,7 +105,7 @@ fn update(
 ) {
     commands.entity(bar_node.0).despawn_descendants();
 
-    let Some(active) = active.0 else {return };
+    let Some(active) = active.0 else { return };
     let object_type = *objects.get(active).unwrap();
 
     if let Some(factory) = solids.get(object_type).factory() {

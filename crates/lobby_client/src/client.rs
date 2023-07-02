@@ -25,7 +25,9 @@ impl<'w> AuthenticatedClient<'w> {
         &self,
         requestable: &T,
     ) -> Result<Task<Result<T::Response>>> {
-        let Some(client) = self.client.as_ref() else { bail!("Client not yet set up.") };
+        let Some(client) = self.client.as_ref() else {
+            bail!("Client not yet set up.")
+        };
         let request = client.create(self.auth.token(), requestable)?;
         Ok(client.fire::<T>(request))
     }

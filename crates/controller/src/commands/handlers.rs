@@ -204,7 +204,9 @@ fn right_click_handler(
     }) {
         Some(enemy) => attack_events.send(GroupAttackEvent::new(enemy)),
         None => {
-            let Some(target) = pointer.terrain_point().map(|p| p.to_flat()) else { return };
+            let Some(target) = pointer.terrain_point().map(|p| p.to_flat()) else {
+                return;
+            };
             send_events.send(SendSelectedEvent::new(target));
             location_events.send(DeliveryLocationSelectedEvent::new(target));
         }
@@ -227,7 +229,10 @@ fn double_click_handler(
         SelectionMode::Replace
     };
 
-    let Some(targeted_entity_type) = pointer.entity().and_then(|entity| playable.get(entity).ok()) else {
+    let Some(targeted_entity_type) = pointer
+        .entity()
+        .and_then(|entity| playable.get(entity).ok())
+    else {
         return;
     };
 
@@ -244,7 +249,9 @@ fn move_camera_arrows_system(
     mut move_events: EventWriter<MoveCameraHorizontallyEvent>,
 ) {
     for key_event in key_events.iter() {
-        let Some(key_code) = key_event.key_code else { continue };
+        let Some(key_code) = key_event.key_code else {
+            continue;
+        };
 
         let mut direction = Vec2::ZERO;
         if key_code == KeyCode::Left {

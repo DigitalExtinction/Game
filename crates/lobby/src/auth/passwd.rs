@@ -53,7 +53,9 @@ impl DbPassword {
     /// Securely check that a given password corresponds to the password
     /// represented by `self`.
     pub(super) fn check(&self, password: &str) -> bool {
-        let Ok(hashed) = Self::hash(password, &self.1) else { return false };
+        let Ok(hashed) = Self::hash(password, &self.1) else {
+            return false;
+        };
         self.0.ct_eq(&hashed).into()
     }
 }

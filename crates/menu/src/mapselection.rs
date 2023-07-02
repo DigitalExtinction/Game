@@ -124,7 +124,7 @@ fn init_buttons(
 ) {
     let Some(mut task) = task else { return };
     let Some(result) = future::block_on(future::poll_once(&mut task.0)) else {
-        return
+        return;
     };
 
     let map_entries = match result {
