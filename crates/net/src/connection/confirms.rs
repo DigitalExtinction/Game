@@ -48,7 +48,7 @@ impl Confirmations {
     /// Send package confirmation datagrams.
     ///
     /// Not all confirmations are sent because there is a small delay to enable
-    /// groping.
+    /// grouping.
     ///
     /// # Arguments
     ///
