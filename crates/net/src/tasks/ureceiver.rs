@@ -1,4 +1,3 @@
-//! User message receiver
 use std::time::{Duration, Instant};
 
 use async_std::{
@@ -7,26 +6,26 @@ use async_std::{
 };
 use tracing::{error, info};
 
-use super::{cancellation::CancellationSender, dreceiver::InUserDatagram};
-use crate::{connection::Confirmations, InMessage};
+use super::{cancellation::CancellationSender, dreceiver::InPackageDatagram};
+use crate::{connection::Confirmations, InPackage};
 
 /// Handler of user datagrams, i.e. datagrams with user data targeted to
 /// higher-level users of the network protocol.
 ///
-/// The handler runs a loop which finishes when `datagrams` or `messages`
+/// The handler runs a loop which finishes when `datagrams` or `packages`
 /// channel is closed.
 pub(super) async fn run(
     port: u16,
     _cancellation: CancellationSender,
-    datagrams: Receiver<InUserDatagram>,
-    messages: Sender<InMessage>,
+    datagrams: Receiver<InPackageDatagram>,
+    packages: Sender<InPackage>,
     mut confirms: Confirmations,
 ) {
-    info!("Starting user message receiver on port {port}...");
+    info!("Starting package receiver on port {port}...");
 
     loop {
         let Ok(result) = timeout(Duration::from_millis(500), datagrams.recv()).await else {
-            if messages.is_closed() {
+            if packages.is_closed() {
                 break;
             } else {
                 continue;
@@ -44,8 +43,8 @@ pub(super) async fn run(
                 .await;
         }
 
-        let result = messages
-            .send(InMessage::new(
+        let result = packages
+            .send(InPackage::new(
                 datagram.data,
                 datagram.header.reliable(),
                 datagram.header.peers(),
@@ -58,5 +57,5 @@ pub(super) async fn run(
         }
     }
 
-    info!("User message receiver on port {port} finished.");
+    info!("Package receiver on port {port} finished.");
 }

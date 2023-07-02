@@ -10,8 +10,8 @@ use async_std::{
 
 use super::book::{Connection, ConnectionBook};
 use crate::{
-    header::{DatagramHeader, DatagramId},
-    messages::MAX_MESSAGE_SIZE,
+    header::{DatagramHeader, PackageId},
+    protocol::MAX_PACKAGE_SIZE,
     tasks::OutDatagram,
 };
 
@@ -33,11 +33,11 @@ impl Confirmations {
         }
     }
 
-    /// This method marks a message with `id` from `addr` as received.
+    /// This method marks a package with `id` from `addr` as received.
     ///
-    /// This method should be called exactly once after each reliable message
+    /// This method should be called exactly once after each reliable package
     /// is delivered.
-    pub(crate) async fn received(&mut self, time: Instant, addr: SocketAddr, id: DatagramId) {
+    pub(crate) async fn received(&mut self, time: Instant, addr: SocketAddr, id: PackageId) {
         self.book
             .lock()
             .await
@@ -45,7 +45,10 @@ impl Confirmations {
             .push(time, id);
     }
 
-    /// Send message confirmation packets which are ready to be send.
+    /// Send package confirmation datagrams.
+    ///
+    /// Not all confirmations are sent because there is a small delay to enable
+    /// grouping.
     ///
     /// # Arguments
     ///
@@ -71,7 +74,7 @@ impl Confirmations {
         while let Some((addr, buffer)) = book.next() {
             if let Some(expiration) = buffer.expiration() {
                 if force || expiration <= time || buffer.full() {
-                    while let Some(data) = buffer.flush(MAX_MESSAGE_SIZE) {
+                    while let Some(data) = buffer.flush(MAX_PACKAGE_SIZE) {
                         datagrams
                             .send(OutDatagram::new(
                                 DatagramHeader::Confirmation,
@@ -111,7 +114,7 @@ impl Buffer {
     }
 
     /// Pushes another datagram ID to the buffer.
-    fn push(&mut self, time: Instant, id: DatagramId) {
+    fn push(&mut self, time: Instant, id: PackageId) {
         if self.buffer.is_empty() {
             self.oldest = time;
         }

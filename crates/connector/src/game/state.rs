@@ -40,7 +40,7 @@ impl GameState {
         self.inner.write().await.remove(addr)
     }
 
-    /// Constructs and returns message targets which includes all or all but
+    /// Constructs and returns package targets which includes all or all but
     /// one players connected to the game. It returns None if there is no
     /// matching target.
     ///

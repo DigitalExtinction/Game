@@ -1,17 +1,17 @@
 use std::time::Duration;
 
 use async_std::{channel::Sender, future::timeout};
-use de_net::{MessageReceiver, Peers};
+use de_net::{PackageReceiver, Peers};
 use tracing::{error, info, warn};
 
 use super::greceiver::ToGameMessage;
-use crate::game::preceiver::PlayersMessage;
+use crate::game::preceiver::PlayersPackage;
 
 pub(super) async fn run(
     port: u16,
-    messages: MessageReceiver,
+    packages: PackageReceiver,
     server: Sender<ToGameMessage>,
-    players: Sender<PlayersMessage>,
+    players: Sender<PlayersPackage>,
 ) {
     info!("Starting game server input processor on port {port}...");
 
@@ -25,25 +25,25 @@ pub(super) async fn run(
             break;
         }
 
-        let Ok(message) = timeout(Duration::from_millis(500), messages.recv()).await else {
+        let Ok(package) = timeout(Duration::from_millis(500), packages.recv()).await else {
             continue;
         };
 
-        let Ok(message) = message else {
+        let Ok(package) = package else {
             error!("Inputs channel on port {port} was unexpectedly closed.");
             break;
         };
 
-        match message.peers() {
+        match package.peers() {
             Peers::Server => {
-                for item in message.decode() {
-                    match item {
-                        Ok(item) => {
+                for message_result in package.decode() {
+                    match message_result {
+                        Ok(message) => {
                             let result = server
                                 .send(ToGameMessage::new(
-                                    message.source(),
-                                    message.reliable(),
-                                    item,
+                                    package.source(),
+                                    package.reliable(),
+                                    message,
                                 ))
                                 .await;
                             if result.is_err() {
@@ -51,7 +51,7 @@ pub(super) async fn run(
                             }
                         }
                         Err(err) => {
-                            warn!("Received invalid message: {err:?}");
+                            warn!("Received invalid package: {err:?}");
                             break;
                         }
                     }
@@ -59,10 +59,10 @@ pub(super) async fn run(
             }
             Peers::Players => {
                 let _ = players
-                    .send(PlayersMessage::new(
-                        message.reliable(),
-                        message.source(),
-                        message.data(),
+                    .send(PlayersPackage::new(
+                        package.reliable(),
+                        package.source(),
+                        package.data(),
                     ))
                     .await;
             }

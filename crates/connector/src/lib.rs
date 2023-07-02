@@ -1,6 +1,6 @@
 use anyhow::Context;
 use async_std::task;
-use de_net::Network;
+use de_net::Socket;
 use tracing::{error, info};
 
 use crate::server::MainServer;
@@ -21,11 +21,11 @@ pub fn start() {
 }
 
 async fn start_inner() -> anyhow::Result<()> {
-    let net = Network::bind(Some(PORT))
+    let socket = Socket::bind(Some(PORT))
         .await
         .with_context(|| format!("Failed to open network on port {PORT}"))?;
     info!("Listening on port {PORT}");
 
-    let server = MainServer::start(net);
+    let server = MainServer::start(socket);
     server.run().await
 }

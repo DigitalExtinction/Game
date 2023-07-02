@@ -1,7 +1,7 @@
 use std::net::SocketAddr;
 
 use async_std::{channel::bounded, task};
-use de_net::{self, Network};
+use de_net::{self, Socket};
 
 use self::{greceiver::GameProcessor, state::GameState};
 
@@ -15,17 +15,17 @@ mod state;
 ///
 /// # Arguments
 ///
-/// * `net` - network interface to use for the game server.
+/// * `socket` - socket to use for the game server.
 ///
 /// * `owner` - address of the creator of the game. This client will be
 ///   automatically added to the game as if they sent [`de_net::ToGame::Join`].
-pub(crate) async fn startup(net: Network, owner: SocketAddr) {
-    let port = net.port();
+pub(crate) async fn startup(socket: Socket, owner: SocketAddr) {
+    let port = socket.port();
     let (outputs, inputs, errors) = de_net::startup(
         |t| {
             task::spawn(t);
         },
-        net,
+        socket,
     );
 
     let (server_sender, server_receiver) = bounded(16);

@@ -2,7 +2,7 @@ use std::collections::VecDeque;
 
 use ahash::AHashMap;
 
-use crate::header::DatagramId;
+use crate::header::PackageId;
 
 /// Data buffer based on a ring-buffer.
 ///
@@ -12,7 +12,7 @@ pub(super) struct DataBuf {
     data: VecDeque<u8>,
     slots: VecDeque<Slot>,
     /// Mapping from datagram ID to datagram ordinal. See [`Slot::ordinal`].
-    ordinals: AHashMap<DatagramId, usize>,
+    ordinals: AHashMap<PackageId, usize>,
 }
 
 impl DataBuf {
@@ -29,7 +29,7 @@ impl DataBuf {
     /// # Panics
     ///
     /// Panics if data with the same `id` is already stored.
-    pub(super) fn push(&mut self, id: DatagramId, data: &[u8]) {
+    pub(super) fn push(&mut self, id: PackageId, data: &[u8]) {
         let (ordinal, data_offset) = match self.slots.back() {
             Some(back) => (
                 back.ordinal.wrapping_add(1),
@@ -57,7 +57,7 @@ impl DataBuf {
     /// # Panics
     ///
     /// Panics if `buf` len is smaller than length of found data.
-    pub(super) fn get(&self, id: DatagramId, buf: &mut [u8]) -> Option<usize> {
+    pub(super) fn get(&self, id: PackageId, buf: &mut [u8]) -> Option<usize> {
         let Some(slot_index) = self.slot_index(id) else {
             return None;
         };
@@ -78,7 +78,7 @@ impl DataBuf {
 
     /// Removes data stored with ID `id` or does nothing if such data do not
     /// exist.
-    pub(super) fn remove(&mut self, id: DatagramId) {
+    pub(super) fn remove(&mut self, id: PackageId) {
         let Some(slot_index) = self.slot_index(id) else {
             return;
         };
@@ -97,7 +97,7 @@ impl DataBuf {
     }
 
     /// Get index (withing slots deque) of the slot with ID `id`.
-    fn slot_index(&self, id: DatagramId) -> Option<usize> {
+    fn slot_index(&self, id: PackageId) -> Option<usize> {
         let Some(&ordinal) = self.ordinals.get(&id) else {
             return None;
         };
@@ -149,22 +149,21 @@ mod tests {
         let mut data = DataBuf::new();
 
         assert!(data
-            .get(DatagramId::try_from(1).unwrap(), &mut buf)
+            .get(PackageId::try_from(1).unwrap(), &mut buf)
             .is_none());
 
-        data.push(DatagramId::try_from(12).unwrap(), &[1, 2, 3, 4, 5, 6]);
-        data.push(DatagramId::try_from(8).unwrap(), &[21, 22, 23]);
+        data.push(PackageId::try_from(12).unwrap(), &[1, 2, 3, 4, 5, 6]);
+        data.push(PackageId::try_from(8).unwrap(), &[21, 22, 23]);
         assert!(data
-            .get(DatagramId::try_from(1).unwrap(), &mut buf)
+            .get(PackageId::try_from(1).unwrap(), &mut buf)
             .is_none());
         assert_eq!(
-            data.get(DatagramId::try_from(8).unwrap(), &mut buf)
-                .unwrap(),
+            data.get(PackageId::try_from(8).unwrap(), &mut buf).unwrap(),
             3
         );
         assert_eq!(&buf[..3], &[21, 22, 23]);
         assert_eq!(
-            data.get(DatagramId::try_from(12).unwrap(), &mut buf)
+            data.get(PackageId::try_from(12).unwrap(), &mut buf)
                 .unwrap(),
             6
         );
@@ -172,19 +171,19 @@ mod tests {
 
         for i in 100..150 {
             for j in (0..20).rev() {
-                let id = DatagramId::try_from(i as u32 * 100 + j as u32).unwrap();
+                let id = PackageId::try_from(i as u32 * 100 + j as u32).unwrap();
                 data.push(id, &[i, j, 23]);
             }
 
             for j in 0..20 {
                 let id = i as u32 * 100 + j as u32;
                 assert_eq!(
-                    data.get(DatagramId::try_from(id).unwrap(), &mut buf)
+                    data.get(PackageId::try_from(id).unwrap(), &mut buf)
                         .unwrap(),
                     3
                 );
                 assert_eq!(&buf[..3], &[i, j, 23]);
-                data.remove(DatagramId::try_from(id).unwrap());
+                data.remove(PackageId::try_from(id).unwrap());
             }
         }
     }

@@ -4,7 +4,7 @@ use std::{
 };
 
 use async_std::{prelude::FutureExt, task};
-use de_net::Network;
+use de_net::Socket;
 use futures::join;
 use ntest::timeout;
 
@@ -47,7 +47,7 @@ impl ReceivedBuffer {
         })
     }
 
-    async fn load(&mut self, net: &mut Network, buf: &mut [u8; 1024]) {
+    async fn load(&mut self, net: &mut Socket, buf: &mut [u8; 1024]) {
         let (n, _) = net.recv(buf).await.unwrap();
         assert!(n >= 4);
 
@@ -100,7 +100,7 @@ enum Incomming {
 fn test() {
     let child = spawn_and_wait();
 
-    async fn first(mut client: Network, game_port: u16) {
+    async fn first(mut client: Socket, game_port: u16) {
         let server = SocketAddr::V4(SocketAddrV4::new(Ipv4Addr::LOCALHOST, game_port));
 
         let mut buffer = [0u8; 1024];
@@ -170,7 +170,7 @@ fn test() {
             .is_err());
     }
 
-    async fn second(mut client: Network, game_port: u16) {
+    async fn second(mut client: Socket, game_port: u16) {
         let server = SocketAddr::V4(SocketAddrV4::new(Ipv4Addr::LOCALHOST, game_port));
 
         let mut buffer = [0u8; 1024];
@@ -237,10 +237,10 @@ fn test() {
     term_and_wait(child);
 }
 
-async fn create_game() -> (Network, u16) {
+async fn create_game() -> (Socket, u16) {
     let mut buffer = [0u8; 1024];
 
-    let mut client = Network::bind(None).await.unwrap();
+    let mut client = Socket::bind(None).await.unwrap();
 
     // [64 + 32] -> reliable + Peers::Server
     // [0, 0, 7] -> datagram ID = 7
@@ -301,11 +301,11 @@ async fn create_game() -> (Network, u16) {
     (client, port)
 }
 
-async fn join_game(game_port: u16) -> Network {
+async fn join_game(game_port: u16) -> Socket {
     let mut buffer = [0u8; 1024];
 
     let server = SocketAddr::V4(SocketAddrV4::new(Ipv4Addr::LOCALHOST, game_port));
-    let mut client = Network::bind(None).await.unwrap();
+    let mut client = Socket::bind(None).await.unwrap();
 
     // [64 + 32] -> reliable + Peers::Server
     // [0, 0, 3] -> datagram ID = 3

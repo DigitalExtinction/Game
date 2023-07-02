@@ -4,8 +4,8 @@ use async_std::{channel::Sender, future::timeout};
 use tracing::{error, info, warn};
 
 use crate::{
-    header::{DataHeader, DatagramHeader},
-    messages::{Messages, MsgRecvError},
+    header::{DatagramHeader, PackageHeader},
+    protocol::{MsgRecvError, ProtocolSocket},
     MAX_DATAGRAM_SIZE,
 };
 
@@ -14,39 +14,38 @@ pub(super) struct InSystemDatagram {
     pub(super) data: Vec<u8>,
 }
 
-pub(super) struct InUserDatagram {
+pub(super) struct InPackageDatagram {
     pub(super) source: SocketAddr,
-    pub(super) header: DataHeader,
+    pub(super) header: PackageHeader,
     pub(super) data: Vec<u8>,
 }
 
-/// Handler of input datagrams received with `messages`.
+/// Handler of input datagrams received with `socket`.
 ///
 /// The handler runs a loop which finishes when `system_datagrams` or
 /// `user_datagrams` channel is closed.
 pub(super) async fn run(
     port: u16,
     system_datagrams: Sender<InSystemDatagram>,
-    user_datagrams: Sender<InUserDatagram>,
-    messages: Messages,
+    package_datagrams: Sender<InPackageDatagram>,
+    socket: ProtocolSocket,
 ) {
     info!("Starting datagram receiver on port {port}...");
     let mut buffer = [0u8; MAX_DATAGRAM_SIZE];
 
     loop {
-        if user_datagrams.is_closed() || system_datagrams.is_closed() {
+        if package_datagrams.is_closed() || system_datagrams.is_closed() {
             break;
         }
 
-        let Ok(result) = timeout(Duration::from_millis(500), messages.recv(&mut buffer)).await
-        else {
+        let Ok(result) = timeout(Duration::from_millis(500), socket.recv(&mut buffer)).await else {
             continue;
         };
 
         let (addr, header, data) = match result {
             Ok(msg) => msg,
             Err(err @ MsgRecvError::InvalidHeader(_)) => {
-                warn!("Invalid message received on port {port}: {err:?}");
+                warn!("Invalid datagram received on port {port}: {err:?}");
                 continue;
             }
             Err(err @ MsgRecvError::RecvError(_)) => {
@@ -66,11 +65,11 @@ pub(super) async fn run(
                     })
                     .await;
             }
-            DatagramHeader::Data(data_header) => {
-                let _ = user_datagrams
-                    .send(InUserDatagram {
+            DatagramHeader::Package(package_header) => {
+                let _ = package_datagrams
+                    .send(InPackageDatagram {
                         source: addr,
-                        header: data_header,
+                        header: package_header,
                         data: data.to_vec(),
                     })
                     .await;

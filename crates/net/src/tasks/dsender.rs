@@ -3,7 +3,7 @@ use tracing::{error, info};
 
 use crate::{
     header::DatagramHeader,
-    messages::{Messages, Targets},
+    protocol::{ProtocolSocket, Targets},
     MAX_DATAGRAM_SIZE,
 };
 
@@ -27,7 +27,7 @@ impl OutDatagram {
     }
 }
 
-pub(super) async fn run(port: u16, datagrams: Receiver<OutDatagram>, messages: Messages) {
+pub(super) async fn run(port: u16, datagrams: Receiver<OutDatagram>, socket: ProtocolSocket) {
     info!("Starting datagram sender on port {port}...");
     let mut buffer = [0u8; MAX_DATAGRAM_SIZE];
 
@@ -35,7 +35,7 @@ pub(super) async fn run(port: u16, datagrams: Receiver<OutDatagram>, messages: M
         let Ok(datagram) = datagrams.recv().await else {
             break;
         };
-        if let Err(err) = messages
+        if let Err(err) = socket
             .send(
                 &mut buffer,
                 datagram.header,

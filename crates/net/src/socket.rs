@@ -14,14 +14,14 @@ use thiserror::Error;
 /// <https://stackoverflow.com/a/35697810/4448708>
 pub const MAX_DATAGRAM_SIZE: usize = 508;
 
-/// This struct represents a low level network connection. The connection is
-/// based on UDP and is unreliable and unordered.
-pub struct Network {
+/// This struct represents a low level network socket. The socket is based on
+/// UDP and thus provides unreliable and unordered means of data delivery.
+pub struct Socket {
     socket: UdpSocket,
     port: u16,
 }
 
-impl Network {
+impl Socket {
     /// Creates / binds a new IPv4 based connection (socket).
     ///
     /// # Arguments
