@@ -262,12 +262,11 @@ fn check_attr(
 
     let arg = &closure.inputs[0];
     let Pat::Type(arg) = arg else {
-        return Err(syn::Error::new_spanned(
-            attr,
-            "expected a closure with one argument",
-        )
-            .to_compile_error()
-            .into());
+        return Err(
+            syn::Error::new_spanned(attr, "expected a closure with one argument")
+                .to_compile_error()
+                .into(),
+        );
     };
 
     let arg_type = quote! { &#field_type };

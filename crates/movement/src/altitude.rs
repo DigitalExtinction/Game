@@ -70,7 +70,9 @@ fn update(
 ) {
     objects.par_iter_mut().for_each_mut(
         |(&object_type, mut horizontal, mut climbing, transform)| {
-            let Some(flight) = solids.get(object_type).flight() else { return };
+            let Some(flight) = solids.get(object_type).flight() else {
+                return;
+            };
             let height = transform.translation.y;
 
             let desired_height = if horizontal.stationary() {

@@ -88,7 +88,9 @@ fn click_handler(
     bounds: Res<MapBounds>,
     mut click_events: EventWriter<MinimapClickEvent>,
 ) {
-    let Some(cursor) = window_query.single().cursor_position() else { return };
+    let Some(cursor) = window_query.single().cursor_position() else {
+        return;
+    };
     for event in input_events.iter() {
         if event.state != ButtonState::Released {
             continue;

@@ -18,9 +18,7 @@ where
     F: Fn() -> Option<SyncPathBuf>,
 {
     let Some(base_dir) = base_dir() else {
-        return Err(
-            DirError("Base directory cannot be established.")
-       );
+        return Err(DirError("Base directory cannot be established."));
     };
 
     Ok(AsyncPathBuf::from(base_dir).join("DigitalExtinction"))

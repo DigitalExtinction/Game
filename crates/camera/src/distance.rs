@@ -48,7 +48,9 @@ fn init<T: Component>(
     camera: Query<&Transform, With<Camera3d>>,
     objects: Query<(Entity, &Transform), Added<T>>,
 ) {
-    let Ok(cam_transform) = camera.get_single() else { return };
+    let Ok(cam_transform) = camera.get_single() else {
+        return;
+    };
 
     for (entity, transform) in objects.iter() {
         commands.entity(entity).insert(CameraDistance(
@@ -61,7 +63,9 @@ fn update(
     camera: Query<&Transform, With<Camera3d>>,
     mut objects: Query<(&Transform, &mut CameraDistance)>,
 ) {
-    let Ok(cam_transform) = camera.get_single() else { return };
+    let Ok(cam_transform) = camera.get_single() else {
+        return;
+    };
 
     for (transform, mut camera_distance) in objects.iter_mut() {
         let distance = cam_transform.translation.distance(transform.translation);

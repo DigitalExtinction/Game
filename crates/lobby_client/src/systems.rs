@@ -31,7 +31,9 @@ fn setup_client(
     if client.is_some() {
         return true.into();
     }
-    let Some(conf) = conf else { return false.into() };
+    let Some(conf) = conf else {
+        return false.into();
+    };
 
     let client = LobbyClient::build(conf.multiplayer().server().clone());
     commands.insert_resource(client);
@@ -42,7 +44,9 @@ fn set_token<T>(mut events: EventReader<ResponseEvent<T>>, mut auth: ResMut<Auth
 where
     T: LobbyRequest<Response = Token>,
 {
-    let Some(event) = events.iter().last() else { return };
+    let Some(event) = events.iter().last() else {
+        return;
+    };
     let Ok(token) = event.result() else { return };
     auth.set_token(token.token().to_owned());
 }

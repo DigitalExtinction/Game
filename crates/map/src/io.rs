@@ -51,8 +51,9 @@ pub async fn load_metadata<P: AsRef<Path>>(path: P) -> LoadingResult<MapMetadata
         let mut entry = loading_io_error!(entry);
         let path = loading_io_error!(entry.path());
         let Some(path) = path.to_str() else {
-            return Err(MapLoadingError::ArchiveContent(
-                String::from("The map archive contains an entry with non-UTF-8 path.")));
+            return Err(MapLoadingError::ArchiveContent(String::from(
+                "The map archive contains an entry with non-UTF-8 path.",
+            )));
         };
 
         if path == METADATA_JSON_ENTRY {
@@ -78,8 +79,9 @@ pub async fn load_map<P: AsRef<Path>>(path: P) -> LoadingResult<Map> {
         let mut entry = loading_io_error!(entry);
         let path = loading_io_error!(entry.path());
         let Some(path) = path.to_str() else {
-            return Err(MapLoadingError::ArchiveContent(
-                String::from("The map archive contains an entry with non-UTF-8 path.")));
+            return Err(MapLoadingError::ArchiveContent(String::from(
+                "The map archive contains an entry with non-UTF-8 path.",
+            )));
         };
 
         if path == METADATA_JSON_ENTRY {

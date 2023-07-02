@@ -64,7 +64,9 @@ impl<'w, 's> ButtonOps<'w, 's> {
     /// [`Text`] component. The text must consist of a single section. If such
     /// a child is found, its text is changed.
     pub fn set_text(&mut self, entity: Entity, text: String) -> Result<(), &'static str> {
-        let Ok(children) = self.button_query.get(entity) else { return Err("Button does not exist.") };
+        let Ok(children) = self.button_query.get(entity) else {
+            return Err("Button does not exist.");
+        };
         for &child in children.iter() {
             if let Ok(mut text_component) = self.text_query.get_mut(child) {
                 if text_component.sections.len() == 1 {

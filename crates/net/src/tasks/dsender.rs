@@ -32,7 +32,9 @@ pub(super) async fn run(port: u16, datagrams: Receiver<OutDatagram>, messages: M
     let mut buffer = [0u8; MAX_DATAGRAM_SIZE];
 
     loop {
-        let Ok(datagram) = datagrams.recv().await else { break };
+        let Ok(datagram) = datagrams.recv().await else {
+            break;
+        };
         if let Err(err) = messages
             .send(
                 &mut buffer,
