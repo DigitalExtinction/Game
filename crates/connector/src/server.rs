@@ -3,7 +3,7 @@ use std::net::SocketAddr;
 use anyhow::Context;
 use async_std::task;
 use de_net::{
-    self, FromServer, MessageDecoder, PackageReceiver, PackageSender, OutPackage, Peers, Socket,
+    self, FromServer, MessageDecoder, OutPackage, PackageReceiver, PackageSender, Peers, Socket,
     ToServer,
 };
 use tracing::{error, info, warn};
@@ -19,30 +19,30 @@ pub(crate) struct MainServer {
 
 impl MainServer {
     /// Setup the server & startup its network stack.
-    pub(crate) fn start(net: Socket) -> Self {
+    pub(crate) fn start(socket: Socket) -> Self {
         let (outputs, inputs, _) = de_net::startup(
             |t| {
                 task::spawn(t);
             },
-            net,
+            socket,
         );
         Self { outputs, inputs }
     }
 
     pub(crate) async fn run(mut self) -> anyhow::Result<()> {
         loop {
-            let message = self
+            let package = self
                 .inputs
                 .recv()
                 .await
                 .context("Inputs channel unexpectedly closed")?;
 
-            match message.peers() {
+            match package.peers() {
                 Peers::Players => {
-                    warn!("Message for players unexpectedly received.");
+                    warn!("Package for players unexpectedly received.");
                 }
                 Peers::Server => {
-                    self.process(message.source(), message.decode()).await?;
+                    self.process(package.source(), package.decode()).await?;
                 }
             }
         }
@@ -53,9 +53,9 @@ impl MainServer {
         source: SocketAddr,
         messages: MessageDecoder<'_, ToServer>,
     ) -> anyhow::Result<()> {
-        for message in messages {
-            let Ok(message) = message else {
-                warn!("Invalid message received");
+        for message_result in messages {
+            let Ok(message) = message_result else {
+                warn!("Invalid package received");
                 return Ok(());
             };
 
@@ -70,11 +70,11 @@ impl MainServer {
 
     async fn open_game(&mut self, source: SocketAddr) -> anyhow::Result<()> {
         match Socket::bind(None).await {
-            Ok(net) => {
-                let port = net.port();
+            Ok(socket) => {
+                let port = socket.port();
                 info!("Starting new game on port {port}.");
                 self.reply(&FromServer::GameOpened { port }, source).await?;
-                game::startup(net, source).await;
+                game::startup(socket, source).await;
                 Ok(())
             }
             Err(error) => {

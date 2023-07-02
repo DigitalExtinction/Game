@@ -1,19 +1,19 @@
 use std::net::SocketAddr;
 
 use async_std::channel::Receiver;
-use de_net::{PackageSender, OutPackage, Peers};
+use de_net::{OutPackage, PackageSender, Peers};
 use tracing::{error, info};
 
 use super::state::GameState;
 
-/// A data message destined to other players in the game.
-pub(super) struct PlayersMessage {
+/// A package destined to other players in the game.
+pub(super) struct PlayersPackage {
     reliable: bool,
     source: SocketAddr,
     data: Vec<u8>,
 }
 
-impl PlayersMessage {
+impl PlayersPackage {
     pub(super) fn new(reliable: bool, source: SocketAddr, data: Vec<u8>) -> Self {
         Self {
             reliable,
@@ -25,14 +25,14 @@ impl PlayersMessage {
 
 pub(super) async fn run(
     port: u16,
-    messages: Receiver<PlayersMessage>,
+    packages: Receiver<PlayersPackage>,
     outputs: PackageSender,
     state: GameState,
 ) {
-    info!("Starting game player message handler on port {port}...");
+    info!("Starting game player package handler on port {port}...");
 
     loop {
-        if messages.is_closed() {
+        if packages.is_closed() {
             break;
         }
 
@@ -41,18 +41,18 @@ pub(super) async fn run(
             break;
         }
 
-        let Ok(message) = messages.recv().await else {
+        let Ok(package) = packages.recv().await else {
             break;
         };
 
-        let Some(targets) = state.targets(Some(message.source)).await else {
+        let Some(targets) = state.targets(Some(package.source)).await else {
             continue;
         };
 
         let result = outputs
             .send(OutPackage::new(
-                message.data,
-                message.reliable,
+                package.data,
+                package.reliable,
                 Peers::Players,
                 targets,
             ))
@@ -62,5 +62,5 @@ pub(super) async fn run(
         }
     }
 
-    info!("Game player message handler on port {port} finished.");
+    info!("Game player package handler on port {port} finished.");
 }
