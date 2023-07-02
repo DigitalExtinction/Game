@@ -26,6 +26,9 @@ overflow-checks = true
 [profile.testing.package."*"]
 opt-level = 3
 
+[features]
+godmode = ["de_spawner/godmode"]
+
 [dependencies]
 # DE
 de_audio.workspace = true
