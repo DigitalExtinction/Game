@@ -16,12 +16,12 @@ const SERVER_PEER_BIT: u8 = 0b0010_0000;
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub(crate) enum DatagramHeader {
     Confirmation,
-    Data(DataHeader),
+    Package(PackageHeader),
 }
 
 impl DatagramHeader {
-    pub(crate) fn new_data(reliable: bool, peers: Peers, id: DatagramId) -> Self {
-        Self::Data(DataHeader {
+    pub(crate) fn new_package(reliable: bool, peers: Peers, id: PackageId) -> Self {
+        Self::Package(PackageHeader {
             reliable,
             peers,
             id,
@@ -37,15 +37,15 @@ impl DatagramHeader {
         assert!(buf.len() >= HEADER_SIZE);
         let (mask, id) = match self {
             Self::Confirmation => (CONTROL_BIT, [0, 0, 0]),
-            Self::Data(data_header) => {
+            Self::Package(package_header) => {
                 let mut mask = 0;
-                if data_header.reliable {
+                if package_header.reliable {
                     mask |= RELIABLE_BIT;
                 }
-                if matches!(data_header.peers, Peers::Server) {
+                if matches!(package_header.peers, Peers::Server) {
                     mask |= SERVER_PEER_BIT;
                 }
-                (mask, data_header.id.to_bytes())
+                (mask, package_header.id.to_bytes())
             }
         };
 
@@ -77,10 +77,10 @@ impl DatagramHeader {
             } else {
                 Peers::Players
             };
-            Ok(Self::Data(DataHeader {
+            Ok(Self::Package(PackageHeader {
                 reliable,
                 peers,
-                id: DatagramId::from_bytes(&data[1..HEADER_SIZE]),
+                id: PackageId::from_bytes(&data[1..HEADER_SIZE]),
             }))
         }
     }
@@ -90,10 +90,10 @@ impl fmt::Display for DatagramHeader {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Self::Confirmation => write!(f, "Confirmation"),
-            Self::Data(header) => {
+            Self::Package(header) => {
                 write!(
                     f,
-                    "Data {{ reliable: {}, peers: {}, id: {} }}",
+                    "Package {{ reliable: {}, peers: {}, id: {} }}",
                     header.reliable, header.peers, header.id
                 )
             }
@@ -102,15 +102,14 @@ impl fmt::Display for DatagramHeader {
 }
 
 #[derive(Clone, Copy, Debug, PartialEq)]
-pub(crate) struct DataHeader {
-    /// True if the datagram is delivered reliably.
+pub(crate) struct PackageHeader {
+    /// True if the package is delivered reliably.
     reliable: bool,
     peers: Peers,
-    /// ID of the datagram.
-    id: DatagramId,
+    id: PackageId,
 }
 
-impl DataHeader {
+impl PackageHeader {
     pub(crate) fn reliable(&self) -> bool {
         self.reliable
     }
@@ -119,7 +118,7 @@ impl DataHeader {
         self.peers
     }
 
-    pub(crate) fn id(&self) -> DatagramId {
+    pub(crate) fn id(&self) -> PackageId {
         self.id
     }
 }
@@ -148,9 +147,9 @@ pub(crate) enum HeaderError {
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
-pub(crate) struct DatagramId(u32);
+pub(crate) struct PackageId(u32);
 
-impl DatagramId {
+impl PackageId {
     pub(crate) const fn zero() -> Self {
         Self(0)
     }
@@ -185,13 +184,13 @@ impl DatagramId {
     }
 }
 
-impl fmt::Display for DatagramId {
+impl fmt::Display for PackageId {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{}", self.0)
     }
 }
 
-impl TryFrom<u32> for DatagramId {
+impl TryFrom<u32> for PackageId {
     type Error = &'static str;
 
     fn try_from(value: u32) -> Result<Self, Self::Error> {
@@ -211,14 +210,14 @@ mod tests {
     fn test_write_header() {
         let mut buf = [0u8; 256];
 
-        DatagramHeader::new_data(false, Peers::Server, DatagramId::zero()).write(&mut buf);
+        DatagramHeader::new_package(false, Peers::Server, PackageId::zero()).write(&mut buf);
         assert_eq![&buf[0..4], &[0b0010_0000, 0, 0, 0]];
         assert_eq![&buf[4..], &[0; 252]];
-        DatagramHeader::new_data(true, Peers::Server, 256.try_into().unwrap()).write(&mut buf);
+        DatagramHeader::new_package(true, Peers::Server, 256.try_into().unwrap()).write(&mut buf);
         assert_eq![&buf[0..4], &[0b0110_0000, 0, 1, 0]];
         assert_eq![&buf[4..], &[0; 252]];
 
-        DatagramHeader::new_data(true, Peers::Players, 1033.try_into().unwrap()).write(&mut buf);
+        DatagramHeader::new_package(true, Peers::Players, 1033.try_into().unwrap()).write(&mut buf);
         assert_eq![&buf[0..4], &[0b0100_0000, 0, 4, 9]];
         assert_eq![&buf[4..], &[0; 252]];
     }
@@ -230,28 +229,28 @@ mod tests {
         buf[0..4].copy_from_slice(&[64, 0, 0, 0]);
         assert_eq!(
             DatagramHeader::read(&buf).unwrap(),
-            DatagramHeader::new_data(true, Peers::Players, 0.try_into().unwrap())
+            DatagramHeader::new_package(true, Peers::Players, 0.try_into().unwrap())
         );
 
         buf[0..4].copy_from_slice(&[64, 1, 0, 3]);
         assert_eq!(
             DatagramHeader::read(&buf).unwrap(),
-            DatagramHeader::new_data(true, Peers::Players, 65539.try_into().unwrap())
+            DatagramHeader::new_package(true, Peers::Players, 65539.try_into().unwrap())
         );
 
         buf[0..4].copy_from_slice(&[32, 0, 0, 2]);
         assert_eq!(
             DatagramHeader::read(&buf).unwrap(),
-            DatagramHeader::new_data(false, Peers::Server, 2.try_into().unwrap())
+            DatagramHeader::new_package(false, Peers::Server, 2.try_into().unwrap())
         );
     }
 
     #[test]
     fn test_id() {
-        let id = DatagramId::from_bytes(&[0, 1, 0]);
+        let id = PackageId::from_bytes(&[0, 1, 0]);
         assert_eq!(id.incremented().to_bytes(), [0, 1, 1]);
 
-        let id: DatagramId = 0xffffff.try_into().unwrap();
+        let id: PackageId = 0xffffff.try_into().unwrap();
         assert_eq!(id.incremented(), 0.try_into().unwrap());
     }
 }

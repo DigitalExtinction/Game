@@ -6,8 +6,8 @@ use tracing::{error, info};
 use super::{cancellation::CancellationSender, dsender::OutDatagram};
 use crate::{
     connection::Resends,
-    header::{DatagramHeader, DatagramId},
-    OutMessage,
+    header::{DatagramHeader, PackageId},
+    OutPackage,
 };
 
 /// Handler & scheduler of datagram resends.
@@ -15,32 +15,32 @@ pub(super) async fn run(
     port: u16,
     _cancellation: CancellationSender,
     datagrams: Sender<OutDatagram>,
-    messages: Receiver<OutMessage>,
+    packages: Receiver<OutPackage>,
     mut resends: Resends,
 ) {
-    info!("Starting user message sender on port {port}...");
+    info!("Starting package sender on port {port}...");
 
-    let mut counter = DatagramId::zero();
+    let mut counter = PackageId::zero();
 
     loop {
-        let Ok(message) = messages.recv().await else {
+        let Ok(package) = packages.recv().await else {
             break;
         };
 
-        let header = DatagramHeader::new_data(message.reliable(), message.peers(), counter);
+        let header = DatagramHeader::new_package(package.reliable(), package.peers(), counter);
         counter = counter.incremented();
 
-        if let DatagramHeader::Data(data_header) = header {
-            if data_header.reliable() {
+        if let DatagramHeader::Package(package_header) = header {
+            if package_header.reliable() {
                 let time = Instant::now();
-                for target in &message.targets {
+                for target in &package.targets {
                     resends
                         .sent(
                             time,
                             target,
-                            data_header.id(),
-                            data_header.peers(),
-                            &message.data,
+                            package_header.id(),
+                            package_header.peers(),
+                            &package.data,
                         )
                         .await;
                 }
@@ -48,7 +48,7 @@ pub(super) async fn run(
         }
 
         let closed = datagrams
-            .send(OutDatagram::new(header, message.data, message.targets))
+            .send(OutDatagram::new(header, package.data, package.targets))
             .await
             .is_err();
 
@@ -58,5 +58,5 @@ pub(super) async fn run(
         }
     }
 
-    info!("User message sender on port {port} finished.");
+    info!("Package sender on port {port} finished.");
 }

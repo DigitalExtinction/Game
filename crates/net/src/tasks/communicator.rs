@@ -9,26 +9,26 @@ use bincode::{
 
 use crate::{
     header::Peers,
-    messages::{Targets, MAX_MESSAGE_SIZE},
+    protocol::{Targets, MAX_PACKAGE_SIZE},
 };
 
-const BINCODE_CONF: Configuration<BigEndian, Varint, Limit<MAX_MESSAGE_SIZE>> =
+const BINCODE_CONF: Configuration<BigEndian, Varint, Limit<MAX_PACKAGE_SIZE>> =
     bincode::config::standard()
         .with_big_endian()
         .with_variable_int_encoding()
-        .with_limit::<MAX_MESSAGE_SIZE>();
+        .with_limit::<MAX_PACKAGE_SIZE>();
 
-/// It cumulatively builds output messages from encodable data items.
-pub struct OutMessageBuilder {
+/// It cumulatively builds output packages from individual messages.
+pub struct PackageBuilder {
     reliable: bool,
     peers: Peers,
     targets: Targets<'static>,
     buffer: Vec<u8>,
     used: usize,
-    messages: Vec<OutMessage>,
+    packages: Vec<OutPackage>,
 }
 
-impl OutMessageBuilder {
+impl PackageBuilder {
     pub fn new<T>(reliable: bool, peers: Peers, targets: T) -> Self
     where
         T: Into<Targets<'static>>,
@@ -37,71 +37,73 @@ impl OutMessageBuilder {
             reliable,
             peers,
             targets: targets.into(),
-            buffer: vec![0; MAX_MESSAGE_SIZE],
+            buffer: vec![0; MAX_PACKAGE_SIZE],
             used: 0,
-            messages: Vec::new(),
+            packages: Vec::new(),
         }
     }
 
-    /// Build output messages from all pushed data items. Data items are split
-    /// among the messages in order.
-    pub fn build(mut self) -> Vec<OutMessage> {
-        let mut messages = self.messages;
+    /// Build output packages from all pushed messages.
+    ///
+    /// The messages are distributed among the packages in a sequential order.
+    /// Each package is filled with as many messages as it can accommodate.
+    pub fn build(mut self) -> Vec<OutPackage> {
+        let mut packages = self.packages;
 
         if self.used > 0 {
             self.buffer.truncate(self.used);
-            let message =
-                OutMessage::new(self.buffer, self.reliable, self.peers, self.targets.clone());
-            messages.push(message);
+            let package =
+                OutPackage::new(self.buffer, self.reliable, self.peers, self.targets.clone());
+            packages.push(package);
         }
 
-        messages
+        packages
     }
 
-    /// Push another data item to the builder so that it is included in one of
-    /// the resulting messages.
-    pub fn push<E>(&mut self, payload: &E) -> Result<(), EncodeError>
+    /// Push another message to the builder so that it is included in one of
+    /// the resulting packages.
+    pub fn push<E>(&mut self, message: &E) -> Result<(), EncodeError>
     where
         E: bincode::Encode,
     {
-        match self.push_inner(payload) {
+        match self.push_inner(message) {
             Err(EncodeError::UnexpectedEnd) => {
-                let mut data = vec![0; MAX_MESSAGE_SIZE];
+                let mut data = vec![0; MAX_PACKAGE_SIZE];
                 mem::swap(&mut data, &mut self.buffer);
                 data.truncate(self.used);
                 self.used = 0;
 
-                let message =
-                    OutMessage::new(data, self.reliable, self.peers, self.targets.clone());
-                self.messages.push(message);
+                let package =
+                    OutPackage::new(data, self.reliable, self.peers, self.targets.clone());
+                self.packages.push(package);
 
-                self.push_inner(payload)
+                self.push_inner(message)
             }
             Err(err) => Err(err),
             Ok(()) => Ok(()),
         }
     }
 
-    fn push_inner<E>(&mut self, payload: &E) -> Result<(), EncodeError>
+    fn push_inner<E>(&mut self, message: &E) -> Result<(), EncodeError>
     where
         E: bincode::Encode,
     {
-        let len = encode_into_slice(payload, &mut self.buffer[self.used..], BINCODE_CONF)?;
+        let len = encode_into_slice(message, &mut self.buffer[self.used..], BINCODE_CONF)?;
         self.used += len;
         Ok(())
     }
 }
 
-/// A message / datagram to be delivered.
-pub struct OutMessage {
+/// A package to be send.
+pub struct OutPackage {
     pub(super) data: Vec<u8>,
     reliable: bool,
     peers: Peers,
     pub(super) targets: Targets<'static>,
 }
 
-impl OutMessage {
-    /// Creates datagram message from a single encodable item.
+impl OutPackage {
+    /// Creates a package from a single message.
     ///
     /// See also [`Self::new`].
     pub fn encode_single<E, T>(
@@ -124,16 +126,16 @@ impl OutMessage {
     ///
     /// * `reliable` - whether to deliver the data reliably.
     ///
-    /// * `targets` - message recipients.
+    /// * `targets` - package recipients.
     ///
     /// # Panics
     ///
-    /// Panics if data is longer than [`MAX_MESSAGE_SIZE`].
+    /// Panics if data is longer than [`MAX_PACKAGE_SIZE`].
     pub fn new<T>(data: Vec<u8>, reliable: bool, peers: Peers, targets: T) -> Self
     where
         T: Into<Targets<'static>>,
     {
-        assert!(data.len() < MAX_MESSAGE_SIZE);
+        assert!(data.len() < MAX_PACKAGE_SIZE);
         Self {
             data,
             reliable,
@@ -152,14 +154,14 @@ impl OutMessage {
 }
 
 /// A received message / datagram.
-pub struct InMessage {
+pub struct InPackage {
     data: Vec<u8>,
     reliable: bool,
     peers: Peers,
     source: SocketAddr,
 }
 
-impl InMessage {
+impl InPackage {
     pub(super) fn new(data: Vec<u8>, reliable: bool, peers: Peers, source: SocketAddr) -> Self {
         Self {
             data,
@@ -173,7 +175,7 @@ impl InMessage {
         self.data
     }
 
-    /// Interpret the data as a sequence of encoded items.
+    /// Interpret the data as a sequence of encoded messages.
     pub fn decode<E>(&self) -> MessageDecoder<E>
     where
         E: bincode::Decode,
@@ -230,7 +232,7 @@ where
     }
 }
 
-/// This error indicates failure to deliver a message to the target.
+/// This error indicates failure to deliver a package to the target.
 pub struct ConnectionError {
     target: SocketAddr,
 }
@@ -249,10 +251,10 @@ impl ConnectionError {
 ///
 /// The data-sending components of the networking stack are halted when this
 /// channel is closed (dropped).
-pub struct MessageSender(pub(crate) Sender<OutMessage>);
+pub struct PackageSender(pub(crate) Sender<OutPackage>);
 
-impl Deref for MessageSender {
-    type Target = Sender<OutMessage>;
+impl Deref for PackageSender {
+    type Target = Sender<OutPackage>;
 
     fn deref(&self) -> &Self::Target {
         &self.0
@@ -261,15 +263,15 @@ impl Deref for MessageSender {
 
 /// Channel into networking stack tasks, used for data receiving.
 ///
-/// This is based on a bounded queue, so non-receiving of messages can
+/// This is based on a bounded queue, so non-receiving of packages can
 /// eventually block the networking stack.
 ///
 /// The data-receiving components of the networking stack are halted when this
 /// channel is closed or dropped.
-pub struct MessageReceiver(pub(crate) Receiver<InMessage>);
+pub struct PackageReceiver(pub(crate) Receiver<InPackage>);
 
-impl Deref for MessageReceiver {
-    type Target = Receiver<InMessage>;
+impl Deref for PackageReceiver {
+    type Target = Receiver<InPackage>;
 
     fn deref(&self) -> &Self::Target {
         &self.0
@@ -308,7 +310,7 @@ mod tests {
             values: [u64; 16], // up to 128 bytes
         }
 
-        let mut builder = OutMessageBuilder::new(
+        let mut builder = PackageBuilder::new(
             true,
             Peers::Players,
             "127.0.0.1:1111".parse::<SocketAddr>().unwrap(),
@@ -323,20 +325,20 @@ mod tests {
                 .unwrap();
         }
 
-        let messages = builder.build();
-        assert_eq!(messages.len(), 4);
+        let packages = builder.build();
+        assert_eq!(packages.len(), 4);
         // 3 items + something extra for the encoding
-        assert!(messages[0].data.len() >= 128 * 3);
+        assert!(packages[0].data.len() >= 128 * 3);
         // less then 4 items
-        assert!(messages[0].data.len() < 128 * 4);
+        assert!(packages[0].data.len() < 128 * 4);
 
-        assert!(messages[1].data.len() >= 128 * 3);
-        assert!(messages[1].data.len() < 128 * 4);
-        assert!(messages[2].data.len() >= 128 * 3);
-        assert!(messages[2].data.len() < 128 * 4);
+        assert!(packages[1].data.len() >= 128 * 3);
+        assert!(packages[1].data.len() < 128 * 4);
+        assert!(packages[2].data.len() >= 128 * 3);
+        assert!(packages[2].data.len() < 128 * 4);
         // last one contains only one leftover item
-        assert!(messages[3].data.len() >= 128);
-        assert!(messages[3].data.len() < 128 * 2);
+        assert!(packages[3].data.len() >= 128);
+        assert!(packages[3].data.len() < 128 * 2);
     }
 
     #[test]
@@ -347,7 +349,7 @@ mod tests {
             Two([u32; 2]),
         }
 
-        let message = InMessage {
+        let package = InPackage {
             // Message::Two([3, 4]), Message::One(1286)
             data: vec![1, 3, 4, 0, 251, 5, 6],
             reliable: false,
@@ -355,7 +357,7 @@ mod tests {
             source: "127.0.0.1:1111".parse().unwrap(),
         };
 
-        let mut items: MessageDecoder<Message> = message.decode();
+        let mut items: MessageDecoder<Message> = package.decode();
         let first = items.next().unwrap().unwrap();
         assert_eq!(first, Message::Two([3, 4]));
         let second = items.next().unwrap().unwrap();

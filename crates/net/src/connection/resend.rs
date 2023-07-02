@@ -16,7 +16,7 @@ use super::{
     databuf::DataBuf,
 };
 use crate::{
-    header::{DatagramHeader, DatagramId, Peers},
+    header::{DatagramHeader, PackageId, Peers},
     tasks::OutDatagram,
 };
 
@@ -39,7 +39,7 @@ impl Resends {
         &mut self,
         time: Instant,
         addr: SocketAddr,
-        id: DatagramId,
+        id: PackageId,
         peers: Peers,
         data: &[u8],
     ) {
@@ -48,9 +48,9 @@ impl Resends {
         queue.push(id, peers, data, time);
     }
 
-    /// Processes message with datagram confirmations.
+    /// Processes data with package confirmations.
     ///
-    /// The data encode IDs of delivered (and confirmed) messages so that they
+    /// The data encode IDs of delivered (and confirmed) packages so that they
     /// can be forgotten.
     pub(crate) async fn confirmed(&mut self, time: Instant, addr: SocketAddr, data: &[u8]) {
         let mut book = self.book.lock().await;
@@ -58,12 +58,12 @@ impl Resends {
 
         for i in 0..data.len() / 3 {
             let offset = i * 3;
-            let id = DatagramId::from_bytes(&data[offset..offset + 3]);
+            let id = PackageId::from_bytes(&data[offset..offset + 3]);
             queue.resolve(id);
         }
     }
 
-    /// Re-send all messages already due for re-sending.
+    /// Re-send all packages already due for re-sending.
     pub(crate) async fn resend(
         &mut self,
         time: Instant,
@@ -84,7 +84,7 @@ impl Resends {
                     RescheduleResult::Resend { len, id, peers } => {
                         datagrams
                             .send(OutDatagram::new(
-                                DatagramHeader::new_data(true, peers, id),
+                                DatagramHeader::new_package(true, peers, id),
                                 buf[..len].to_vec(),
                                 addr,
                             ))
@@ -129,11 +129,11 @@ pub(crate) struct ResendResult {
     pub(crate) next: Instant,
 }
 
-/// This struct governs reliable message re-sending (until each message is
+/// This struct governs reliable package re-sending (until each package is
 /// confirmed).
 struct Queue {
-    queue: PriorityQueue<DatagramId, Timing>,
-    meta: AHashMap<DatagramId, Peers>,
+    queue: PriorityQueue<PackageId, Timing>,
+    meta: AHashMap<PackageId, Peers>,
     data: DataBuf,
 }
 
@@ -151,16 +151,16 @@ impl Queue {
         self.queue.len()
     }
 
-    /// Registers new message for re-sending until it is resolved.
-    fn push(&mut self, id: DatagramId, peers: Peers, data: &[u8], now: Instant) {
+    /// Registers new package for re-sending until it is resolved.
+    fn push(&mut self, id: PackageId, peers: Peers, data: &[u8], now: Instant) {
         self.queue.push(id, Timing::new(now));
         self.meta.insert(id, peers);
         self.data.push(id, data);
     }
 
-    /// Marks a message as delivered. No more re-sends will be scheduled and
-    /// message data will be dropped.
-    fn resolve(&mut self, id: DatagramId) {
+    /// Marks a package as delivered. No more re-sends will be scheduled and
+    /// package data will be dropped.
+    fn resolve(&mut self, id: PackageId) {
         let result = self.queue.remove(&id);
         if result.is_some() {
             self.meta.remove(&id);
@@ -168,22 +168,22 @@ impl Queue {
         }
     }
 
-    /// Retrieves next message to be resend or None if there is not (yet) such
-    /// a message.
+    /// Retrieves next package to be resend or None if there is not (yet) such
+    /// a package.
     ///
-    /// Each message is resent multiple times with randomized exponential
+    /// Each package is resent multiple times with randomized exponential
     /// backoff.
     ///
     /// # Arguments
     ///
-    /// * `buf` - the message data is written to this buffer. The buffer length
-    ///   must be greater or equal to the length of the message.
+    /// * `buf` - the package payload is written to this buffer. The buffer
+    ///   length must be greater or equal to the length of the payload.
     ///
     /// * `now` - current time, used for the retry scheduling.
     ///
     /// # Panics
     ///
-    /// Panics if `buf` is smaller than the retrieved message.
+    /// Panics if `buf` is smaller than the retrieved package payload.
     fn reschedule(&mut self, buf: &mut [u8], now: Instant) -> RescheduleResult {
         match self.queue.peek() {
             Some((&id, timing)) => {
@@ -219,7 +219,7 @@ pub(crate) enum RescheduleResult {
     Resend {
         /// Length of the datagram data (written to a buffer) in bytes.
         len: usize,
-        id: DatagramId,
+        id: PackageId,
         peers: Peers,
     },
     /// No datagram is currently scheduled for an immediate resent. This

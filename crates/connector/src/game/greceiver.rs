@@ -4,7 +4,7 @@ use async_std::{
     channel::{Receiver, Sender},
     task,
 };
-use de_net::{FromGame, JoinError, OutMessage, Peers, Targets, ToGame};
+use de_net::{FromGame, JoinError, OutPackage, Peers, Targets, ToGame};
 use tracing::{error, info, warn};
 
 use super::state::{GameState, JoinError as JoinErrorInner};
@@ -32,7 +32,7 @@ pub(super) struct GameProcessor {
     port: u16,
     owner: SocketAddr,
     messages: Receiver<ToGameMessage>,
-    outputs: Sender<OutMessage>,
+    outputs: Sender<OutPackage>,
     state: GameState,
 }
 
@@ -41,7 +41,7 @@ impl GameProcessor {
         port: u16,
         owner: SocketAddr,
         messages: Receiver<ToGameMessage>,
-        outputs: Sender<OutMessage>,
+        outputs: Sender<OutPackage>,
         state: GameState,
     ) -> Self {
         Self {
@@ -115,7 +115,7 @@ impl GameProcessor {
         let _ = self
             .outputs
             .send(
-                OutMessage::encode_single(
+                OutPackage::encode_single(
                     &FromGame::Pong(id),
                     meta.reliable,
                     Peers::Server,
@@ -198,7 +198,7 @@ impl GameProcessor {
         E: bincode::Encode,
         T: Into<Targets<'static>>,
     {
-        let message = OutMessage::encode_single(message, true, Peers::Server, targets).unwrap();
+        let message = OutPackage::encode_single(message, true, Peers::Server, targets).unwrap();
         let _ = self.outputs.send(message).await;
     }
 }

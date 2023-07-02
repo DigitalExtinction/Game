@@ -3,7 +3,7 @@ use std::net::SocketAddr;
 use anyhow::Context;
 use async_std::task;
 use de_net::{
-    self, FromServer, MessageDecoder, MessageReceiver, MessageSender, Network, OutMessage, Peers,
+    self, FromServer, MessageDecoder, PackageReceiver, PackageSender, OutPackage, Peers, Socket,
     ToServer,
 };
 use tracing::{error, info, warn};
@@ -13,13 +13,13 @@ use crate::game;
 /// Main game server responsible for initial communication with clients and
 /// establishment of game sub-servers.
 pub(crate) struct MainServer {
-    outputs: MessageSender,
-    inputs: MessageReceiver,
+    outputs: PackageSender,
+    inputs: PackageReceiver,
 }
 
 impl MainServer {
     /// Setup the server & startup its network stack.
-    pub(crate) fn start(net: Network) -> Self {
+    pub(crate) fn start(net: Socket) -> Self {
         let (outputs, inputs, _) = de_net::startup(
             |t| {
                 task::spawn(t);
@@ -69,7 +69,7 @@ impl MainServer {
     }
 
     async fn open_game(&mut self, source: SocketAddr) -> anyhow::Result<()> {
-        match Network::bind(None).await {
+        match Socket::bind(None).await {
             Ok(net) => {
                 let port = net.port();
                 info!("Starting new game on port {port}.");
@@ -86,7 +86,7 @@ impl MainServer {
 
     async fn reply(&mut self, message: &FromServer, target: SocketAddr) -> anyhow::Result<()> {
         self.outputs
-            .send(OutMessage::encode_single(message, true, Peers::Server, target).unwrap())
+            .send(OutPackage::encode_single(message, true, Peers::Server, target).unwrap())
             .await
             .context("Failed to send a reply")
     }

@@ -1,5 +1,3 @@
-//! System message receiver
-
 use std::time::{Duration, Instant};
 
 use async_std::{channel::Receiver, future::timeout};
@@ -8,7 +6,7 @@ use tracing::{error, info};
 use super::{cancellation::CancellationRecv, dreceiver::InSystemDatagram};
 use crate::connection::Resends;
 
-/// Handler of system (protocol) datagrams.
+/// Handler of protocol control datagrams.
 ///
 /// The handler runs a loop which finishes when `datagrams` channel is closed.
 pub(super) async fn run(
@@ -17,7 +15,7 @@ pub(super) async fn run(
     datagrams: Receiver<InSystemDatagram>,
     mut resends: Resends,
 ) {
-    info!("Starting system message receiver on port {port}...");
+    info!("Starting protocol control datagram receiver on port {port}...");
 
     loop {
         if cancellation.cancelled() {
@@ -38,5 +36,5 @@ pub(super) async fn run(
             .await;
     }
 
-    info!("System message receiver on port {port} finished.");
+    info!("Protocol control datagram receiver on port {port} finished.");
 }

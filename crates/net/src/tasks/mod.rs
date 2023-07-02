@@ -52,13 +52,13 @@
 //! cancellation token is canceled.
 //!
 //! `usender` and `ureceiver` are responsible for sending and reception of user
-//! data. The user communicates with these via [`MessageSender`] and
-//! [`MessageReceiver`] respectively.
+//! data. The user communicates with these via [`PackageSender`] and
+//! [`PackageReceiver`] respectively.
 
 use async_std::channel::bounded;
 pub use communicator::{
-    ConnErrorReceiver, ConnectionError, InMessage, MessageDecoder, MessageReceiver, MessageSender,
-    OutMessage, OutMessageBuilder,
+    ConnErrorReceiver, ConnectionError, InPackage, MessageDecoder, OutPackage, PackageBuilder,
+    PackageReceiver, PackageSender,
 };
 pub(crate) use dsender::OutDatagram;
 use futures::future::BoxFuture;
@@ -66,9 +66,9 @@ use tracing::info;
 
 use crate::{
     connection::{Confirmations, Resends},
-    messages::Messages,
+    protocol::ProtocolSocket,
     tasks::cancellation::cancellation,
-    Network,
+    Socket,
 };
 
 mod cancellation;
@@ -87,7 +87,7 @@ const CHANNEL_CAPACITY: usize = 1024;
 /// channels for data sending, data retrieval, and error retrieval.
 ///
 /// All tasks in the network stack keep running until the returned channels are
-/// closed. Once the [`MessageSender`], [`MessageReceiver`], and
+/// closed. Once the [`PackageSender`], [`PackageReceiver`], and
 /// [`ConnErrorReceiver`] are all dropped, the networking stack will terminate
 /// completely.
 ///
@@ -95,21 +95,21 @@ const CHANNEL_CAPACITY: usize = 1024;
 ///
 /// * `spawn` - async task spawner.
 ///
-/// * `network` - network communication will happen over this socket.
-pub fn startup<S>(spawn: S, network: Network) -> (MessageSender, MessageReceiver, ConnErrorReceiver)
+/// * `socket` - network communication will happen over this socket.
+pub fn startup<S>(spawn: S, socket: Socket) -> (PackageSender, PackageReceiver, ConnErrorReceiver)
 where
     S: Fn(BoxFuture<'static, ()>),
 {
-    let port = network.port();
+    let port = socket.port();
     info!("Starting up network stack on port {port}...");
 
-    let messages = Messages::new(network);
+    let protocol_socket = ProtocolSocket::new(socket);
 
     let (out_datagrams_sender, out_datagrams_receiver) = bounded(16);
     spawn(Box::pin(dsender::run(
         port,
         out_datagrams_receiver,
-        messages.clone(),
+        protocol_socket.clone(),
     )));
 
     let (in_system_datagrams_sender, in_system_datagrams_receiver) = bounded(16);
@@ -118,7 +118,7 @@ where
         port,
         in_system_datagrams_sender,
         in_user_datagrams_sender,
-        messages,
+        protocol_socket,
     )));
 
     let resends = Resends::new();
@@ -168,8 +168,8 @@ where
     )));
 
     (
-        MessageSender(outputs_sender),
-        MessageReceiver(inputs_receiver),
+        PackageSender(outputs_sender),
+        PackageReceiver(inputs_receiver),
         ConnErrorReceiver(errors_receiver),
     )
 }

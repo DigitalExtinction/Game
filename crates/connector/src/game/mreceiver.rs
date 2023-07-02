@@ -1,7 +1,7 @@
 use std::time::Duration;
 
 use async_std::{channel::Sender, future::timeout};
-use de_net::{MessageReceiver, Peers};
+use de_net::{PackageReceiver, Peers};
 use tracing::{error, info, warn};
 
 use super::greceiver::ToGameMessage;
@@ -9,7 +9,7 @@ use crate::game::preceiver::PlayersMessage;
 
 pub(super) async fn run(
     port: u16,
-    messages: MessageReceiver,
+    messages: PackageReceiver,
     server: Sender<ToGameMessage>,
     players: Sender<PlayersMessage>,
 ) {

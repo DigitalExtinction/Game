@@ -1,174 +1,64 @@
-use std::{borrow::Cow, net::SocketAddr};
+use bincode::{Decode, Encode};
 
-use async_std::sync::Arc;
-use futures::future::try_join_all;
-use thiserror::Error;
-use tracing::{error, trace};
-
-use crate::{
-    header::{DatagramHeader, HeaderError, HEADER_SIZE},
-    net, Network, SendError, MAX_DATAGRAM_SIZE,
-};
-
-/// Maximum number of bytes of a single message.
-pub const MAX_MESSAGE_SIZE: usize = MAX_DATAGRAM_SIZE - HEADER_SIZE;
-
-/// A thin layer over UDP datagram based network translating UDP datagrams to
-/// messages with headers.
-#[derive(Clone)]
-pub(crate) struct Messages {
-    network: Arc<Network>,
+/// Message to be sent from a player/client to a main server (outside of a
+/// game).
+#[derive(Encode, Decode)]
+pub enum ToServer {
+    /// Prompts the server to respond [`FromServer::Pong`] with the same ping ID.
+    Ping(u32),
+    /// This message opens a new game on the server. The server responds with
+    /// [`FromServer::GameOpened`].
+    OpenGame,
 }
 
-impl Messages {
-    pub(crate) fn new(network: Network) -> Self {
-        Self {
-            network: Arc::new(network),
-        }
-    }
-
-    /// Send message to a list of targets.
-    ///
-    /// The sending is done in parallel.
-    ///
-    /// # Arguments
-    ///
-    /// * `data` - to be modified data slice containing the data of the message
-    ///   to be send. The data must start at position [`HEADER_SIZE`] and span
-    ///   across the rest of the slice.
-    ///
-    /// * `header` - header of the message.
-    ///
-    /// * `targets` - recipients of the message.
-    pub(crate) async fn send<'a, T>(
-        &'a self,
-        buf: &mut [u8],
-        header: DatagramHeader,
-        data: &[u8],
-        targets: T,
-    ) -> Result<(), SendError>
-    where
-        T: Into<Targets<'a>>,
-    {
-        let len = HEADER_SIZE + data.len();
-        assert!(buf.len() >= len);
-        let buf = &mut buf[..len];
-        buf[HEADER_SIZE..len].copy_from_slice(data);
-
-        trace!("Going to send datagram {}", header);
-        header.write(buf);
-
-        match targets.into() {
-            Targets::Single(target) => {
-                self.network.send(target, buf).await?;
-            }
-            Targets::Many(targets) => {
-                try_join_all(targets.iter().map(|&target| self.network.send(target, buf))).await?;
-            }
-        }
-
-        Ok(())
-    }
-
-    /// Receive a single message.
-    ///
-    /// # Arguments
-    ///
-    /// * `buf` - the message is written to this buffer. The buffer must be at
-    ///   least [`MAX_DATAGRAM_SIZE`] long.
-    ///
-    /// # Returns
-    ///
-    /// Return source address, datagram header and number of bytes of the
-    /// message.
-    ///
-    /// # Panics
-    ///
-    /// Panics if len of `buf` is smaller than [`MAX_DATAGRAM_SIZE`].
-    pub(crate) async fn recv<'a>(
-        &self,
-        buf: &'a mut [u8],
-    ) -> Result<(SocketAddr, DatagramHeader, &'a [u8]), MsgRecvError> {
-        let (stop, source) = self.network.recv(buf).await.map_err(MsgRecvError::from)?;
-
-        let header = DatagramHeader::read(&buf[0..stop]).map_err(MsgRecvError::from)?;
-        trace!("Received datagram with ID {header}");
-
-        Ok((source, header, &buf[HEADER_SIZE..stop]))
-    }
+/// Message to be sent from a main server to a player/client (outside of a
+/// game).
+#[derive(Encode, Decode)]
+pub enum FromServer {
+    /// Response to [`ToServer::Ping`].
+    Pong(u32),
+    /// A new game was opened upon request from the client.
+    GameOpened {
+        /// Port at which players may connect to join the game.
+        port: u16,
+    },
 }
 
-#[derive(Clone)]
-pub enum Targets<'a> {
-    Single(SocketAddr),
-    Many(Cow<'a, [SocketAddr]>),
+/// Message to be sent from a player/client to a game server (inside of a
+/// game).
+#[derive(Encode, Decode)]
+pub enum ToGame {
+    /// Prompts the server to respond [`FromGame::Pong`] with the same ping ID.
+    Ping(u32),
+    /// Connect the player to the game.
+    Join,
+    /// Disconnect the player from the game.
+    ///
+    /// The game is automatically closed once all players disconnect.
+    Leave,
 }
 
-impl<'a> From<SocketAddr> for Targets<'a> {
-    fn from(addr: SocketAddr) -> Self {
-        Self::Single(addr)
-    }
+/// Message to be sent from a game server to a player/client (inside of a
+/// game).
+#[derive(Encode, Decode)]
+pub enum FromGame {
+    /// Response to [`ToGame::Ping`].
+    Pong(u32),
+    /// Informs the player that they were just connected to the game under the
+    /// ID.
+    Joined(u8),
+    /// Informs the player that they were not connected to the game due to an
+    /// error.
+    JoinError(JoinError),
+    /// Informs the player that another player just connected to the same game
+    /// under the given ID.
+    PeerJoined(u8),
+    /// Informs the player that another player with the given ID just
+    /// disconnected from the same game.
+    PeerLeft(u8),
 }
 
-impl<'a> From<&'a [SocketAddr]> for Targets<'a> {
-    fn from(addrs: &'a [SocketAddr]) -> Self {
-        Self::Many(addrs.into())
-    }
-}
-
-impl<'a> From<Vec<SocketAddr>> for Targets<'a> {
-    fn from(addrs: Vec<SocketAddr>) -> Self {
-        Self::Many(addrs.into())
-    }
-}
-
-impl<'a> IntoIterator for &Targets<'a> {
-    type Item = SocketAddr;
-    type IntoIter = TargetsIter<'a>;
-
-    fn into_iter(self) -> Self::IntoIter {
-        TargetsIter {
-            targets: self.clone(),
-            offset: 0,
-        }
-    }
-}
-
-pub struct TargetsIter<'a> {
-    targets: Targets<'a>,
-    offset: usize,
-}
-
-impl<'a> Iterator for TargetsIter<'a> {
-    type Item = SocketAddr;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        match self.targets {
-            Targets::Single(single) => {
-                if self.offset > 0 {
-                    None
-                } else {
-                    self.offset += 1;
-                    Some(single)
-                }
-            }
-            Targets::Many(ref many) => {
-                if self.offset >= many.len() {
-                    None
-                } else {
-                    let addr = many[self.offset];
-                    self.offset += 1;
-                    Some(addr)
-                }
-            }
-        }
-    }
-}
-
-#[derive(Error, Debug)]
-pub(crate) enum MsgRecvError {
-    #[error(transparent)]
-    InvalidHeader(#[from] HeaderError),
-    #[error("error while receiving data from the socket")]
-    RecvError(#[from] net::RecvError),
+#[derive(Encode, Decode)]
+pub enum JoinError {
+    GameFull,
 }

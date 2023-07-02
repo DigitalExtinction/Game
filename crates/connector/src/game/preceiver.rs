@@ -1,7 +1,7 @@
 use std::net::SocketAddr;
 
 use async_std::channel::Receiver;
-use de_net::{MessageSender, OutMessage, Peers};
+use de_net::{PackageSender, OutPackage, Peers};
 use tracing::{error, info};
 
 use super::state::GameState;
@@ -26,7 +26,7 @@ impl PlayersMessage {
 pub(super) async fn run(
     port: u16,
     messages: Receiver<PlayersMessage>,
-    outputs: MessageSender,
+    outputs: PackageSender,
     state: GameState,
 ) {
     info!("Starting game player message handler on port {port}...");
@@ -50,7 +50,7 @@ pub(super) async fn run(
         };
 
         let result = outputs
-            .send(OutMessage::new(
+            .send(OutPackage::new(
                 message.data,
                 message.reliable,
                 Peers::Players,
