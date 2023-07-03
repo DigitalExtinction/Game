@@ -1,3 +1,5 @@
+use std::time::Duration;
+
 use bevy::log::LogPlugin;
 #[cfg(not(target_os = "macos"))]
 use bevy::window::{CursorGrabMode, PrimaryWindow};
@@ -59,7 +61,11 @@ fn main() {
                     })
                     .disable::<LogPlugin>(),
             )
-            .add_plugin(LogDiagnosticsPlugin::default())
+            .add_plugin(LogDiagnosticsPlugin {
+                debug: false,
+                wait_duration: Duration::from_secs(10),
+                filter: None,
+            })
             .add_plugin(FrameTimeDiagnosticsPlugin::default())
             .add_plugin(GamePlugin)
             .add_plugins(ConfigPluginGroup)
