@@ -2262,6 +2262,7 @@ dependencies = [
  "de_log",
  "de_menu",
  "de_movement",
+ "de_multiplayer",
  "de_objects",
  "de_pathing",
  "de_signs",
@@ -2417,6 +2418,18 @@ dependencies = [
  "glam",
  "parry2d",
  "parry3d",
+]
+
+[[package]]
+name = "de_multiplayer"
+version = "0.1.0-dev"
+dependencies = [
+ "async-std",
+ "bevy",
+ "de_core",
+ "de_net",
+ "futures-lite",
+ "iyes_progress",
 ]
 
 [[package]]
