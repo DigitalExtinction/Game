@@ -63,6 +63,12 @@ where
 
 pub(crate) struct ToMainServerEvent(ToServer);
 
+impl From<ToServer> for ToMainServerEvent {
+    fn from(message: ToServer) -> Self {
+        Self(message)
+    }
+}
+
 impl ToMessage for ToMainServerEvent {
     type Message = ToServer;
     const PORT_TYPE: PortType = PortType::Main;
@@ -73,6 +79,12 @@ impl ToMessage for ToMainServerEvent {
 }
 
 pub(crate) struct ToGameServerEvent(ToGame);
+
+impl From<ToGame> for ToGameServerEvent {
+    fn from(message: ToGame) -> Self {
+        Self(message)
+    }
+}
 
 impl ToMessage for ToGameServerEvent {
     type Message = ToGame;
@@ -85,6 +97,12 @@ impl ToMessage for ToGameServerEvent {
 
 pub(crate) struct FromMainServerEvent(FromServer);
 
+impl FromMainServerEvent {
+    pub(crate) fn message(&self) -> &FromServer {
+        &self.0
+    }
+}
+
 impl From<FromServer> for FromMainServerEvent {
     fn from(message: FromServer) -> Self {
         Self(message)
@@ -92,6 +110,12 @@ impl From<FromServer> for FromMainServerEvent {
 }
 
 pub(crate) struct FromGameServerEvent(FromGame);
+
+impl FromGameServerEvent {
+    pub(crate) fn message(&self) -> &FromGame {
+        &self.0
+    }
+}
 
 impl From<FromGame> for FromGameServerEvent {
     fn from(message: FromGame) -> Self {
@@ -104,9 +128,33 @@ impl From<FromGame> for FromGameServerEvent {
 pub(crate) enum Ports {
     Main(u16),
     Game(u16),
+    Both { main: u16, game: u16 },
 }
 
 impl Ports {
+    /// The game port is stored if it is not yet known. Otherwise, the new port
+    /// is compared to the existing one. If they do not match, an error is
+    /// returned.
+    pub(crate) fn init_game_port(&mut self, port: u16) -> Result<(), String> {
+        match self {
+            Self::Main(main) => {
+                *self = Self::Both {
+                    main: *main,
+                    game: port,
+                };
+
+                Ok(())
+            }
+            Self::Both { game, .. } | Self::Game(game) => {
+                if port == *game {
+                    Ok(())
+                } else {
+                    Err(format!("Game change game port ({} -> {}).", *game, port))
+                }
+            }
+        }
+    }
+
     fn port(&self, port_type: PortType) -> Option<u16> {
         match port_type {
             PortType::Game => self.game(),
@@ -118,6 +166,7 @@ impl Ports {
     fn main(&self) -> Option<u16> {
         match self {
             Self::Main(port) => Some(*port),
+            Self::Both { main, .. } => Some(*main),
             Self::Game(_) => None,
         }
     }
@@ -126,6 +175,7 @@ impl Ports {
     fn game(&self) -> Option<u16> {
         match self {
             Self::Game(port) => Some(*port),
+            Self::Both { game, .. } => Some(*game),
             Self::Main(_) => None,
         }
     }
@@ -168,7 +218,10 @@ fn message_sender<E>(
 ) where
     E: ToMessage,
 {
-    let port = ports.port(E::PORT_TYPE).expect("Port not (yet) known.");
+    let Some(port) = ports.port(E::PORT_TYPE) else {
+        warn!("Port not (yet) known.");
+        return;
+    };
     let addr = SocketAddr::new(conf.server_host(), port);
     let mut builder = PackageBuilder::new(true, Peers::Server, addr);
 
@@ -218,5 +271,26 @@ fn decode_and_send<P, E>(
                 break;
             }
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_ports() {
+        let mut ports = Ports::from(ServerPort::Main(2));
+        assert_eq!(ports.main(), Some(2));
+        assert_eq!(ports.game(), None);
+        ports.init_game_port(3).unwrap();
+        assert_eq!(ports.main(), Some(2));
+        assert_eq!(ports.game(), Some(3));
+
+        let mut ports = Ports::from(ServerPort::Game(4));
+        assert_eq!(ports.main(), None);
+        assert_eq!(ports.game(), Some(4));
+        ports.init_game_port(4).unwrap();
+        assert!(ports.init_game_port(5).is_err());
     }
 }
