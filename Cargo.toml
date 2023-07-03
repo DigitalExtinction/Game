@@ -47,6 +47,7 @@ de_lobby_client.workspace = true
 de_log.workspace = true
 de_menu.workspace = true
 de_movement.workspace = true
+de_multiplayer.workspace = true
 de_objects.workspace = true
 de_pathing.workspace = true
 de_signs.workspace = true
@@ -92,6 +93,7 @@ de_log = { path = "crates/log", version = "0.1.0-dev" }
 de_map = { path = "crates/map", version = "0.1.0-dev" }
 de_menu = { path = "crates/menu", version = "0.1.0-dev" }
 de_movement = { path = "crates/movement", version = "0.1.0-dev" }
+de_multiplayer = { path = "crates/multiplayer", version = "0.1.0-dev" }
 de_net = { path = "crates/net", version = "0.1.0-dev" }
 de_objects = { path = "crates/objects", version = "0.1.0-dev" }
 de_pathing = { path = "crates/pathing", version = "0.1.0-dev" }

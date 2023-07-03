@@ -24,6 +24,7 @@ use de_lobby_client::LobbyClientPluginGroup;
 use de_log::LogPluginGroup;
 use de_menu::MenuPluginGroup;
 use de_movement::MovementPluginGroup;
+use de_multiplayer::MultiplayerPluginGroup;
 use de_objects::ObjectsPluginGroup;
 use de_pathing::PathingPluginGroup;
 use de_signs::SignsPluginGroup;
@@ -87,7 +88,8 @@ fn main() {
             .add_plugins(BehaviourPluginGroup)
             .add_plugins(CombatPluginGroup)
             .add_plugins(ConstructionPluginGroup)
-            .add_plugins(AudioPluginGroup);
+            .add_plugins(AudioPluginGroup)
+            .add_plugins(MultiplayerPluginGroup);
     }
 
     app.run();
