@@ -19,5 +19,6 @@ de_net.workspace = true
 # Other
 async-std.workspace = true
 bevy.workspace = true
+bincode.workspace = true
 futures-lite.workspace = true
 iyes_progress.workspace = true

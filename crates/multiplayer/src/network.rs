@@ -67,8 +67,20 @@ pub(crate) enum NetworkSet {
 /// [`self::send_packages`] system.
 pub(crate) struct SendPackageEvent(OutPackage);
 
+impl From<OutPackage> for SendPackageEvent {
+    fn from(package: OutPackage) -> Self {
+        Self(package)
+    }
+}
+
 /// This event is sent any time a new package from any source is received.
 pub(crate) struct PackageReceivedEvent(InPackage);
+
+impl PackageReceivedEvent {
+    pub(crate) fn package(&self) -> &InPackage {
+        &self.0
+    }
+}
 
 /// This event is sent any time a network error is detected.
 pub(crate) struct ConnErrorEvent(pub(crate) ConnectionError);
