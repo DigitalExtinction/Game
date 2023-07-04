@@ -1,18 +1,11 @@
 use std::net::IpAddr;
 
-use bevy::prelude::*;
-
-/// Insert this resource before starting a multiplayer game.
-///
-/// After the resource is inserted, a connection to DE Connector is
-/// established. The connection is dropped when the resource is removed.
-#[derive(Resource)]
-pub struct MultiplayerGameConfig {
+pub struct NetGameConf {
     server_host: IpAddr,
     server_port: ServerPort,
 }
 
-impl MultiplayerGameConfig {
+impl NetGameConf {
     pub fn new(server_host: IpAddr, server_port: ServerPort) -> Self {
         Self {
             server_host,
@@ -21,11 +14,11 @@ impl MultiplayerGameConfig {
     }
 
     /// Address of DE Connector server.
-    pub fn server_host(&self) -> IpAddr {
+    pub(crate) fn server_host(&self) -> IpAddr {
         self.server_host
     }
 
-    pub fn server_port(&self) -> ServerPort {
+    pub(crate) fn server_port(&self) -> ServerPort {
         self.server_port
     }
 }
