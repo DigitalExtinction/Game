@@ -5,7 +5,8 @@ use de_core::baseset::GameSet;
 use de_net::{FromGame, FromServer, InPackage, PackageBuilder, Peers, ToGame, ToServer};
 
 use crate::{
-    config::{MultiplayerGameConfig, ServerPort},
+    config::ServerPort,
+    lifecycle::NetGameConfRes,
     netstate::NetState,
     network::{NetworkSet, PackageReceivedEvent, SendPackageEvent},
 };
@@ -19,7 +20,7 @@ impl Plugin for MessagesPlugin {
             .add_event::<FromMainServerEvent>()
             .add_event::<FromGameServerEvent>()
             .add_system(setup.in_schedule(OnEnter(NetState::Connecting)))
-            .add_system(cleanup.in_schedule(OnEnter(NetState::Disconnected)))
+            .add_system(cleanup.in_schedule(OnEnter(NetState::None)))
             .add_system(
                 message_sender::<ToMainServerEvent>
                     .in_base_set(GameSet::PostUpdate)
@@ -150,7 +151,7 @@ enum PortType {
     Game,
 }
 
-fn setup(mut commands: Commands, conf: Res<MultiplayerGameConfig>) {
+fn setup(mut commands: Commands, conf: Res<NetGameConfRes>) {
     let ports: Ports = conf.server_port().into();
     commands.insert_resource(ports);
 }
@@ -160,7 +161,7 @@ fn cleanup(mut commands: Commands) {
 }
 
 fn message_sender<E>(
-    conf: Res<MultiplayerGameConfig>,
+    conf: Res<NetGameConfRes>,
     ports: Res<Ports>,
     mut inputs: EventReader<E>,
     mut outputs: EventWriter<SendPackageEvent>,

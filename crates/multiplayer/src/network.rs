@@ -25,7 +25,7 @@ impl Plugin for NetworkPlugin {
             .add_event::<PackageReceivedEvent>()
             .add_event::<ConnErrorEvent>()
             .add_system(setup.in_schedule(OnEnter(NetState::Connecting)))
-            .add_system(cleanup.in_schedule(OnEnter(NetState::Disconnected)))
+            .add_system(cleanup.in_schedule(OnEnter(NetState::None)))
             .add_system(
                 wait_for_network
                     .track_progress()
