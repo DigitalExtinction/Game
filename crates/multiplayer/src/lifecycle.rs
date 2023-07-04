@@ -1,4 +1,3 @@
-// TODO rename plugin and module
 use std::ops::Deref;
 
 use bevy::prelude::*;
