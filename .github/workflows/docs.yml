@@ -1,6 +1,18 @@
 name: Docs
 
-on: [push, pull_request, merge_group]
+on:
+  push:
+    branches:
+      - main
+  merge_group: {}
+  pull_request:
+    branches:
+      - main
+    types:
+      - opened
+      - reopened
+      - synchronize
+      - ready_for_review
 
 env:
   CARGO_TERM_COLOR: always
