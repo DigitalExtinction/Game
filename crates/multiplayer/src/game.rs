@@ -108,6 +108,7 @@ fn process_from_game(
             }
             FromGame::Joined(id) => match Player::try_from(*id) {
                 Ok(player) => {
+                    info!("Joined game as Player {player}.");
                     players.local = Some(player);
                     next_state.set(NetState::Joined);
                 }
