@@ -109,8 +109,8 @@ fn test() {
         received.load(&mut client, &mut buffer).await;
         received.load(&mut client, &mut buffer).await;
 
-        // [4, 1] -> FromGame::PeerJoined(1)
-        let id = received.find_id(true, &[4, 1]).unwrap().to_be_bytes();
+        // [5, 1] -> FromGame::PeerJoined(1)
+        let id = received.find_id(true, &[5, 1]).unwrap().to_be_bytes();
         // And send a confirmation
         client
             .send(server, &[128, 0, 0, 0, id[1], id[2], id[3]])
