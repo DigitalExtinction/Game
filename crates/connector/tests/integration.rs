@@ -244,9 +244,9 @@ async fn create_game() -> (Socket, u16) {
 
     // [64 + 32] -> reliable + Peers::Server
     // [0, 0, 7] -> datagram ID = 7
-    // [1] -> ToGame::OpenGame
+    // [1 3] -> ToGame::OpenGame { max_players: 3 }
     client
-        .send(SERVER_ADDR, &[64 + 32, 0, 0, 7, 1])
+        .send(SERVER_ADDR, &[64 + 32, 0, 0, 7, 1, 3])
         .await
         .unwrap();
 
