@@ -22,8 +22,8 @@ pub(super) struct InPackageDatagram {
 
 /// Handler of input datagrams received with `socket`.
 ///
-/// The handler runs a loop which finishes when `system_datagrams` or
-/// `user_datagrams` channel is closed.
+/// The handler runs a loop which finishes when `system_datagrams` and
+/// `user_datagrams` channel are closed.
 pub(super) async fn run(
     port: u16,
     system_datagrams: Sender<InSystemDatagram>,
@@ -34,7 +34,7 @@ pub(super) async fn run(
     let mut buffer = [0u8; MAX_DATAGRAM_SIZE];
 
     loop {
-        if package_datagrams.is_closed() || system_datagrams.is_closed() {
+        if package_datagrams.is_closed() && system_datagrams.is_closed() {
             break;
         }
 
