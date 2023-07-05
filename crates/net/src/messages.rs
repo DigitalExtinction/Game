@@ -44,6 +44,9 @@ pub enum ToGame {
 pub enum FromGame {
     /// Response to [`ToGame::Ping`].
     Pong(u32),
+    /// Informs the player that the server has discarded one or more incoming
+    /// messages (to any peer) due to the player not being part of the game.
+    NotJoined,
     /// Informs the player that they were just connected to the game under the
     /// ID.
     Joined(u8),
