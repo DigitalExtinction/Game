@@ -53,6 +53,9 @@ pub enum FromGame {
     /// Informs the player that they were not connected to the game due to an
     /// error.
     JoinError(JoinError),
+    /// Informs the player the they is no longer part of the game. They might
+    /// has been kicked out of the game or left voluntarily.
+    Left,
     /// Informs the player that another player just connected to the same game
     /// under the given ID.
     PeerJoined(u8),

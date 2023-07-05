@@ -206,6 +206,7 @@ impl GameProcessor {
             meta.source, self.port
         );
 
+        self.send(&FromGame::Left, meta.source).await;
         self.send_all(&FromGame::PeerLeft(id), None).await;
     }
 
