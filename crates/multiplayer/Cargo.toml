@@ -18,6 +18,7 @@ de_gui.workspace = true
 de_net.workspace = true
 
 # Other
+ahash.workspace = true
 async-std.workspace = true
 bevy.workspace = true
 bincode.workspace = true
