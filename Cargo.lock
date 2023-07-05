@@ -2428,6 +2428,7 @@ dependencies = [
  "bevy",
  "bincode",
  "de_core",
+ "de_gui",
  "de_net",
  "futures-lite",
  "iyes_progress",

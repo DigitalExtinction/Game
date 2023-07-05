@@ -7,13 +7,12 @@ use bevy::{
 };
 use de_core::baseset::GameSet;
 use de_net::{
-    startup, ConnErrorReceiver, ConnectionError, InPackage, OutPackage, PackageReceiver,
-    PackageSender, Socket,
+    startup, ConnErrorReceiver, InPackage, OutPackage, PackageReceiver, PackageSender, Socket,
 };
 use futures_lite::future;
 use iyes_progress::prelude::*;
 
-use crate::netstate::NetState;
+use crate::{lifecycle::FatalErrorEvent, netstate::NetState};
 
 const MAX_RECV_PER_UPDATE: usize = 100;
 
@@ -23,7 +22,6 @@ impl Plugin for NetworkPlugin {
     fn build(&self, app: &mut App) {
         app.add_event::<SendPackageEvent>()
             .add_event::<PackageReceivedEvent>()
-            .add_event::<ConnErrorEvent>()
             .add_system(setup.in_schedule(OnEnter(NetState::Connecting)))
             .add_system(cleanup.in_schedule(OnEnter(NetState::None)))
             .add_system(
@@ -81,9 +79,6 @@ impl PackageReceivedEvent {
         &self.0
     }
 }
-
-/// This event is sent any time a network error is detected.
-pub(crate) struct ConnErrorEvent(pub(crate) ConnectionError);
 
 #[derive(Resource)]
 struct NetworkStartup(Task<(PackageSender, PackageReceiver, ConnErrorReceiver)>);
@@ -152,26 +147,40 @@ fn wait_for_network(mut commands: Commands, mut task: ResMut<NetworkStartup>) ->
     true.into()
 }
 
-fn send_packages(mut events: ResMut<Events<SendPackageEvent>>, sender: Res<Sender>) {
+fn send_packages(
+    mut events: ResMut<Events<SendPackageEvent>>,
+    sender: Res<Sender>,
+    mut fatals: EventWriter<FatalErrorEvent>,
+) {
     for event in events.drain() {
         if let Err(err) = sender.try_send(event.0) {
             match err {
                 TrySendError::Full(_) => {
-                    error!("Network stack is not keeping up. Skipping a message.");
+                    fatals.send(FatalErrorEvent::new("Network stack is not keeping up."));
                 }
-                TrySendError::Closed(_) => panic!("Network output channel is unexpectedly closed."),
+                TrySendError::Closed(_) => {
+                    fatals.send(FatalErrorEvent::new(
+                        "Network output channel is unexpectedly closed.",
+                    ));
+                }
             }
         }
     }
 }
 
-fn recv_packages(receiver: Res<Receiver>, mut events: EventWriter<PackageReceivedEvent>) {
+fn recv_packages(
+    receiver: Res<Receiver>,
+    mut events: EventWriter<PackageReceivedEvent>,
+    mut fatals: EventWriter<FatalErrorEvent>,
+) {
     for _ in 0..MAX_RECV_PER_UPDATE {
         match receiver.try_recv() {
             Ok(package) => events.send(PackageReceivedEvent(package)),
             Err(TryRecvError::Empty) => return,
             Err(TryRecvError::Closed) => {
-                panic!("Network message receiver is unexpectedly closed.");
+                fatals.send(FatalErrorEvent::new(
+                    "Network message receiver is unexpectedly closed.",
+                ));
             }
         }
     }
@@ -179,13 +188,20 @@ fn recv_packages(receiver: Res<Receiver>, mut events: EventWriter<PackageReceive
     warn!("More than {MAX_RECV_PER_UPDATE} messages received since the last update.");
 }
 
-fn recv_errors(receiver: Res<Errors>, mut events: EventWriter<ConnErrorEvent>) {
+fn recv_errors(receiver: Res<Errors>, mut fatals: EventWriter<FatalErrorEvent>) {
     loop {
         match receiver.try_recv() {
-            Ok(error) => events.send(ConnErrorEvent(error)),
+            Ok(error) => {
+                fatals.send(FatalErrorEvent::new(format!(
+                    "Connection lost with {:?}.",
+                    error.target()
+                )));
+            }
             Err(TryRecvError::Empty) => return,
             Err(TryRecvError::Closed) => {
-                panic!("Network connection errors receiver is unexpectedly closed.");
+                fatals.send(FatalErrorEvent::new(
+                    "Network connection errors receiver is unexpectedly closed.",
+                ));
             }
         }
     }
