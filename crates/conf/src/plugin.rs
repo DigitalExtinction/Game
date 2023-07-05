@@ -60,7 +60,7 @@ fn poll_conf(
                 }
                 Err(err) => {
                     error!("{err}");
-                    toasts.send(ToastEvent::new("Configuration loading failed.".to_owned()));
+                    toasts.send(ToastEvent::new("Configuration loading failed."));
                     commands.init_resource::<Configuration>();
                     true.into()
                 }
