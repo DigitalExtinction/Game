@@ -58,7 +58,7 @@ struct GameStateInner {
 impl GameStateInner {
     fn new(max_players: u8) -> Self {
         Self {
-            available_ids: Vec::from_iter((0..max_players).rev()),
+            available_ids: Vec::from_iter((1..=max_players).rev()),
             players: AHashMap::new(),
         }
     }
