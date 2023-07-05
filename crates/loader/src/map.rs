@@ -93,7 +93,7 @@ fn spawn_map(
         .iter()
         .filter_map(|object| match object.inner() {
             InnerObject::Active(active_object) => {
-                if game_config.is_local_player(active_object.player())
+                if game_config.locals().is_playable(active_object.player())
                     && active_object.object_type() == ActiveObjectType::Building(BuildingType::Base)
                 {
                     Some(object.placement().position())
