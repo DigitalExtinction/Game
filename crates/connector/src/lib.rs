@@ -5,6 +5,7 @@ use tracing::{error, info};
 
 use crate::server::MainServer;
 
+mod clients;
 mod game;
 mod server;
 

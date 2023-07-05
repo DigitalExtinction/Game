@@ -8,6 +8,7 @@ use de_net::{FromGame, JoinError, OutPackage, Peers, Targets, ToGame};
 use tracing::{error, info, warn};
 
 use super::state::{GameState, JoinError as JoinErrorInner};
+use crate::clients::Clients;
 
 pub(super) struct ToGameMessage {
     meta: MessageMeta,
@@ -34,6 +35,7 @@ pub(super) struct GameProcessor {
     messages: Receiver<ToGameMessage>,
     outputs: Sender<OutPackage>,
     state: GameState,
+    clients: Clients,
 }
 
 impl GameProcessor {
@@ -43,6 +45,7 @@ impl GameProcessor {
         messages: Receiver<ToGameMessage>,
         outputs: Sender<OutPackage>,
         state: GameState,
+        clients: Clients,
     ) -> Self {
         Self {
             port,
@@ -50,6 +53,7 @@ impl GameProcessor {
             messages,
             outputs,
             state,
+            clients,
         }
     }
 
@@ -162,22 +166,34 @@ impl GameProcessor {
 
     /// Process connect message.
     async fn process_join(&mut self, meta: MessageMeta) {
-        if let Err(err) = self.join(meta.source).await {
-            match err {
-                JoinErrorInner::AlreadyJoined => {
-                    warn!(
-                        "Player {:?} has already joined game on port {}.",
-                        meta.source, self.port
-                    );
-                }
-                JoinErrorInner::GameFull => {
-                    warn!(
-                        "Player {:?} could not join game on port {} because the game is full.",
-                        meta.source, self.port
-                    );
+        if let Err(err) = self.clients.reserve(meta.source).await {
+            warn!("Ignoring Join request: {err}");
+            return;
+        }
 
-                    self.send(&FromGame::JoinError(JoinError::GameFull), meta.source)
-                        .await;
+        match self.join(meta.source).await {
+            Ok(_) => {
+                self.clients.set(meta.source, self.port).await;
+            }
+            Err(err) => {
+                self.clients.free(meta.source).await;
+
+                match err {
+                    JoinErrorInner::AlreadyJoined => {
+                        warn!(
+                            "Player {:?} has already joined game on port {}.",
+                            meta.source, self.port
+                        );
+                    }
+                    JoinErrorInner::GameFull => {
+                        warn!(
+                            "Player {:?} could not join game on port {} because the game is full.",
+                            meta.source, self.port
+                        );
+
+                        self.send(&FromGame::JoinError(JoinError::GameFull), meta.source)
+                            .await;
+                    }
                 }
             }
         }
@@ -200,6 +216,8 @@ impl GameProcessor {
             warn!("Tried to remove non-existent player {:?}.", meta.source);
             return;
         };
+
+        self.clients.free(meta.source).await;
 
         info!(
             "Player {id} on {:?} just left game on port {}.",
