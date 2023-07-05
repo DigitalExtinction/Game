@@ -67,6 +67,18 @@ for fast compilation times while keeping performance reasonable.
 
 Profile `lto` shares configuration with `release` profile but enables LTO.
 
+# Cargo Build Features
+
+The following are the Cargo [build
+features](https://doc.rust-lang.org/cargo/reference/features.html) supported by
+the game. These features enable special functionality that can be useful during
+development, testing, and experimentation.
+
+## godmode
+
+`godmode` makes it possible to control all game entities (i.e. enemy units and
+buildings).
+
 # Where to Get Help?
 
 * Consult [TUTORIAL.md](/TUTORIAL.md), [CONTRIBUTING.md](/CONTRIBUTING.md),
