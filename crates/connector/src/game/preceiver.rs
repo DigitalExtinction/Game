@@ -1,8 +1,8 @@
 use std::net::SocketAddr;
 
 use async_std::channel::Receiver;
-use de_net::{OutPackage, PackageSender, Peers};
-use tracing::{error, info};
+use de_net::{FromGame, OutPackage, PackageSender, Peers};
+use tracing::{error, info, warn};
 
 use super::state::GameState;
 
@@ -44,6 +44,26 @@ pub(super) async fn run(
         let Ok(package) = packages.recv().await else {
             break;
         };
+
+        if !state.contains(package.source).await {
+            warn!(
+                "Received a player message from a non-participating client: {:?}.",
+                package.source
+            );
+
+            let _ = outputs
+                .send(
+                    OutPackage::encode_single(
+                        &FromGame::NotJoined,
+                        package.reliable,
+                        Peers::Server,
+                        package.source,
+                    )
+                    .unwrap(),
+                )
+                .await;
+            continue;
+        }
 
         let Some(targets) = state.targets(Some(package.source)).await else {
             continue;

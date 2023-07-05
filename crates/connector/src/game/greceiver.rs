@@ -81,6 +81,10 @@ impl GameProcessor {
                 break;
             };
 
+            if self.handle_ignore(&message).await {
+                continue;
+            }
+
             match message.message {
                 ToGame::Ping(id) => {
                     self.process_ping(message.meta, id).await;
@@ -105,13 +109,43 @@ impl GameProcessor {
         );
     }
 
-    /// Process a ping message.
-    async fn process_ping(&self, meta: MessageMeta, id: u32) {
-        if !self.state.contains(meta.source).await {
-            warn!("Ping message received from client who is not currently connected to the game.");
-            return;
+    /// Returns true if the massage should be ignored and further handles such
+    /// messages.
+    async fn handle_ignore(&self, message: &ToGameMessage) -> bool {
+        if !matches!(message.message, ToGame::Join | ToGame::Leave) {
+            // Join must be excluded from the condition because of the
+            // chicken and egg problem.
+            //
+            // Leave must be excluded due to possibility that the message
+            // was redelivered.
+            return false;
         }
 
+        if self.state.contains(message.meta.source).await {
+            return false;
+        }
+
+        warn!(
+            "Received a game message from a non-participating client: {:?}.",
+            message.meta.source
+        );
+        let _ = self
+            .outputs
+            .send(
+                OutPackage::encode_single(
+                    &FromGame::NotJoined,
+                    message.meta.reliable,
+                    Peers::Server,
+                    message.meta.source,
+                )
+                .unwrap(),
+            )
+            .await;
+        true
+    }
+
+    /// Process a ping message.
+    async fn process_ping(&self, meta: MessageMeta, id: u32) {
         let _ = self
             .outputs
             .send(
