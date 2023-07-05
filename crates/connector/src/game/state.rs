@@ -5,17 +5,15 @@ use async_std::sync::{Arc, RwLock};
 use de_net::Targets;
 use thiserror::Error;
 
-const MAX_PLAYERS: u8 = 8;
-
 #[derive(Clone)]
 pub(super) struct GameState {
     inner: Arc<RwLock<GameStateInner>>,
 }
 
 impl GameState {
-    pub(super) fn new() -> Self {
+    pub(super) fn new(max_players: u8) -> Self {
         Self {
-            inner: Arc::new(RwLock::new(GameStateInner::new())),
+            inner: Arc::new(RwLock::new(GameStateInner::new(max_players))),
         }
     }
 
@@ -58,9 +56,9 @@ struct GameStateInner {
 }
 
 impl GameStateInner {
-    fn new() -> Self {
+    fn new(max_players: u8) -> Self {
         Self {
-            available_ids: Vec::from_iter((0..MAX_PLAYERS).rev()),
+            available_ids: Vec::from_iter((0..max_players).rev()),
             players: AHashMap::new(),
         }
     }
@@ -149,7 +147,7 @@ mod tests {
     #[test]
     fn test_state() {
         task::block_on(task::spawn(async {
-            let mut state = GameState::new();
+            let mut state = GameState::new(8);
             let mut ids: HashSet<u8> = HashSet::new();
 
             assert!(ids.insert(state.add("127.0.0.1:1001".parse().unwrap()).await.unwrap()));
@@ -196,7 +194,7 @@ mod tests {
 
     #[test]
     fn test_targets() {
-        let mut state = GameStateInner::new();
+        let mut state = GameStateInner::new(8);
 
         assert!(state.targets(None).is_none());
 

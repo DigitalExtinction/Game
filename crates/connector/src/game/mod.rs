@@ -19,7 +19,10 @@ mod state;
 ///
 /// * `owner` - address of the creator of the game. This client will be
 ///   automatically added to the game as if they sent [`de_net::ToGame::Join`].
-pub(crate) async fn startup(socket: Socket, owner: SocketAddr) {
+///
+/// * `max_players` - maximum number of clients which may connect to the game
+///   at the same time
+pub(crate) async fn startup(socket: Socket, owner: SocketAddr, max_players: u8) {
     let port = socket.port();
     let (outputs, inputs, errors) = de_net::startup(
         |t| {
@@ -34,7 +37,7 @@ pub(crate) async fn startup(socket: Socket, owner: SocketAddr) {
     let (players_sender, players_receiver) = bounded(16);
     task::spawn(mreceiver::run(port, inputs, server_sender, players_sender));
 
-    let state = GameState::new();
+    let state = GameState::new(max_players);
     let server = GameProcessor::new(port, owner, server_receiver, outputs.clone(), state.clone());
     task::spawn(server.run());
 

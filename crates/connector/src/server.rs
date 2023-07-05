@@ -61,20 +61,20 @@ impl MainServer {
 
             match message {
                 ToServer::Ping(id) => self.reply(&FromServer::Pong(id), source).await?,
-                ToServer::OpenGame => self.open_game(source).await?,
+                ToServer::OpenGame { max_players } => self.open_game(source, max_players).await?,
             }
         }
 
         Ok(())
     }
 
-    async fn open_game(&mut self, source: SocketAddr) -> anyhow::Result<()> {
+    async fn open_game(&mut self, source: SocketAddr, max_players: u8) -> anyhow::Result<()> {
         match Socket::bind(None).await {
             Ok(socket) => {
                 let port = socket.port();
                 info!("Starting new game on port {port}.");
                 self.reply(&FromServer::GameOpened { port }, source).await?;
-                game::startup(socket, source).await;
+                game::startup(socket, source, max_players).await;
                 Ok(())
             }
             Err(error) => {

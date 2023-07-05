@@ -8,7 +8,7 @@ pub enum ToServer {
     Ping(u32),
     /// This message opens a new game on the server. The server responds with
     /// [`FromServer::GameOpened`].
-    OpenGame,
+    OpenGame { max_players: u8 },
 }
 
 /// Message to be sent from a main server to a player/client (outside of a
