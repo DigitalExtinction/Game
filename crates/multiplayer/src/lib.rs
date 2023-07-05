@@ -8,6 +8,7 @@
 //! down via [`ShutdownMultiplayerEvent`].
 
 use bevy::{app::PluginGroupBuilder, prelude::*};
+use game::GamePlugin;
 use lifecycle::LifecyclePlugin;
 use messages::MessagesPlugin;
 
@@ -19,6 +20,7 @@ pub use crate::{
 use crate::{netstate::NetStatePlugin, network::NetworkPlugin};
 
 mod config;
+mod game;
 mod lifecycle;
 mod messages;
 mod netstate;
@@ -33,5 +35,6 @@ impl PluginGroup for MultiplayerPluginGroup {
             .add(LifecyclePlugin)
             .add(NetworkPlugin)
             .add(MessagesPlugin)
+            .add(GamePlugin)
     }
 }

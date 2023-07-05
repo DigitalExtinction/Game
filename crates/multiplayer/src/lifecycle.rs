@@ -89,7 +89,7 @@ fn start(
 }
 
 fn shutdown(mut next_state: ResMut<NextState<NetState>>) {
-    next_state.set(NetState::None);
+    next_state.set(NetState::ShuttingDown);
 }
 
 fn errors(

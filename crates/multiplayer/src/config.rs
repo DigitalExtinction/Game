@@ -1,16 +1,24 @@
 use std::net::IpAddr;
 
+use de_core::player::Player;
+
 pub struct NetGameConf {
+    max_players: Player,
     server_host: IpAddr,
     server_port: ServerPort,
 }
 
 impl NetGameConf {
-    pub fn new(server_host: IpAddr, server_port: ServerPort) -> Self {
+    pub fn new(max_players: Player, server_host: IpAddr, server_port: ServerPort) -> Self {
         Self {
+            max_players,
             server_host,
             server_port,
         }
+    }
+
+    pub(crate) fn max_players(&self) -> Player {
+        self.max_players
     }
 
     /// Address of DE Connector server.
