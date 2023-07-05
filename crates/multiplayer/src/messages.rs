@@ -6,7 +6,7 @@ use de_net::{FromGame, FromServer, InPackage, PackageBuilder, Peers, ToGame, ToS
 
 use crate::{
     config::ServerPort,
-    lifecycle::NetGameConfRes,
+    lifecycle::{FatalErrorEvent, NetGameConfRes},
     netstate::NetState,
     network::{NetworkSet, PackageReceivedEvent, SendPackageEvent},
 };
@@ -185,19 +185,23 @@ fn recv_messages(
     mut packages: EventReader<PackageReceivedEvent>,
     mut main_server: EventWriter<FromMainServerEvent>,
     mut game_server: EventWriter<FromGameServerEvent>,
+    mut fatals: EventWriter<FatalErrorEvent>,
 ) {
     for event in packages.iter() {
         let package = event.package();
         if ports.is_main(package.source().port()) {
-            decode_and_send::<FromServer, _>(package, &mut main_server);
+            decode_and_send::<FromServer, _>(package, &mut main_server, &mut fatals);
         } else {
-            decode_and_send::<FromGame, _>(package, &mut game_server);
+            decode_and_send::<FromGame, _>(package, &mut game_server, &mut fatals);
         }
     }
 }
 
-fn decode_and_send<P, E>(package: &InPackage, events: &mut EventWriter<E>)
-where
+fn decode_and_send<P, E>(
+    package: &InPackage,
+    events: &mut EventWriter<E>,
+    fatals: &mut EventWriter<FatalErrorEvent>,
+) where
     P: bincode::Decode,
     E: From<P> + Send + Sync + 'static,
 {
@@ -207,7 +211,10 @@ where
                 events.send(message.into());
             }
             Err(err) => {
-                warn!("Invalid data received: {:?}", err);
+                fatals.send(FatalErrorEvent::new(format!(
+                    "Invalid data received: {:?}",
+                    err
+                )));
                 break;
             }
         }

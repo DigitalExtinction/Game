@@ -1,6 +1,7 @@
 use std::ops::Deref;
 
 use bevy::prelude::*;
+use de_gui::ToastEvent;
 
 use crate::{config::NetGameConf, NetState};
 
@@ -10,6 +11,7 @@ impl Plugin for LifecyclePlugin {
     fn build(&self, app: &mut App) {
         app.add_event::<StartMultiplayerEvent>()
             .add_event::<ShutdownMultiplayerEvent>()
+            .add_event::<FatalErrorEvent>()
             .add_system(cleanup.in_schedule(OnEnter(NetState::None)))
             .add_system(
                 start
@@ -20,6 +22,11 @@ impl Plugin for LifecyclePlugin {
                 shutdown
                     .run_if(not(in_state(NetState::None)))
                     .run_if(on_event::<ShutdownMultiplayerEvent>()),
+            )
+            .add_system(
+                errors
+                    .run_if(not(in_state(NetState::None)))
+                    .run_if(on_event::<FatalErrorEvent>()),
             );
     }
 }
@@ -40,6 +47,18 @@ impl StartMultiplayerEvent {
 
 /// Send this event to shutdown multiplayer functionality.
 pub struct ShutdownMultiplayerEvent;
+
+/// Send this event when a fatal multiplayer event occurs. These are events
+/// which prevents further continuation of multiplayer game.
+///
+/// An error will be displayed to the user and multiplayer will shut down.
+pub(crate) struct FatalErrorEvent(String);
+
+impl FatalErrorEvent {
+    pub(crate) fn new(message: impl ToString) -> Self {
+        Self(message.to_string())
+    }
+}
 
 #[derive(Resource)]
 pub(crate) struct NetGameConfRes(NetGameConf);
@@ -71,4 +90,20 @@ fn start(
 
 fn shutdown(mut next_state: ResMut<NextState<NetState>>) {
     next_state.set(NetState::None);
+}
+
+fn errors(
+    mut events: EventReader<FatalErrorEvent>,
+    mut toasts: EventWriter<ToastEvent>,
+    mut shutdowns: EventWriter<ShutdownMultiplayerEvent>,
+) {
+    let Some(event) = events.iter().next() else {
+        return;
+    };
+
+    error!("Fatal multiplayer error: {}", event.0);
+    toasts.send(ToastEvent::new(&event.0));
+    shutdowns.send(ShutdownMultiplayerEvent);
+
+    events.clear();
 }
