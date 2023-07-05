@@ -1,6 +1,7 @@
 use std::ops::Deref;
 
 use bevy::prelude::*;
+use de_core::state::AppState;
 use de_gui::ToastEvent;
 
 use crate::{config::NetGameConf, NetState};
@@ -13,6 +14,11 @@ impl Plugin for LifecyclePlugin {
             .add_event::<ShutdownMultiplayerEvent>()
             .add_event::<FatalErrorEvent>()
             .add_system(cleanup.in_schedule(OnEnter(NetState::None)))
+            .add_system(
+                game_left
+                    .in_schedule(OnExit(AppState::InGame))
+                    .run_if(not(in_state(NetState::None))),
+            )
             .add_system(
                 start
                     .run_if(in_state(NetState::None))
@@ -106,4 +112,8 @@ fn errors(
     shutdowns.send(ShutdownMultiplayerEvent);
 
     events.clear();
+}
+
+fn game_left(mut shutdowns: EventWriter<ShutdownMultiplayerEvent>) {
+    shutdowns.send(ShutdownMultiplayerEvent);
 }
