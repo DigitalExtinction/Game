@@ -8,13 +8,14 @@ use de_net::{
 };
 use tracing::{error, info, warn};
 
-use crate::game;
+use crate::{clients::Clients, game};
 
 /// Main game server responsible for initial communication with clients and
 /// establishment of game sub-servers.
 pub(crate) struct MainServer {
     outputs: PackageSender,
     inputs: PackageReceiver,
+    clients: Clients,
 }
 
 impl MainServer {
@@ -26,7 +27,11 @@ impl MainServer {
             },
             socket,
         );
-        Self { outputs, inputs }
+        Self {
+            outputs,
+            inputs,
+            clients: Clients::new(),
+        }
     }
 
     pub(crate) async fn run(mut self) -> anyhow::Result<()> {
@@ -69,16 +74,24 @@ impl MainServer {
     }
 
     async fn open_game(&mut self, source: SocketAddr, max_players: u8) -> anyhow::Result<()> {
+        if let Err(err) = self.clients.reserve(source).await {
+            warn!("Ignoring OpenGame request: {err}");
+            return Ok(());
+        }
+
         match Socket::bind(None).await {
             Ok(socket) => {
                 let port = socket.port();
+                self.clients.set(source, port).await;
+
                 info!("Starting new game on port {port}.");
                 self.reply(&FromServer::GameOpened { port }, source).await?;
-                game::startup(socket, source, max_players).await;
+                game::startup(self.clients.clone(), socket, source, max_players).await;
                 Ok(())
             }
             Err(error) => {
                 error!("Failed to open a new game: {:?}", error);
+                self.clients.free(source).await;
                 Ok(())
             }
         }

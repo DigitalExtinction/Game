@@ -4,6 +4,7 @@ use async_std::{channel::bounded, task};
 use de_net::{self, Socket};
 
 use self::{greceiver::GameProcessor, state::GameState};
+use crate::clients::Clients;
 
 mod ereceiver;
 mod greceiver;
@@ -15,6 +16,8 @@ mod state;
 ///
 /// # Arguments
 ///
+/// * `clients` - global clients tracker.
+///
 /// * `socket` - socket to use for the game server.
 ///
 /// * `owner` - address of the creator of the game. This client will be
@@ -22,7 +25,7 @@ mod state;
 ///
 /// * `max_players` - maximum number of clients which may connect to the game
 ///   at the same time
-pub(crate) async fn startup(socket: Socket, owner: SocketAddr, max_players: u8) {
+pub(crate) async fn startup(clients: Clients, socket: Socket, owner: SocketAddr, max_players: u8) {
     let port = socket.port();
     let (outputs, inputs, errors) = de_net::startup(
         |t| {
@@ -38,7 +41,14 @@ pub(crate) async fn startup(socket: Socket, owner: SocketAddr, max_players: u8) 
     task::spawn(mreceiver::run(port, inputs, server_sender, players_sender));
 
     let state = GameState::new(max_players);
-    let server = GameProcessor::new(port, owner, server_receiver, outputs.clone(), state.clone());
+    let server = GameProcessor::new(
+        port,
+        owner,
+        server_receiver,
+        outputs.clone(),
+        state.clone(),
+        clients,
+    );
     task::spawn(server.run());
 
     task::spawn(preceiver::run(port, players_receiver, outputs, state));
