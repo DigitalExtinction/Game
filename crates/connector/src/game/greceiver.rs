@@ -112,7 +112,7 @@ impl GameProcessor {
     /// Returns true if the massage should be ignored and further handles such
     /// messages.
     async fn handle_ignore(&self, message: &ToGameMessage) -> bool {
-        if !matches!(message.message, ToGame::Join | ToGame::Leave) {
+        if matches!(message.message, ToGame::Join | ToGame::Leave) {
             // Join must be excluded from the condition because of the
             // chicken and egg problem.
             //
