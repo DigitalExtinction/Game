@@ -1,6 +1,10 @@
 use async_std::path::PathBuf;
 use bevy::prelude::*;
-use de_core::{gconfig::GameConfig, player::Player, state::AppState};
+use de_core::{
+    gconfig::{GameConfig, LocalPlayers},
+    player::Player,
+    state::AppState,
+};
 use de_gui::{ButtonCommands, GuiCommands, OuterStyle, ToastEvent};
 
 use crate::{
@@ -99,8 +103,8 @@ fn button_system(
                     Some(path) => {
                         commands.insert_resource(GameConfig::new(
                             path,
-                            Player::Player1,
                             Player::Player4,
+                            LocalPlayers::new(Player::Player1),
                         ));
                         next_state.set(AppState::InGame);
                     }

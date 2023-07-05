@@ -25,12 +25,11 @@ fn game_end_detection_system(
     counter: Res<ObjectCounter>,
 ) {
     let mut result = None;
-    if counter.player(conf.player()).unwrap().total() == 0 {
+    if counter.player(conf.locals().playable()).unwrap().total() == 0 {
         result = Some(GameResult::new(false));
-    } else if conf
-        .players()
-        .all(|player| conf.is_local_player(player) || counter.player(player).unwrap().total() == 0)
-    {
+    } else if conf.players().all(|player| {
+        conf.locals().is_playable(player) || counter.player(player).unwrap().total() == 0
+    }) {
         result = Some(GameResult::new(true));
     }
 

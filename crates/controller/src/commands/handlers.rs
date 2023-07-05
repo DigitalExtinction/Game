@@ -199,7 +199,7 @@ fn right_click_handler(
     match pointer.entity().filter(|&entity| {
         targets
             .get(entity)
-            .map(|&player| !config.is_local_player(player))
+            .map(|&player| !config.locals().is_playable(player))
             .unwrap_or(false)
     }) {
         Some(enemy) => attack_events.send(GroupAttackEvent::new(enemy)),
@@ -389,7 +389,12 @@ fn place_draft(
           counter: Res<ObjectCounter>,
           pointer: Res<Pointer>,
           mut events: EventWriter<NewDraftEvent>| {
-        if counter.player(conf.player()).unwrap().building_count() >= PLAYER_MAX_BUILDINGS {
+        if counter
+            .player(conf.locals().playable())
+            .unwrap()
+            .building_count()
+            >= PLAYER_MAX_BUILDINGS
+        {
             warn!("Maximum number of buildings reached.");
             return;
         }

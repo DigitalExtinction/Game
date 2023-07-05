@@ -88,7 +88,7 @@ fn draw_entities_system(
 
     for (transform, &player, &object_type) in entities.iter() {
         let minimap_position = ui_coords.flat_to_rel(transform.translation.to_flat());
-        let color = if game.is_local_player(player) {
+        let color = if game.locals().is_playable(player) {
             PLAYER_COLOR
         } else {
             ENEMY_COLOR

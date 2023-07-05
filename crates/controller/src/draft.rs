@@ -90,7 +90,7 @@ fn spawn(
             commands.entity(entity).despawn_recursive();
             commands.spawn((
                 SpawnBundle::new(object_type, transform),
-                game_config.player(),
+                game_config.locals().playable(),
                 DespawnOnGameExit,
             ));
         }
