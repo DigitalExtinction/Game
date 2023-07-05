@@ -59,6 +59,9 @@ impl LocalPlayers {
     }
 
     /// The player controlled directly by the user on this computer.
+    ///
+    /// Note that other players than this one may be playable in case that
+    /// "godmode" is enabled.
     pub fn playable(&self) -> Player {
         self.playable
     }
@@ -66,7 +69,7 @@ impl LocalPlayers {
     /// Returns true if the player is controlled directly by the user on this
     /// computer.
     pub fn is_playable(&self, player: Player) -> bool {
-        self.playable == player
+        cfg!(feature = "godmode") || self.playable == player
     }
 
     fn validate(&self, max_player: Player) -> Result<(), String> {

@@ -196,6 +196,9 @@ fn right_click_handler(
     targets: Query<&Player>,
     pointer: Res<Pointer>,
 ) {
+    // TODO do not use config.locals().is_playable(player) for enemy detection
+    // it doesn't work well with godmode
+
     match pointer.entity().filter(|&entity| {
         targets
             .get(entity)

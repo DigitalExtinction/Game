@@ -11,6 +11,9 @@ homepage.workspace = true
 license.workspace = true
 categories.workspace = true
 
+[features]
+godmode = []
+
 [dependencies]
 async-std.workspace = true
 bevy.workspace = true

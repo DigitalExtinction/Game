@@ -11,9 +11,6 @@ homepage.workspace = true
 license.workspace = true
 categories.workspace = true
 
-[features]
-godmode = []
-
 [dependencies]
 # DE
 de_core.workspace = true
