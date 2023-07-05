@@ -109,8 +109,8 @@ fn test() {
         received.load(&mut client, &mut buffer).await;
         received.load(&mut client, &mut buffer).await;
 
-        // [3, 1] -> FromGame::PeerJoined(1)
-        let id = received.find_id(true, &[3, 1]).unwrap().to_be_bytes();
+        // [4, 1] -> FromGame::PeerJoined(1)
+        let id = received.find_id(true, &[4, 1]).unwrap().to_be_bytes();
         // And send a confirmation
         client
             .send(server, &[128, 0, 0, 0, id[1], id[2], id[3]])
@@ -291,8 +291,8 @@ async fn create_game() -> (Socket, u16) {
     let mut received = ReceivedBuffer::new();
     received.load(&mut client, &mut buffer).await;
 
-    // [1, 0] -> FromGame::Joined(0)
-    let id = received.find_id(true, &[1, 0]).unwrap().to_be_bytes();
+    // [2, 0] -> FromGame::Joined(0)
+    let id = received.find_id(true, &[2, 0]).unwrap().to_be_bytes();
     client
         .send(server, &[128, 0, 0, 0, id[1], id[2], id[3]])
         .await
@@ -317,8 +317,8 @@ async fn join_game(game_port: u16) -> Socket {
     received.load(&mut client, &mut buffer).await;
     received.assert_confirmed(3);
 
-    // [1, 1] -> FromGame::Joined(1)
-    let id = received.find_id(true, &[1, 1]).unwrap().to_be_bytes();
+    // [2, 1] -> FromGame::Joined(1)
+    let id = received.find_id(true, &[2, 1]).unwrap().to_be_bytes();
     client
         .send(server, &[128, 0, 0, 0, id[1], id[2], id[3]])
         .await
