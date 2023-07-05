@@ -40,6 +40,10 @@ pub enum ToGame {
 
 /// Message to be sent from a game server to a player/client (inside of a
 /// game).
+///
+/// # Notes
+///
+/// * Players are numbered from 1 to `max_players` (inclusive).
 #[derive(Encode, Decode)]
 pub enum FromGame {
     /// Response to [`ToGame::Ping`].
