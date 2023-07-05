@@ -193,7 +193,7 @@ fn recv_errors(receiver: Res<Errors>, mut fatals: EventWriter<FatalErrorEvent>) 
         match receiver.try_recv() {
             Ok(error) => {
                 fatals.send(FatalErrorEvent::new(format!(
-                    "Connection lost with {:?}.",
+                    "Connection error with {:?}.",
                     error.target()
                 )));
             }
