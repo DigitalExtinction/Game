@@ -28,7 +28,7 @@ impl Socket {
     ///
     /// * `port` - if None, system assigned port is used.
     pub async fn bind(port: Option<u16>) -> io::Result<Self> {
-        let addr = SocketAddr::new(IpAddr::V4(Ipv4Addr::LOCALHOST), port.unwrap_or(0));
+        let addr = SocketAddr::new(IpAddr::V4(Ipv4Addr::UNSPECIFIED), port.unwrap_or(0));
         let socket = UdpSocket::bind(addr).await?;
 
         let obtained_port = socket.local_addr().map(|addr| addr.port())?;
