@@ -51,14 +51,14 @@ impl GameState {
 }
 
 struct GameStateInner {
-    available_ids: Vec<u8>,
+    available_ids: AvailableIds,
     players: AHashMap<SocketAddr, Player>,
 }
 
 impl GameStateInner {
     fn new(max_players: u8) -> Self {
         Self {
-            available_ids: Vec::from_iter((1..=max_players).rev()),
+            available_ids: AvailableIds::new(max_players),
             players: AHashMap::new(),
         }
     }
@@ -74,7 +74,7 @@ impl GameStateInner {
     fn add(&mut self, addr: SocketAddr) -> Result<u8, JoinError> {
         match self.players.entry(addr) {
             Entry::Occupied(_) => Err(JoinError::AlreadyJoined),
-            Entry::Vacant(vacant) => match self.available_ids.pop() {
+            Entry::Vacant(vacant) => match self.available_ids.lease() {
                 Some(id) => {
                     vacant.insert(Player { id });
                     Ok(id)
@@ -87,8 +87,7 @@ impl GameStateInner {
     fn remove(&mut self, addr: SocketAddr) -> Option<u8> {
         match self.players.remove_entry(&addr) {
             Some((_, player)) => {
-                debug_assert!(!self.available_ids.contains(&player.id));
-                self.available_ids.push(player.id);
+                self.available_ids.release(player.id);
                 Some(player.id)
             }
             None => None,
@@ -121,6 +120,36 @@ impl GameStateInner {
             }
             Some(addrs.into())
         }
+    }
+}
+
+struct AvailableIds(Vec<u8>);
+
+impl AvailableIds {
+    fn new(max_players: u8) -> Self {
+        Self(Vec::from_iter((1..=max_players).rev()))
+    }
+
+    /// Borrows a new ID or returns None if all are already borrowed.
+    fn lease(&mut self) -> Option<u8> {
+        self.0.pop()
+    }
+
+    /// Makes a borrowed ID available for another borrow.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the ID is not borrowed.
+    fn release(&mut self, id: u8) {
+        let index = match self.0.iter().position(|other| *other <= id) {
+            Some(index) => {
+                assert_ne!(self.0[index], id);
+                index
+            }
+            None => self.0.len(),
+        };
+
+        self.0.insert(index, id);
     }
 }
 
@@ -229,5 +258,23 @@ mod tests {
                 "127.0.0.1:2003".parse().unwrap(),
             ])
         );
+    }
+
+    #[test]
+    fn test_available_ids() {
+        let mut ids = AvailableIds::new(3);
+
+        assert_eq!(ids.lease().unwrap(), 1);
+        assert_eq!(ids.lease().unwrap(), 2);
+        assert_eq!(ids.lease().unwrap(), 3);
+        assert!(ids.lease().is_none());
+
+        ids.release(2);
+        ids.release(3);
+        ids.release(1);
+        assert_eq!(ids.lease().unwrap(), 1);
+        assert_eq!(ids.lease().unwrap(), 2);
+        assert_eq!(ids.lease().unwrap(), 3);
+        assert!(ids.lease().is_none());
     }
 }
