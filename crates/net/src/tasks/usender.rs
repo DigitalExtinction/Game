@@ -20,15 +20,22 @@ pub(super) async fn run(
 ) {
     info!("Starting package sender on port {port}...");
 
-    let mut counter = PackageId::zero();
+    let mut counter_reliable = PackageId::zero();
+    let mut counter_unreliable = PackageId::zero();
 
     loop {
         let Ok(package) = packages.recv().await else {
             break;
         };
 
-        let header = DatagramHeader::new_package(package.reliable(), package.peers(), counter);
-        counter = counter.incremented();
+        let counter = if package.reliable() {
+            &mut counter_reliable
+        } else {
+            &mut counter_unreliable
+        };
+
+        let header = DatagramHeader::new_package(package.reliable(), package.peers(), *counter);
+        *counter = counter.incremented();
 
         if let DatagramHeader::Package(package_header) = header {
             if package_header.reliable() {
