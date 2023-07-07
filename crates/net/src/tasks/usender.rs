@@ -6,7 +6,7 @@ use tracing::{error, info};
 use super::{cancellation::CancellationSender, dsender::OutDatagram};
 use crate::{
     connection::Resends,
-    header::{DatagramHeader, PackageId},
+    header::{DatagramHeader, PackageIdRange},
     OutPackage,
 };
 
@@ -20,22 +20,21 @@ pub(super) async fn run(
 ) {
     info!("Starting package sender on port {port}...");
 
-    let mut counter_reliable = PackageId::zero();
-    let mut counter_unreliable = PackageId::zero();
+    let mut counter_reliable = PackageIdRange::counter();
+    let mut counter_unreliable = PackageIdRange::counter();
 
     loop {
         let Ok(package) = packages.recv().await else {
             break;
         };
 
-        let counter = if package.reliable() {
-            &mut counter_reliable
+        let package_id = if package.reliable() {
+            counter_reliable.next().unwrap()
         } else {
-            &mut counter_unreliable
+            counter_unreliable.next().unwrap()
         };
 
-        let header = DatagramHeader::new_package(package.reliable(), package.peers(), *counter);
-        *counter = counter.incremented();
+        let header = DatagramHeader::new_package(package.reliable(), package.peers(), package_id);
 
         if let DatagramHeader::Package(package_header) = header {
             if package_header.reliable() {
