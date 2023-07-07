@@ -6,7 +6,7 @@ use std::{
 use ahash::AHashMap;
 
 /// Connection info should be tossed away after this time.
-const MAX_CONN_AGE: Duration = Duration::from_secs(600);
+pub(crate) const MAX_CONN_AGE: Duration = Duration::from_secs(600);
 
 pub(super) trait Connection {
     /// Returns true if the value holds any pending actions on the connection.

@@ -4,7 +4,7 @@ use async_std::{
     channel::{Receiver, Sender},
     future::timeout,
 };
-use tracing::{error, info};
+use tracing::{error, info, trace, warn};
 
 use super::{cancellation::CancellationSender, dreceiver::InPackageDatagram};
 use crate::{connection::Confirmations, InPackage};
@@ -26,11 +26,20 @@ pub(super) async fn run(
     loop {
         let Ok(result) = timeout(Duration::from_millis(500), datagrams.recv()).await else {
             if packages.is_closed() {
+                // This must be here in case of no incoming packages to ensure
+                // that the check is done at least once every 500ms.
                 break;
             } else {
                 continue;
             }
         };
+
+        // This must be here in case of both a) packages are incoming
+        // frequently (so no timeouts above), b) packages are skipped because
+        // they are duplicates (so no packages.send() is called).
+        if packages.is_closed() {
+            break;
+        }
 
         let Ok(datagram) = result else {
             error!("Datagram receiver channel is unexpectedly closed.");
@@ -38,9 +47,23 @@ pub(super) async fn run(
         };
 
         if datagram.header.reliable() {
-            confirms
+            match confirms
                 .received(Instant::now(), datagram.source, datagram.header.id())
-                .await;
+                .await
+            {
+                Ok(true) => {
+                    trace!(
+                        "Duplicate delivery of package {:?} from {:?}.",
+                        datagram.header.id(),
+                        datagram.source
+                    );
+                    continue;
+                }
+                Ok(false) => (),
+                Err(err) => {
+                    warn!("Package ID error: {err:?}");
+                }
+            }
         }
 
         let result = packages

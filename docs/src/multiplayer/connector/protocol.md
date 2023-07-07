@@ -31,7 +31,7 @@ Reliability is signaled by the second highest bit of the flags byte
 (represented by the mask `0b0100_0000`). Packages sent in reliable mode always
 receive confirmation from the receiving party and are retransmitted multiple
 times, with the time delay exponentially increasing until a confirmation is
-obtained.
+obtained. Reliably sent packages are automatically deduplicated.
 
 Packages can be targeted to the server. This is signaled by the third highest
 bit of the flags byte (represented by the mask `0b0010_0000`). All other

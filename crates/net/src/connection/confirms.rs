@@ -1,16 +1,19 @@
 use std::{
+    cmp::Ordering,
     net::SocketAddr,
     time::{Duration, Instant},
 };
 
+use ahash::AHashSet;
 use async_std::{
     channel::{SendError, Sender},
     sync::{Arc, Mutex},
 };
+use thiserror::Error;
 
 use super::book::{Connection, ConnectionBook};
 use crate::{
-    header::{DatagramHeader, PackageId},
+    header::{DatagramHeader, PackageId, PackageIdRange},
     protocol::MAX_PACKAGE_SIZE,
     tasks::OutDatagram,
 };
@@ -20,10 +23,11 @@ use crate::{
 const MAX_BUFF_SIZE: usize = 96;
 /// The buffer is flushed after the oldest part is older than this.
 const MAX_BUFF_AGE: Duration = Duration::from_millis(100);
+const MAX_SKIPPED: usize = 1024;
 
 #[derive(Clone)]
 pub(crate) struct Confirmations {
-    book: Arc<Mutex<ConnectionBook<Buffer>>>,
+    book: Arc<Mutex<ConnectionBook<IdReceiver>>>,
 }
 
 impl Confirmations {
@@ -33,16 +37,23 @@ impl Confirmations {
         }
     }
 
-    /// This method marks a package with `id` from `addr` as received.
+    /// This method checks whether a package with `id` from `addr` was already
+    /// marked as received in the past. If so it returns true. Otherwise, it
+    /// marks the package as received and returns false.
     ///
     /// This method should be called exactly once after each reliable package
-    /// is delivered.
-    pub(crate) async fn received(&mut self, time: Instant, addr: SocketAddr, id: PackageId) {
+    /// is delivered and in order.
+    pub(crate) async fn received(
+        &mut self,
+        time: Instant,
+        addr: SocketAddr,
+        id: PackageId,
+    ) -> Result<bool, PackageIdError> {
         self.book
             .lock()
             .await
-            .update(time, addr, Buffer::new)
-            .push(time, id);
+            .update(time, addr, IdReceiver::new)
+            .push(time, id)
     }
 
     /// Send package confirmation datagrams.
@@ -71,10 +82,10 @@ impl Confirmations {
         let mut next = Instant::now() + MAX_BUFF_AGE;
         let mut book = self.book.lock().await;
 
-        while let Some((addr, buffer)) = book.next() {
-            if let Some(expiration) = buffer.expiration() {
-                if force || expiration <= time || buffer.full() {
-                    while let Some(data) = buffer.flush(MAX_PACKAGE_SIZE) {
+        while let Some((addr, id_receiver)) = book.next() {
+            if let Some(expiration) = id_receiver.buffer.expiration() {
+                if force || expiration <= time || id_receiver.buffer.full() {
+                    while let Some(data) = id_receiver.buffer.flush(MAX_PACKAGE_SIZE) {
                         datagrams
                             .send(OutDatagram::new(
                                 DatagramHeader::Confirmation,
@@ -97,6 +108,85 @@ impl Confirmations {
     }
 }
 
+struct IdReceiver {
+    duplicates: Duplicates,
+    buffer: Buffer,
+}
+
+impl IdReceiver {
+    fn new() -> Self {
+        Self {
+            duplicates: Duplicates::new(),
+            buffer: Buffer::new(),
+        }
+    }
+
+    /// Registers a package as received and returns whether the it was a
+    /// duplicate delivery.
+    fn push(&mut self, time: Instant, id: PackageId) -> Result<bool, PackageIdError> {
+        // Push to the buffer unconditionally, because the reason behind the
+        // re-delivery might be loss of the confirmation datagram.
+        self.buffer.push(time, id);
+        self.duplicates.process(id)
+    }
+}
+
+impl Connection for IdReceiver {
+    fn pending(&self) -> bool {
+        !self.buffer.is_empty()
+    }
+}
+
+struct Duplicates {
+    highest_id: Option<PackageId>,
+    holes: AHashSet<PackageId>,
+}
+
+impl Duplicates {
+    fn new() -> Self {
+        Self {
+            highest_id: None,
+            holes: AHashSet::new(),
+        }
+    }
+
+    /// Registers package as delivered and returns true if it was already
+    /// delivered in the past.
+    fn process(&mut self, id: PackageId) -> Result<bool, PackageIdError> {
+        let range_start = match self.highest_id {
+            Some(highest) => match highest.ordering(id) {
+                Ordering::Less => highest.incremented(),
+                Ordering::Greater => {
+                    return Ok(!self.holes.remove(&id));
+                }
+                Ordering::Equal => {
+                    return Ok(true);
+                }
+            },
+            None => PackageId::zero(),
+        };
+
+        let range = PackageIdRange::range(range_start, id);
+        let skipped = range.size_hint().1.unwrap() + self.holes.len();
+        if skipped > MAX_SKIPPED {
+            return Err(PackageIdError::TooManySkipped(skipped));
+        }
+
+        self.highest_id = Some(id);
+        for hole in range {
+            self.holes.insert(hole);
+        }
+
+        Ok(false)
+    }
+}
+
+#[derive(Error, Debug)]
+pub(crate) enum PackageIdError {
+    #[error("Too many packages skipped: {0}")]
+    TooManySkipped(usize),
+}
+
 /// Buffer with datagram confirmations.
 struct Buffer {
     oldest: Instant,
@@ -111,6 +201,10 @@ impl Buffer {
             buffer: Vec::with_capacity(MAX_BUFF_SIZE),
             flushed: 0,
         }
+    }
+
+    fn is_empty(&self) -> bool {
+        self.buffer.is_empty()
     }
 
     /// Pushes another datagram ID to the buffer.
@@ -154,15 +248,48 @@ impl Buffer {
     }
 }
 
-impl Connection for Buffer {
-    fn pending(&self) -> bool {
-        !self.buffer.is_empty()
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn test_duplicates() {
+        let mut duplicates = Duplicates::new();
+
+        assert!(!duplicates
+            .process(PackageId::from_bytes(&[0, 0, 2]))
+            .unwrap());
+        assert!(!duplicates
+            .process(PackageId::from_bytes(&[0, 0, 1]))
+            .unwrap());
+        assert!(duplicates
+            .process(PackageId::from_bytes(&[0, 0, 1]))
+            .unwrap());
+        assert!(!duplicates
+            .process(PackageId::from_bytes(&[0, 0, 0]))
+            .unwrap());
+
+        assert!(!duplicates
+            .process(PackageId::from_bytes(&[0, 0, 5]))
+            .unwrap());
+        assert!(!duplicates
+            .process(PackageId::from_bytes(&[0, 0, 3]))
+            .unwrap());
+        assert!(duplicates
+            .process(PackageId::from_bytes(&[0, 0, 5]))
+            .unwrap());
+        assert!(!duplicates
+            .process(PackageId::from_bytes(&[0, 0, 6]))
+            .unwrap());
+        assert!(duplicates
+            .process(PackageId::from_bytes(&[0, 0, 3]))
+            .unwrap());
+
+        assert!(matches!(
+            duplicates.process(PackageId::from_bytes(&[50, 0, 6])),
+            Err(PackageIdError::TooManySkipped(3276800))
+        ));
+    }
 
     #[test]
     fn test_buffer() {

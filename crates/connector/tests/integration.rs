@@ -121,12 +121,15 @@ fn test() {
 
         let mut data = [22; 412];
         data[0] = 64; // Reliable
+        data[1] = 0;
+        data[2] = 0;
+        data[3] = 22;
         client.send(server, &data).await.unwrap();
 
         let mut received = ReceivedBuffer::new();
         received.load(&mut client, &mut buffer).await;
         received.load(&mut client, &mut buffer).await;
-        received.assert_confirmed(1447446);
+        received.assert_confirmed(22);
         received.find_id(false, &[82, 83, 84]).unwrap();
 
         // Try to send invalid data -- wrong header
@@ -177,14 +180,14 @@ fn test() {
 
         client
             // Reliable
-            .send(server, &[64, 0, 8, 7, 5, 6, 7, 8])
+            .send(server, &[64, 0, 0, 14, 5, 6, 7, 8])
             .await
             .unwrap();
 
         let mut received = ReceivedBuffer::new();
         received.load(&mut client, &mut buffer).await;
         received.load(&mut client, &mut buffer).await;
-        received.assert_confirmed(2055);
+        received.assert_confirmed(14);
         let id = received.find_id(true, &[22; 408]).unwrap().to_be_bytes();
         // Sending confirmation
 

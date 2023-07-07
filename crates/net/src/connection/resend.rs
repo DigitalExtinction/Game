@@ -12,7 +12,7 @@ use async_std::{
 use priority_queue::PriorityQueue;
 
 use super::{
-    book::{Connection, ConnectionBook},
+    book::{Connection, ConnectionBook, MAX_CONN_AGE},
     databuf::DataBuf,
 };
 use crate::{
@@ -22,6 +22,7 @@ use crate::{
 
 const START_BACKOFF_MS: u64 = 220;
 const MAX_TRIES: u8 = 6;
+const MAX_BASE_RESEND_INTERVAL_MS: u64 = (MAX_CONN_AGE.as_millis() / 2) as u64;
 
 #[derive(Clone)]
 pub(crate) struct Resends {
@@ -269,7 +270,7 @@ impl Timing {
     }
 
     fn backoff(attempt: u8) -> u64 {
-        START_BACKOFF_MS * 2u64.pow(attempt as u32)
+        MAX_BASE_RESEND_INTERVAL_MS.min(START_BACKOFF_MS * 2u64.pow(attempt as u32))
     }
 
     fn jitter(millis: u64) -> u64 {

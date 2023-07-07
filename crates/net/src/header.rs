@@ -1,4 +1,4 @@
-use std::fmt;
+use std::{cmp::Ordering, fmt};
 
 use thiserror::Error;
 
@@ -150,6 +150,8 @@ pub(crate) enum HeaderError {
 pub(crate) struct PackageId(u32);
 
 impl PackageId {
+    const MAX: u32 = 0xffffff;
+
     pub(crate) const fn zero() -> Self {
         Self(0)
     }
@@ -157,10 +159,34 @@ impl PackageId {
     /// Increments the counter by one. It wraps around to zero after reaching
     /// maximum value.
     pub(crate) fn incremented(self) -> Self {
-        if self.0 >= 0xffffff {
+        if self.0 >= Self::MAX {
             Self(0)
         } else {
             Self(self.0 + 1)
+        }
+    }
+
+    /// Returns probable relative ordering of two package IDs.
+    ///
+    /// Note that the implementation is circular due to wrapping around maximum
+    /// value and thus the ordering is not transitive.
+    pub(crate) fn ordering(self, other: PackageId) -> Ordering {
+        match self.0.cmp(&other.0) {
+            Ordering::Greater => {
+                if self.0.abs_diff(other.0) < Self::MAX / 2 {
+                    Ordering::Greater
+                } else {
+                    Ordering::Less
+                }
+            }
+            Ordering::Less => {
+                if self.0.abs_diff(other.0) < Self::MAX / 2 {
+                    Ordering::Less
+                } else {
+                    Ordering::Greater
+                }
+            }
+            Ordering::Equal => Ordering::Equal,
         }
     }
 
@@ -186,12 +212,26 @@ impl PackageId {
 
 pub(crate) struct PackageIdRange {
     current: PackageId,
+    stop: Option<PackageId>,
 }
 
 impl PackageIdRange {
     pub(crate) fn counter() -> Self {
         Self {
             current: PackageId::zero(),
+            stop: None,
+        }
+    }
+
+    /// # Arguments
+    ///
+    /// * `start` - inclusive start.
+    ///
+    /// * `stop` - exclusive stop.
+    pub(crate) fn range(start: PackageId, stop: PackageId) -> Self {
+        Self {
+            current: start,
+            stop: Some(stop),
         }
     }
 }
@@ -200,9 +240,27 @@ impl Iterator for PackageIdRange {
     type Item = PackageId;
 
     fn next(&mut self) -> Option<Self::Item> {
+        if Some(self.current) == self.stop {
+            return None;
+        }
+
         let current = self.current;
         self.current = current.incremented();
         Some(current)
+    }
+
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        let Some(stop) = self.stop else {
+            return (usize::MAX, None);
+        };
+
+        let exact = match self.current.0.cmp(&stop.0) {
+            Ordering::Less => stop.0 - self.current.0,
+            Ordering::Equal => 0,
+            Ordering::Greater => stop.0 + (PackageId::MAX - self.current.0),
+        } as usize;
+
+        (exact, Some(exact))
     }
 }
 
@@ -277,6 +335,31 @@ mod tests {
     }
 
     #[test]
+    fn test_ordering() {
+        assert_eq!(
+            PackageId::from_bytes(&[0, 1, 1]).ordering(PackageId::from_bytes(&[0, 1, 2])),
+            Ordering::Less
+        );
+        assert_eq!(
+            PackageId::from_bytes(&[0, 1, 1]).ordering(PackageId::from_bytes(&[0, 1, 0])),
+            Ordering::Greater
+        );
+        assert_eq!(
+            PackageId::from_bytes(&[0, 1, 1]).ordering(PackageId::from_bytes(&[0, 1, 1])),
+            Ordering::Equal
+        );
+
+        assert_eq!(
+            PackageId::from_bytes(&[0, 1, 2]).ordering(PackageId::from_bytes(&[255, 255, 1])),
+            Ordering::Greater
+        );
+        assert_eq!(
+            PackageId::from_bytes(&[255, 255, 1]).ordering(PackageId::from_bytes(&[0, 1, 2])),
+            Ordering::Less
+        );
+    }
+
+    #[test]
     fn test_iter() {
         let mut counter = PackageIdRange::counter();
         assert_eq!(counter.next().unwrap(), PackageId::zero());
@@ -286,5 +369,13 @@ mod tests {
             PackageId::zero().incremented().incremented()
         );
         assert_eq!(counter.next().unwrap(), PackageId::from_bytes(&[0, 0, 3]));
+
+        let mut counter = PackageIdRange::range(
+            PackageId::from_bytes(&[0, 1, 2]),
+            PackageId::from_bytes(&[0, 1, 4]),
+        );
+        assert_eq!(counter.next().unwrap(), PackageId::from_bytes(&[0, 1, 2]));
+        assert_eq!(counter.next().unwrap(), PackageId::from_bytes(&[0, 1, 3]));
+        assert!(counter.next().is_none());
     }
 }
