@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 use de_core::{baseset::GameSet, player::Player};
-use de_net::{FromGame, FromServer, JoinError, ToGame, ToServer};
+use de_net::{FromGame, FromServer, GameOpenError, JoinError, ToGame, ToServer};
 
 use crate::{
     lifecycle::{FatalErrorEvent, NetGameConfRes},
@@ -20,7 +20,7 @@ impl Plugin for GamePlugin {
             .add_system(cleanup.in_schedule(OnEnter(NetState::None)))
             .add_system(open_or_join.in_schedule(OnEnter(NetState::Connected)))
             .add_system(
-                process_game_opened
+                process_from_server
                     .in_base_set(GameSet::PreMovement)
                     .run_if(on_event::<FromMainServerEvent>())
                     .after(MessagesSet::RecvMessages),
@@ -70,21 +70,31 @@ fn open_or_join(
     }
 }
 
-fn process_game_opened(
+fn process_from_server(
     mut ports: ResMut<Ports>,
     mut events: EventReader<FromMainServerEvent>,
     mut fatals: EventWriter<FatalErrorEvent>,
 ) {
     for event in events.iter() {
-        if let FromServer::GameOpened { port } = event.message() {
-            match ports.init_game_port(*port) {
+        match event.message() {
+            FromServer::Pong(id) => {
+                info!("Pong {} received from server.", *id);
+            }
+            FromServer::GameOpened { port } => match ports.init_game_port(*port) {
                 Ok(_) => {
                     info!("Game on port {} opened.", *port);
                 }
                 Err(err) => {
                     fatals.send(FatalErrorEvent::new(format!("Invalid GameOpened: {err:?}")));
                 }
-            }
+            },
+            FromServer::GameOpenError(err) => match err {
+                GameOpenError::DifferentGame => {
+                    fatals.send(FatalErrorEvent::new(
+                        "Cannot open game, the player already joined a game.",
+                    ));
+                }
+            },
         }
     }
 }
@@ -121,6 +131,16 @@ fn process_from_game(
             FromGame::JoinError(error) => match error {
                 JoinError::GameFull => {
                     fatals.send(FatalErrorEvent::new("Game is full, cannot join."));
+                }
+                JoinError::AlreadyJoined => {
+                    fatals.send(FatalErrorEvent::new(
+                        "Already joined the game, cannot re-join.",
+                    ));
+                }
+                JoinError::DifferentGame => {
+                    fatals.send(FatalErrorEvent::new(
+                        "Player already joined a different game.",
+                    ));
                 }
             },
             FromGame::Left => {

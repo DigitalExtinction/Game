@@ -167,7 +167,9 @@ impl GameProcessor {
     /// Process connect message.
     async fn process_join(&mut self, meta: MessageMeta) {
         if let Err(err) = self.clients.reserve(meta.source).await {
-            warn!("Ignoring Join request: {err}");
+            warn!("Join request error: {err}");
+            self.send(&FromGame::JoinError(JoinError::DifferentGame), meta.source)
+                .await;
             return;
         }
 
@@ -184,6 +186,9 @@ impl GameProcessor {
                             "Player {:?} has already joined game on port {}.",
                             meta.source, self.port
                         );
+
+                        self.send(&FromGame::JoinError(JoinError::AlreadyJoined), meta.source)
+                            .await;
                     }
                     JoinErrorInner::GameFull => {
                         warn!(
