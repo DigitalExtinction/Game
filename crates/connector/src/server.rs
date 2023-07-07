@@ -3,8 +3,8 @@ use std::net::SocketAddr;
 use anyhow::Context;
 use async_std::task;
 use de_net::{
-    self, FromServer, MessageDecoder, OutPackage, PackageReceiver, PackageSender, Peers, Socket,
-    ToServer,
+    self, FromServer, GameOpenError, MessageDecoder, OutPackage, PackageReceiver, PackageSender,
+    Peers, Socket, ToServer,
 };
 use tracing::{error, info, warn};
 
@@ -75,7 +75,12 @@ impl MainServer {
 
     async fn open_game(&mut self, source: SocketAddr, max_players: u8) -> anyhow::Result<()> {
         if let Err(err) = self.clients.reserve(source).await {
-            warn!("Ignoring OpenGame request: {err}");
+            warn!("OpenGame request error: {err}");
+            self.reply(
+                &FromServer::GameOpenError(GameOpenError::DifferentGame),
+                source,
+            )
+            .await?;
             return Ok(());
         }
 

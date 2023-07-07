@@ -22,6 +22,13 @@ pub enum FromServer {
         /// Port at which players may connect to join the game.
         port: u16,
     },
+    GameOpenError(GameOpenError),
+}
+
+#[derive(Encode, Decode)]
+pub enum GameOpenError {
+    /// The player opening the game has already joined a different game.
+    DifferentGame,
 }
 
 /// Message to be sent from a player/client to a game server (inside of a
@@ -71,4 +78,8 @@ pub enum FromGame {
 #[derive(Encode, Decode)]
 pub enum JoinError {
     GameFull,
+    /// The player has already joined the game.
+    AlreadyJoined,
+    /// The player already participates on a different game.
+    DifferentGame,
 }
