@@ -184,6 +184,28 @@ impl PackageId {
     }
 }
 
+pub(crate) struct PackageIdRange {
+    current: PackageId,
+}
+
+impl PackageIdRange {
+    pub(crate) fn counter() -> Self {
+        Self {
+            current: PackageId::zero(),
+        }
+    }
+}
+
+impl Iterator for PackageIdRange {
+    type Item = PackageId;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        let current = self.current;
+        self.current = current.incremented();
+        Some(current)
+    }
+}
+
 impl fmt::Display for PackageId {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{}", self.0)
@@ -246,11 +268,23 @@ mod tests {
     }
 
     #[test]
-    fn test_id() {
+    fn test_incremented() {
         let id = PackageId::from_bytes(&[0, 1, 0]);
         assert_eq!(id.incremented().to_bytes(), [0, 1, 1]);
 
         let id: PackageId = 0xffffff.try_into().unwrap();
         assert_eq!(id.incremented(), 0.try_into().unwrap());
+    }
+
+    #[test]
+    fn test_iter() {
+        let mut counter = PackageIdRange::counter();
+        assert_eq!(counter.next().unwrap(), PackageId::zero());
+        assert_eq!(counter.next().unwrap(), PackageId::zero().incremented());
+        assert_eq!(
+            counter.next().unwrap(),
+            PackageId::zero().incremented().incremented()
+        );
+        assert_eq!(counter.next().unwrap(), PackageId::from_bytes(&[0, 0, 3]));
     }
 }
