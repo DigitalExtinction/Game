@@ -11,6 +11,7 @@ use bevy::{app::PluginGroupBuilder, prelude::*};
 use game::GamePlugin;
 use lifecycle::LifecyclePlugin;
 use messages::MessagesPlugin;
+use stats::StatsPlugin;
 
 pub use crate::{
     config::{NetGameConf, ServerPort},
@@ -25,6 +26,7 @@ mod lifecycle;
 mod messages;
 mod netstate;
 mod network;
+mod stats;
 
 pub struct MultiplayerPluginGroup;
 
@@ -36,5 +38,6 @@ impl PluginGroup for MultiplayerPluginGroup {
             .add(NetworkPlugin)
             .add(MessagesPlugin)
             .add(GamePlugin)
+            .add(StatsPlugin)
     }
 }

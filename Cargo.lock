@@ -2424,6 +2424,7 @@ dependencies = [
 name = "de_multiplayer"
 version = "0.1.0-dev"
 dependencies = [
+ "ahash 0.7.6",
  "async-std",
  "bevy",
  "bincode",
