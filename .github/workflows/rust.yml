@@ -108,3 +108,11 @@ jobs:
         run: sudo apt-get update; sudo apt-get install --no-install-recommends libasound2-dev libudev-dev
       - name: Run cargo-udeps
         run: cargo udeps
+
+  comments:
+    name: Check Code Comments
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Forgotten TODOs
+        run: bash tools/todos.sh
