@@ -2433,6 +2433,7 @@ dependencies = [
  "de_net",
  "futures-lite",
  "iyes_progress",
+ "tracing",
 ]
 
 [[package]]
