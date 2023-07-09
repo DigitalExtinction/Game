@@ -73,6 +73,7 @@ fn open_or_join(
 fn process_from_server(
     mut ports: ResMut<Ports>,
     mut events: EventReader<FromMainServerEvent>,
+    mut outputs: EventWriter<ToGameServerEvent<true>>,
     mut fatals: EventWriter<FatalErrorEvent>,
 ) {
     for event in events.iter() {
@@ -83,6 +84,8 @@ fn process_from_server(
             FromServer::GameOpened { port } => match ports.init_game_port(*port) {
                 Ok(_) => {
                     info!("Game on port {} opened.", *port);
+                    // Send something to open NAT.
+                    outputs.send(ToGame::Ping(u32::MAX).into());
                 }
                 Err(err) => {
                     fatals.send(FatalErrorEvent::new(format!("Invalid GameOpened: {err:?}")));
