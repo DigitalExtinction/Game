@@ -124,10 +124,12 @@ impl IdReceiver {
     /// Registers a package as received and returns whether the it was a
     /// duplicate delivery.
     fn push(&mut self, time: Instant, id: PackageId) -> Result<bool, PackageIdError> {
-        // Push to the buffer unconditionally, because the reason behind the
-        // re-delivery might be loss of the confirmation datagram.
+        // Return early on error to avoid confirmation of erroneous datagrams.
+        let duplicate = self.duplicates.process(id)?;
+        // Push to the buffer even duplicate packages, because the reason
+        // behind the re-delivery might be loss of the confirmation datagram.
         self.buffer.push(time, id);
-        self.duplicates.process(id)
+        Ok(duplicate)
     }
 }
 
