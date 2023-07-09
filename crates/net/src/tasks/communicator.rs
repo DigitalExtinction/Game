@@ -1,4 +1,4 @@
-use std::{marker::PhantomData, mem, net::SocketAddr, ops::Deref};
+use std::{marker::PhantomData, mem, net::SocketAddr, ops::Deref, time::Instant};
 
 use async_std::channel::{Receiver, Sender};
 use bincode::{
@@ -159,15 +159,23 @@ pub struct InPackage {
     reliable: bool,
     peers: Peers,
     source: SocketAddr,
+    time: Instant,
 }
 
 impl InPackage {
-    pub(super) fn new(data: Vec<u8>, reliable: bool, peers: Peers, source: SocketAddr) -> Self {
+    pub(super) fn new(
+        data: Vec<u8>,
+        reliable: bool,
+        peers: Peers,
+        source: SocketAddr,
+        time: Instant,
+    ) -> Self {
         Self {
             data,
             reliable,
             peers,
             source,
+            time,
         }
     }
 
@@ -198,6 +206,11 @@ impl InPackage {
 
     pub fn peers(&self) -> Peers {
         self.peers
+    }
+
+    /// Package arrival time.
+    pub fn time(&self) -> Instant {
+        self.time
     }
 }
 
@@ -355,6 +368,7 @@ mod tests {
             reliable: false,
             peers: Peers::Players,
             source: "127.0.0.1:1111".parse().unwrap(),
+            time: Instant::now(),
         };
 
         let mut items: MessageDecoder<Message> = package.decode();
