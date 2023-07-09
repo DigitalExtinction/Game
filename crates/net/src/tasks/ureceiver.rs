@@ -46,9 +46,10 @@ pub(super) async fn run(
             break;
         };
 
+        let time = Instant::now();
         if datagram.header.reliable() {
             match confirms
-                .received(Instant::now(), datagram.source, datagram.header.id())
+                .received(time, datagram.source, datagram.header.id())
                 .await
             {
                 Ok(true) => {
@@ -72,6 +73,7 @@ pub(super) async fn run(
                 datagram.header.reliable(),
                 datagram.header.peers(),
                 datagram.source,
+                time,
             ))
             .await;
 
