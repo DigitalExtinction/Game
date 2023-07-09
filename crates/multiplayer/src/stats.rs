@@ -132,7 +132,7 @@ fn ping(
     time: Res<Time>,
     mut timer: ResMut<PingTimer>,
     mut tracker: ResMut<PingTracker>,
-    mut messages: EventWriter<ToGameServerEvent>,
+    mut messages: EventWriter<ToGameServerEvent<true>>,
 ) {
     timer.0.tick(time.delta());
 

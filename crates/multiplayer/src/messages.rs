@@ -16,7 +16,8 @@ pub(crate) struct MessagesPlugin;
 impl Plugin for MessagesPlugin {
     fn build(&self, app: &mut App) {
         app.add_event::<ToMainServerEvent>()
-            .add_event::<ToGameServerEvent>()
+            .add_event::<ToGameServerEvent<true>>()
+            .add_event::<ToGameServerEvent<false>>()
             .add_event::<FromMainServerEvent>()
             .add_event::<FromGameServerEvent>()
             .add_system(setup.in_schedule(OnEnter(NetState::Connecting)))
@@ -29,9 +30,16 @@ impl Plugin for MessagesPlugin {
                     .before(NetworkSet::SendPackages),
             )
             .add_system(
-                message_sender::<ToGameServerEvent>
+                message_sender::<ToGameServerEvent<true>>
                     .in_base_set(GameSet::PostUpdate)
-                    .run_if(on_event::<ToGameServerEvent>())
+                    .run_if(on_event::<ToGameServerEvent<true>>())
+                    .in_set(MessagesSet::SendMessages)
+                    .before(NetworkSet::SendPackages),
+            )
+            .add_system(
+                message_sender::<ToGameServerEvent<false>>
+                    .in_base_set(GameSet::PostUpdate)
+                    .run_if(on_event::<ToGameServerEvent<false>>())
                     .in_set(MessagesSet::SendMessages)
                     .before(NetworkSet::SendPackages),
             )
@@ -57,6 +65,7 @@ where
 {
     type Message: bincode::Encode;
     const PORT_TYPE: PortType;
+    const RELIABLE: bool;
 
     fn message(&self) -> &Self::Message;
 }
@@ -72,23 +81,25 @@ impl From<ToServer> for ToMainServerEvent {
 impl ToMessage for ToMainServerEvent {
     type Message = ToServer;
     const PORT_TYPE: PortType = PortType::Main;
+    const RELIABLE: bool = true;
 
     fn message(&self) -> &Self::Message {
         &self.0
     }
 }
 
-pub(crate) struct ToGameServerEvent(ToGame);
+pub(crate) struct ToGameServerEvent<const R: bool>(ToGame);
 
-impl From<ToGame> for ToGameServerEvent {
+impl<const R: bool> From<ToGame> for ToGameServerEvent<R> {
     fn from(message: ToGame) -> Self {
         Self(message)
     }
 }
 
-impl ToMessage for ToGameServerEvent {
+impl<const R: bool> ToMessage for ToGameServerEvent<R> {
     type Message = ToGame;
     const PORT_TYPE: PortType = PortType::Game;
+    const RELIABLE: bool = R;
 
     fn message(&self) -> &Self::Message {
         &self.0
@@ -243,7 +254,7 @@ fn message_sender<E>(
         return;
     };
     let addr = SocketAddr::new(conf.server_host(), port);
-    let mut builder = PackageBuilder::new(true, Peers::Server, addr);
+    let mut builder = PackageBuilder::new(E::RELIABLE, Peers::Server, addr);
 
     for event in inputs.iter() {
         builder.push(event.message()).unwrap();

@@ -51,7 +51,7 @@ fn cleanup(mut commands: Commands) {
 fn open_or_join(
     conf: Res<NetGameConfRes>,
     mut main_server: EventWriter<ToMainServerEvent>,
-    mut game_server: EventWriter<ToGameServerEvent>,
+    mut game_server: EventWriter<ToGameServerEvent<true>>,
 ) {
     match conf.server_port() {
         ServerPort::Main(_) => {
@@ -158,7 +158,7 @@ fn process_from_game(
     }
 }
 
-fn leave(mut server: EventWriter<ToGameServerEvent>) {
+fn leave(mut server: EventWriter<ToGameServerEvent<true>>) {
     // Send this even if not yet joined because the join / open-game request
     // might already be processed.
     server.send(ToGame::Leave.into());
