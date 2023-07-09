@@ -1,4 +1,7 @@
-use std::{collections::VecDeque, time::Duration};
+use std::{
+    collections::VecDeque,
+    time::{Duration, Instant},
+};
 
 use bevy::prelude::*;
 use de_core::baseset::GameSet;
@@ -56,7 +59,7 @@ struct PingTracker {
 struct PingRecord {
     resolved: bool,
     id: u32,
-    time: Duration,
+    time: Instant,
 }
 
 impl PingTracker {
@@ -69,7 +72,7 @@ impl PingTracker {
 
     /// Register a new ping send time and returns a new unique ID (wrapping)
     /// for the ping.
-    fn start(&mut self, time: Duration) -> u32 {
+    fn start(&mut self, time: Instant) -> u32 {
         let id = self.counter;
         self.counter = id.wrapping_add(1);
         self.times.push_back(PingRecord {
@@ -80,15 +83,15 @@ impl PingTracker {
         id
     }
 
-    /// Marks a ping record as resolved and returns round-trip time.
-    fn resolve(&mut self, id: u32, time: Duration) -> Option<Duration> {
+    /// Marks a ping record as resolved and returns ping send time.
+    fn resolve(&mut self, id: u32) -> Option<Instant> {
         for record in self.times.iter_mut() {
             if record.id == id {
                 if record.resolved {
                     return None;
                 } else {
                     record.resolved = true;
-                    return Some(time - record.time);
+                    return Some(record.time);
                 }
             }
         }
@@ -132,26 +135,29 @@ fn ping(
     mut messages: EventWriter<ToGameServerEvent>,
 ) {
     timer.0.tick(time.delta());
+
+    let time = Instant::now();
     for _ in 0..timer.0.times_finished_this_tick() {
-        let id = tracker.start(time.elapsed());
+        let id = tracker.start(time);
         info!("Sending Ping({id}).");
         messages.send(ToGame::Ping(id).into());
     }
 }
 
-fn pong(
-    time: Res<Time>,
-    mut tracker: ResMut<PingTracker>,
-    mut messages: EventReader<FromGameServerEvent>,
-) {
+fn pong(mut tracker: ResMut<PingTracker>, mut messages: EventReader<FromGameServerEvent>) {
     for event in messages.iter() {
         if let FromGame::Pong(id) = event.message() {
-            match tracker.resolve(*id, time.elapsed()) {
-                Some(round_trip) => {
+            match tracker.resolve(*id) {
+                Some(send_time) => {
+                    let time = Instant::now();
+                    let system_time = time - send_time;
+                    let network_time = event.time() - send_time;
+
                     info!(
-                        "Received Pong({}) with {}ms round trip.",
+                        "Received Pong({}) with {{ system: {}ms, network: {}ms }} round trip.",
                         *id,
-                        round_trip.as_millis()
+                        system_time.as_millis(),
+                        network_time.as_millis(),
                     );
                 }
                 None => {
@@ -179,21 +185,18 @@ mod tests {
     fn test_tracker() {
         let mut tracker = PingTracker::new();
 
-        assert_eq!(tracker.start(Duration::from_millis(500)), 0);
-        assert_eq!(tracker.start(Duration::from_millis(800)), 1);
-        assert_eq!(tracker.start(Duration::from_millis(900)), 2);
+        let time_a = Instant::now();
+        assert_eq!(tracker.start(time_a), 0);
+        let time_b = time_a + Duration::from_millis(100);
+        assert_eq!(tracker.start(time_b), 1);
+        let time_c = time_a + Duration::from_millis(200);
+        assert_eq!(tracker.start(time_c), 2);
 
-        assert_eq!(
-            tracker.resolve(2, Duration::from_millis(910)).unwrap(),
-            Duration::from_millis(10)
-        );
-        assert_eq!(tracker.start(Duration::from_millis(1100)), 3);
-        assert_eq!(
-            tracker.resolve(1, Duration::from_millis(1005)).unwrap(),
-            Duration::from_millis(205)
-        );
-        assert_eq!(tracker.start(Duration::from_millis(1300)), 4);
-        assert_eq!(tracker.start(Duration::from_millis(1800)), 5);
+        assert_eq!(tracker.resolve(2).unwrap(), time_c);
+        assert_eq!(tracker.start(Instant::now()), 3);
+        assert_eq!(tracker.resolve(1).unwrap(), time_b);
+        assert_eq!(tracker.start(Instant::now()), 4);
+        assert_eq!(tracker.start(Instant::now()), 5);
 
         let mut ids = Vec::new();
         tracker.trim(2, &mut ids);

@@ -1,4 +1,4 @@
-use std::net::SocketAddr;
+use std::{net::SocketAddr, time::Instant};
 
 use bevy::prelude::*;
 use de_core::baseset::GameSet;
@@ -95,6 +95,15 @@ impl ToMessage for ToGameServerEvent {
     }
 }
 
+trait InMessageEvent
+where
+    Self: Send + Sync + 'static,
+{
+    type M;
+
+    fn from_message(time: Instant, message: Self::M) -> Self;
+}
+
 pub(crate) struct FromMainServerEvent(FromServer);
 
 impl FromMainServerEvent {
@@ -103,23 +112,34 @@ impl FromMainServerEvent {
     }
 }
 
-impl From<FromServer> for FromMainServerEvent {
-    fn from(message: FromServer) -> Self {
+impl InMessageEvent for FromMainServerEvent {
+    type M = FromServer;
+
+    fn from_message(_time: Instant, message: Self::M) -> Self {
         Self(message)
     }
 }
 
-pub(crate) struct FromGameServerEvent(FromGame);
+pub(crate) struct FromGameServerEvent {
+    time: Instant,
+    message: FromGame,
+}
 
 impl FromGameServerEvent {
+    pub(crate) fn time(&self) -> Instant {
+        self.time
+    }
+
     pub(crate) fn message(&self) -> &FromGame {
-        &self.0
+        &self.message
     }
 }
 
-impl From<FromGame> for FromGameServerEvent {
-    fn from(message: FromGame) -> Self {
-        Self(message)
+impl InMessageEvent for FromGameServerEvent {
+    type M = FromGame;
+
+    fn from_message(time: Instant, message: Self::M) -> Self {
+        Self { time, message }
     }
 }
 
@@ -256,12 +276,12 @@ fn decode_and_send<P, E>(
     fatals: &mut EventWriter<FatalErrorEvent>,
 ) where
     P: bincode::Decode,
-    E: From<P> + Send + Sync + 'static,
+    E: InMessageEvent<M = P>,
 {
     for message in package.decode::<P>() {
         match message {
             Ok(message) => {
-                events.send(message.into());
+                events.send(E::from_message(package.time(), message));
             }
             Err(err) => {
                 fatals.send(FatalErrorEvent::new(format!(
