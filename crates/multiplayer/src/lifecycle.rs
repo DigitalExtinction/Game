@@ -1,7 +1,7 @@
 use std::ops::Deref;
 
 use bevy::prelude::*;
-use de_core::state::AppState;
+use de_core::{gresult::GameResult, state::AppState};
 use de_gui::ToastEvent;
 
 use crate::{config::NetGameConf, NetState};
@@ -15,6 +15,11 @@ impl Plugin for LifecyclePlugin {
             .add_event::<FatalErrorEvent>()
             .add_system(cleanup.in_schedule(OnEnter(NetState::None)))
             .add_system(
+                finish_game
+                    .in_schedule(OnEnter(NetState::None))
+                    .run_if(in_state(AppState::InGame)),
+            )
+            .add_system(
                 game_left
                     .in_schedule(OnExit(AppState::InGame))
                     .run_if(not(in_state(NetState::None))),
@@ -26,7 +31,9 @@ impl Plugin for LifecyclePlugin {
             )
             .add_system(
                 shutdown
-                    .run_if(not(in_state(NetState::None)))
+                    .run_if(not(
+                        in_state(NetState::None).or_else(in_state(NetState::ShuttingDown))
+                    ))
                     .run_if(on_event::<ShutdownMultiplayerEvent>()),
             )
             .add_system(
@@ -81,6 +88,10 @@ fn cleanup(mut commands: Commands) {
     commands.remove_resource::<NetGameConfRes>();
 }
 
+fn finish_game(mut next_state: ResMut<NextState<AppState>>) {
+    next_state.set(AppState::InMenu);
+}
+
 fn start(
     mut commands: Commands,
     mut next_state: ResMut<NextState<NetState>>,
@@ -99,6 +110,7 @@ fn shutdown(mut next_state: ResMut<NextState<NetState>>) {
 }
 
 fn errors(
+    mut commands: Commands,
     mut events: EventReader<FatalErrorEvent>,
     mut toasts: EventWriter<ToastEvent>,
     mut shutdowns: EventWriter<ShutdownMultiplayerEvent>,
@@ -110,6 +122,8 @@ fn errors(
     error!("Fatal multiplayer error: {}", event.0);
     toasts.send(ToastEvent::new(&event.0));
     shutdowns.send(ShutdownMultiplayerEvent);
+
+    commands.insert_resource(GameResult::error(&event.0));
 
     events.clear();
 }

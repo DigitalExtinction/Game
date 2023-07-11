@@ -26,11 +26,11 @@ fn game_end_detection_system(
 ) {
     let mut result = None;
     if counter.player(conf.locals().playable()).unwrap().total() == 0 {
-        result = Some(GameResult::new(false));
+        result = Some(GameResult::finished(false));
     } else if conf.players().all(|player| {
         conf.locals().is_playable(player) || counter.player(player).unwrap().total() == 0
     }) {
-        result = Some(GameResult::new(true));
+        result = Some(GameResult::finished(true));
     }
 
     if let Some(result) = result {
