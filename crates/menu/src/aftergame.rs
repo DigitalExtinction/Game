@@ -18,10 +18,18 @@ fn cleanup(mut commands: Commands) {
 }
 
 fn setup(mut commands: GuiCommands, menu: Res<Menu>, result: Res<GameResult>) {
-    let text = if result.won() {
-        "You have won!"
-    } else {
-        "You have lost! "
+    let text = match result.as_ref() {
+        GameResult::Finished(result) => {
+            if result.won() {
+                "You have won!".to_owned()
+            } else {
+                "You have lost!".to_owned()
+            }
+        }
+        GameResult::Error(message) => {
+            error!("Game finished with an error: {message}");
+            format!("Error: {message}")
+        }
     };
     let text_id = commands.spawn_label(OuterStyle::default(), text).id();
     commands.entity(menu.root_node()).add_child(text_id);
