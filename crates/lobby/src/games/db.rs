@@ -31,8 +31,8 @@ impl Games {
             include_str!("init.sql"),
             username_len = MAX_USERNAME_LEN,
             game_name_len = MAX_GAME_NAME_LEN,
-            map_name_lenght = MAX_MAP_NAME_LEN,
-            map_hash_lenght = MAP_HASH_LEN,
+            map_name_len = MAX_MAP_NAME_LEN,
+            map_hash_len = MAP_HASH_LEN,
         );
 
         info!("Initializing games...");
