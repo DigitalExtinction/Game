@@ -150,8 +150,7 @@ impl KdTree {
             range: 0..circles.len(),
         }];
 
-        while !stack.is_empty() {
-            let item = stack.pop().unwrap();
+        while let Some(item) = stack.pop() {
             let subtree = &mut circles[item.range.clone()];
 
             subtree.sort_by(|a, b| {

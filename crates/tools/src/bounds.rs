@@ -42,8 +42,7 @@ pub fn execute(path: &Path) {
         let mut stack = Vec::new();
         stack.extend(scene.nodes().map(WorldNode::from_node));
 
-        while !stack.is_empty() {
-            let world_node = stack.pop().unwrap();
+        while let Some(world_node) = stack.pop() {
             let node = world_node.node();
 
             stack.extend(node.children().map(|c| world_node.new_child(c)));

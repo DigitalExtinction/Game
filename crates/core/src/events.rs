@@ -17,7 +17,7 @@ pub struct ResendEventPlugin<T: Event> {
 impl<T: Event> Default for ResendEventPlugin<T> {
     fn default() -> Self {
         Self {
-            _marker: PhantomData::default(),
+            _marker: PhantomData,
         }
     }
 }

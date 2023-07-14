@@ -67,7 +67,7 @@ fn main() {
                 wait_duration: Duration::from_secs(10),
                 filter: None,
             })
-            .add_plugin(FrameTimeDiagnosticsPlugin::default())
+            .add_plugin(FrameTimeDiagnosticsPlugin)
             .add_plugin(GamePlugin)
             .add_plugins(ConfigPluginGroup)
             .add_plugins(GuiPluginGroup)

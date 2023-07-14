@@ -191,7 +191,7 @@ impl InPackage {
         MessageDecoder {
             data: self.data.as_slice(),
             offset: 0,
-            _marker: PhantomData::default(),
+            _marker: PhantomData,
         }
     }
 
