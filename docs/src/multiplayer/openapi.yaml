@@ -112,6 +112,34 @@ paths:
         "409":
           description: A different game with the same name already exists.
 
+  /a/games/{name}:
+    get:
+      summary: Get complete information about a game.
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: name
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Game successfully retrieved.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  players:
+                    type: array
+                    items:
+                      type: string
+                  setup:
+                    $ref: "#/components/schemas/game-setup"
+        "404":
+          description: The game does not exist.
+
   /a/games/{name}/join:
     put:
       summary: Join the game.

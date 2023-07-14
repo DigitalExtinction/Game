@@ -1,7 +1,9 @@
+use std::net::SocketAddr;
+
 use anyhow::{Context, Result};
 use de_lobby_model::{
-    Game, GameConfig, GameListing, GameMap, GamePartial, MAP_HASH_LEN, MAX_GAME_NAME_LEN,
-    MAX_MAP_NAME_LEN, MAX_USERNAME_LEN,
+    Game, GameConfig, GameListing, GameMap, GamePartial, GameSetup, MAP_HASH_LEN,
+    MAX_GAME_NAME_LEN, MAX_MAP_NAME_LEN, MAX_USERNAME_LEN,
 };
 use futures_util::TryStreamExt;
 use log::info;
@@ -67,6 +69,36 @@ impl Games {
         }
 
         Ok(games)
+    }
+
+    /// This method retrieves complete info about a single game.
+    pub(super) async fn get(&self, game: &str) -> Result<Option<Game>> {
+        let Some(game_row) = query("SELECT * FROM games WHERE name = ?;")
+            .bind(game)
+            .fetch_optional(self.pool)
+            .await
+            .context("Failed to retrieve a game from the DB")?
+        else {
+            return Ok(None);
+        };
+
+        let setup = GameSetup::try_from_row(game_row)?;
+
+        let mut players = Vec::new();
+        let mut player_rows = query("SELECT username FROM players WHERE game = ?;")
+            .bind(game)
+            .fetch(self.pool);
+
+        while let Some(player_row) = player_rows
+            .try_next()
+            .await
+            .context("Failed to retrieve game players from the DB")?
+        {
+            let username: String = player_row.try_get("username")?;
+            players.push(username);
+        }
+
+        Ok(Some(Game::new(setup, players)))
     }
 
     /// This method creates a new game in the DB and places all users to it.
@@ -249,6 +281,17 @@ pub(super) enum RemovalError {
     NotInTheGame,
     #[error("A database error encountered")]
     Database(#[source] sqlx::Error),
+}
+
+impl FromRow for GameSetup {
+    type Error = anyhow::Error;
+
+    fn try_from_row(row: SqliteRow) -> Result<Self, Self::Error> {
+        let server: String = row.try_get("server")?;
+        let server: SocketAddr = server.parse()?;
+        let config = GameConfig::try_from_row(row)?;
+        Ok(Self::new(server, config))
+    }
 }
 
 impl FromRow for GamePartial {
