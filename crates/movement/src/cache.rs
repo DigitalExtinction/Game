@@ -57,7 +57,7 @@ impl<M> Default for DecayingCache<M> {
         DecayingCache {
             entities: Vec::new(),
             capacity: 0.,
-            _m: PhantomData::default(),
+            _m: PhantomData,
         }
     }
 }
