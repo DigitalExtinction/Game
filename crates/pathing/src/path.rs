@@ -65,20 +65,20 @@ impl ScheduledPath {
         while self.current > 0 {
             let segment_end = self.path.waypoints()[self.current - 1];
             let remainder = segment_end - advancement;
-            let mut remainder_lenght = remainder.length();
+            let mut remainder_length = remainder.length();
 
             if self.current == start {
-                remainder_lenght /= CURRENT_SEGMENT_BIAS;
+                remainder_length /= CURRENT_SEGMENT_BIAS;
             }
 
-            if remainder_lenght > amount {
-                advancement += (amount / remainder_lenght) * remainder;
+            if remainder_length > amount {
+                advancement += (amount / remainder_length) * remainder;
                 break;
             }
 
             self.current -= 1;
             advancement = segment_end;
-            amount -= remainder_lenght;
+            amount -= remainder_length;
         }
 
         advancement
