@@ -1,3 +1,5 @@
+use std::net::SocketAddr;
+
 use serde::{Deserialize, Serialize};
 
 use crate::{ensure, validation};
@@ -10,21 +12,22 @@ const MAX_PLAYERS: u8 = 4;
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Game {
-    config: GameConfig,
+    setup: GameSetup,
     players: Vec<String>,
 }
 
 impl Game {
     /// Creates a new game with the author being the only player.
-    pub fn new(config: GameConfig, author: String) -> Self {
-        Self {
-            config,
-            players: vec![author],
-        }
+    pub fn from_author(setup: GameSetup, author: String) -> Self {
+        Self::new(setup, vec![author])
     }
 
-    pub fn config(&self) -> &GameConfig {
-        &self.config
+    pub fn new(setup: GameSetup, players: Vec<String>) -> Self {
+        Self { setup, players }
+    }
+
+    pub fn setup(&self) -> &GameSetup {
+        &self.setup
     }
 
     pub fn players(&self) -> &[String] {
@@ -71,6 +74,33 @@ impl GamePartial {
 
     pub fn num_players(&self) -> u8 {
         self.num_players
+    }
+}
+
+#[derive(Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct GameSetup {
+    server: SocketAddr,
+    config: GameConfig,
+}
+
+impl GameSetup {
+    pub fn new(server: SocketAddr, config: GameConfig) -> Self {
+        Self { server, config }
+    }
+
+    pub fn server(&self) -> SocketAddr {
+        self.server
+    }
+
+    pub fn config(&self) -> &GameConfig {
+        &self.config
+    }
+}
+
+impl validation::Validatable for GameSetup {
+    fn validate(&self) -> validation::Result {
+        self.config.validate()
     }
 }
 

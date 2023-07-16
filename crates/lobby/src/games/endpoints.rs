@@ -1,5 +1,5 @@
 use actix_web::{get, post, put, web, HttpResponse, Responder};
-use de_lobby_model::{Game, GameConfig, Validatable};
+use de_lobby_model::{Game, GameSetup, Validatable};
 use log::{error, warn};
 
 use super::db::{AdditionError, CreationError, Games, RemovalError};
@@ -20,15 +20,15 @@ pub(super) fn configure(cfg: &mut web::ServiceConfig) {
 async fn create(
     claims: web::ReqData<Claims>,
     games: web::Data<Games>,
-    game_config: web::Json<GameConfig>,
+    game_setup: web::Json<GameSetup>,
 ) -> impl Responder {
-    let game_config = game_config.into_inner();
-    if let Err(error) = game_config.validate() {
-        warn!("Invalid game configuration: {:?}", error);
+    let game_setup = game_setup.into_inner();
+    if let Err(error) = game_setup.validate() {
+        warn!("Invalid game setup: {:?}", error);
         return HttpResponse::BadRequest().json(format!("{error}"));
     }
 
-    let game = Game::new(game_config, claims.username().to_owned());
+    let game = Game::from_author(game_setup, claims.username().to_owned());
     match games.create(game).await {
         Ok(_) => HttpResponse::Ok().json(()),
         Err(CreationError::NameTaken) => {

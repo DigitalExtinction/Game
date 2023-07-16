@@ -16,6 +16,10 @@ use crate::{
     db_error,
 };
 
+// This should correspond to the longest valid socket address. IPv6 hast up to
+// 39 characters + colon + 5 characters for port number.
+const SERVER_LEN: usize = 45;
+
 #[derive(Clone)]
 pub(super) struct Games {
     pool: &'static Pool<Sqlite>,
@@ -33,6 +37,7 @@ impl Games {
             game_name_len = MAX_GAME_NAME_LEN,
             map_name_len = MAX_MAP_NAME_LEN,
             map_hash_len = MAP_HASH_LEN,
+            server_len = SERVER_LEN,
         );
 
         info!("Initializing games...");
@@ -66,16 +71,18 @@ impl Games {
 
     /// This method creates a new game in the DB and places all users to it.
     pub(super) async fn create(&self, game: Game) -> Result<(), CreationError> {
-        let game_config = game.config();
+        let game_setup = game.setup();
+        let game_config = game_setup.config();
 
         let mut transaction = self.pool.begin().await.map_err(CreationError::Database)?;
 
         let result =
-            query("INSERT INTO games (name, max_players, map_hash, map_name) VALUES(?, ?, ?, ?);")
+            query("INSERT INTO games (name, max_players, map_hash, map_name, server) VALUES(?, ?, ?, ?, ?);")
                 .bind(game_config.name())
                 .bind(game_config.max_players())
                 .bind(game_config.map().hash())
                 .bind(game_config.map().name())
+                .bind(game_setup.server().to_string())
                 .execute(&mut transaction)
                 .await;
         db_error!(

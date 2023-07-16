@@ -1,10 +1,12 @@
+use std::net::SocketAddr;
+
 use bevy::prelude::*;
 use de_gui::{
     ButtonCommands, ButtonOps, GuiCommands, LabelCommands, OuterStyle, TextBoxCommands,
     TextBoxQuery, ToastEvent,
 };
 use de_lobby_client::CreateGameRequest;
-use de_lobby_model::{GameConfig, GameMap, Validatable};
+use de_lobby_model::{GameConfig, GameMap, GameSetup, Validatable};
 use de_map::hash::MapHash;
 
 use crate::{
@@ -255,13 +257,15 @@ fn create_game_system(
         }
     };
 
+    let game_server: SocketAddr = "127.0.0.1:8082".parse().unwrap();
     let game_config = GameConfig::new(name, max_players, selected_map.0.clone());
-    if let Err(error) = game_config.validate() {
+    let game_setup = GameSetup::new(game_server, game_config);
+    if let Err(error) = game_setup.validate() {
         toasts.send(ToastEvent::new(format!("{error}")));
         return;
     }
 
-    sender.send(CreateGameRequest::new(game_config));
+    sender.send(CreateGameRequest::new(game_setup));
 }
 
 fn response_system(

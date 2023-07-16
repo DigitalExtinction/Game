@@ -95,7 +95,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/game-config"
+              $ref: "#/components/schemas/game-setup"
       responses:
         "200":
           description: The game was successfully crated and the user joined it.
@@ -189,6 +189,16 @@ components:
             A unique user name. It is a non-empty Unicode string with maximum
             length of 32 bytes when encoded in UTF-8. It does not start or end
             with whitespace.
+    game-setup:
+      type: object
+      properties:
+        server:
+          type: string
+          description: >-
+            An IPv4 or IPv6 socket address. For example 127.0.0.1:8082.
+        config:
+          $ref: "#/components/schemas/game-config"
+
     game-config:
       type: object
       properties:
