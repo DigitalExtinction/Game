@@ -10,6 +10,7 @@ pub(super) fn configure(cfg: &mut web::ServiceConfig) {
     cfg.service(
         web::scope("/games")
             .service(create)
+            .service(get)
             .service(list)
             .service(join)
             .service(leave),
@@ -41,6 +42,19 @@ async fn create(
         }
         Err(error) => {
             error!("Game creation error: {:?}", error);
+            HttpResponse::InternalServerError().finish()
+        }
+    }
+}
+
+#[get("/{name}")]
+async fn get(path: web::Path<String>, games: web::Data<Games>) -> impl Responder {
+    let name = path.into_inner();
+    match games.get(&name).await {
+        Ok(Some(game)) => HttpResponse::Ok().json(game),
+        Ok(None) => HttpResponse::NotFound().json("Game not found"),
+        Err(error) => {
+            error!("Game get error: {:?}", error);
             HttpResponse::InternalServerError().finish()
         }
     }
