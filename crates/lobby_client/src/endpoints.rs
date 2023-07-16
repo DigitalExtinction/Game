@@ -1,6 +1,6 @@
 use std::borrow::Cow;
 
-use de_lobby_model::{GameConfig, GameListing, Token, UserWithPassword, UsernameAndPassword};
+use de_lobby_model::{GameListing, GameSetup, Token, UserWithPassword, UsernameAndPassword};
 use reqwest::{header::HeaderValue, Method, Request};
 use serde::Serialize;
 use url::Url;
@@ -55,11 +55,11 @@ impl LobbyRequestCreator for SignInRequest {
     }
 }
 
-pub struct CreateGameRequest(GameConfig);
+pub struct CreateGameRequest(GameSetup);
 
 impl CreateGameRequest {
-    pub fn new(config: GameConfig) -> Self {
-        Self(config)
+    pub fn new(setup: GameSetup) -> Self {
+        Self(setup)
     }
 }
 
@@ -158,7 +158,7 @@ fn encode(parts: &[&str]) -> Cow<'static, str> {
 
 #[cfg(test)]
 mod tests {
-    use de_lobby_model::{GameMap, User};
+    use de_lobby_model::{GameConfig, GameMap, User};
 
     use super::*;
 
@@ -204,14 +204,16 @@ mod tests {
 
     #[test]
     fn test_create() {
-        let request = CreateGameRequest::new(GameConfig::new(
+        let config = GameConfig::new(
             "Druhá Hra".to_owned(),
             2,
             GameMap::new(
                 "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef".to_owned(),
                 "custom".to_owned(),
             ),
-        ));
+        );
+        let request =
+            CreateGameRequest::new(GameSetup::new("127.0.0.1:8082".parse().unwrap(), config));
         assert_eq!(request.path().as_ref(), "/a/games");
 
         let request = request.create(Url::parse("http://example.com/a/games").unwrap());
@@ -220,9 +222,10 @@ mod tests {
 
         let body = String::from_utf8(request.body().unwrap().as_bytes().unwrap().to_vec()).unwrap();
         let expected_body = concat!(
-            r#"{"name":"Druhá Hra","maxPlayers":2,"map":{"hash":"#,
+            r#"{"server":"127.0.0.1:8082","config":{"name":"Druhá Hra","maxPlayers":2,"#,
+            r#""map":{"hash":"#,
             r#""0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef","#,
-            r#""name":"custom"}}"#
+            r#""name":"custom"}}}"#
         );
 
         assert_eq!(body, expected_body);
