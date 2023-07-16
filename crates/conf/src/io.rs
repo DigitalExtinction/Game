@@ -24,6 +24,8 @@ pub(crate) async fn load_conf_text(path: &Path) -> Result<Option<String>> {
 
 #[cfg(test)]
 mod tests {
+    use std::net::{IpAddr, Ipv6Addr};
+
     use async_std::{path::PathBuf, task};
     use de_uom::Metre;
 
@@ -41,9 +43,14 @@ mod tests {
         let conf = task::block_on(Configuration::load(path.as_path())).unwrap();
 
         assert_eq!(
-            conf.multiplayer().server().as_str(),
+            conf.multiplayer().lobby().as_str(),
             "http://example.com/de/"
         );
+        assert_eq!(
+            conf.multiplayer().connector().ip(),
+            IpAddr::V6(Ipv6Addr::LOCALHOST)
+        );
+        assert_eq!(conf.multiplayer().connector().port(), 8083);
         assert_eq!(conf.camera().min_distance(), Metre::new(12.5));
         assert_eq!(conf.camera().max_distance(), Metre::new(250.));
     }

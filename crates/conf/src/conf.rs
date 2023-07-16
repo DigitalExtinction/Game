@@ -2,6 +2,8 @@
 //! This module implements final (i.e. parsed and validated) game configuration
 //! objects and their building from persistent configuration.
 
+use std::net::{IpAddr, Ipv4Addr, SocketAddr};
+
 use anyhow::{ensure, Context, Error, Result};
 use async_std::path::Path;
 use conf_macros::Config;
@@ -17,8 +19,9 @@ use crate::bundle_config;
 
 #[derive(Deserialize, Serialize, Config, Debug, Clone)]
 pub struct MultiplayerConf {
-    #[ensure(server.scheme() == "http", "Only `http` scheme is allowed for `server`.")]
-    server: Url,
+    #[ensure(lobby.scheme() == "http", "Only `http` scheme is allowed for `lobby`.")]
+    lobby: Url,
+    connector: SocketAddr,
 }
 
 #[derive(Deserialize, Serialize, Config, Debug, Clone)]
@@ -60,7 +63,8 @@ pub struct AudioConf {
 impl Default for MultiplayerConf {
     fn default() -> Self {
         Self {
-            server: Url::parse("http://lobby.de_game.org").unwrap(),
+            lobby: Url::parse("http://lobby.de_game.org").unwrap(),
+            connector: SocketAddr::new(IpAddr::V4(Ipv4Addr::LOCALHOST), 8082),
         }
     }
 }
@@ -163,8 +167,13 @@ impl CameraConf {
 
 impl MultiplayerConf {
     /// Server URL for lobby connections.
-    pub fn server(&self) -> &Url {
-        &self.server
+    pub fn lobby(&self) -> &Url {
+        &self.lobby
+    }
+
+    /// Socket address of a DE Connector main sever.
+    pub fn connector(&self) -> SocketAddr {
+        self.connector
     }
 }
 

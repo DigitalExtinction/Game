@@ -18,7 +18,9 @@ Missing configuration YAML file is treated equally to an empty YAML file, id
 est as if all properties are missing.
 
 * `multiplayer` (object) – multiplayer and network configuration.
-  * `server` (string; default: `http://lobby.de-game.org`) – lobby server base URL.
+  * `lobby` (string; default: `http://lobby.de-game.org`) – lobby server base URL.
+  * `connector` (string; default: `127.0.0.1:8082`) – DE Connector main server
+    socket address. It must be valid IPv4 or IPv6 address.
 * `camera` (object) – in-game camera configuration.
   * `move_margin` (f32; default: `40.0`) – horizontal camera movement is
     initiated if mouse is withing this distance in logical pixels to a window

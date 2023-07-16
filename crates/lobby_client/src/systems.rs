@@ -35,7 +35,7 @@ fn setup_client(
         return false.into();
     };
 
-    let client = LobbyClient::build(conf.multiplayer().server().clone());
+    let client = LobbyClient::build(conf.multiplayer().lobby().clone());
     commands.insert_resource(client);
     false.into()
 }

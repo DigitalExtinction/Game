@@ -1,5 +1,6 @@
 multiplayer: # test comment
-  server: http://example.com/de/
+  lobby: http://example.com/de/
+  connector: '[::1]:8083'
 camera:
   min_distance: 12.5
   max_distance: 250
