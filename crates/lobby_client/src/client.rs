@@ -103,7 +103,7 @@ impl LobbyClient {
     }
 
     fn fire<T: LobbyRequestCreator>(&self, request: Request) -> Task<Result<T::Response>> {
-        info!("Requesting {}", request.url());
+        info!("Requesting {} {}", request.method(), request.url());
         let client = self.client.clone();
 
         IoTaskPool::get().spawn(Compat::new(async move {

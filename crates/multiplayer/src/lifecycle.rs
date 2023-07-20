@@ -89,6 +89,7 @@ fn cleanup(mut commands: Commands) {
 }
 
 fn finish_game(mut next_state: ResMut<NextState<AppState>>) {
+    info!("Multiplayer terminated during a game. Quitting the game.");
     next_state.set(AppState::InMenu);
 }
 
@@ -101,11 +102,13 @@ fn start(
         return;
     };
 
+    info!("Multiplayer start event received, initiating multiplayer.");
     commands.insert_resource(NetGameConfRes(event.net_conf));
     next_state.set(NetState::Connecting);
 }
 
 fn shutdown(mut next_state: ResMut<NextState<NetState>>) {
+    info!("Multiplayer shutdown event received, initiating the shutdown.");
     next_state.set(NetState::ShuttingDown);
 }
 
@@ -129,5 +132,6 @@ fn errors(
 }
 
 fn game_left(mut shutdowns: EventWriter<ShutdownMultiplayerEvent>) {
+    info!("Game finished, sending multiplayer shutdown event.");
     shutdowns.send(ShutdownMultiplayerEvent);
 }
