@@ -162,6 +162,7 @@ fn process_from_game(
 }
 
 fn leave(mut server: EventWriter<ToGameServerEvent<true>>) {
+    info!("Sending leave game message.");
     // Send this even if not yet joined because the join / open-game request
     // might already be processed.
     server.send(ToGame::Leave.into());
