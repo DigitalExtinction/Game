@@ -3,7 +3,6 @@ use bevy_kira_audio::{
     prelude::{Audio as KAudio, AudioSource as KAudioSource},
     AudioControl, AudioInstance,
 };
-
 use de_camera::CameraFocus;
 use de_core::gamestate::GameState;
 
@@ -68,17 +67,16 @@ fn calculate_volume_and_pan(
     (distance_attenuation as f64, pan as f64)
 }
 
+type UninitializedSound<'s> = (
+    Entity,
+    &'s Handle<KAudioSource>,
+    &'s GlobalTransform,
+    Option<&'s Volume>,
+);
+
 fn start(
     mut commands: Commands,
-    starts: Query<
-        (
-            Entity,
-            &Handle<KAudioSource>,
-            &GlobalTransform,
-            Option<&Volume>,
-        ),
-        (With<SpatialSound>, Without<Handle<AudioInstance>>),
-    >,
+    starts: Query<UninitializedSound, (With<SpatialSound>, Without<Handle<AudioInstance>>)>,
     camera: Query<&GlobalTransform, With<Camera>>,
     focus: Res<CameraFocus>,
     audio: Res<KAudio>,
@@ -97,17 +95,16 @@ fn start(
     }
 }
 
+type InitializedSound<'s> = (
+    Entity,
+    &'s Handle<AudioInstance>,
+    &'s GlobalTransform,
+    Option<&'s Volume>,
+);
+
 fn update_spatial(
     mut commands: Commands,
-    spatial_audios: Query<
-        (
-            Entity,
-            &Handle<AudioInstance>,
-            &GlobalTransform,
-            Option<&Volume>,
-        ),
-        With<SpatialSound>,
-    >,
+    spatial_audios: Query<InitializedSound, With<SpatialSound>>,
     camera: Query<&GlobalTransform, With<Camera>>,
     focus: Res<CameraFocus>,
     mut audio_instances: ResMut<Assets<AudioInstance>>,
