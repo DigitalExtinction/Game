@@ -1,4 +1,4 @@
-use baseset::GameSetsPlugin;
+use schedule::GameSchedulesPlugin;
 use bevy::{app::PluginGroupBuilder, prelude::PluginGroup};
 use cleanup::CleanupPlugin;
 use gamestate::GameStateSetupPlugin;
@@ -7,7 +7,7 @@ use state::AppState;
 use visibility::VisibilityPlugin;
 
 pub mod assets;
-pub mod baseset;
+pub mod schedule;
 pub mod cleanup;
 mod errors;
 pub mod events;
@@ -32,7 +32,7 @@ impl PluginGroup for CorePluginGroup {
     fn build(self) -> PluginGroupBuilder {
         PluginGroupBuilder::start::<Self>()
             .add(ProgressPlugin::new(AppState::AppLoading).continue_to(AppState::InMenu))
-            .add(GameSetsPlugin)
+            .add(GameSchedulesPlugin)
             .add(GameStateSetupPlugin)
             .add(VisibilityPlugin)
             .add(CleanupPlugin)

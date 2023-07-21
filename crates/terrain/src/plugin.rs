@@ -6,7 +6,7 @@ use bevy::{
         texture::ImageSampler,
     },
 };
-use de_core::{baseset::GameSet, gamestate::GameState, state::AppState};
+use de_core::{gamestate::GameState, state::AppState};
 use iyes_progress::prelude::*;
 
 use crate::{shader::TerrainMaterial, terrain::Terrain};
@@ -17,18 +17,17 @@ pub(crate) struct TerrainPlugin;
 
 impl Plugin for TerrainPlugin {
     fn build(&self, app: &mut App) {
-        app.add_plugin(MaterialPlugin::<TerrainMaterial>::default())
-            .add_system(load.in_schedule(OnEnter(AppState::InGame)))
-            .add_system(cleanup.in_schedule(OnExit(AppState::InGame)))
-            .add_system(
-                setup_textures
-                    .track_progress()
-                    .in_base_set(GameSet::Update)
-                    .run_if(in_state(GameState::Loading)),
-            )
-            .add_system(
-                init.in_base_set(GameSet::Update)
-                    .run_if(in_state(AppState::InGame)),
+        app.add_plugins(MaterialPlugin::<TerrainMaterial>::default())
+            .add_systems(OnEnter(AppState::InGame), load)
+            .add_systems(OnExit(AppState::InGame), cleanup)
+            .add_systems(
+                Update,
+                (
+                    setup_textures
+                        .track_progress()
+                        .run_if(in_state(GameState::Loading)),
+                    init.run_if(in_state(AppState::InGame)),
+                ),
             );
     }
 }

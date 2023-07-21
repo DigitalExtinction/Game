@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 use de_core::{
-    baseset::GameSet,
+    schedule::{Movement, PreMovement},
     gamestate::GameState,
     objects::{MovableSolid, ObjectType},
     state::AppState,
@@ -17,14 +17,13 @@ pub(crate) struct AltitudePlugin;
 
 impl Plugin for AltitudePlugin {
     fn build(&self, app: &mut App) {
-        app.add_system(
-            setup_entities
-                .in_base_set(GameSet::PreMovement)
-                .run_if(in_state(AppState::InGame)),
+        app.add_systems(
+            PreMovement,
+            setup_entities.run_if(in_state(AppState::InGame)),
         )
-        .add_system(
+        .add_systems(
+            Movement,
             update
-                .in_base_set(GameSet::Movement)
                 .run_if(in_state(GameState::Playing))
                 .in_set(AltitudeSet::Update)
                 .after(RepulsionLables::Apply),

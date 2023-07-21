@@ -6,7 +6,7 @@ use bevy::{
     window::PrimaryWindow,
 };
 use de_camera::MoveFocusEvent;
-use de_core::{baseset::GameSet, gamestate::GameState};
+use de_core::{schedule::InputSchedule, gamestate::GameState};
 use de_map::size::MapBounds;
 
 use super::nodes::MinimapNode;
@@ -19,33 +19,25 @@ pub(super) struct InteractionPlugin;
 
 impl Plugin for InteractionPlugin {
     fn build(&self, app: &mut App) {
-        app.add_event::<MinimapClickEvent>()
-            .add_system(
+        app.add_event::<MinimapClickEvent>().add_systems(
+            InputSchedule,
+            (
                 click_handler
-                    .in_base_set(GameSet::Input)
                     .run_if(in_state(GameState::Playing))
                     .in_set(InteractionSet::ClickHandler),
-            )
-            .add_system(
                 move_camera_system
-                    .in_base_set(GameSet::Input)
                     .run_if(in_state(GameState::Playing))
                     .after(InteractionSet::ClickHandler),
-            )
-            .add_system(
                 send_units_system
-                    .in_base_set(GameSet::Input)
                     .run_if(in_state(GameState::Playing))
                     .after(InteractionSet::ClickHandler)
                     .before(CommandsSet::SendSelected),
-            )
-            .add_system(
                 delivery_location_system
-                    .in_base_set(GameSet::Input)
                     .run_if(in_state(GameState::Playing))
                     .after(InteractionSet::ClickHandler)
                     .before(CommandsSet::DeliveryLocation),
-            );
+            ),
+        );
     }
 }
 
@@ -54,6 +46,7 @@ enum InteractionSet {
     ClickHandler,
 }
 
+#[derive(Event)]
 struct MinimapClickEvent {
     button: MouseButton,
     position: Vec2,

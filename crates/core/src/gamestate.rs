@@ -7,8 +7,10 @@ pub(crate) struct GameStateSetupPlugin;
 
 impl Plugin for GameStateSetupPlugin {
     fn build(&self, app: &mut App) {
-        app.add_plugin(GameStatePlugin)
-            .add_plugin(ProgressPlugin::new(GameState::Loading).continue_to(GameState::Playing));
+        app.add_plugins((
+            GameStatePlugin,
+            ProgressPlugin::new(GameState::Loading).continue_to(GameState::Playing),
+        ));
     }
 }
 

@@ -1,8 +1,7 @@
 use ahash::AHashMap;
 use bevy::prelude::*;
-use bevy::reflect::TypeUuid;
+use bevy::reflect::{TypePath, TypeUuid};
 use bevy::render::render_resource::{AsBindGroup, ShaderRef};
-use de_core::baseset::GameSet;
 use de_core::cleanup::DespawnOnGameExit;
 use de_core::objects::Active;
 use de_core::state::AppState;
@@ -16,41 +15,34 @@ pub(crate) struct LinePlugin;
 
 impl Plugin for LinePlugin {
     fn build(&self, app: &mut App) {
-        app.add_plugin(MaterialPlugin::<LineMaterial>::default())
+        app.add_plugins(MaterialPlugin::<LineMaterial>::default())
             .add_event::<UpdateLineLocationEvent>()
             .add_event::<UpdateLineEndEvent>()
             .add_event::<UpdateLineVisibilityEvent>()
-            .add_system(setup.in_schedule(OnEnter(AppState::InGame)))
-            .add_system(cleanup.in_schedule(OnExit(AppState::InGame)))
-            .add_system(
-                update_line_end
-                    .in_base_set(GameSet::PostUpdate)
-                    .run_if(in_state(AppState::InGame))
-                    .run_if(on_event::<UpdateLineEndEvent>())
-                    .in_set(LinesSet::LineEnd),
-            )
-            .add_system(
-                update_line_location
-                    .in_base_set(GameSet::PostUpdate)
-                    .run_if(in_state(AppState::InGame))
-                    .run_if(on_event::<UpdateLineLocationEvent>())
-                    .in_set(LinesSet::LocationEvents)
-                    .after(LinesSet::LineEnd),
-            )
-            .add_system(
-                update_line_visibility
-                    .in_base_set(GameSet::PostUpdate)
-                    .run_if(in_state(AppState::InGame))
-                    .run_if(on_event::<UpdateLineVisibilityEvent>())
-                    .in_set(LinesSet::VisibilityEvents)
-                    .after(LinesSet::LocationEvents),
-            )
-            .add_system(
-                owner_despawn
-                    .in_base_set(GameSet::PostUpdate)
-                    .run_if(in_state(AppState::InGame))
-                    .in_set(LinesSet::Despawn)
-                    .after(LinesSet::VisibilityEvents),
+            .add_systems(OnEnter(AppState::InGame), setup)
+            .add_systems(OnExit(AppState::InGame), cleanup)
+            .add_systems(
+                PostUpdate,
+                (
+                    update_line_end
+                        .run_if(in_state(AppState::InGame))
+                        .run_if(on_event::<UpdateLineEndEvent>())
+                        .in_set(LinesSet::LineEnd),
+                    update_line_location
+                        .run_if(in_state(AppState::InGame))
+                        .run_if(on_event::<UpdateLineLocationEvent>())
+                        .in_set(LinesSet::LocationEvents)
+                        .after(LinesSet::LineEnd),
+                    update_line_visibility
+                        .run_if(in_state(AppState::InGame))
+                        .run_if(on_event::<UpdateLineVisibilityEvent>())
+                        .in_set(LinesSet::VisibilityEvents)
+                        .after(LinesSet::LocationEvents),
+                    owner_despawn
+                        .run_if(in_state(AppState::InGame))
+                        .in_set(LinesSet::Despawn)
+                        .after(LinesSet::VisibilityEvents),
+                ),
             );
     }
 }
@@ -64,7 +56,7 @@ enum LinesSet {
 }
 
 // Passed to the `rally_point.wgsl` shader
-#[derive(AsBindGroup, TypeUuid, Debug, Clone)]
+#[derive(AsBindGroup, TypeUuid, TypePath, Debug, Clone)]
 #[uuid = "d0fae52d-f398-4416-9b72-9039093a6c34"]
 pub struct LineMaterial {}
 
@@ -103,6 +95,7 @@ impl LineLocation {
     }
 }
 
+#[derive(Event)]
 pub struct UpdateLineVisibilityEvent {
     owner: Entity,
     visible: bool,
@@ -114,6 +107,7 @@ impl UpdateLineVisibilityEvent {
     }
 }
 
+#[derive(Event)]
 pub struct UpdateLineLocationEvent {
     owner: Entity,
     location: LineLocation,
@@ -125,6 +119,7 @@ impl UpdateLineLocationEvent {
     }
 }
 
+#[derive(Event)]
 pub struct UpdateLineEndEvent {
     owner: Entity,
     end: Vec3,

@@ -21,14 +21,17 @@ impl Plugin for MapSelectionPlugin {
         app.add_state::<MapState>()
             .add_event::<SelectMapEvent>()
             .add_event::<MapSelectedEvent>()
-            .add_system(setup.in_schedule(OnEnter(MapState::On)))
-            .add_system(cleanup.in_schedule(OnExit(MapState::On)))
-            .add_system(init_buttons.run_if(in_state(MapState::On)))
-            .add_system(button_system.run_if(in_state(MapState::On)))
-            .add_system(
-                select_map_system
-                    .run_if(in_state(AppState::InMenu))
-                    .run_if(on_event::<SelectMapEvent>()),
+            .add_systems(OnEnter(MapState::On), setup)
+            .add_systems(OnExit(MapState::On), cleanup)
+            .add_systems(
+                Update,
+                (
+                    init_buttons.run_if(in_state(MapState::On)),
+                    button_system.run_if(in_state(MapState::On)),
+                    select_map_system
+                        .run_if(in_state(AppState::InMenu))
+                        .run_if(on_event::<SelectMapEvent>()),
+                ),
             );
     }
 }
@@ -41,10 +44,12 @@ enum MapState {
 }
 
 /// Send this event to display map selection on top of current UI.
+#[derive(Event)]
 pub(crate) struct SelectMapEvent;
 
 /// This event is sent after a map is selected, just before menu state is
 /// switched to a next state.
+#[derive(Event)]
 pub(crate) struct MapSelectedEvent {
     path: PathBuf,
     metadata: MapMetadata,
@@ -105,8 +110,12 @@ fn setup(mut commands: Commands) {
         .spawn(NodeBundle {
             style: Style {
                 position_type: PositionType::Absolute,
-                position: UiRect::all(Val::Percent(0.)),
-                size: Size::new(Val::Percent(100.), Val::Percent(100.)),
+                top: Val::Percent(0.),
+                bottom: Val::Percent(0.),
+                left: Val::Percent(0.),
+                right: Val::Percent(0.),
+                width: Val::Percent(100.),
+                height: Val::Percent(100.),
                 ..default()
             },
             background_color: Color::GRAY.into(),
@@ -141,7 +150,8 @@ fn init_buttons(
         .spawn(NodeBundle {
             style: Style {
                 flex_direction: FlexDirection::Column,
-                size: Size::new(Val::Percent(25.), Val::Percent(100.)),
+                width: Val::Percent(25.),
+                height: Val::Percent(100.),
                 margin: UiRect::all(Val::Auto),
                 align_items: AlignItems::Center,
                 justify_content: JustifyContent::Center,
@@ -170,7 +180,7 @@ fn button_system(
     mut events: EventWriter<MapSelectedEvent>,
 ) {
     for (&interaction, map) in interactions.iter() {
-        if let Interaction::Clicked = interaction {
+        if let Interaction::Pressed = interaction {
             next_state.set(MapState::Off);
             events.send(MapSelectedEvent::new(
                 map.path().into(),
@@ -221,7 +231,8 @@ fn map_button(commands: &mut GuiCommands, map: MapEntry) -> Entity {
     commands
         .spawn_button(
             OuterStyle {
-                size: Size::new(Val::Percent(100.), Val::Percent(8.)),
+                width: Val::Percent(100.),
+                height: Val::Percent(8.),
                 margin: UiRect::new(
                     Val::Percent(0.),
                     Val::Percent(0.),

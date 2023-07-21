@@ -8,19 +8,18 @@ pub(crate) struct MenuPlugin;
 
 impl Plugin for MenuPlugin {
     fn build(&self, app: &mut App) {
-        app.add_system(setup.in_schedule(OnEnter(AppState::InMenu)))
-            .add_system(cleanup.in_schedule(OnExit(AppState::InMenu)))
-            .add_system(
-                clean_up_root
-                    .in_base_set(CoreSet::PreUpdate)
-                    .run_if(resource_exists::<Menu>()),
-            )
-            .add_system(
-                hide_show_corner
-                    .run_if(resource_exists::<Menu>())
-                    .run_if(resource_changed::<State<MenuState>>()),
-            )
-            .add_system(button_system.run_if(in_state(AppState::InMenu)));
+        app.add_systems(OnEnter(AppState::InMenu), setup)
+            .add_systems(OnExit(AppState::InMenu), cleanup)
+            .add_systems(PreUpdate, clean_up_root.run_if(resource_exists::<Menu>()))
+            .add_systems(
+                Update,
+                (
+                    hide_show_corner
+                        .run_if(resource_exists::<Menu>())
+                        .run_if(resource_changed::<State<MenuState>>()),
+                    button_system.run_if(in_state(AppState::InMenu)),
+                ),
+            );
     }
 }
 
@@ -65,7 +64,7 @@ fn hide_show_corner(
     mut visibility: Query<&mut Visibility>,
 ) {
     let mut corner_visibility = visibility.get_mut(menu.corner_node()).unwrap();
-    *corner_visibility = if state.0 == MenuState::MainMenu {
+    *corner_visibility = if state.get() == &MenuState::MainMenu {
         Visibility::Hidden
     } else {
         Visibility::Inherited
@@ -94,8 +93,12 @@ fn spawn_root_node(commands: &mut GuiCommands) -> Entity {
         .spawn(NodeBundle {
             style: Style {
                 position_type: PositionType::Absolute,
-                position: UiRect::all(Val::Percent(0.)),
-                size: Size::new(Val::Percent(100.), Val::Percent(100.)),
+                top: Val::Percent(0.),
+                bottom: Val::Percent(0.),
+                left: Val::Percent(0.),
+                right: Val::Percent(0.),
+                width: Val::Percent(100.),
+                height: Val::Percent(100.),
                 ..default()
             },
             background_color: Color::GRAY.into(),
@@ -109,12 +112,11 @@ fn spawn_corner_node(commands: &mut GuiCommands) -> Entity {
         .spawn(NodeBundle {
             style: Style {
                 position_type: PositionType::Absolute,
-                position: UiRect::new(
-                    Val::Percent(90.),
-                    Val::Percent(5.),
-                    Val::Percent(5.),
-                    Val::Percent(90.),
-                ),
+                left: Val::Percent(90.),
+                right: Val::Percent(5.),
+                top: Val::Percent(5.),
+                bottom: Val::Percent(90.),
+
                 ..default()
             },
             z_index: ZIndex::Global(1),
@@ -125,7 +127,8 @@ fn spawn_corner_node(commands: &mut GuiCommands) -> Entity {
     let close_button = commands
         .spawn_button(
             OuterStyle {
-                size: Size::new(Val::Percent(100.), Val::Percent(100.)),
+                width: Val::Percent(100.),
+                height: Val::Percent(100.),
                 ..default()
             },
             "X",
@@ -142,7 +145,7 @@ fn button_system(
     interactions: Query<(&Interaction, &ButtonAction), Changed<Interaction>>,
 ) {
     for (&interaction, &action) in interactions.iter() {
-        if let Interaction::Clicked = interaction {
+        if let Interaction::Pressed = interaction {
             match action {
                 ButtonAction::Close => next_state.set(MenuState::MainMenu),
             }

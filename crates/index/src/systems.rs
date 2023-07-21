@@ -3,7 +3,7 @@
 
 use bevy::prelude::*;
 use de_core::{
-    baseset::GameSet,
+    schedule::PostMovement,
     gamestate::GameState,
     objects::{MovableSolid, ObjectType, StaticSolid},
     state::AppState,
@@ -42,23 +42,22 @@ pub(crate) struct IndexPlugin;
 
 impl Plugin for IndexPlugin {
     fn build(&self, app: &mut App) {
-        app.add_system(setup.in_schedule(OnEnter(AppState::InGame)))
-            .add_system(cleanup.in_schedule(OnExit(AppState::InGame)))
-            .add_system(
-                insert
-                    .in_base_set(GameSet::PostUpdate)
-                    .run_if(in_state(GameState::Playing))
-                    .in_set(IndexSet::Index),
+        app.add_systems(OnEnter(AppState::InGame), setup)
+            .add_systems(OnExit(AppState::InGame), cleanup)
+            .add_systems(
+                PostUpdate,
+                (
+                    insert
+                        .run_if(in_state(GameState::Playing))
+                        .in_set(IndexSet::Index),
+                    remove
+                        .run_if(in_state(GameState::Playing))
+                        .in_set(IndexSet::Index),
+                ),
             )
-            .add_system(
-                remove
-                    .in_base_set(GameSet::PostUpdate)
-                    .run_if(in_state(GameState::Playing))
-                    .in_set(IndexSet::Index),
-            )
-            .add_system(
+            .add_systems(
+                PostMovement,
                 update
-                    .in_base_set(GameSet::PostMovement)
                     .run_if(in_state(GameState::Playing))
                     .in_set(IndexSet::Index),
             );

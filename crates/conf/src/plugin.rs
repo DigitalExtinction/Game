@@ -16,9 +16,10 @@ pub(super) struct ConfPlugin;
 
 impl Plugin for ConfPlugin {
     fn build(&self, app: &mut App) {
-        app.add_system(start_loading.in_schedule(OnEnter(AppState::AppLoading)))
-            .add_system(cleanup.in_schedule(OnExit(AppState::AppLoading)))
-            .add_system(
+        app.add_systems(OnEnter(AppState::AppLoading), start_loading)
+            .add_systems(OnExit(AppState::AppLoading), cleanup)
+            .add_systems(
+                Update,
                 poll_conf
                     .track_progress()
                     .run_if(in_state(AppState::AppLoading)),

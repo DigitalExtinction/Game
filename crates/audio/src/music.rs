@@ -1,4 +1,4 @@
-use bevy::{asset::LoadState, prelude::*};
+use bevy::{asset::LoadState, audio::Volume, prelude::*};
 use de_conf::Configuration;
 use de_core::state::AppState;
 use iyes_progress::prelude::*;
@@ -7,9 +7,12 @@ pub(crate) struct MusicPlugin;
 
 impl Plugin for MusicPlugin {
     fn build(&self, app: &mut App) {
-        app.add_system(setup.in_schedule(OnEnter(AppState::AppLoading)))
-            .add_system(load.track_progress().run_if(in_state(AppState::AppLoading)))
-            .add_system(start.in_schedule(OnExit(AppState::AppLoading)));
+        app.add_systems(OnEnter(AppState::AppLoading), setup)
+            .add_systems(
+                Update,
+                load.track_progress().run_if(in_state(AppState::AppLoading)),
+            )
+            .add_systems(OnExit(AppState::AppLoading), start);
     }
 }
 
@@ -28,12 +31,14 @@ fn load(server: Res<AssetServer>, tracks: Res<Tracks>) -> Progress {
     }
 }
 
-fn start(audio: Res<Audio>, tracks: Res<Tracks>, config: Res<Configuration>) {
+fn start(mut commands: Commands, tracks: Res<Tracks>, config: Res<Configuration>) {
     if !config.audio().music_enabled() {
         return;
     }
-    audio.play_with_settings(
-        tracks.0.clone(),
-        PlaybackSettings::LOOP.with_volume(config.audio().music_volume()),
-    );
+
+    let volume = Volume::new_relative(config.audio().music_volume());
+    commands.spawn(AudioBundle {
+        source: tracks.0.clone(),
+        settings: PlaybackSettings::LOOP.with_volume(volume),
+    });
 }

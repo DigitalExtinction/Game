@@ -2,7 +2,7 @@ use bevy::prelude::*;
 use de_behaviour::ChaseTargetEvent;
 use de_combat::AttackEvent;
 use de_construction::{AssemblyLine, ChangeDeliveryLocationEvent};
-use de_core::{baseset::GameSet, gamestate::GameState, objects::MovableSolid};
+use de_core::{schedule::InputSchedule, gamestate::GameState, objects::MovableSolid};
 use de_pathing::{PathQueryProps, PathTarget, UpdateEntityPathEvent};
 use glam::Vec2;
 
@@ -15,23 +15,19 @@ impl Plugin for ExecutorPlugin {
         app.add_event::<SendSelectedEvent>()
             .add_event::<DeliveryLocationSelectedEvent>()
             .add_event::<GroupAttackEvent>()
-            .add_system(
-                send_selected_system
-                    .in_base_set(GameSet::Input)
-                    .run_if(in_state(GameState::Playing))
-                    .in_set(CommandsSet::SendSelected),
-            )
-            .add_system(
-                delivery_location_system
-                    .in_base_set(GameSet::Input)
-                    .run_if(in_state(GameState::Playing))
-                    .in_set(CommandsSet::DeliveryLocation),
-            )
-            .add_system(
-                attack_system
-                    .in_base_set(GameSet::Input)
-                    .run_if(in_state(GameState::Playing))
-                    .in_set(CommandsSet::Attack),
+            .add_systems(
+                InputSchedule,
+                (
+                    send_selected_system
+                        .run_if(in_state(GameState::Playing))
+                        .in_set(CommandsSet::SendSelected),
+                    delivery_location_system
+                        .run_if(in_state(GameState::Playing))
+                        .in_set(CommandsSet::DeliveryLocation),
+                    attack_system
+                        .run_if(in_state(GameState::Playing))
+                        .in_set(CommandsSet::Attack),
+                ),
             );
     }
 }
@@ -44,6 +40,7 @@ pub(crate) enum CommandsSet {
 }
 
 /// Send this event to send all selected movable units to a point on the map.
+#[derive(Event)]
 pub(crate) struct SendSelectedEvent(Vec2);
 
 impl SendSelectedEvent {
@@ -58,6 +55,7 @@ impl SendSelectedEvent {
 
 /// Send this event to set manufacturing delivery location for all selected
 /// building with a factory.
+#[derive(Event)]
 pub(crate) struct DeliveryLocationSelectedEvent(Vec2);
 
 impl DeliveryLocationSelectedEvent {
@@ -72,6 +70,7 @@ impl DeliveryLocationSelectedEvent {
 
 /// Send this event to attack an enemy with all selected movable units. The
 /// target must be an enemy entity.
+#[derive(Event)]
 pub(crate) struct GroupAttackEvent(Entity);
 
 impl GroupAttackEvent {

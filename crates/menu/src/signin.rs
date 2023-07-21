@@ -16,18 +16,23 @@ pub(crate) struct SignInPlugin;
 
 impl Plugin for SignInPlugin {
     fn build(&self, app: &mut App) {
-        app.add_plugin(RequestsPlugin::<SignInRequest>::new())
-            .add_plugin(RequestsPlugin::<SignUpRequest>::new())
-            .add_system(setup.in_schedule(OnEnter(MenuState::SignIn)))
-            .add_system(cleanup.in_schedule(OnExit(MenuState::SignIn)))
-            .add_system(
+        app.add_plugins((
+            RequestsPlugin::<SignInRequest>::new(),
+            RequestsPlugin::<SignUpRequest>::new(),
+        ))
+        .add_systems(OnEnter(MenuState::SignIn), setup)
+        .add_systems(OnExit(MenuState::SignIn), cleanup)
+        .add_systems(
+            Update,
+            (
                 button_system
                     .run_if(resource_exists::<Inputs>())
                     .run_if(in_state(MenuState::SignIn)),
-            )
-            .add_system(response_system::<SignInRequest>.run_if(in_state(MenuState::SignIn)))
-            .add_system(response_system::<SignUpRequest>.run_if(in_state(MenuState::SignIn)))
-            .add_system(auth_system.run_if(in_state(MenuState::SignIn)));
+                response_system::<SignInRequest>.run_if(in_state(MenuState::SignIn)),
+                response_system::<SignUpRequest>.run_if(in_state(MenuState::SignIn)),
+                auth_system.run_if(in_state(MenuState::SignIn)),
+            ),
+        );
     }
 }
 
@@ -72,7 +77,8 @@ fn root_column(commands: &mut GuiCommands) -> Entity {
         .spawn(NodeBundle {
             style: Style {
                 flex_direction: FlexDirection::Column,
-                size: Size::new(Val::Percent(50.), Val::Percent(100.)),
+                width: Val::Percent(50.),
+                height: Val::Percent(100.),
                 margin: UiRect::all(Val::Auto),
                 align_items: AlignItems::Center,
                 justify_content: JustifyContent::Center,
@@ -88,7 +94,8 @@ fn row(commands: &mut GuiCommands, parent: Entity) -> Entity {
         .spawn(NodeBundle {
             style: Style {
                 flex_direction: FlexDirection::Row,
-                size: Size::new(Val::Percent(100.), Val::Percent(8.)),
+                width: Val::Percent(100.),
+                height: Val::Percent(8.),
                 margin: UiRect::new(
                     Val::Percent(0.),
                     Val::Percent(0.),
@@ -110,7 +117,8 @@ fn input(commands: &mut GuiCommands, parent: Entity, caption: &str, secret: bool
     let caption = commands
         .spawn_label(
             OuterStyle {
-                size: Size::new(Val::Percent(35.), Val::Percent(100.)),
+                width: Val::Percent(35.),
+                height: Val::Percent(100.),
                 ..default()
             },
             caption,
@@ -121,7 +129,8 @@ fn input(commands: &mut GuiCommands, parent: Entity, caption: &str, secret: bool
     let input = commands
         .spawn_text_box(
             OuterStyle {
-                size: Size::new(Val::Percent(65.), Val::Percent(100.)),
+                width: Val::Percent(65.),
+                height: Val::Percent(100.),
                 ..default()
             },
             secret,
@@ -145,7 +154,8 @@ fn button(commands: &mut GuiCommands, parent: Entity, action: Action) {
     let id = commands
         .spawn_button(
             OuterStyle {
-                size: Size::new(Val::Percent(48.), Val::Percent(100.)),
+                width: Val::Percent(48.),
+                height: Val::Percent(100.),
                 ..default()
             },
             caption,
@@ -163,7 +173,7 @@ fn button_system(
     mut sign_up_sender: Sender<SignUpRequest>,
 ) {
     for (&interaction, &action) in interactions.iter() {
-        if let Interaction::Clicked = interaction {
+        if let Interaction::Pressed = interaction {
             let username = texts.text(inputs.username).unwrap().to_string();
             let password = texts.text(inputs.password).unwrap().to_string();
 

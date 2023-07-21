@@ -1,5 +1,5 @@
 use bevy::prelude::*;
-use de_core::{baseset::GameSet, gamestate::GameState, state::AppState};
+use de_core::{schedule::InputSchedule, gamestate::GameState, state::AppState};
 use de_index::SpatialQuery;
 use de_signs::UpdateBarVisibilityEvent;
 use de_terrain::TerrainCollider;
@@ -15,20 +15,19 @@ pub(super) struct PointerPlugin;
 
 impl Plugin for PointerPlugin {
     fn build(&self, app: &mut App) {
-        app.add_system(setup.in_schedule(OnEnter(AppState::InGame)))
-            .add_system(cleanup.in_schedule(OnExit(AppState::InGame)))
-            .add_system(
-                pointer_update_system
-                    .in_base_set(GameSet::Input)
-                    .run_if(in_state(GameState::Playing))
-                    .in_set(PointerSet::Update)
-                    .after(MouseSet::Position),
-            )
-            .add_system(
-                update_bar_visibility
-                    .in_base_set(GameSet::Input)
-                    .run_if(in_state(GameState::Playing))
-                    .after(PointerSet::Update),
+        app.add_systems(OnEnter(AppState::InGame), setup)
+            .add_systems(OnExit(AppState::InGame), cleanup)
+            .add_systems(
+                InputSchedule,
+                (
+                    pointer_update_system
+                        .run_if(in_state(GameState::Playing))
+                        .in_set(PointerSet::Update)
+                        .after(MouseSet::Position),
+                    update_bar_visibility
+                        .run_if(in_state(GameState::Playing))
+                        .after(PointerSet::Update),
+                ),
             );
     }
 }

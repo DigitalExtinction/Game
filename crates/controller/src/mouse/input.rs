@@ -4,7 +4,9 @@ use bevy::{
     prelude::*,
     window::PrimaryWindow,
 };
-use de_core::{baseset::GameSet, gamestate::GameState, screengeom::ScreenRect, state::AppState};
+use de_core::{
+    gamestate::GameState, schedule::InputSchedule, screengeom::ScreenRect, state::AppState,
+};
 
 use crate::hud::HudNodes;
 
@@ -18,35 +20,28 @@ impl Plugin for InputPlugin {
         app.add_event::<MouseClickedEvent>()
             .add_event::<MouseDoubleClickedEvent>()
             .add_event::<MouseDraggedEvent>()
-            .add_system(setup.in_schedule(OnEnter(AppState::InGame)))
-            .add_system(cleanup.in_schedule(OnExit(AppState::InGame)))
-            .add_system(
-                update_position
-                    .in_base_set(GameSet::Input)
-                    .run_if(in_state(GameState::Playing))
-                    .in_set(MouseSet::Position),
-            )
-            .add_system(
-                update_drags
-                    .in_base_set(GameSet::Input)
-                    .run_if(in_state(GameState::Playing))
-                    .run_if(resource_exists_and_changed::<MousePosition>())
-                    .in_set(MouseSet::Drags)
-                    .after(MouseSet::Position),
-            )
-            .add_system(
-                update_buttons
-                    .in_base_set(GameSet::Input)
-                    .run_if(in_state(GameState::Playing))
-                    .in_set(MouseSet::SingeButton)
-                    .after(MouseSet::Drags),
-            )
-            .add_system(
-                check_double_click
-                    .in_base_set(GameSet::Input)
-                    .run_if(in_state(GameState::Playing))
-                    .in_set(MouseSet::Buttons)
-                    .after(MouseSet::SingeButton),
+            .add_systems(OnEnter(AppState::InGame), setup)
+            .add_systems(OnExit(AppState::InGame), cleanup)
+            .add_systems(
+                InputSchedule,
+                (
+                    update_position
+                        .run_if(in_state(GameState::Playing))
+                        .in_set(MouseSet::Position),
+                    update_drags
+                        .run_if(in_state(GameState::Playing))
+                        .run_if(resource_exists_and_changed::<MousePosition>())
+                        .in_set(MouseSet::Drags)
+                        .after(MouseSet::Position),
+                    update_buttons
+                        .run_if(in_state(GameState::Playing))
+                        .in_set(MouseSet::SingeButton)
+                        .after(MouseSet::Drags),
+                    check_double_click
+                        .run_if(in_state(GameState::Playing))
+                        .in_set(MouseSet::Buttons)
+                        .after(MouseSet::SingeButton),
+                ),
             );
     }
 }
@@ -59,6 +54,7 @@ pub(crate) enum MouseSet {
     Buttons,
 }
 
+#[derive(Event)]
 pub(crate) struct MouseClickedEvent {
     button: MouseButton,
     position: Vec2,
@@ -78,6 +74,7 @@ impl MouseClickedEvent {
     }
 }
 
+#[derive(Event)]
 pub(crate) struct MouseDoubleClickedEvent {
     button: MouseButton,
 }
@@ -92,6 +89,7 @@ impl MouseDoubleClickedEvent {
     }
 }
 
+#[derive(Event)]
 pub(crate) struct MouseDraggedEvent {
     button: MouseButton,
     rect: Option<ScreenRect>,
@@ -136,9 +134,10 @@ impl MousePosition {
     /// Returns position of the mouse on screen normalized to values between
     /// [-1., -1.] (bottom-left corner) and [1., 1.] (upper-right corner).
     pub(crate) fn ndc(&self) -> Option<Vec2> {
-        self.0.map(|p| 2. * p - Vec2::ONE)
+        self.0.map(|p| Vec2::new(2. * p.x - 1., 1. - 2. * p.y))
     }
 
+    /// Top-left corner is (0, 0), bottom-right corner is (1, 1).
     fn position(&self) -> Option<Vec2> {
         self.0
     }

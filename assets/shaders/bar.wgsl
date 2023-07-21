@@ -1,6 +1,5 @@
-#import bevy_pbr::mesh_view_bindings
-#import bevy_pbr::mesh_bindings
-#import bevy_pbr::mesh_functions
+#import bevy_pbr::mesh_bindings  mesh
+#import bevy_pbr::mesh_functions mesh_position_local_to_clip
 
 const BACKGROUND_COLOR = vec4<f32>(0., 0., 0., 0.75);
 const FOREGROUND_COLOR = vec4<f32>(0.6, 1., 0.6, 0.75);

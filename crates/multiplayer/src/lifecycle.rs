@@ -13,33 +13,29 @@ impl Plugin for LifecyclePlugin {
         app.add_event::<StartMultiplayerEvent>()
             .add_event::<ShutdownMultiplayerEvent>()
             .add_event::<FatalErrorEvent>()
-            .add_system(cleanup.in_schedule(OnEnter(NetState::None)))
-            .add_system(
-                finish_game
-                    .in_schedule(OnEnter(NetState::None))
-                    .run_if(in_state(AppState::InGame)),
+            .add_systems(
+                OnEnter(NetState::None),
+                (cleanup, finish_game.run_if(in_state(AppState::InGame))),
             )
-            .add_system(
-                game_left
-                    .in_schedule(OnExit(AppState::InGame))
-                    .run_if(not(in_state(NetState::None))),
+            .add_systems(
+                OnExit(AppState::InGame),
+                game_left.run_if(not(in_state(NetState::None))),
             )
-            .add_system(
-                start
-                    .run_if(in_state(NetState::None))
-                    .run_if(on_event::<StartMultiplayerEvent>()),
-            )
-            .add_system(
-                shutdown
-                    .run_if(not(
-                        in_state(NetState::None).or_else(in_state(NetState::ShuttingDown))
-                    ))
-                    .run_if(on_event::<ShutdownMultiplayerEvent>()),
-            )
-            .add_system(
-                errors
-                    .run_if(not(in_state(NetState::None)))
-                    .run_if(on_event::<FatalErrorEvent>()),
+            .add_systems(
+                Update,
+                (
+                    start
+                        .run_if(in_state(NetState::None))
+                        .run_if(on_event::<StartMultiplayerEvent>()),
+                    shutdown
+                        .run_if(not(
+                            in_state(NetState::None).or_else(in_state(NetState::ShuttingDown))
+                        ))
+                        .run_if(on_event::<ShutdownMultiplayerEvent>()),
+                    errors
+                        .run_if(not(in_state(NetState::None)))
+                        .run_if(on_event::<FatalErrorEvent>()),
+                ),
             );
     }
 }
@@ -48,6 +44,7 @@ impl Plugin for LifecyclePlugin {
 ///
 /// These events are processed only in [`crate::netstate::NetState::None`]
 /// state.
+#[derive(Event)]
 pub struct StartMultiplayerEvent {
     net_conf: NetGameConf,
 }
@@ -59,12 +56,14 @@ impl StartMultiplayerEvent {
 }
 
 /// Send this event to shutdown multiplayer functionality.
+#[derive(Event)]
 pub struct ShutdownMultiplayerEvent;
 
 /// Send this event when a fatal multiplayer event occurs. These are events
 /// which prevents further continuation of multiplayer game.
 ///
 /// An error will be displayed to the user and multiplayer will shut down.
+#[derive(Event)]
 pub(crate) struct FatalErrorEvent(String);
 
 impl FatalErrorEvent {

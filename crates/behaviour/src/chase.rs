@@ -1,5 +1,5 @@
 use bevy::prelude::*;
-use de_core::{baseset::GameSet, gamestate::GameState, projection::ToFlat};
+use de_core::{gamestate::GameState, projection::ToFlat};
 use de_pathing::{PathQueryProps, PathTarget, UpdateEntityPathEvent};
 
 pub(crate) struct ChasePlugin;
@@ -7,17 +7,13 @@ pub(crate) struct ChasePlugin;
 impl Plugin for ChasePlugin {
     fn build(&self, app: &mut App) {
         app.add_event::<ChaseTargetEvent>()
-            .add_system(
+            .add_systems(
+                PreUpdate,
                 handle_chase_events
-                    .in_base_set(GameSet::PreUpdate)
                     .run_if(in_state(GameState::Playing))
                     .in_set(ChaseSet::ChaseTargetEvent),
             )
-            .add_system(
-                chase
-                    .in_base_set(GameSet::Update)
-                    .run_if(in_state(GameState::Playing)),
-            );
+            .add_systems(Update, chase.run_if(in_state(GameState::Playing)));
     }
 }
 
@@ -27,6 +23,7 @@ pub enum ChaseSet {
 }
 
 /// Send this event to start or stop chasing of an entity (movable or static).
+#[derive(Event)]
 pub struct ChaseTargetEvent {
     entity: Entity,
     target: Option<ChaseTarget>,

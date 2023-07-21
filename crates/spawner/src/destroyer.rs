@@ -1,5 +1,5 @@
 use bevy::prelude::*;
-use de_core::{baseset::GameSet, objects::ObjectType, player::Player, state::AppState};
+use de_core::{objects::ObjectType, player::Player, state::AppState};
 use de_objects::Health;
 
 use crate::{ObjectCounter, SpawnerSet};
@@ -8,9 +8,9 @@ pub(crate) struct DestroyerPlugin;
 
 impl Plugin for DestroyerPlugin {
     fn build(&self, app: &mut App) {
-        app.add_system(
+        app.add_systems(
+            Update,
             destroy
-                .in_base_set(GameSet::Update)
                 .run_if(in_state(AppState::InGame))
                 .in_set(SpawnerSet::Destroyer),
         );

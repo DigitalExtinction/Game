@@ -27,8 +27,8 @@ where
     T: LobbyRequest,
 {
     fn build(&self, app: &mut App) {
-        app.add_system(setup::<T>.in_schedule(OnEnter(AppState::InMenu)))
-            .add_system(cleanup::<T>.in_schedule(OnExit(AppState::InMenu)));
+        app.add_systems(OnEnter(AppState::InMenu), setup::<T>)
+            .add_systems(OnExit(AppState::InMenu), cleanup::<T>);
     }
 }
 

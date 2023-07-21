@@ -4,7 +4,10 @@ use bevy::{
     tasks::{AsyncComputeTaskPool, Task},
 };
 use de_core::{
-    baseset::GameSet, gamestate::GameState, objects::MovableSolid, projection::ToFlat,
+    schedule::{PostMovement, PreMovement},
+    gamestate::GameState,
+    objects::MovableSolid,
+    projection::ToFlat,
     state::AppState,
 };
 use futures_lite::future;
@@ -34,45 +37,40 @@ pub struct PathingPlugin;
 impl Plugin for PathingPlugin {
     fn build(&self, app: &mut App) {
         app.add_event::<UpdateEntityPathEvent>()
-            .add_system(setup.in_schedule(OnEnter(AppState::InGame)))
-            .add_system(cleanup.in_schedule(OnExit(AppState::InGame)))
-            .add_system(
-                update_existing_paths
-                    .in_base_set(GameSet::PreMovement)
-                    .run_if(in_state(GameState::Playing))
-                    .run_if(on_event::<PathFinderUpdatedEvent>())
-                    .in_set(PathingSet::UpdateExistingPaths)
-                    .after(FinderSet::UpdateFinder),
+            .add_systems(OnEnter(AppState::InGame), setup)
+            .add_systems(OnExit(AppState::InGame), cleanup)
+            .add_systems(
+                PreMovement,
+                (
+                    update_existing_paths
+                        .run_if(in_state(GameState::Playing))
+                        .run_if(on_event::<PathFinderUpdatedEvent>())
+                        .in_set(PathingSet::UpdateExistingPaths)
+                        .after(FinderSet::UpdateFinder),
+                    update_requested_paths
+                        .run_if(in_state(GameState::Playing))
+                        .in_set(PathingSet::UpdateRequestedPaths)
+                        .after(PathingSet::UpdateExistingPaths),
+                    check_path_results
+                        .run_if(in_state(GameState::Playing))
+                        // This is needed to avoid race condition in PathTarget
+                        // removal which would happen if path was not-found before
+                        // this system is run.
+                        .before(PathingSet::UpdateRequestedPaths)
+                        // This system removes finished tasks from UpdatePathsState
+                        // and inserts Scheduledpath components. When this happen,
+                        // the tasks is no longer available however the component
+                        // is not available as well until the end of the stage.
+                        //
+                        // System PathingSet::UpdateExistingPaths needs to detect
+                        // that a path is either already scheduled or being
+                        // computed. Thus this system must run after it.
+                        .after(PathingSet::UpdateExistingPaths),
+                ),
             )
-            .add_system(
-                update_requested_paths
-                    .in_base_set(GameSet::PreMovement)
-                    .run_if(in_state(GameState::Playing))
-                    .in_set(PathingSet::UpdateRequestedPaths)
-                    .after(PathingSet::UpdateExistingPaths),
-            )
-            .add_system(
-                check_path_results
-                    .in_base_set(GameSet::PreMovement)
-                    .run_if(in_state(GameState::Playing))
-                    // This is needed to avoid race condition in PathTarget
-                    // removal which would happen if path was not-found before
-                    // this system is run.
-                    .before(PathingSet::UpdateRequestedPaths)
-                    // This system removes finished tasks from UpdatePathsState
-                    // and inserts Scheduledpath components. When this happen,
-                    // the tasks is no longer available however the component
-                    // is not available as well until the end of the stage.
-                    //
-                    // System PathingSet::UpdateExistingPaths needs to detect
-                    // that a path is either already scheduled or being
-                    // computed. Thus this system must run after it.
-                    .after(PathingSet::UpdateExistingPaths),
-            )
-            .add_system(
-                remove_path_targets
-                    .in_base_set(GameSet::PostMovement)
-                    .run_if(in_state(AppState::InGame)),
+            .add_systems(
+                PostMovement,
+                remove_path_targets.run_if(in_state(AppState::InGame)),
             );
     }
 }
@@ -85,6 +83,7 @@ enum PathingSet {
 
 /// This event triggers computation of shortest path to a target and
 /// replacement / insertion of this path to the entity.
+#[derive(Event)]
 pub struct UpdateEntityPathEvent {
     entity: Entity,
     target: PathTarget,

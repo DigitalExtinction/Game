@@ -1,5 +1,5 @@
 use bevy::prelude::*;
-use de_core::{baseset::GameSet, player::Player};
+use de_core::{schedule::PreMovement, player::Player};
 use de_net::{FromGame, FromServer, GameOpenError, JoinError, ToGame, ToServer};
 
 use crate::{
@@ -16,22 +16,20 @@ pub(crate) struct GamePlugin;
 
 impl Plugin for GamePlugin {
     fn build(&self, app: &mut App) {
-        app.add_system(setup.in_schedule(OnEnter(NetState::Connected)))
-            .add_system(cleanup.in_schedule(OnEnter(NetState::None)))
-            .add_system(open_or_join.in_schedule(OnEnter(NetState::Connected)))
-            .add_system(
-                process_from_server
-                    .in_base_set(GameSet::PreMovement)
-                    .run_if(on_event::<FromMainServerEvent>())
-                    .after(MessagesSet::RecvMessages),
+        app.add_systems(OnEnter(NetState::Connected), (setup, open_or_join))
+            .add_systems(OnEnter(NetState::None), cleanup)
+            .add_systems(
+                PreMovement,
+                (
+                    process_from_server
+                        .run_if(on_event::<FromMainServerEvent>())
+                        .after(MessagesSet::RecvMessages),
+                    process_from_game
+                        .run_if(on_event::<FromGameServerEvent>())
+                        .after(MessagesSet::RecvMessages),
+                ),
             )
-            .add_system(
-                process_from_game
-                    .in_base_set(GameSet::PreMovement)
-                    .run_if(on_event::<FromGameServerEvent>())
-                    .after(MessagesSet::RecvMessages),
-            )
-            .add_system(leave.in_schedule(OnEnter(NetState::ShuttingDown)));
+            .add_systems(OnEnter(NetState::ShuttingDown), leave);
     }
 }
 
@@ -147,7 +145,7 @@ fn process_from_game(
                 }
             },
             FromGame::Left => {
-                if state.0 < NetState::ShuttingDown {
+                if state.get() < &NetState::ShuttingDown {
                     fatals.send(FatalErrorEvent::new("Player was kicked from the game."));
                 }
             }

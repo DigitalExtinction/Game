@@ -3,8 +3,12 @@ use std::f32::consts::FRAC_PI_2;
 use bevy::prelude::*;
 use de_conf::{CameraConf, Configuration};
 use de_core::{
-    baseset::GameSet, cleanup::DespawnOnGameExit, events::ResendEventPlugin, gamestate::GameState,
-    projection::ToAltitude, state::AppState,
+    schedule::{InputSchedule, Movement, PreMovement},
+    cleanup::DespawnOnGameExit,
+    events::ResendEventPlugin,
+    gamestate::GameState,
+    projection::ToAltitude,
+    state::AppState,
 };
 use de_map::size::MapBounds;
 use de_terrain::{TerrainCollider, MAX_ELEVATION};
@@ -42,79 +46,64 @@ impl Plugin for CameraPlugin {
             .add_event::<ZoomCameraEvent>()
             .add_event::<RotateCameraEvent>()
             .add_event::<TiltCameraEvent>()
-            .add_plugin(ResendEventPlugin::<MoveFocusEvent>::default())
+            .add_plugins(ResendEventPlugin::<MoveFocusEvent>::default())
             .add_event::<FocusInvalidatedEvent>()
             .add_event::<UpdateTranslationEvent>()
-            .add_system(setup.in_schedule(OnEnter(AppState::InGame)))
-            .add_system(cleanup.in_schedule(OnExit(AppState::InGame)))
-            .add_system(
-                update_focus
-                    .in_base_set(GameSet::PreMovement)
-                    .run_if(in_state(GameState::Playing))
-                    .run_if(on_event::<FocusInvalidatedEvent>())
-                    .in_set(InternalCameraSet::UpdateFocus),
+            .add_systems(OnEnter(AppState::InGame), setup)
+            .add_systems(OnExit(AppState::InGame), cleanup)
+            .add_systems(
+                InputSchedule,
+                (
+                    handle_horizontal_events
+                        .run_if(in_state(GameState::Playing))
+                        .in_set(CameraSet::MoveHorizontallEvent),
+                    handle_zoom_events
+                        .run_if(in_state(GameState::Playing))
+                        .in_set(CameraSet::ZoomEvent),
+                    handle_rotate_events
+                        .run_if(in_state(GameState::Playing))
+                        .in_set(CameraSet::RotateEvent),
+                    handle_tilt_events
+                        .run_if(in_state(GameState::Playing))
+                        .in_set(CameraSet::TiltEvent),
+                ),
             )
-            .add_system(
-                handle_horizontal_events
-                    .in_base_set(GameSet::Input)
-                    .run_if(in_state(GameState::Playing))
-                    .in_set(CameraSet::MoveHorizontallEvent),
+            .add_systems(
+                PreMovement,
+                (
+                    update_focus
+                        .run_if(in_state(GameState::Playing))
+                        .run_if(on_event::<FocusInvalidatedEvent>())
+                        .in_set(InternalCameraSet::UpdateFocus),
+                    process_move_focus_events
+                        .run_if(in_state(GameState::Playing))
+                        .in_set(InternalCameraSet::MoveFocus)
+                        .after(InternalCameraSet::UpdateFocus),
+                    update_translation_handler
+                        .run_if(in_state(GameState::Playing))
+                        .run_if(on_event::<UpdateTranslationEvent>())
+                        .after(InternalCameraSet::MoveFocus),
+                ),
             )
-            .add_system(
-                handle_zoom_events
-                    .in_base_set(GameSet::Input)
-                    .run_if(in_state(GameState::Playing))
-                    .in_set(CameraSet::ZoomEvent),
-            )
-            .add_system(
-                handle_rotate_events
-                    .in_base_set(GameSet::Input)
-                    .run_if(in_state(GameState::Playing))
-                    .in_set(CameraSet::RotateEvent),
-            )
-            .add_system(
-                handle_tilt_events
-                    .in_base_set(GameSet::Input)
-                    .run_if(in_state(GameState::Playing))
-                    .in_set(CameraSet::TiltEvent),
-            )
-            .add_system(
-                process_move_focus_events
-                    .in_base_set(GameSet::PreMovement)
-                    .run_if(in_state(GameState::Playing))
-                    .in_set(InternalCameraSet::MoveFocus)
-                    .after(InternalCameraSet::UpdateFocus),
-            )
-            .add_system(
-                update_translation_handler
-                    .in_base_set(GameSet::PreMovement)
-                    .run_if(in_state(GameState::Playing))
-                    .run_if(on_event::<UpdateTranslationEvent>())
-                    .after(InternalCameraSet::MoveFocus),
-            )
-            .add_system(
-                zoom.in_base_set(GameSet::Movement)
-                    .run_if(in_state(GameState::Playing))
-                    .in_set(InternalCameraSet::Zoom),
-            )
-            .add_system(
-                pivot
-                    .in_base_set(GameSet::Movement)
-                    .run_if(in_state(GameState::Playing))
-                    .in_set(InternalCameraSet::Pivot)
-                    .run_if(
-                        resource_exists_and_changed::<DesiredOffNadir>()
-                            .or_else(resource_exists_and_changed::<DesiredAzimuth>()),
-                    ),
-            )
-            .add_system(
-                move_horizontaly
-                    .in_base_set(GameSet::Movement)
-                    .run_if(in_state(GameState::Playing))
-                    // Zooming changes camera focus point so do it
-                    // after other types of camera movement.
-                    .after(InternalCameraSet::Zoom)
-                    .after(InternalCameraSet::Pivot),
+            .add_systems(
+                Movement,
+                (
+                    zoom.run_if(in_state(GameState::Playing))
+                        .in_set(InternalCameraSet::Zoom),
+                    pivot
+                        .run_if(in_state(GameState::Playing))
+                        .run_if(
+                            resource_exists_and_changed::<DesiredOffNadir>()
+                                .or_else(resource_exists_and_changed::<DesiredAzimuth>()),
+                        )
+                        .in_set(InternalCameraSet::Pivot),
+                    move_horizontaly
+                        .run_if(in_state(GameState::Playing))
+                        // Zooming changes camera focus point so do it
+                        // after other types of camera movement.
+                        .after(InternalCameraSet::Zoom)
+                        .after(InternalCameraSet::Pivot),
+                ),
             );
     }
 }
@@ -135,6 +124,7 @@ enum InternalCameraSet {
     MoveFocus,
 }
 
+#[derive(Event)]
 pub struct MoveFocusEvent {
     point: Vec2,
 }
@@ -150,6 +140,7 @@ impl MoveFocusEvent {
 }
 
 /// Send this event to (re)set camera horizontal movement.
+#[derive(Event)]
 pub struct MoveCameraHorizontallyEvent(Vec2);
 
 impl MoveCameraHorizontallyEvent {
@@ -168,6 +159,7 @@ impl MoveCameraHorizontallyEvent {
 }
 
 /// Send this event to rotate camera around the vertical (Y) axis.
+#[derive(Event)]
 pub struct RotateCameraEvent(f32);
 
 impl RotateCameraEvent {
@@ -184,6 +176,7 @@ impl RotateCameraEvent {
 }
 
 /// Send this event to tilt the camera, i.e. to change elevation / off nadir.
+#[derive(Event)]
 pub struct TiltCameraEvent(f32);
 
 impl TiltCameraEvent {
@@ -200,6 +193,7 @@ impl TiltCameraEvent {
 }
 
 /// Send this event to zoom the camera.
+#[derive(Event)]
 pub struct ZoomCameraEvent(f32);
 
 impl ZoomCameraEvent {
@@ -245,9 +239,11 @@ impl CameraFocus {
     }
 }
 
+#[derive(Event)]
 struct FocusInvalidatedEvent;
 
 /// Send this event to (re)set camera translation based on focus point.
+#[derive(Event)]
 struct UpdateTranslationEvent;
 
 #[derive(Default, Resource)]

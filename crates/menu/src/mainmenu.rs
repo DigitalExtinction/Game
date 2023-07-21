@@ -7,8 +7,8 @@ pub(crate) struct MainMenuPlugin;
 
 impl Plugin for MainMenuPlugin {
     fn build(&self, app: &mut App) {
-        app.add_system(setup.in_schedule(OnEnter(MenuState::MainMenu)))
-            .add_system(button_system.run_if(in_state(MenuState::MainMenu)));
+        app.add_systems(OnEnter(MenuState::MainMenu), setup)
+            .add_systems(Update, button_system.run_if(in_state(MenuState::MainMenu)));
     }
 }
 
@@ -23,7 +23,8 @@ fn setup(mut commands: GuiCommands, menu: Res<Menu>) {
         .spawn(NodeBundle {
             style: Style {
                 flex_direction: FlexDirection::Column,
-                size: Size::new(Val::Percent(25.), Val::Percent(100.)),
+                width: Val::Percent(25.),
+                height: Val::Percent(100.),
                 margin: UiRect::all(Val::Auto),
                 align_items: AlignItems::Center,
                 justify_content: JustifyContent::Center,
@@ -53,7 +54,8 @@ fn button(commands: &mut GuiCommands, parent: Entity, action: ButtonAction, capt
     let button = commands
         .spawn_button(
             OuterStyle {
-                size: Size::new(Val::Percent(100.), Val::Percent(8.)),
+                width: Val::Percent(100.),
+                height: Val::Percent(8.),
                 margin: UiRect::new(
                     Val::Percent(0.),
                     Val::Percent(0.),
@@ -74,7 +76,7 @@ fn button_system(
     interactions: Query<(&Interaction, &ButtonAction), Changed<Interaction>>,
 ) {
     for (&interaction, &action) in interactions.iter() {
-        if let Interaction::Clicked = interaction {
+        if let Interaction::Pressed = interaction {
             match action {
                 ButtonAction::SwithState(state) => next_state.set(state),
                 ButtonAction::Quit => exit.send(AppExit),

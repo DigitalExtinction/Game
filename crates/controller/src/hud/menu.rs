@@ -1,7 +1,7 @@
 use core::fmt;
 
 use bevy::prelude::*;
-use de_core::{baseset::GameSet, gamestate::GameState, state::AppState};
+use de_core::{schedule::InputSchedule, gamestate::GameState, state::AppState};
 use de_gui::{ButtonCommands, GuiCommands, OuterStyle};
 
 use super::interaction::InteractionBlocker;
@@ -10,19 +10,17 @@ pub(crate) struct MenuPlugin;
 
 impl Plugin for MenuPlugin {
     fn build(&self, app: &mut App) {
-        app.add_event::<ToggleGameMenu>()
-            .add_system(setup.in_schedule(OnEnter(GameState::Playing)))
-            .add_system(cleanup.in_schedule(OnExit(GameState::Playing)))
-            .add_system(
-                toggle_system
-                    .in_base_set(GameSet::Input)
-                    .run_if(in_state(GameState::Playing))
-                    .in_set(GameMenuSet::Toggle),
-            )
-            .add_system(
-                button_system
-                    .in_base_set(GameSet::Input)
-                    .run_if(in_state(GameState::Playing)),
+        app.add_event::<ToggleGameMenuEvent>()
+            .add_systems(OnEnter(GameState::Playing), setup)
+            .add_systems(OnExit(GameState::Playing), cleanup)
+            .add_systems(
+                InputSchedule,
+                (
+                    toggle_system
+                        .run_if(in_state(GameState::Playing))
+                        .in_set(GameMenuSet::Toggle),
+                    button_system.run_if(in_state(GameState::Playing)),
+                ),
             );
     }
 }
@@ -32,7 +30,8 @@ pub(crate) enum GameMenuSet {
     Toggle,
 }
 
-pub(crate) struct ToggleGameMenu;
+#[derive(Event)]
+pub(crate) struct ToggleGameMenuEvent;
 
 #[derive(Component)]
 struct PopUpMenu;
@@ -56,7 +55,10 @@ fn setup(mut commands: GuiCommands) {
             style: Style {
                 position_type: PositionType::Absolute,
                 flex_direction: FlexDirection::Column,
-                position: UiRect::all(Val::Percent(0.)),
+                left: Val::Percent(0.),
+                right: Val::Percent(0.),
+                top: Val::Percent(0.),
+                bottom: Val::Percent(0.),
                 align_items: AlignItems::Center,
                 justify_content: JustifyContent::Center,
                 ..default()
@@ -72,7 +74,8 @@ fn setup(mut commands: GuiCommands) {
         .spawn(NodeBundle {
             style: Style {
                 flex_direction: FlexDirection::Column,
-                size: Size::new(Val::Percent(25.), Val::Percent(50.)),
+                width: Val::Percent(25.),
+                height: Val::Percent(50.),
                 padding: UiRect::horizontal(Val::Percent(1.)),
                 align_items: AlignItems::Center,
                 justify_content: JustifyContent::Center,
@@ -91,7 +94,8 @@ fn button(commands: &mut GuiCommands, parent: Entity, action: ButtonAction) {
     let button = commands
         .spawn_button(
             OuterStyle {
-                size: Size::new(Val::Percent(100.), Val::Percent(16.)),
+                width: Val::Percent(100.),
+                height: Val::Percent(16.),
                 margin: UiRect::new(
                     Val::Percent(0.),
                     Val::Percent(0.),
@@ -113,7 +117,7 @@ fn cleanup(mut commands: Commands, query: Query<Entity, With<PopUpMenu>>) {
 }
 
 fn toggle_system(
-    mut events: EventReader<ToggleGameMenu>,
+    mut events: EventReader<ToggleGameMenuEvent>,
     mut query: Query<&mut Visibility, With<PopUpMenu>>,
 ) {
     if events.iter().count() % 2 == 0 {
@@ -132,7 +136,7 @@ fn button_system(
     interactions: Query<(&Interaction, &ButtonAction), Changed<Interaction>>,
 ) {
     for (&interaction, &action) in interactions.iter() {
-        if let Interaction::Clicked = interaction {
+        if let Interaction::Pressed = interaction {
             match action {
                 ButtonAction::Quit => next_state.set(AppState::InMenu),
             }

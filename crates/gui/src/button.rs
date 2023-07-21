@@ -12,7 +12,7 @@ pub(crate) struct ButtonPlugin;
 
 impl Plugin for ButtonPlugin {
     fn build(&self, app: &mut App) {
-        app.add_system(color_system);
+        app.add_systems(Update, color_system);
     }
 }
 
@@ -36,7 +36,8 @@ impl<'w, 's> ButtonCommands<'w, 's> for GuiCommands<'w, 's> {
             style: Style {
                 justify_content: JustifyContent::Center,
                 align_items: AlignItems::Center,
-                size: style.size,
+                width: style.width,
+                height: style.height,
                 margin: style.margin,
                 ..default()
             },
@@ -90,7 +91,7 @@ type ButtonInteractions<'w, 'q> = Query<
 fn color_system(mut interactions: ButtonInteractions) {
     for (&interaction, mut color) in interactions.iter_mut() {
         match interaction {
-            Interaction::Clicked => (),
+            Interaction::Pressed => (),
             Interaction::Hovered => {
                 *color = HOVERED_BUTTON.into();
             }

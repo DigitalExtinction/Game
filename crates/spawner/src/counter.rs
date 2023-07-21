@@ -13,8 +13,8 @@ pub(crate) struct CounterPlugin;
 
 impl Plugin for CounterPlugin {
     fn build(&self, app: &mut App) {
-        app.add_system(setup.in_schedule(OnEnter(AppState::InGame)))
-            .add_system(cleanup.in_schedule(OnExit(AppState::InGame)));
+        app.add_systems(OnEnter(AppState::InGame), setup)
+            .add_systems(OnExit(AppState::InGame), cleanup);
     }
 }
 

@@ -5,7 +5,7 @@ use bevy::{
     prelude::*,
     render::{
         camera::Projection,
-        primitives::{Frustum, Plane},
+        primitives::{Frustum, HalfSpace},
     },
 };
 use de_core::screengeom::ScreenRect;
@@ -42,7 +42,7 @@ impl<'w, 's> ScreenFrustum<'w, 's> {
         debug_assert!(projection.fov < PI);
         debug_assert!(projection.fov > 0.);
 
-        let mut planes = [Plane::default(); 6];
+        let mut half_spaces = [HalfSpace::default(); 6];
 
         let y_max = (0.5 * projection.fov).tan();
         let maxs = [y_max * projection.aspect_ratio, y_max];
@@ -53,15 +53,15 @@ impl<'w, 's> ScreenFrustum<'w, 's> {
             norm[i / 2] = signum;
             norm[2] = signum * maxs[i / 2] * edges[i];
             let norm = transform.rotation * Vec3::from_array(norm);
-            planes[i] = Plane::new(norm.extend(-transform.translation.dot(norm)));
+            half_spaces[i] = HalfSpace::new(norm.extend(-transform.translation.dot(norm)));
         }
 
         let forward = transform.forward();
         let near_dist = -forward.dot(transform.translation + projection.near * forward);
         let far_dist = -forward.dot(transform.translation + projection.far * forward);
-        planes[4] = Plane::new(forward.extend(near_dist));
-        planes[5] = Plane::new(-forward.extend(far_dist));
+        half_spaces[4] = HalfSpace::new(forward.extend(near_dist));
+        half_spaces[5] = HalfSpace::new(-forward.extend(far_dist));
 
-        Frustum { planes }
+        Frustum { half_spaces }
     }
 }

@@ -1,7 +1,8 @@
-use bevy::ui::{Size, UiRect};
+use bevy::ui::{UiRect, Val};
 
 #[derive(Default)]
 pub struct OuterStyle {
-    pub size: Size,
+    pub width: Val,
+    pub height: Val,
     pub margin: UiRect,
 }
