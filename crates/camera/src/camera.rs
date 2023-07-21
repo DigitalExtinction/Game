@@ -217,17 +217,17 @@ impl ZoomCameraEvent {
 }
 
 #[derive(Resource)]
-struct CameraFocus {
+pub struct CameraFocus {
     point: Vec3,
     distance: Metre,
 }
 
 impl CameraFocus {
-    fn point(&self) -> Vec3 {
+    pub fn point(&self) -> Vec3 {
         self.point
     }
 
-    fn distance(&self) -> Metre {
+    pub fn distance(&self) -> Metre {
         self.distance
     }
 

@@ -16,6 +16,7 @@ godmode = []
 
 [dependencies]
 # DE
+de_audio.workspace = true
 de_core.workspace = true
 de_index.workspace = true
 de_map.workspace = true
@@ -26,5 +27,7 @@ de_energy.workspace = true
 # Other
 ahash.workspace = true
 bevy.workspace = true
+bevy_kira_audio.workspace = true
+iyes_progress.workspace = true
 parry2d.workspace = true
 parry3d.workspace = true

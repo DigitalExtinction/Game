@@ -1,4 +1,6 @@
-use bevy::prelude::*;
+use bevy::{asset::LoadState, prelude::*};
+use bevy_kira_audio::AudioSource as KAudioSource;
+use de_audio::spatial::SpatialSoundBundle;
 use de_core::{
     baseset::GameSet,
     cleanup::DespawnOnGameExit,
@@ -8,6 +10,7 @@ use de_core::{
     state::AppState,
 };
 use de_spawner::{DraftAllowed, DraftBundle, SpawnBundle};
+use iyes_progress::{Progress, ProgressSystem};
 
 use crate::mouse::{Pointer, PointerSet};
 
@@ -18,6 +21,8 @@ impl Plugin for DraftPlugin {
         app.add_event::<SpawnDraftsEvent>()
             .add_event::<NewDraftEvent>()
             .add_event::<DiscardDraftsEvent>()
+            .add_system(setup.in_schedule(OnEnter(AppState::AppLoading)))
+            .add_system(load.track_progress().run_if(in_state(AppState::AppLoading)))
             .add_system(
                 spawn
                     .in_base_set(GameSet::Input)
@@ -80,10 +85,26 @@ impl NewDraftEvent {
     }
 }
 
+#[derive(Resource)]
+struct ConstructionSound(Handle<KAudioSource>);
+
+fn setup(mut commands: Commands, server: Res<AssetServer>) {
+    commands.insert_resource(ConstructionSound(server.load("audio/sounds/construct.ogg")));
+}
+
+fn load(server: Res<AssetServer>, sound: Res<ConstructionSound>) -> Progress {
+    match server.get_load_state(&sound.0) {
+        LoadState::Loaded => true.into(),
+        LoadState::NotLoaded | LoadState::Loading => false.into(),
+        _ => panic!("Unexpected loading state."),
+    }
+}
+
 fn spawn(
     mut commands: Commands,
     game_config: Res<GameConfig>,
     drafts: Query<(Entity, &Transform, &ObjectType, &DraftAllowed)>,
+    sound: Res<ConstructionSound>,
 ) {
     for (entity, &transform, &object_type, draft) in drafts.iter() {
         if draft.allowed() {
@@ -92,6 +113,14 @@ fn spawn(
                 SpawnBundle::new(object_type, transform),
                 game_config.locals().playable(),
                 DespawnOnGameExit,
+            ));
+
+            commands.spawn((
+                TransformBundle::from_transform(transform),
+                SpatialSoundBundle {
+                    sound: sound.0.clone(),
+                    ..Default::default()
+                },
             ));
         }
     }
