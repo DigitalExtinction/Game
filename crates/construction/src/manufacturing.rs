@@ -1,9 +1,8 @@
 use std::{collections::VecDeque, time::Duration};
 
 use ahash::AHashMap;
-use bevy::{asset::LoadState, prelude::*};
-use bevy_kira_audio::AudioSource as KAudioSource;
-use de_audio::spatial::{SpatialSoundBundle, Volume};
+use bevy::prelude::*;
+use de_audio::spatial::{PlaySpatialAudioEvent, Sound};
 use de_core::{
     baseset::GameSet,
     cleanup::DespawnOnGameExit,
@@ -21,7 +20,6 @@ use de_signs::{
     LineLocation, UpdateLineEndEvent, UpdateLineLocationEvent, UpdatePoleLocationEvent,
 };
 use de_spawner::{ObjectCounter, SpawnBundle};
-use iyes_progress::{Progress, ProgressSystem};
 use parry2d::bounding_volume::Aabb;
 use parry3d::math::Isometry;
 
@@ -35,8 +33,6 @@ impl Plugin for ManufacturingPlugin {
         app.add_event::<EnqueueAssemblyEvent>()
             .add_event::<ChangeDeliveryLocationEvent>()
             .add_event::<DeliverEvent>()
-            .add_system(setup.in_schedule(OnEnter(AppState::AppLoading)))
-            .add_system(load.track_progress().run_if(in_state(AppState::AppLoading)))
             .add_system(
                 configure
                     .in_base_set(GameSet::PostUpdate)
@@ -144,9 +140,6 @@ impl DeliverEvent {
         self.unit
     }
 }
-
-#[derive(Resource)]
-struct AssemblySound(Handle<KAudioSource>);
 
 #[derive(Component)]
 struct DeliveryLocation(Vec2);
@@ -314,18 +307,6 @@ impl ProductionItem {
     }
 }
 
-fn setup(mut commands: Commands, server: Res<AssetServer>) {
-    commands.insert_resource(AssemblySound(server.load("audio/sounds/manufacture.ogg")));
-}
-
-fn load(server: Res<AssetServer>, sounds: Res<AssemblySound>) -> Progress {
-    match server.get_load_state(&sounds.0) {
-        LoadState::Loaded => true.into(),
-        LoadState::NotLoaded | LoadState::Loading => false.into(),
-        _ => panic!("Unexpected loading state."),
-    }
-}
-
 fn configure(
     mut commands: Commands,
     solids: SolidObjects,
@@ -448,7 +429,7 @@ fn deliver(
     mut deliver_events: EventReader<DeliverEvent>,
     mut path_events: EventWriter<UpdateEntityPath>,
     factories: Query<(&Transform, &ObjectType, &Player, &DeliveryLocation)>,
-    sound: Res<AssemblySound>,
+    mut play_audio: EventWriter<PlaySpatialAudioEvent>,
 ) {
     for delivery in deliver_events.iter() {
         info!(
@@ -481,14 +462,7 @@ fn deliver(
             ),
         ));
 
-        commands.spawn((
-            TransformBundle::from_transform(Transform::from_translation(spawn_point)),
-            SpatialSoundBundle {
-                sound: sound.0.clone(),
-                volume: Volume(0.4),
-                ..Default::default()
-            },
-        ));
+        play_audio.send(PlaySpatialAudioEvent::new(Sound::Manufacture, spawn_point));
     }
 }
 

@@ -112,7 +112,7 @@ assert_cmd = "2.0.10"
 async-compat = "0.2.1"
 async-std = "1.11"
 async-tar = "0.4.2"
-bevy_kira_audio = { version = "0.15.0", features = ["mp3", "wav"] }
+bevy_kira_audio = { version = "0.15.0", features = ["mp3"] }
 bincode = "2.0.0-rc.3"
 chrono = "0.4.24"
 clap = { version = "4.0", features = ["derive"] }

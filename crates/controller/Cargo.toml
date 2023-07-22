@@ -33,9 +33,7 @@ de_terrain.workspace = true
 # Other
 ahash.workspace = true
 bevy.workspace = true
-bevy_kira_audio.workspace = true
 enum-map.workspace = true
 glam.workspace = true
-iyes_progress.workspace = true
 parry2d.workspace = true
 parry3d.workspace = true

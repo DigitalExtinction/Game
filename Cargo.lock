@@ -2118,6 +2118,7 @@ dependencies = [
  "de_camera",
  "de_conf",
  "de_core",
+ "enum-map",
  "iyes_progress",
 ]
 
@@ -2209,7 +2210,6 @@ version = "0.1.0-dev"
 dependencies = [
  "ahash 0.7.6",
  "bevy",
- "bevy_kira_audio",
  "de_audio",
  "de_core",
  "de_index",
@@ -2217,7 +2217,6 @@ dependencies = [
  "de_pathing",
  "de_signs",
  "de_spawner",
- "iyes_progress",
  "parry2d",
  "parry3d",
 ]
@@ -2228,7 +2227,6 @@ version = "0.1.0-dev"
 dependencies = [
  "ahash 0.7.6",
  "bevy",
- "bevy_kira_audio",
  "de_audio",
  "de_behaviour",
  "de_camera",
@@ -2247,7 +2245,6 @@ dependencies = [
  "de_terrain",
  "enum-map",
  "glam",
- "iyes_progress",
  "parry2d",
  "parry3d",
 ]
@@ -2545,7 +2542,6 @@ version = "0.1.0-dev"
 dependencies = [
  "ahash 0.7.6",
  "bevy",
- "bevy_kira_audio",
  "de_audio",
  "de_core",
  "de_energy",
@@ -2553,7 +2549,6 @@ dependencies = [
  "de_map",
  "de_objects",
  "de_terrain",
- "iyes_progress",
  "parry2d",
  "parry3d",
 ]
@@ -5618,11 +5613,9 @@ checksum = "62e48dba70095f265fdb269b99619b95d04c89e619538138383e63310b14d941"
 dependencies = [
  "lazy_static",
  "symphonia-bundle-mp3",
- "symphonia-codec-pcm",
  "symphonia-codec-vorbis",
  "symphonia-core",
  "symphonia-format-ogg",
- "symphonia-format-wav",
  "symphonia-metadata",
 ]
 
@@ -5637,16 +5630,6 @@ dependencies = [
  "log",
  "symphonia-core",
  "symphonia-metadata",
-]
-
-[[package]]
-name = "symphonia-codec-pcm"
-version = "0.5.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "47f1fbd220a06a641c8ce2ddad10f5ef6ee5cc0c54d9044d25d43b0d3119deaa"
-dependencies = [
- "log",
- "symphonia-core",
 ]
 
 [[package]]
@@ -5683,17 +5666,6 @@ dependencies = [
  "symphonia-core",
  "symphonia-metadata",
  "symphonia-utils-xiph",
-]
-
-[[package]]
-name = "symphonia-format-wav"
-version = "0.5.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "da76614728fa27c003bdcdfbac51396bd8fcbf94c95fe8e62f1d2bac58ef03a4"
-dependencies = [
- "log",
- "symphonia-core",
- "symphonia-metadata",
 ]
 
 [[package]]
