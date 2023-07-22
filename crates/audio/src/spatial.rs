@@ -8,6 +8,18 @@ use de_core::{baseset::GameSet, gamestate::GameState, state::AppState};
 use enum_map::{enum_map, Enum, EnumMap};
 use iyes_progress::{Progress, ProgressSystem};
 
+/// The start of the linear falloff for sounds, in units of camera zoom distance
+/// from the camera focus
+const SOUND_FALLOFF_START_RATIO: f32 = 0.7;
+/// The end of the linear falloff for sounds, in units of camera zoom distance
+/// from the camera focus
+const SOUND_FALLOFF_END_RATIO: f32 = 1.0;
+/// This is added to the camera zoom distance for sound falloff to make the range
+/// larger with a very close zoom.
+const SOUND_FALLOFF_BIAS: f32 = 20.0;
+/// The calculated length of the linear falloff
+const SOUND_FALLOFF_LENGTH: f32 = SOUND_FALLOFF_END_RATIO - SOUND_FALLOFF_START_RATIO;
+
 pub(crate) struct SpatialSoundPlugin;
 
 impl Plugin for SpatialSoundPlugin {
@@ -83,6 +95,12 @@ fn load(server: Res<AssetServer>, sounds: Res<Sounds>) -> Progress {
     }
 }
 
+/// Clamped linear function passing through (start, 1) and (end, 0).
+/// `distance_ratio` is in units of camera zoom distance.
+fn sound_falloff(distance_ratio: f32) -> f32 {
+    ((SOUND_FALLOFF_END_RATIO - distance_ratio) / SOUND_FALLOFF_LENGTH).clamp(0.0, 1.0)
+}
+
 fn calculate_volume_and_pan(
     camera: &GlobalTransform,
     focus: &CameraFocus,
@@ -92,10 +110,10 @@ fn calculate_volume_and_pan(
     let sound_dir = (sound_position - camera.translation()).normalize();
     let pan = cam_right.dot(sound_dir) * 0.5 + 0.5;
 
-    let sqr_distance_from_focus = focus.point().distance_squared(sound_position);
-    let camera_zoom_distance = focus.distance().inner();
-    let distance_attenuation =
-        (camera_zoom_distance * camera_zoom_distance / sqr_distance_from_focus).clamp(0.0, 1.0);
+    let distance_from_focus = focus.point().distance(sound_position);
+    let biased_zoom_distance = focus.distance().inner() + SOUND_FALLOFF_BIAS;
+
+    let distance_attenuation = sound_falloff(distance_from_focus / biased_zoom_distance);
     (distance_attenuation as f64, pan as f64)
 }
 
