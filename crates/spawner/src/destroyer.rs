@@ -34,10 +34,9 @@ struct DestructionSounds {
 }
 
 fn setup(mut commands: Commands, server: Res<AssetServer>) {
-    let sound = server.load("audio/sounds/destruction.wav");
     commands.insert_resource(DestructionSounds {
-        building: sound.clone(),
-        unit: sound,
+        building: server.load("audio/sounds/destruction_building.ogg"),
+        unit: server.load("audio/sounds/destruction_unit.ogg"),
     });
 }
 
@@ -75,7 +74,6 @@ fn destroy(
                         },
                         ActiveObjectType::Unit(_) => SpatialSoundBundle {
                             sound: sounds.unit.clone(),
-                            volume: Volume(0.4),
                             ..Default::default()
                         },
                     },
