@@ -14,7 +14,7 @@ use de_core::{
 };
 use de_index::SpatialQuery;
 use de_objects::SolidObjects;
-use de_pathing::{PathQueryProps, PathTarget, UpdateEntityPath};
+use de_pathing::{PathQueryProps, PathTarget, UpdateEntityPathEvent};
 use de_signs::{
     LineLocation, UpdateLineEndEvent, UpdateLineLocationEvent, UpdatePoleLocationEvent,
 };
@@ -426,7 +426,7 @@ fn deliver(
     mut commands: Commands,
     solids: SolidObjects,
     mut deliver_events: EventReader<DeliverEvent>,
-    mut path_events: EventWriter<UpdateEntityPath>,
+    mut path_events: EventWriter<UpdateEntityPathEvent>,
     factories: Query<(&Transform, &ObjectType, &Player, &DeliveryLocation)>,
 ) {
     for delivery in deliver_events.iter() {
@@ -451,7 +451,7 @@ fn deliver(
                 DespawnOnGameExit,
             ))
             .id();
-        path_events.send(UpdateEntityPath::new(
+        path_events.send(UpdateEntityPathEvent::new(
             unit,
             PathTarget::new(
                 delivery_location.0,

@@ -10,7 +10,7 @@ use de_core::{
 use futures_lite::future;
 
 use crate::{
-    fplugin::{FinderRes, FinderSet, PathFinderUpdated},
+    fplugin::{FinderRes, FinderSet, PathFinderUpdatedEvent},
     path::{Path, ScheduledPath},
     PathQueryProps, PathTarget,
 };
@@ -33,14 +33,14 @@ pub struct PathingPlugin;
 
 impl Plugin for PathingPlugin {
     fn build(&self, app: &mut App) {
-        app.add_event::<UpdateEntityPath>()
+        app.add_event::<UpdateEntityPathEvent>()
             .add_system(setup.in_schedule(OnEnter(AppState::InGame)))
             .add_system(cleanup.in_schedule(OnExit(AppState::InGame)))
             .add_system(
                 update_existing_paths
                     .in_base_set(GameSet::PreMovement)
                     .run_if(in_state(GameState::Playing))
-                    .run_if(on_event::<PathFinderUpdated>())
+                    .run_if(on_event::<PathFinderUpdatedEvent>())
                     .in_set(PathingSet::UpdateExistingPaths)
                     .after(FinderSet::UpdateFinder),
             )
@@ -85,12 +85,12 @@ enum PathingSet {
 
 /// This event triggers computation of shortest path to a target and
 /// replacement / insertion of this path to the entity.
-pub struct UpdateEntityPath {
+pub struct UpdateEntityPathEvent {
     entity: Entity,
     target: PathTarget,
 }
 
-impl UpdateEntityPath {
+impl UpdateEntityPathEvent {
     /// # Arguments
     ///
     /// * `entity` - entity whose path should be updated / inserted.
@@ -199,7 +199,7 @@ fn update_requested_paths(
     mut commands: Commands,
     finder: Res<FinderRes>,
     mut state: ResMut<UpdatePathsState>,
-    mut events: EventReader<UpdateEntityPath>,
+    mut events: EventReader<UpdateEntityPathEvent>,
     entities: Query<&Transform, With<MovableSolid>>,
 ) {
     for event in events.iter() {
