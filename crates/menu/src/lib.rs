@@ -1,11 +1,7 @@
 use aftergame::AfterGamePlugin;
 use bevy::{app::PluginGroupBuilder, prelude::*};
 use create::CreateGamePlugin;
-use de_core::{
-    gresult::GameResult,
-    state::AppState,
-    transition::{DeStateTransition, StateWithSet},
-};
+use de_core::{gresult::GameResult, nested_state, state::AppState};
 use gamelisting::GameListingPlugin;
 use mainmenu::MainMenuPlugin;
 use mapselection::MapSelectionPlugin;
@@ -28,7 +24,7 @@ pub struct MenuPluginGroup;
 impl PluginGroup for MenuPluginGroup {
     fn build(self) -> PluginGroupBuilder {
         PluginGroupBuilder::start::<Self>()
-            .add(MenuSetupPlugin)
+            .add(MenuStatePlugin)
             .add(MenuPlugin)
             .add(MainMenuPlugin)
             .add(MapSelectionPlugin)
@@ -40,40 +36,20 @@ impl PluginGroup for MenuPluginGroup {
     }
 }
 
-struct MenuSetupPlugin;
-
-impl Plugin for MenuSetupPlugin {
-    fn build(&self, app: &mut App) {
-        app.add_state_with_set::<MenuState>()
-            .configure_sets((AppState::state_set(), MenuState::state_set()).chain())
-            .add_system(menu_entered_system.in_schedule(OnEnter(AppState::InMenu)))
-            .add_system(menu_exited_system.in_schedule(OnExit(AppState::InMenu)));
+nested_state!(
+    AppState::InMenu -> MenuState,
+    doc = "Top-level menu state. Each variant corresponds to a single menu screen.",
+    enter = menu_entered_system,
+    variants = {
+        MainMenu,
+        SinglePlayerGame,
+        SignIn,
+        GameListing,
+        GameCreation,
+        MultiPlayerGame,
+        AfterGame,
     }
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default, States)]
-pub(crate) enum MenuState {
-    #[default]
-    None,
-    MainMenu,
-    SinglePlayerGame,
-    SignIn,
-    GameListing,
-    GameCreation,
-    MultiPlayerGame,
-    AfterGame,
-}
-
-impl StateWithSet for MenuState {
-    type Set = MenuStateSet;
-
-    fn state_set() -> Self::Set {
-        MenuStateSet
-    }
-}
-
-#[derive(Clone, Copy, PartialEq, Eq, Hash, Debug, SystemSet)]
-pub struct MenuStateSet;
+);
 
 fn menu_entered_system(
     mut next_state: ResMut<NextState<MenuState>>,
@@ -84,8 +60,4 @@ fn menu_entered_system(
     } else {
         next_state.set(MenuState::MainMenu);
     }
-}
-
-fn menu_exited_system(mut next_state: ResMut<NextState<MenuState>>) {
-    next_state.set(MenuState::None);
 }
