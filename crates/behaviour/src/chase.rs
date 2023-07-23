@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 use de_core::{baseset::GameSet, gamestate::GameState, projection::ToFlat};
-use de_pathing::{PathQueryProps, PathTarget, UpdateEntityPath};
+use de_pathing::{PathQueryProps, PathTarget, UpdateEntityPathEvent};
 
 pub(crate) struct ChasePlugin;
 
@@ -127,7 +127,7 @@ fn handle_chase_events(mut commands: Commands, mut events: EventReader<ChaseTarg
 
 fn chase(
     mut commands: Commands,
-    mut path_events: EventWriter<UpdateEntityPath>,
+    mut path_events: EventWriter<UpdateEntityPathEvent>,
     chasing: Query<(
         Entity,
         &Transform,
@@ -153,7 +153,7 @@ fn chase(
             continue;
         }
 
-        path_events.send(UpdateEntityPath::new(
+        path_events.send(UpdateEntityPathEvent::new(
             entity,
             PathTarget::new(
                 target_position,

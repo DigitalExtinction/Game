@@ -22,7 +22,7 @@ pub use fplugin::create_finder;
 use fplugin::FinderPlugin;
 pub use path::ScheduledPath;
 use pplugin::PathingPlugin;
-pub use pplugin::UpdateEntityPath;
+pub use pplugin::UpdateEntityPathEvent;
 pub use query::{PathQueryProps, PathTarget};
 
 pub struct PathingPluginGroup;

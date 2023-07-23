@@ -41,7 +41,7 @@ pub struct FinderPlugin;
 
 impl Plugin for FinderPlugin {
     fn build(&self, app: &mut App) {
-        app.add_event::<PathFinderUpdated>()
+        app.add_event::<PathFinderUpdatedEvent>()
             .add_system(setup_loading.in_schedule(OnEnter(AppState::InGame)))
             .add_system(setup_playing.in_schedule(OnEnter(GameState::Playing)))
             .add_system(cleanup.in_schedule(OnExit(AppState::InGame)))
@@ -84,7 +84,7 @@ pub(crate) enum FinderSet {
 ///
 /// Paths found before the event was sent may no longer be optimal or may lead
 /// through non-accessible area.
-pub(crate) struct PathFinderUpdated;
+pub(crate) struct PathFinderUpdatedEvent;
 
 #[derive(Clone, Resource)]
 pub(crate) struct FinderRes(Arc<PathFinder>);
@@ -206,12 +206,12 @@ fn update(
 fn check_update_result(
     mut state: ResMut<UpdateFinderState>,
     mut finder_res: ResMut<FinderRes>,
-    mut pf_updated: EventWriter<PathFinderUpdated>,
+    mut pf_updated: EventWriter<PathFinderUpdatedEvent>,
 ) {
     if let Some(finder) = state.check_result() {
         info!("Inserting updated path finder");
         finder_res.update(finder);
-        pf_updated.send(PathFinderUpdated);
+        pf_updated.send(PathFinderUpdatedEvent);
     }
 }
 

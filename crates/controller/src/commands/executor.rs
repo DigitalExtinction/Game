@@ -3,7 +3,7 @@ use de_behaviour::ChaseTargetEvent;
 use de_combat::AttackEvent;
 use de_construction::{AssemblyLine, ChangeDeliveryLocationEvent};
 use de_core::{baseset::GameSet, gamestate::GameState, objects::MovableSolid};
-use de_pathing::{PathQueryProps, PathTarget, UpdateEntityPath};
+use de_pathing::{PathQueryProps, PathTarget, UpdateEntityPathEvent};
 use glam::Vec2;
 
 use crate::selection::Selected;
@@ -89,13 +89,13 @@ type SelectedMovable = (With<Selected>, With<MovableSolid>);
 fn send_selected_system(
     mut send_events: EventReader<SendSelectedEvent>,
     selected: Query<Entity, SelectedMovable>,
-    mut path_events: EventWriter<UpdateEntityPath>,
+    mut path_events: EventWriter<UpdateEntityPathEvent>,
     mut chase_events: EventWriter<ChaseTargetEvent>,
 ) {
     if let Some(send) = send_events.iter().last() {
         for entity in selected.iter() {
             chase_events.send(ChaseTargetEvent::new(entity, None));
-            path_events.send(UpdateEntityPath::new(
+            path_events.send(UpdateEntityPathEvent::new(
                 entity,
                 PathTarget::new(send.target(), PathQueryProps::exact(), false),
             ));
