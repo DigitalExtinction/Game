@@ -54,11 +54,8 @@ fn setup(mut commands: GuiCommands) {
     let details_text = commands
         .spawn_body_text(
             OuterStyle {
-                size: Size {
-                    width: Val::Percent(20.),
-                    height: Val::Percent(30.),
-                },
                 margin: UiRect::all(Val::Percent(5.)),
+                ..default()
             },
             "",
         )
