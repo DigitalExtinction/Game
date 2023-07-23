@@ -1,7 +1,7 @@
 use baseset::GameSetsPlugin;
 use bevy::{app::PluginGroupBuilder, prelude::PluginGroup};
 use cleanup::CleanupPlugin;
-use gamestate::GameStatePlugin;
+use gamestate::GameStateSetupPlugin;
 use iyes_progress::prelude::*;
 use state::AppState;
 use visibility::VisibilityPlugin;
@@ -33,7 +33,7 @@ impl PluginGroup for CorePluginGroup {
         PluginGroupBuilder::start::<Self>()
             .add(ProgressPlugin::new(AppState::AppLoading).continue_to(AppState::InMenu))
             .add(GameSetsPlugin)
-            .add(GameStatePlugin)
+            .add(GameStateSetupPlugin)
             .add(VisibilityPlugin)
             .add(CleanupPlugin)
     }

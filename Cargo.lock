@@ -2239,6 +2239,7 @@ dependencies = [
  "nalgebra",
  "parry2d",
  "parry3d",
+ "paste",
  "serde",
  "thiserror",
 ]
