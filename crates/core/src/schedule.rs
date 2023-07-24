@@ -6,13 +6,15 @@ pub struct GameSchedulesPlugin;
 
 impl Plugin for GameSchedulesPlugin {
     fn build(&self, app: &mut App) {
-        let mut main = app.world.get_resource_mut::<MainScheduleOrder>().unwrap();
-
-        main.insert_after(First, InputSchedule);
-        main.insert_after(InputSchedule, PreMovement);
-        main.insert_after(PreMovement, Movement);
-        main.insert_after(Movement, PostMovement);
+        app.add_systems(Startup, setup);
     }
+}
+
+fn setup(mut main: ResMut<MainScheduleOrder>) {
+    main.insert_after(First, InputSchedule);
+    main.insert_after(InputSchedule, PreMovement);
+    main.insert_after(PreMovement, Movement);
+    main.insert_after(Movement, PostMovement);
 }
 
 /// All user input is handled during this schedule.
