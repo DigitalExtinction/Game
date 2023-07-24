@@ -2152,6 +2152,7 @@ name = "de_combat"
 version = "0.1.0-dev"
 dependencies = [
  "bevy",
+ "de_audio",
  "de_behaviour",
  "de_core",
  "de_index",

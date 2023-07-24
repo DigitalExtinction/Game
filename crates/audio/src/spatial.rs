@@ -66,6 +66,7 @@ pub enum Sound {
     Manufacture,
     DestroyBuilding,
     DestroyUnit,
+    LaserFire,
 }
 
 pub struct PlaySpatialAudioEvent {
@@ -116,6 +117,7 @@ fn setup(mut commands: Commands, server: Res<AssetServer>) {
         Manufacture => server.load("audio/sounds/manufacture.ogg"),
         DestroyBuilding => server.load("audio/sounds/destruction_building.ogg"),
         DestroyUnit => server.load("audio/sounds/destruction_unit.ogg"),
+        LaserFire => server.load("audio/sounds/laser.ogg"),
     }));
 }
 
