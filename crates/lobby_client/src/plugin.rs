@@ -20,8 +20,8 @@ impl<T: LobbyRequestCreator> Plugin for EndpointPlugin<T> {
         app.add_event::<RequestEvent<T>>()
             .add_event::<ResponseEvent<T>>()
             .init_resource::<PendingTasks<T>>()
-            .add_system(fire::<T>)
-            .add_system(poll::<T>);
+            .add_system(fire::<T>.in_base_set(CoreSet::PostUpdate))
+            .add_system(poll::<T>.in_base_set(CoreSet::PreUpdate));
     }
 }
 
