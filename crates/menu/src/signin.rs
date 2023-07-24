@@ -1,7 +1,7 @@
 use bevy::prelude::*;
 use de_gui::{
     ButtonCommands, GuiCommands, LabelCommands, OuterStyle, SetFocusEvent, TextBoxCommands,
-    TextBoxQuery, ToastEvent, ToastSet,
+    TextBoxQuery, ToastEvent,
 };
 use de_lobby_client::{Authentication, LobbyRequest, SignInRequest, SignUpRequest};
 use de_lobby_model::{User, UserWithPassword, UsernameAndPassword};
@@ -25,16 +25,8 @@ impl Plugin for SignInPlugin {
                     .run_if(resource_exists::<Inputs>())
                     .run_if(in_state(MenuState::SignIn)),
             )
-            .add_system(
-                response_system::<SignInRequest>
-                    .run_if(in_state(MenuState::SignIn))
-                    .before(ToastSet::ProcessEvents),
-            )
-            .add_system(
-                response_system::<SignUpRequest>
-                    .run_if(in_state(MenuState::SignIn))
-                    .before(ToastSet::ProcessEvents),
-            )
+            .add_system(response_system::<SignInRequest>.run_if(in_state(MenuState::SignIn)))
+            .add_system(response_system::<SignUpRequest>.run_if(in_state(MenuState::SignIn)))
             .add_system(auth_system.run_if(in_state(MenuState::SignIn)));
     }
 }

@@ -15,8 +15,8 @@ use text::TextPlugin;
 pub use text::TextProps;
 use textbox::TextBoxPlugin;
 pub use textbox::{TextBoxCommands, TextBoxQuery};
+pub use toast::ToastEvent;
 use toast::ToastPlugin;
-pub use toast::{ToastEvent, ToastSet};
 
 mod body_text;
 mod button;
