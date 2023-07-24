@@ -34,8 +34,6 @@ enum ToastSet {
 }
 
 /// Send this event to briefly display a UI toast.
-///
-/// The events are processed by a system labeled [`ToastSet::ProcessEvents`].
 pub struct ToastEvent(String);
 
 impl ToastEvent {
