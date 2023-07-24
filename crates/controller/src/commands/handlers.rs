@@ -15,12 +15,12 @@ use de_camera::{
 };
 use de_conf::Configuration;
 use de_core::{
-    schedule::InputSchedule,
     gamestate::GameState,
     gconfig::GameConfig,
     objects::{BuildingType, ObjectType, Playable, PLAYER_MAX_BUILDINGS},
     player::Player,
     projection::ToFlat,
+    schedule::InputSchedule,
     screengeom::ScreenRect,
 };
 use de_spawner::{DraftAllowed, ObjectCounter};

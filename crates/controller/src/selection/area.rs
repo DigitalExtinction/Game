@@ -1,9 +1,9 @@
 use bevy::prelude::*;
 use de_core::{
-    schedule::InputSchedule,
     frustum,
     gamestate::GameState,
     objects::{ObjectType, Playable},
+    schedule::InputSchedule,
     screengeom::ScreenRect,
 };
 use de_objects::SolidObjects;

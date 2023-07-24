@@ -1,7 +1,7 @@
 use core::fmt;
 
 use bevy::prelude::*;
-use de_core::{schedule::InputSchedule, gamestate::GameState, state::AppState};
+use de_core::{gamestate::GameState, schedule::InputSchedule, state::AppState};
 use de_gui::{ButtonCommands, GuiCommands, OuterStyle};
 
 use super::interaction::InteractionBlocker;

@@ -2,10 +2,10 @@ use std::marker::PhantomData;
 
 use bevy::prelude::*;
 use de_core::{
-    schedule::{Movement, PreMovement},
     gamestate::GameState,
     objects::MovableSolid,
     projection::ToAltitude,
+    schedule::{Movement, PreMovement},
     state::AppState,
 };
 use de_map::size::MapBounds;

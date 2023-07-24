@@ -1,10 +1,10 @@
 use bevy::prelude::*;
 use de_core::{
-    schedule::InputSchedule,
     cleanup::DespawnOnGameExit,
     gamestate::GameState,
     gconfig::GameConfig,
     objects::{BuildingType, ObjectType},
+    schedule::InputSchedule,
     state::AppState,
 };
 use de_spawner::{DraftAllowed, DraftBundle, SpawnBundle};

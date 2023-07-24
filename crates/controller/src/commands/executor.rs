@@ -2,7 +2,7 @@ use bevy::prelude::*;
 use de_behaviour::ChaseTargetEvent;
 use de_combat::AttackEvent;
 use de_construction::{AssemblyLine, ChangeDeliveryLocationEvent};
-use de_core::{schedule::InputSchedule, gamestate::GameState, objects::MovableSolid};
+use de_core::{gamestate::GameState, objects::MovableSolid, schedule::InputSchedule};
 use de_pathing::{PathQueryProps, PathTarget, UpdateEntityPathEvent};
 use glam::Vec2;
 

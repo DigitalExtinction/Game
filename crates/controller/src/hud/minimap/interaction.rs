@@ -6,7 +6,7 @@ use bevy::{
     window::PrimaryWindow,
 };
 use de_camera::MoveFocusEvent;
-use de_core::{schedule::InputSchedule, gamestate::GameState};
+use de_core::{gamestate::GameState, schedule::InputSchedule};
 use de_map::size::MapBounds;
 
 use super::nodes::MinimapNode;

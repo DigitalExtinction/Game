@@ -1,7 +1,7 @@
 use bevy::{ecs::system::SystemParam, prelude::*};
 use de_core::{
-    schedule::PostMovement, gamestate::GameState, gconfig::GameConfig, objects::ObjectType,
-    player::Player, projection::ToFlat,
+    gamestate::GameState, gconfig::GameConfig, objects::ObjectType, player::Player,
+    projection::ToFlat, schedule::PostMovement,
 };
 use de_map::size::MapBounds;
 use de_objects::SolidObjects;

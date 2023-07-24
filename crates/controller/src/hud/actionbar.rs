@@ -1,10 +1,10 @@
 use bevy::prelude::*;
 use de_construction::EnqueueAssemblyEvent;
 use de_core::{
-    schedule::InputSchedule,
     cleanup::DespawnOnGameExit,
     gamestate::GameState,
     objects::{ObjectType, UnitType},
+    schedule::InputSchedule,
 };
 use de_gui::{ButtonCommands, GuiCommands, OuterStyle};
 use de_objects::SolidObjects;

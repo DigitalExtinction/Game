@@ -2,10 +2,10 @@ use std::f32::consts::{FRAC_PI_4, PI, TAU};
 
 use bevy::prelude::*;
 use de_core::{
-    schedule::{Movement, PreMovement},
     gamestate::GameState,
     objects::MovableSolid,
     projection::ToAltitude,
+    schedule::{Movement, PreMovement},
     state::AppState,
 };
 

@@ -2,7 +2,7 @@ use bevy::{
     prelude::*,
     render::render_resource::{Extent3d, TextureDimension, TextureFormat},
 };
-use de_core::{schedule::PreMovement, cleanup::DespawnOnGameExit, gamestate::GameState};
+use de_core::{cleanup::DespawnOnGameExit, gamestate::GameState, schedule::PreMovement};
 use de_map::size::MapBounds;
 
 use crate::hud::{interaction::InteractionBlocker, HUD_COLOR};

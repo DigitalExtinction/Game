@@ -4,10 +4,10 @@ use bevy::{
     tasks::{AsyncComputeTaskPool, Task},
 };
 use de_core::{
-    schedule::{PostMovement, PreMovement},
     gamestate::GameState,
     objects::MovableSolid,
     projection::ToFlat,
+    schedule::{PostMovement, PreMovement},
     state::AppState,
 };
 use futures_lite::future;

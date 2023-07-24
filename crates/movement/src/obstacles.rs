@@ -1,9 +1,9 @@
 use bevy::prelude::*;
 use de_core::{
-    schedule::{Movement, PreMovement},
     gamestate::GameState,
     objects::{MovableSolid, ObjectType, StaticSolid},
     projection::ToFlat,
+    schedule::{Movement, PreMovement},
 };
 use de_index::SpatialQuery;
 use de_objects::SolidObjects;

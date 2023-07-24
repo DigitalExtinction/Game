@@ -5,9 +5,9 @@ use bevy::{
     tasks::{AsyncComputeTaskPool, Task},
 };
 use de_core::{
-    schedule::PreMovement,
     gamestate::GameState,
     objects::{ObjectType, StaticSolid},
+    schedule::PreMovement,
     state::AppState,
 };
 use de_map::size::MapBounds;

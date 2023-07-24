@@ -1,8 +1,8 @@
 use bevy::prelude::*;
 use de_core::{
-    schedule::{Movement, PreMovement},
     gamestate::GameState,
     projection::ToFlat,
+    schedule::{Movement, PreMovement},
     state::AppState,
 };
 use de_pathing::ScheduledPath;

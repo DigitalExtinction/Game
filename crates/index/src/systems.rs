@@ -3,9 +3,9 @@
 
 use bevy::prelude::*;
 use de_core::{
-    schedule::PostMovement,
     gamestate::GameState,
     objects::{MovableSolid, ObjectType, StaticSolid},
+    schedule::PostMovement,
     state::AppState,
 };
 use de_objects::SolidObjects;

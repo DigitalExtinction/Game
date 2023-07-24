@@ -1,5 +1,5 @@
 use bevy::prelude::*;
-use de_core::{schedule::PreMovement, player::Player};
+use de_core::{player::Player, schedule::PreMovement};
 use de_net::{FromGame, FromServer, GameOpenError, JoinError, ToGame, ToServer};
 
 use crate::{

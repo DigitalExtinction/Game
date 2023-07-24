@@ -1,8 +1,8 @@
 use bevy::prelude::*;
 use de_core::{
-    schedule::{Movement, PreMovement},
     gamestate::GameState,
     objects::{MovableSolid, ObjectType},
+    schedule::{Movement, PreMovement},
     state::AppState,
 };
 use de_objects::SolidObjects;

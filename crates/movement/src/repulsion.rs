@@ -1,9 +1,9 @@
 use bevy::prelude::*;
 use de_core::{
-    schedule::{Movement, PreMovement},
     gamestate::GameState,
     objects::{MovableSolid, ObjectType, StaticSolid},
     projection::ToFlat,
+    schedule::{Movement, PreMovement},
     state::AppState,
 };
 use de_map::size::MapBounds;

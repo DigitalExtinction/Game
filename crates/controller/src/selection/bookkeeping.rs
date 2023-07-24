@@ -1,6 +1,6 @@
 use ahash::AHashSet;
 use bevy::{ecs::system::SystemParam, prelude::*};
-use de_core::{schedule::InputSchedule, gamestate::GameState};
+use de_core::{gamestate::GameState, schedule::InputSchedule};
 use de_signs::{UpdateBarVisibilityEvent, UpdateLineVisibilityEvent, UpdatePoleVisibilityEvent};
 use de_terrain::MarkerVisibility;
 

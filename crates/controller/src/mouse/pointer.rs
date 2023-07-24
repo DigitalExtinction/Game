@@ -1,5 +1,5 @@
 use bevy::prelude::*;
-use de_core::{schedule::InputSchedule, gamestate::GameState, state::AppState};
+use de_core::{gamestate::GameState, schedule::InputSchedule, state::AppState};
 use de_index::SpatialQuery;
 use de_signs::UpdateBarVisibilityEvent;
 use de_terrain::TerrainCollider;

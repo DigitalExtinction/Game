@@ -3,11 +3,11 @@ use std::f32::consts::FRAC_PI_2;
 use bevy::prelude::*;
 use de_conf::{CameraConf, Configuration};
 use de_core::{
-    schedule::{InputSchedule, Movement, PreMovement},
     cleanup::DespawnOnGameExit,
     events::ResendEventPlugin,
     gamestate::GameState,
     projection::ToAltitude,
+    schedule::{InputSchedule, Movement, PreMovement},
     state::AppState,
 };
 use de_map::size::MapBounds;
