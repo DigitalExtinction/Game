@@ -14,9 +14,14 @@ impl Plugin for ToastPlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<ToastQueue>()
             .add_event::<ToastEvent>()
-            .add_system(process_events.in_set(ToastSet::ProcessEvents))
+            .add_system(
+                process_events
+                    .in_base_set(CoreSet::PostUpdate)
+                    .in_set(ToastSet::ProcessEvents),
+            )
             .add_system(
                 spawn_and_despawn
+                    .in_base_set(CoreSet::PostUpdate)
                     .run_if(not(in_state(AppState::AppLoading)))
                     .after(ToastSet::ProcessEvents),
             );
@@ -24,13 +29,11 @@ impl Plugin for ToastPlugin {
 }
 
 #[derive(Copy, Clone, Hash, Debug, PartialEq, Eq, SystemSet)]
-pub enum ToastSet {
+enum ToastSet {
     ProcessEvents,
 }
 
 /// Send this event to briefly display a UI toast.
-///
-/// The events are processed by a system labeled [`ToastSet::ProcessEvents`].
 pub struct ToastEvent(String);
 
 impl ToastEvent {

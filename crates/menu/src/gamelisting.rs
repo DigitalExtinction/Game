@@ -1,7 +1,7 @@
 use std::time::Duration;
 
 use bevy::{prelude::*, time::Stopwatch};
-use de_gui::{ButtonCommands, GuiCommands, LabelCommands, OuterStyle, ToastEvent, ToastSet};
+use de_gui::{ButtonCommands, GuiCommands, LabelCommands, OuterStyle, ToastEvent};
 use de_lobby_client::{ListGamesRequest, RequestEvent, ResponseEvent};
 use de_lobby_model::GamePartial;
 
@@ -16,11 +16,7 @@ impl Plugin for GameListingPlugin {
         app.add_system(setup.in_schedule(OnEnter(MenuState::GameListing)))
             .add_system(cleanup.in_schedule(OnExit(MenuState::GameListing)))
             .add_system(refresh_system.run_if(in_state(MenuState::GameListing)))
-            .add_system(
-                list_games_system
-                    .run_if(in_state(MenuState::GameListing))
-                    .before(ToastSet::ProcessEvents),
-            )
+            .add_system(list_games_system.run_if(in_state(MenuState::GameListing)))
             .add_system(button_system.run_if(in_state(MenuState::GameListing)));
     }
 }
