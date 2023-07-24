@@ -34,8 +34,8 @@ use crate::{
     draft::{DiscardDraftsEvent, DraftSet, NewDraftEvent, SpawnDraftsEvent},
     hud::{GameMenuSet, ToggleGameMenu, UpdateSelectionBoxEvent},
     mouse::{
-        DragUpdateType, MouseClicked, MouseDoubleClicked, MouseDragged, MouseSet, Pointer,
-        PointerSet,
+        DragUpdateType, MouseClickedEvent, MouseDoubleClickedEvent, MouseDraggedEvent, MouseSet,
+        Pointer, PointerSet,
     },
     selection::{
         AreaSelectSet, SelectEvent, SelectInRectEvent, Selected, SelectionMode, SelectionSet,
@@ -172,16 +172,16 @@ pub(crate) enum HandlersSet {
     LeftClick,
 }
 
-fn on_click(button: MouseButton) -> impl Fn(EventReader<MouseClicked>) -> bool {
-    move |mut events: EventReader<MouseClicked>| {
+fn on_click(button: MouseButton) -> impl Fn(EventReader<MouseClickedEvent>) -> bool {
+    move |mut events: EventReader<MouseClickedEvent>| {
         // It is desirable to exhaust the iterator, thus .filter().count() is
         // used instead of .any()
         events.iter().filter(|e| e.button() == button).count() > 0
     }
 }
 
-fn on_double_click(button: MouseButton) -> impl Fn(EventReader<MouseDoubleClicked>) -> bool {
-    move |mut events: EventReader<MouseDoubleClicked>| {
+fn on_double_click(button: MouseButton) -> impl Fn(EventReader<MouseDoubleClickedEvent>) -> bool {
+    move |mut events: EventReader<MouseDoubleClickedEvent>| {
         // It is desirable to exhaust the iterator, thus .filter().count() is
         // used instead of .any()
         events.iter().filter(|e| e.button() == button).count() > 0
@@ -425,7 +425,7 @@ fn select_all_visible(mut events: EventWriter<SelectInRectEvent>) {
 
 fn update_drags(
     keys: Res<Input<KeyCode>>,
-    mut drag_events: EventReader<MouseDragged>,
+    mut drag_events: EventReader<MouseDraggedEvent>,
     mut ui_events: EventWriter<UpdateSelectionBoxEvent>,
     mut select_events: EventWriter<SelectInRectEvent>,
 ) {

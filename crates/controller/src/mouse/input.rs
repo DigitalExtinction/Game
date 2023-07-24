@@ -15,9 +15,9 @@ pub(super) struct InputPlugin;
 
 impl Plugin for InputPlugin {
     fn build(&self, app: &mut App) {
-        app.add_event::<MouseClicked>()
-            .add_event::<MouseDoubleClicked>()
-            .add_event::<MouseDragged>()
+        app.add_event::<MouseClickedEvent>()
+            .add_event::<MouseDoubleClickedEvent>()
+            .add_event::<MouseDraggedEvent>()
             .add_system(setup.in_schedule(OnEnter(AppState::InGame)))
             .add_system(cleanup.in_schedule(OnExit(AppState::InGame)))
             .add_system(
@@ -59,12 +59,12 @@ pub(crate) enum MouseSet {
     Buttons,
 }
 
-pub(crate) struct MouseClicked {
+pub(crate) struct MouseClickedEvent {
     button: MouseButton,
     position: Vec2,
 }
 
-impl MouseClicked {
+impl MouseClickedEvent {
     fn new(button: MouseButton, position: Vec2) -> Self {
         Self { button, position }
     }
@@ -78,11 +78,11 @@ impl MouseClicked {
     }
 }
 
-pub(crate) struct MouseDoubleClicked {
+pub(crate) struct MouseDoubleClickedEvent {
     button: MouseButton,
 }
 
-impl MouseDoubleClicked {
+impl MouseDoubleClickedEvent {
     fn new(button: MouseButton) -> Self {
         Self { button }
     }
@@ -92,13 +92,13 @@ impl MouseDoubleClicked {
     }
 }
 
-pub(crate) struct MouseDragged {
+pub(crate) struct MouseDraggedEvent {
     button: MouseButton,
     rect: Option<ScreenRect>,
     update_type: DragUpdateType,
 }
 
-impl MouseDragged {
+impl MouseDraggedEvent {
     fn new(button: MouseButton, rect: Option<ScreenRect>, update_type: DragUpdateType) -> Self {
         Self {
             button,
@@ -263,11 +263,11 @@ fn update_position(
 fn update_drags(
     mouse_position: Res<MousePosition>,
     mut mouse_state: ResMut<MouseDragStates>,
-    mut drags: EventWriter<MouseDragged>,
+    mut drags: EventWriter<MouseDraggedEvent>,
 ) {
     let resolutions = mouse_state.update(mouse_position.ndc());
     for (&button, &rect) in resolutions.iter() {
-        drags.send(MouseDragged::new(button, rect, DragUpdateType::Moved));
+        drags.send(MouseDraggedEvent::new(button, rect, DragUpdateType::Moved));
     }
 }
 
@@ -275,8 +275,8 @@ fn update_buttons(
     mouse_position: Res<MousePosition>,
     mut mouse_state: ResMut<MouseDragStates>,
     mut input_events: EventReader<MouseButtonInput>,
-    mut clicks: EventWriter<MouseClicked>,
-    mut drags: EventWriter<MouseDragged>,
+    mut clicks: EventWriter<MouseClickedEvent>,
+    mut drags: EventWriter<MouseDraggedEvent>,
 ) {
     for event in input_events.iter() {
         match event.state {
@@ -284,10 +284,10 @@ fn update_buttons(
                 if let Some(drag_resolution) = mouse_state.resolve(event.button) {
                     match drag_resolution {
                         DragResolution::Point(position) => {
-                            clicks.send(MouseClicked::new(event.button, position));
+                            clicks.send(MouseClickedEvent::new(event.button, position));
                         }
                         DragResolution::Rect(rect) => {
-                            drags.send(MouseDragged::new(
+                            drags.send(MouseDraggedEvent::new(
                                 event.button,
                                 rect,
                                 DragUpdateType::Released,
@@ -304,8 +304,8 @@ fn update_buttons(
 }
 
 fn check_double_click(
-    mut clicks: EventReader<MouseClicked>,
-    mut double_clicks: EventWriter<MouseDoubleClicked>,
+    mut clicks: EventReader<MouseClickedEvent>,
+    mut double_clicks: EventWriter<MouseDoubleClickedEvent>,
     mut last_click_position: Local<Option<Vec2>>,
     mut last_click_time: Local<f64>,
     time: Res<Time>,
@@ -318,7 +318,7 @@ fn check_double_click(
         }) {
             // Check if double click using timer
             if (current_time - *last_click_time) < DOUBLE_CLICK_TIME {
-                double_clicks.send(MouseDoubleClicked::new(mouse_clicked.button()));
+                double_clicks.send(MouseDoubleClickedEvent::new(mouse_clicked.button()));
             }
         }
 
