@@ -18,7 +18,6 @@ pub trait StateWithSet {
 
 impl DeStateTransition for App {
     fn add_state_with_set<S: States + StateWithSet>(&mut self) -> &mut Self {
-        // TODO check if it is possible to modify apply_state_transition::<S> instead
         self.init_resource::<State<S>>()
             .init_resource::<NextState<S>>()
             .add_systems(
