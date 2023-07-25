@@ -18,7 +18,7 @@ impl Plugin for DespawnerPlugin {
                     .run_if(in_state(AppState::InGame))
                     .in_set(DespawnerSet::Destruction)
                     .before(DespawnerSet::Despawn),
-                despawn // This shhould always be ready to despawn marked entities
+                despawn // This should always be ready to despawn marked entities
                     .in_set(DespawnerSet::Despawn)
                     .after(DespawnerSet::Destruction),
             ),
