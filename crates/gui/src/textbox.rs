@@ -6,7 +6,6 @@ use bevy::{
     prelude::*,
     window::PrimaryWindow,
 };
-use de_core::schedule::InputSchedule;
 
 use crate::{focus::FocusedQuery, GuiCommands, OuterStyle};
 
@@ -18,7 +17,7 @@ pub(crate) struct TextBoxPlugin;
 impl Plugin for TextBoxPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(
-            InputSchedule,
+            Update,
             (
                 focus_system,
                 input_system
