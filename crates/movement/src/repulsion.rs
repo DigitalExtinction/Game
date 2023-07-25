@@ -1,9 +1,9 @@
 use bevy::prelude::*;
 use de_core::{
-    baseset::GameSet,
     gamestate::GameState,
     objects::{MovableSolid, ObjectType, StaticSolid},
     projection::ToFlat,
+    schedule::{Movement, PreMovement},
     state::AppState,
 };
 use de_map::size::MapBounds;
@@ -28,47 +28,37 @@ pub(crate) struct RepulsionPlugin;
 
 impl Plugin for RepulsionPlugin {
     fn build(&self, app: &mut App) {
-        app.add_system(
-            setup_entities
-                .in_base_set(GameSet::PreMovement)
-                .run_if(in_state(AppState::InGame)),
+        app.add_systems(
+            PreMovement,
+            (
+                setup_entities.run_if(in_state(AppState::InGame)),
+                add_desired_velocity::<RepulsionVelocity>.run_if(in_state(AppState::InGame)),
+            ),
         )
-        .add_system(
-            add_desired_velocity::<RepulsionVelocity>
-                .in_base_set(GameSet::PreMovement)
-                .run_if(in_state(AppState::InGame)),
-        )
-        .add_system(
-            repel_static
-                .in_base_set(GameSet::Movement)
-                .run_if(in_state(GameState::Playing))
-                .in_set(RepulsionLables::RepelStatic)
-                .after(ObstaclesLables::UpdateNearby)
-                .after(PathingSet::FollowPath),
-        )
-        .add_system(
-            repel_movable
-                .in_base_set(GameSet::Movement)
-                .run_if(in_state(GameState::Playing))
-                .in_set(RepulsionLables::RepelMovable)
-                .after(ObstaclesLables::UpdateNearby)
-                .after(PathingSet::FollowPath),
-        )
-        .add_system(
-            repel_bounds
-                .in_base_set(GameSet::Movement)
-                .run_if(in_state(GameState::Playing))
-                .in_set(RepulsionLables::RepelBounds)
-                .after(PathingSet::FollowPath),
-        )
-        .add_system(
-            apply
-                .in_base_set(GameSet::Movement)
-                .run_if(in_state(GameState::Playing))
-                .in_set(RepulsionLables::Apply)
-                .after(RepulsionLables::RepelStatic)
-                .after(RepulsionLables::RepelMovable)
-                .after(RepulsionLables::RepelBounds),
+        .add_systems(
+            Movement,
+            (
+                repel_static
+                    .run_if(in_state(GameState::Playing))
+                    .in_set(RepulsionLables::RepelStatic)
+                    .after(ObstaclesLables::UpdateNearby)
+                    .after(PathingSet::FollowPath),
+                repel_movable
+                    .run_if(in_state(GameState::Playing))
+                    .in_set(RepulsionLables::RepelMovable)
+                    .after(ObstaclesLables::UpdateNearby)
+                    .after(PathingSet::FollowPath),
+                repel_bounds
+                    .run_if(in_state(GameState::Playing))
+                    .in_set(RepulsionLables::RepelBounds)
+                    .after(PathingSet::FollowPath),
+                apply
+                    .run_if(in_state(GameState::Playing))
+                    .in_set(RepulsionLables::Apply)
+                    .after(RepulsionLables::RepelStatic)
+                    .after(RepulsionLables::RepelMovable)
+                    .after(RepulsionLables::RepelBounds),
+            ),
         );
     }
 }

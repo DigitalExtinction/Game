@@ -16,15 +16,12 @@ impl Plugin for FocusPlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<UiFocus>()
             .add_event::<SetFocusEvent>()
-            .add_system(
-                focus_system
-                    .in_base_set(CoreSet::PreUpdate)
-                    .after(UiSystem::Focus),
-            );
+            .add_systems(PreUpdate, focus_system.after(UiSystem::Focus));
     }
 }
 
 /// Send this event to (de)select an entity.
+#[derive(Event)]
 pub struct SetFocusEvent(Option<Entity>);
 
 impl SetFocusEvent {
@@ -38,7 +35,7 @@ impl SetFocusEvent {
 ///
 /// An entity can be (de)selected / (de)focused by multiple means:
 ///
-/// * Selected via [`Interaction::Clicked`].
+/// * Selected via [`Interaction::Pressed`].
 /// * (De)selected via [`SetFocusEvent`].
 /// * Deselected by despawning.
 /// * Deselected by clicking outside of it.
@@ -110,7 +107,7 @@ fn focus_system(
     }
 
     for (entity, &interaction) in interactions.iter() {
-        if matches!(interaction, Interaction::Clicked) {
+        if matches!(interaction, Interaction::Pressed) {
             current = Some(entity);
         }
     }

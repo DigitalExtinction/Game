@@ -104,14 +104,14 @@ de_uom = { path = "crates/uom", version = "0.1.0-dev" }
 
 # Other
 ab_glyph = "0.2.21"
-ahash = "0.7.6"
+ahash = "0.8.3"
 anyhow = "1.0"
 approx = "0.5.1"
 assert_cmd = "2.0.10"
 async-compat = "0.2.1"
 async-std = "1.11"
 async-tar = "0.4.2"
-bevy = { version = "0.10", features = ["mp3"] }
+bevy = { version = "0.11", features = ["mp3"] }
 bincode = "2.0.0-rc.3"
 chrono = "0.4.24"
 clap = { version = "4.0", features = ["derive"] }
@@ -124,12 +124,12 @@ fern = "0.6.2"
 flate2 = "1.0.26"
 futures = "0.3.28"
 futures-lite = "1.13.0"
-glam = "0.23"
+glam = "0.24"
 gltf = "1.0"
 itertools = "0.11.0"
-iyes_progress = "0.8.0"
+iyes_progress = "0.9.0"
 log = "0.4.17"
-nalgebra = { version = "0.32.2", features = ["convert-glam023"] }
+nalgebra = { version = "0.32.3", features = ["convert-glam024"] }
 nix = "0.26.2"
 ntest = "0.9.0"
 parry2d = "0.13.1"

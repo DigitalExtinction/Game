@@ -11,6 +11,6 @@ pub(crate) struct SelectionPlugin;
 
 impl Plugin for SelectionPlugin {
     fn build(&self, app: &mut App) {
-        app.add_plugin(BookkeepingPlugin).add_plugin(AreaPlugin);
+        app.add_plugins((BookkeepingPlugin, AreaPlugin));
     }
 }

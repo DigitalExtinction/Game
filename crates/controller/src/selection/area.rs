@@ -1,9 +1,9 @@
 use bevy::prelude::*;
 use de_core::{
-    baseset::GameSet,
     frustum,
     gamestate::GameState,
     objects::{ObjectType, Playable},
+    schedule::InputSchedule,
     screengeom::ScreenRect,
 };
 use de_objects::SolidObjects;
@@ -17,9 +17,9 @@ pub(super) struct AreaPlugin;
 
 impl Plugin for AreaPlugin {
     fn build(&self, app: &mut App) {
-        app.add_event::<SelectInRectEvent>().add_system(
+        app.add_event::<SelectInRectEvent>().add_systems(
+            InputSchedule,
             select_in_area
-                .in_base_set(GameSet::Input)
                 .run_if(in_state(GameState::Playing))
                 .in_set(AreaSelectSet::SelectInArea)
                 .before(SelectionSet::Update),
@@ -32,6 +32,7 @@ pub(crate) enum AreaSelectSet {
     SelectInArea,
 }
 
+#[derive(Event)]
 pub(crate) struct SelectInRectEvent {
     rect: ScreenRect,
     mode: SelectionMode,

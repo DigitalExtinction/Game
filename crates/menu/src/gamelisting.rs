@@ -13,11 +13,16 @@ pub(crate) struct GameListingPlugin;
 
 impl Plugin for GameListingPlugin {
     fn build(&self, app: &mut App) {
-        app.add_system(setup.in_schedule(OnEnter(MenuState::GameListing)))
-            .add_system(cleanup.in_schedule(OnExit(MenuState::GameListing)))
-            .add_system(refresh_system.run_if(in_state(MenuState::GameListing)))
-            .add_system(list_games_system.run_if(in_state(MenuState::GameListing)))
-            .add_system(button_system.run_if(in_state(MenuState::GameListing)));
+        app.add_systems(OnEnter(MenuState::GameListing), setup)
+            .add_systems(OnExit(MenuState::GameListing), cleanup)
+            .add_systems(
+                Update,
+                (
+                    refresh_system.run_if(in_state(MenuState::GameListing)),
+                    list_games_system.run_if(in_state(MenuState::GameListing)),
+                    button_system.run_if(in_state(MenuState::GameListing)),
+                ),
+            );
     }
 }
 
@@ -39,7 +44,8 @@ fn setup(
         .spawn(NodeBundle {
             style: Style {
                 flex_direction: FlexDirection::Column,
-                size: Size::new(Val::Percent(80.), Val::Percent(80.)),
+                width: Val::Percent(80.),
+                height: Val::Percent(80.),
                 margin: UiRect::all(Val::Auto),
                 align_items: AlignItems::Center,
                 justify_content: JustifyContent::FlexStart,
@@ -64,7 +70,8 @@ fn create_game_button(commands: &mut GuiCommands, parent_node: Entity) {
     let button_id = commands
         .spawn_button(
             OuterStyle {
-                size: Size::new(Val::Percent(100.), Val::Percent(8.)),
+                width: Val::Percent(100.),
+                height: Val::Percent(8.),
                 margin: UiRect::bottom(Val::Percent(1.)),
             },
             "Create Game",
@@ -79,7 +86,8 @@ fn table(commands: &mut GuiCommands, parent_node: Entity) -> Entity {
         .spawn(NodeBundle {
             style: Style {
                 flex_direction: FlexDirection::Column,
-                size: Size::new(Val::Percent(100.), Val::Percent(91.)),
+                width: Val::Percent(100.),
+                height: Val::Percent(91.),
                 margin: UiRect::all(Val::Auto),
                 align_items: AlignItems::Center,
                 justify_content: JustifyContent::FlexStart,
@@ -97,7 +105,8 @@ fn row(commands: &mut GuiCommands, game: &GamePartial) -> Entity {
         .spawn(NodeBundle {
             style: Style {
                 flex_direction: FlexDirection::Row,
-                size: Size::new(Val::Percent(100.), Val::Percent(8.)),
+                width: Val::Percent(100.),
+                height: Val::Percent(8.),
                 margin: UiRect::vertical(Val::Percent(0.5)),
                 align_items: AlignItems::Center,
                 justify_content: JustifyContent::FlexStart,
@@ -110,7 +119,8 @@ fn row(commands: &mut GuiCommands, game: &GamePartial) -> Entity {
     let name_id = commands
         .spawn_label(
             OuterStyle {
-                size: Size::new(Val::Percent(80.), Val::Percent(100.)),
+                width: Val::Percent(80.),
+                height: Val::Percent(100.),
                 margin: UiRect::right(Val::Percent(2.)),
             },
             format!(
@@ -127,7 +137,8 @@ fn row(commands: &mut GuiCommands, game: &GamePartial) -> Entity {
         let button_id = commands
             .spawn_button(
                 OuterStyle {
-                    size: Size::new(Val::Percent(18.), Val::Percent(100.)),
+                    width: Val::Percent(18.),
+                    height: Val::Percent(100.),
                     ..default()
                 },
                 "Join",
@@ -180,7 +191,7 @@ fn button_system(
     mut toasts: EventWriter<ToastEvent>,
 ) {
     for (&interaction, action) in interactions.iter() {
-        if let Interaction::Clicked = interaction {
+        if let Interaction::Pressed = interaction {
             match action {
                 ButtonAction::Create => next_state.set(MenuState::GameCreation),
                 ButtonAction::Join => {

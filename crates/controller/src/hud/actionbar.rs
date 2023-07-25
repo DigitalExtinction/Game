@@ -1,10 +1,10 @@
 use bevy::prelude::*;
 use de_construction::EnqueueAssemblyEvent;
 use de_core::{
-    baseset::GameSet,
     cleanup::DespawnOnGameExit,
     gamestate::GameState,
     objects::{ObjectType, UnitType},
+    schedule::InputSchedule,
 };
 use de_gui::{ButtonCommands, GuiCommands, OuterStyle};
 use de_objects::SolidObjects;
@@ -16,25 +16,23 @@ pub(crate) struct ActionBarPlugin;
 
 impl Plugin for ActionBarPlugin {
     fn build(&self, app: &mut App) {
-        app.add_system(setup.in_schedule(OnEnter(GameState::Playing)))
-            .add_system(cleanup.in_schedule(OnExit(GameState::Playing)))
-            .add_system(
-                detect_update
-                    .in_base_set(GameSet::PostUpdate)
-                    .run_if(in_state(GameState::Playing))
-                    .in_set(ActionBarSet::DetectUpdate),
+        app.add_systems(OnEnter(GameState::Playing), setup)
+            .add_systems(OnExit(GameState::Playing), cleanup)
+            .add_systems(
+                PostUpdate,
+                (
+                    detect_update
+                        .run_if(in_state(GameState::Playing))
+                        .in_set(ActionBarSet::DetectUpdate),
+                    update
+                        .run_if(in_state(GameState::Playing))
+                        .run_if(resource_exists_and_changed::<ActiveEntity>())
+                        .after(ActionBarSet::DetectUpdate),
+                ),
             )
-            .add_system(
-                update
-                    .in_base_set(GameSet::PostUpdate)
-                    .run_if(in_state(GameState::Playing))
-                    .run_if(resource_exists_and_changed::<ActiveEntity>())
-                    .after(ActionBarSet::DetectUpdate),
-            )
-            .add_system(
-                button_system
-                    .in_base_set(GameSet::Input)
-                    .run_if(in_state(GameState::Playing)),
+            .add_systems(
+                InputSchedule,
+                button_system.run_if(in_state(GameState::Playing)),
             );
     }
 }
@@ -64,17 +62,13 @@ fn setup(mut commands: Commands) {
         .spawn((
             NodeBundle {
                 style: Style {
-                    size: Size {
-                        width: Val::Percent(60.),
-                        height: Val::Percent(15.),
-                    },
+                    width: Val::Percent(60.),
+                    height: Val::Percent(15.),
                     position_type: PositionType::Absolute,
-                    position: UiRect::new(
-                        Val::Percent(20.),
-                        Val::Percent(80.),
-                        Val::Percent(85.),
-                        Val::Percent(100.),
-                    ),
+                    left: Val::Percent(20.),
+                    right: Val::Percent(80.),
+                    top: Val::Percent(85.),
+                    bottom: Val::Percent(100.),
                     ..default()
                 },
                 background_color: HUD_COLOR.into(),
@@ -119,7 +113,8 @@ fn spawn_button(commands: &mut GuiCommands, parent: Entity, unit: UnitType) {
     let button = commands
         .spawn_button(
             OuterStyle {
-                size: Size::new(Val::Percent(10.), Val::Percent(80.)),
+                width: Val::Percent(10.),
+                height: Val::Percent(80.),
                 margin: UiRect::new(
                     Val::Percent(0.),
                     Val::Percent(0.),
@@ -140,7 +135,7 @@ fn button_system(
     mut events: EventWriter<EnqueueAssemblyEvent>,
 ) {
     for (&interaction, action) in interactions.iter() {
-        if let Interaction::Clicked = interaction {
+        if let Interaction::Pressed = interaction {
             events.send(EnqueueAssemblyEvent::new(active.0.unwrap(), action.0));
         }
     }

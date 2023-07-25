@@ -14,6 +14,6 @@ pub(crate) struct MousePlugin;
 
 impl Plugin for MousePlugin {
     fn build(&self, app: &mut App) {
-        app.add_plugin(InputPlugin).add_plugin(PointerPlugin);
+        app.add_plugins((InputPlugin, PointerPlugin));
     }
 }

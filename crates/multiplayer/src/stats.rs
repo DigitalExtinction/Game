@@ -4,7 +4,7 @@ use std::{
 };
 
 use bevy::prelude::*;
-use de_core::baseset::GameSet;
+use de_core::schedule::PreMovement;
 use de_net::{FromGame, ToGame};
 use tracing::{debug, info, trace};
 
@@ -24,28 +24,27 @@ pub(crate) struct StatsPlugin;
 
 impl StatsPlugin {
     fn build_spec<const R: bool>(app: &mut App) {
-        app.add_system(setup_spec::<R>.in_schedule(OnEnter(NetState::Joined)))
-            .add_system(cleanup_spec::<R>.in_schedule(OnExit(NetState::Joined)))
-            .add_system(
+        app.add_systems(OnEnter(NetState::Joined), setup_spec::<R>)
+            .add_systems(OnExit(NetState::Joined), cleanup_spec::<R>)
+            .add_systems(
+                PostUpdate,
                 ping::<R>
-                    .in_base_set(GameSet::PostUpdate)
                     .run_if(in_state(NetState::Joined))
                     .before(MessagesSet::SendMessages),
             )
-            .add_system(
-                pong::<R>
-                    .in_base_set(GameSet::PreMovement)
-                    .run_if(in_state(NetState::Joined))
-                    .run_if(on_event::<FromGameServerEvent>())
-                    .in_set(StatsSet::Pong)
-                    .after(MessagesSet::RecvMessages),
-            )
-            .add_system(
-                unresolved::<R>
-                    .in_base_set(GameSet::PreMovement)
-                    .run_if(in_state(NetState::Joined))
-                    .in_set(StatsSet::Unresolved)
-                    .after(StatsSet::Pong),
+            .add_systems(
+                PreMovement,
+                (
+                    pong::<R>
+                        .run_if(in_state(NetState::Joined))
+                        .run_if(on_event::<FromGameServerEvent>())
+                        .in_set(StatsSet::Pong)
+                        .after(MessagesSet::RecvMessages),
+                    unresolved::<R>
+                        .run_if(in_state(NetState::Joined))
+                        .in_set(StatsSet::Unresolved)
+                        .after(StatsSet::Pong),
+                ),
             );
     }
 }
@@ -55,20 +54,19 @@ impl Plugin for StatsPlugin {
         Self::build_spec::<false>(app);
         Self::build_spec::<true>(app);
 
-        app.add_system(setup.in_schedule(OnEnter(NetState::Joined)))
-            .add_system(cleanup.in_schedule(OnExit(NetState::Joined)))
-            .add_system(
-                stats_tick
-                    .in_base_set(GameSet::PreMovement)
-                    .run_if(in_state(NetState::Joined))
-                    .in_set(StatsSet::StatsTick),
-            )
-            .add_system(
-                delivery_rate
-                    .in_base_set(GameSet::PreMovement)
-                    .run_if(in_state(NetState::Joined))
-                    .after(StatsSet::StatsTick)
-                    .after(StatsSet::Unresolved),
+        app.add_systems(OnEnter(NetState::Joined), setup)
+            .add_systems(OnExit(NetState::Joined), cleanup)
+            .add_systems(
+                PreMovement,
+                (
+                    stats_tick
+                        .run_if(in_state(NetState::Joined))
+                        .in_set(StatsSet::StatsTick),
+                    delivery_rate
+                        .run_if(in_state(NetState::Joined))
+                        .after(StatsSet::StatsTick)
+                        .after(StatsSet::Unresolved),
+                ),
             );
     }
 }

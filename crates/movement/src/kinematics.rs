@@ -2,7 +2,10 @@ use std::f32::consts::{FRAC_PI_4, PI, TAU};
 
 use bevy::prelude::*;
 use de_core::{
-    baseset::GameSet, gamestate::GameState, objects::MovableSolid, projection::ToAltitude,
+    gamestate::GameState,
+    objects::MovableSolid,
+    projection::ToAltitude,
+    schedule::{Movement, PreMovement},
     state::AppState,
 };
 
@@ -17,14 +20,13 @@ pub(crate) struct KinematicsPlugin;
 
 impl Plugin for KinematicsPlugin {
     fn build(&self, app: &mut App) {
-        app.add_system(
-            setup_entities
-                .in_base_set(GameSet::PreMovement)
-                .run_if(in_state(AppState::InGame)),
+        app.add_systems(
+            PreMovement,
+            setup_entities.run_if(in_state(AppState::InGame)),
         )
-        .add_system(
+        .add_systems(
+            Movement,
             kinematics
-                .in_base_set(GameSet::Movement)
                 .run_if(in_state(GameState::Playing))
                 .in_set(KinematicsSet::Kinematics)
                 .before(MovementSet::UpdateTransform)

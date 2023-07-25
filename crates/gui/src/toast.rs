@@ -14,16 +14,14 @@ impl Plugin for ToastPlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<ToastQueue>()
             .add_event::<ToastEvent>()
-            .add_system(
-                process_events
-                    .in_base_set(CoreSet::PostUpdate)
-                    .in_set(ToastSet::ProcessEvents),
-            )
-            .add_system(
-                spawn_and_despawn
-                    .in_base_set(CoreSet::PostUpdate)
-                    .run_if(not(in_state(AppState::AppLoading)))
-                    .after(ToastSet::ProcessEvents),
+            .add_systems(
+                PostUpdate,
+                (
+                    process_events.in_set(ToastSet::ProcessEvents),
+                    spawn_and_despawn
+                        .run_if(not(in_state(AppState::AppLoading)))
+                        .after(ToastSet::ProcessEvents),
+                ),
             );
     }
 }
@@ -34,6 +32,7 @@ enum ToastSet {
 }
 
 /// Send this event to briefly display a UI toast.
+#[derive(Event)]
 pub struct ToastEvent(String);
 
 impl ToastEvent {
@@ -133,12 +132,10 @@ fn spawn(commands: &mut Commands, text_props: &TextProps, text: String) -> Entit
             position_type: PositionType::Absolute,
             justify_content: JustifyContent::Center,
             align_items: AlignItems::Center,
-            position: UiRect::new(
-                Val::Percent(20.),
-                Val::Percent(20.),
-                Val::Percent(5.),
-                Val::Percent(85.),
-            ),
+            left: Val::Percent(20.),
+            right: Val::Percent(20.),
+            top: Val::Percent(5.),
+            bottom: Val::Percent(85.),
             padding: UiRect::all(Val::Percent(1.)),
             ..default()
         },

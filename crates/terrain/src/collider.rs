@@ -114,7 +114,7 @@ mod test {
             commands.insert_resource(Vec3Wrap(Vec3::from(ray.point_at(intersection.toi))));
         }
 
-        app.add_system(help_system);
+        app.add_systems(Update, help_system);
 
         app.update();
 

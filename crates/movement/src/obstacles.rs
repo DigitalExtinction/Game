@@ -1,9 +1,9 @@
 use bevy::prelude::*;
 use de_core::{
-    baseset::GameSet,
     gamestate::GameState,
     objects::{MovableSolid, ObjectType, StaticSolid},
     projection::ToFlat,
+    schedule::{Movement, PreMovement},
 };
 use de_index::SpatialQuery;
 use de_objects::SolidObjects;
@@ -19,27 +19,23 @@ pub(crate) struct ObstaclesPlugin;
 
 impl Plugin for ObstaclesPlugin {
     fn build(&self, app: &mut App) {
-        app.add_system(
-            setup_discs
-                .in_base_set(GameSet::PreMovement)
-                .run_if(in_state(GameState::Playing)),
+        app.add_systems(
+            PreMovement,
+            (
+                setup_discs.run_if(in_state(GameState::Playing)),
+                update_discs.run_if(in_state(GameState::Playing)),
+            ),
         )
-        .add_system(
-            update_discs
-                .in_base_set(GameSet::PreMovement)
-                .run_if(in_state(GameState::Playing)),
-        )
-        .add_system(
-            update_nearby::<StaticObstacles, StaticSolid>
-                .in_base_set(GameSet::Movement)
-                .run_if(in_state(GameState::Playing))
-                .in_set(ObstaclesLables::UpdateNearby),
-        )
-        .add_system(
-            update_nearby::<MovableObstacles, MovableSolid>
-                .in_base_set(GameSet::Movement)
-                .run_if(in_state(GameState::Playing))
-                .in_set(ObstaclesLables::UpdateNearby),
+        .add_systems(
+            Movement,
+            (
+                update_nearby::<StaticObstacles, StaticSolid>
+                    .run_if(in_state(GameState::Playing))
+                    .in_set(ObstaclesLables::UpdateNearby),
+                update_nearby::<MovableObstacles, MovableSolid>
+                    .run_if(in_state(GameState::Playing))
+                    .in_set(ObstaclesLables::UpdateNearby),
+            ),
         );
     }
 }

@@ -1,10 +1,10 @@
 use bevy::prelude::*;
 use de_core::{
-    baseset::GameSet,
     cleanup::DespawnOnGameExit,
     gamestate::GameState,
     gconfig::GameConfig,
     objects::{BuildingType, ObjectType},
+    schedule::InputSchedule,
     state::AppState,
 };
 use de_spawner::{DraftAllowed, DraftBundle, SpawnBundle};
@@ -18,31 +18,24 @@ impl Plugin for DraftPlugin {
         app.add_event::<SpawnDraftsEvent>()
             .add_event::<NewDraftEvent>()
             .add_event::<DiscardDraftsEvent>()
-            .add_system(
-                spawn
-                    .in_base_set(GameSet::Input)
-                    .run_if(in_state(AppState::InGame))
-                    .run_if(on_event::<SpawnDraftsEvent>())
-                    .in_set(DraftSet::Spawn),
-            )
-            .add_system(
-                new_drafts
-                    .in_base_set(GameSet::Input)
-                    .run_if(in_state(AppState::InGame))
-                    .in_set(DraftSet::New),
-            )
-            .add_system(
-                discard_drafts
-                    .in_base_set(GameSet::Input)
-                    .run_if(in_state(AppState::InGame))
-                    .run_if(on_event::<DiscardDraftsEvent>())
-                    .in_set(DraftSet::Discard),
-            )
-            .add_system(
-                move_drafts
-                    .in_base_set(GameSet::Input)
-                    .run_if(in_state(GameState::Playing))
-                    .after(PointerSet::Update),
+            .add_systems(
+                InputSchedule,
+                (
+                    spawn
+                        .run_if(in_state(AppState::InGame))
+                        .run_if(on_event::<SpawnDraftsEvent>())
+                        .in_set(DraftSet::Spawn),
+                    new_drafts
+                        .run_if(in_state(AppState::InGame))
+                        .in_set(DraftSet::New),
+                    discard_drafts
+                        .run_if(in_state(AppState::InGame))
+                        .run_if(on_event::<DiscardDraftsEvent>())
+                        .in_set(DraftSet::Discard),
+                    move_drafts
+                        .run_if(in_state(GameState::Playing))
+                        .after(PointerSet::Update),
+                ),
             );
     }
 }
@@ -54,13 +47,16 @@ pub(crate) enum DraftSet {
     Discard,
 }
 
+#[derive(Event)]
 pub(crate) struct SpawnDraftsEvent;
 
+#[derive(Event)]
 pub(crate) struct NewDraftEvent {
     point: Vec3,
     building_type: BuildingType,
 }
 
+#[derive(Event)]
 pub(crate) struct DiscardDraftsEvent;
 
 impl NewDraftEvent {

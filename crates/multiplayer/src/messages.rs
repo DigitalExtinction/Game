@@ -1,7 +1,7 @@
 use std::{net::SocketAddr, time::Instant};
 
 use bevy::prelude::*;
-use de_core::baseset::GameSet;
+use de_core::schedule::PreMovement;
 use de_net::{FromGame, FromServer, InPackage, PackageBuilder, Peers, ToGame, ToServer};
 
 use crate::{
@@ -20,32 +20,28 @@ impl Plugin for MessagesPlugin {
             .add_event::<ToGameServerEvent<false>>()
             .add_event::<FromMainServerEvent>()
             .add_event::<FromGameServerEvent>()
-            .add_system(setup.in_schedule(OnEnter(NetState::Connecting)))
-            .add_system(cleanup.in_schedule(OnEnter(NetState::None)))
-            .add_system(
-                message_sender::<ToMainServerEvent>
-                    .in_base_set(GameSet::PostUpdate)
-                    .run_if(on_event::<ToMainServerEvent>())
-                    .in_set(MessagesSet::SendMessages)
-                    .before(NetworkSet::SendPackages),
+            .add_systems(OnEnter(NetState::Connecting), setup)
+            .add_systems(OnEnter(NetState::None), cleanup)
+            .add_systems(
+                PostUpdate,
+                (
+                    message_sender::<ToMainServerEvent>
+                        .run_if(on_event::<ToMainServerEvent>())
+                        .in_set(MessagesSet::SendMessages)
+                        .before(NetworkSet::SendPackages),
+                    message_sender::<ToGameServerEvent<true>>
+                        .run_if(on_event::<ToGameServerEvent<true>>())
+                        .in_set(MessagesSet::SendMessages)
+                        .before(NetworkSet::SendPackages),
+                    message_sender::<ToGameServerEvent<false>>
+                        .run_if(on_event::<ToGameServerEvent<false>>())
+                        .in_set(MessagesSet::SendMessages)
+                        .before(NetworkSet::SendPackages),
+                ),
             )
-            .add_system(
-                message_sender::<ToGameServerEvent<true>>
-                    .in_base_set(GameSet::PostUpdate)
-                    .run_if(on_event::<ToGameServerEvent<true>>())
-                    .in_set(MessagesSet::SendMessages)
-                    .before(NetworkSet::SendPackages),
-            )
-            .add_system(
-                message_sender::<ToGameServerEvent<false>>
-                    .in_base_set(GameSet::PostUpdate)
-                    .run_if(on_event::<ToGameServerEvent<false>>())
-                    .in_set(MessagesSet::SendMessages)
-                    .before(NetworkSet::SendPackages),
-            )
-            .add_system(
+            .add_systems(
+                PreMovement,
                 recv_messages
-                    .in_base_set(GameSet::PreMovement)
                     .run_if(on_event::<PackageReceivedEvent>())
                     .in_set(MessagesSet::RecvMessages)
                     .after(NetworkSet::RecvPackages),
@@ -61,7 +57,7 @@ pub(crate) enum MessagesSet {
 
 trait ToMessage
 where
-    Self: Send + Sync + 'static,
+    Self: Event,
 {
     type Message: bincode::Encode;
     const PORT_TYPE: PortType;
@@ -70,6 +66,7 @@ where
     fn message(&self) -> &Self::Message;
 }
 
+#[derive(Event)]
 pub(crate) struct ToMainServerEvent(ToServer);
 
 impl From<ToServer> for ToMainServerEvent {
@@ -88,6 +85,7 @@ impl ToMessage for ToMainServerEvent {
     }
 }
 
+#[derive(Event)]
 pub(crate) struct ToGameServerEvent<const R: bool>(ToGame);
 
 impl<const R: bool> From<ToGame> for ToGameServerEvent<R> {
@@ -108,13 +106,14 @@ impl<const R: bool> ToMessage for ToGameServerEvent<R> {
 
 trait InMessageEvent
 where
-    Self: Send + Sync + 'static,
+    Self: Event,
 {
     type M;
 
     fn from_message(time: Instant, message: Self::M) -> Self;
 }
 
+#[derive(Event)]
 pub(crate) struct FromMainServerEvent(FromServer);
 
 impl FromMainServerEvent {
@@ -131,6 +130,7 @@ impl InMessageEvent for FromMainServerEvent {
     }
 }
 
+#[derive(Event)]
 pub(crate) struct FromGameServerEvent {
     time: Instant,
     message: FromGame,

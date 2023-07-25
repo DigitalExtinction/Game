@@ -5,7 +5,7 @@ use bevy::{
     prelude::*,
     tasks::{IoTaskPool, Task},
 };
-use de_core::baseset::GameSet;
+use de_core::schedule::PreMovement;
 use de_net::{
     startup, ConnErrorReceiver, InPackage, OutPackage, PackageReceiver, PackageSender, Socket,
 };
@@ -22,31 +22,31 @@ impl Plugin for NetworkPlugin {
     fn build(&self, app: &mut App) {
         app.add_event::<SendPackageEvent>()
             .add_event::<PackageReceivedEvent>()
-            .add_system(setup.in_schedule(OnEnter(NetState::Connecting)))
-            .add_system(cleanup.in_schedule(OnEnter(NetState::None)))
-            .add_system(
+            .add_systems(OnEnter(NetState::Connecting), setup)
+            .add_systems(OnEnter(NetState::None), cleanup)
+            .add_systems(
+                Update,
                 wait_for_network
                     .track_progress()
                     .run_if(resource_exists::<NetworkStartup>()),
             )
-            .add_system(
-                send_packages
-                    .in_base_set(GameSet::PostUpdate)
-                    .run_if(resource_exists::<Sender>())
-                    .run_if(on_event::<SendPackageEvent>())
-                    .in_set(NetworkSet::SendPackages),
+            .add_systems(
+                PostUpdate,
+                (
+                    send_packages
+                        .run_if(resource_exists::<Sender>())
+                        .run_if(on_event::<SendPackageEvent>())
+                        .in_set(NetworkSet::SendPackages),
+                    recv_errors
+                        .run_if(resource_exists::<Errors>())
+                        .in_set(NetworkSet::RecvErrors),
+                ),
             )
-            .add_system(
+            .add_systems(
+                PreMovement,
                 recv_packages
-                    .in_base_set(GameSet::PreMovement)
                     .run_if(resource_exists::<Receiver>())
                     .in_set(NetworkSet::RecvPackages),
-            )
-            .add_system(
-                recv_errors
-                    .in_base_set(GameSet::PostUpdate)
-                    .run_if(resource_exists::<Errors>())
-                    .in_set(NetworkSet::RecvErrors),
             );
     }
 }
@@ -63,6 +63,7 @@ pub(crate) enum NetworkSet {
 /// The network must be established before this events are sent. The events are
 /// drained and thus it is expected that the events are received only by
 /// [`self::send_packages`] system.
+#[derive(Event)]
 pub(crate) struct SendPackageEvent(OutPackage);
 
 impl From<OutPackage> for SendPackageEvent {
@@ -72,6 +73,7 @@ impl From<OutPackage> for SendPackageEvent {
 }
 
 /// This event is sent any time a new package from any source is received.
+#[derive(Event)]
 pub(crate) struct PackageReceivedEvent(InPackage);
 
 impl PackageReceivedEvent {

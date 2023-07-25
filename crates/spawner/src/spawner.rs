@@ -2,7 +2,6 @@
 
 use bevy::prelude::*;
 use de_core::{
-    baseset::GameSet,
     gamestate::GameState,
     gconfig::GameConfig,
     objects::{Active, ActiveObjectType, MovableSolid, ObjectType, Playable, StaticSolid},
@@ -18,11 +17,7 @@ pub(crate) struct SpawnerPlugin;
 
 impl Plugin for SpawnerPlugin {
     fn build(&self, app: &mut App) {
-        app.add_system(
-            spawn
-                .in_base_set(GameSet::Update)
-                .run_if(in_state(GameState::Playing)),
-        );
+        app.add_systems(Update, spawn.run_if(in_state(GameState::Playing)));
     }
 }
 

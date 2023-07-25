@@ -20,28 +20,27 @@ pub(crate) struct CreateGamePlugin;
 
 impl Plugin for CreateGamePlugin {
     fn build(&self, app: &mut App) {
-        app.add_plugin(RequestsPlugin::<CreateGameRequest>::new())
+        app.add_plugins(RequestsPlugin::<CreateGameRequest>::new())
             .add_event::<CreateGameEvent>()
-            .add_system(setup.in_schedule(OnEnter(MenuState::GameCreation)))
-            .add_system(cleanup.in_schedule(OnExit(MenuState::GameCreation)))
-            .add_system(
-                button_system
-                    .run_if(in_state(MenuState::GameCreation))
-                    .in_set(CreateSet::Buttons),
-            )
-            .add_system(
-                map_selected_system
-                    .run_if(in_state(MenuState::GameCreation))
-                    .in_set(CreateSet::MapSelected),
-            )
-            .add_system(
-                create_game_system
-                    .run_if(in_state(MenuState::GameCreation))
-                    .run_if(on_event::<CreateGameEvent>())
-                    .after(CreateSet::Buttons)
-                    .after(CreateSet::MapSelected),
-            )
-            .add_system(response_system.run_if(in_state(MenuState::GameCreation)));
+            .add_systems(OnEnter(MenuState::GameCreation), setup)
+            .add_systems(OnExit(MenuState::GameCreation), cleanup)
+            .add_systems(
+                Update,
+                (
+                    button_system
+                        .run_if(in_state(MenuState::GameCreation))
+                        .in_set(CreateSet::Buttons),
+                    map_selected_system
+                        .run_if(in_state(MenuState::GameCreation))
+                        .in_set(CreateSet::MapSelected),
+                    create_game_system
+                        .run_if(in_state(MenuState::GameCreation))
+                        .run_if(on_event::<CreateGameEvent>())
+                        .after(CreateSet::Buttons)
+                        .after(CreateSet::MapSelected),
+                    response_system.run_if(in_state(MenuState::GameCreation)),
+                ),
+            );
     }
 }
 
@@ -67,6 +66,7 @@ struct Inputs {
 #[derive(Resource)]
 struct SelectedMap(GameMap);
 
+#[derive(Event)]
 struct CreateGameEvent;
 
 fn setup(mut commands: GuiCommands, menu: Res<Menu>) {
@@ -92,7 +92,8 @@ fn setup(mut commands: GuiCommands, menu: Res<Menu>) {
     let create_id = commands
         .spawn_button(
             OuterStyle {
-                size: Size::new(Val::Percent(100.), Val::Percent(100.)),
+                width: Val::Percent(100.),
+                height: Val::Percent(100.),
                 ..default()
             },
             "Create Game",
@@ -107,7 +108,8 @@ fn column(commands: &mut GuiCommands, parent_id: Entity) -> Entity {
         .spawn(NodeBundle {
             style: Style {
                 flex_direction: FlexDirection::Column,
-                size: Size::new(Val::Percent(50.), Val::Percent(100.)),
+                width: Val::Percent(50.),
+                height: Val::Percent(100.),
                 margin: UiRect::all(Val::Auto),
                 align_items: AlignItems::Center,
                 justify_content: JustifyContent::Center,
@@ -125,7 +127,8 @@ fn row(commands: &mut GuiCommands, parent_id: Entity) -> Entity {
         .spawn(NodeBundle {
             style: Style {
                 flex_direction: FlexDirection::Row,
-                size: Size::new(Val::Percent(100.), Val::Percent(8.)),
+                width: Val::Percent(100.),
+                height: Val::Percent(8.),
                 margin: UiRect::new(
                     Val::Percent(0.),
                     Val::Percent(0.),
@@ -149,7 +152,8 @@ fn text_input(commands: &mut GuiCommands, parent_id: Entity, caption: &str) -> E
     let input_id = commands
         .spawn_text_box(
             OuterStyle {
-                size: Size::new(Val::Percent(65.), Val::Percent(100.)),
+                width: Val::Percent(65.),
+                height: Val::Percent(100.),
                 ..default()
             },
             false,
@@ -165,7 +169,8 @@ fn map_button(commands: &mut GuiCommands, parent_id: Entity) -> Entity {
     let input_id = commands
         .spawn_button(
             OuterStyle {
-                size: Size::new(Val::Percent(65.), Val::Percent(100.)),
+                width: Val::Percent(65.),
+                height: Val::Percent(100.),
                 ..default()
             },
             "-",
@@ -180,7 +185,8 @@ fn spawn_caption(commands: &mut GuiCommands, parent_id: Entity, caption: &str) {
     let caption_id = commands
         .spawn_label(
             OuterStyle {
-                size: Size::new(Val::Percent(35.), Val::Percent(100.)),
+                width: Val::Percent(35.),
+                height: Val::Percent(100.),
                 ..default()
             },
             caption,
@@ -200,7 +206,7 @@ fn button_system(
     mut create_events: EventWriter<CreateGameEvent>,
 ) {
     for (&interaction, &action) in interactions.iter() {
-        if let Interaction::Clicked = interaction {
+        if let Interaction::Pressed = interaction {
             match action {
                 ButtonAction::SelectMap => map_events.send(SelectMapEvent),
                 ButtonAction::Create => create_events.send(CreateGameEvent),

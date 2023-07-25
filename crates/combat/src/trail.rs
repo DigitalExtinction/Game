@@ -3,7 +3,7 @@ use std::time::Duration;
 use bevy::{
     pbr::{MaterialPipeline, MaterialPipelineKey, NotShadowCaster, NotShadowReceiver},
     prelude::*,
-    reflect::TypeUuid,
+    reflect::{TypePath, TypeUuid},
     render::{
         mesh::{Indices, MeshVertexBufferLayout, PrimitiveTopology},
         render_resource::{
@@ -11,9 +11,7 @@ use bevy::{
         },
     },
 };
-use de_core::{
-    baseset::GameSet, cleanup::DespawnOnGameExit, gamestate::GameState, state::AppState,
-};
+use de_core::{cleanup::DespawnOnGameExit, gamestate::GameState, state::AppState};
 use parry3d::query::Ray;
 
 const TRAIL_LIFESPAN: Duration = Duration::from_millis(500);
@@ -23,23 +21,21 @@ pub(crate) struct TrailPlugin;
 
 impl Plugin for TrailPlugin {
     fn build(&self, app: &mut App) {
-        app.add_plugin(MaterialPlugin::<TrailMaterial>::default())
+        app.add_plugins(MaterialPlugin::<TrailMaterial>::default())
             .add_event::<TrailEvent>()
-            .add_system(setup.in_schedule(OnEnter(AppState::InGame)))
-            .add_system(cleanup.in_schedule(OnExit(AppState::InGame)))
-            .add_system(
-                spawn
-                    .in_base_set(GameSet::PostUpdate)
-                    .run_if(in_state(GameState::Playing)),
-            )
-            .add_system(
-                update
-                    .in_base_set(GameSet::PostUpdate)
-                    .run_if(in_state(GameState::Playing)),
+            .add_systems(OnEnter(AppState::InGame), setup)
+            .add_systems(OnExit(AppState::InGame), cleanup)
+            .add_systems(
+                PostUpdate,
+                (
+                    spawn.run_if(in_state(GameState::Playing)),
+                    update.run_if(in_state(GameState::Playing)),
+                ),
             );
     }
 }
 
+#[derive(Event)]
 pub(crate) struct TrailEvent(Ray);
 
 impl TrailEvent {
@@ -75,7 +71,7 @@ impl Trail {
     }
 }
 
-#[derive(AsBindGroup, TypeUuid, Debug, Clone)]
+#[derive(AsBindGroup, TypeUuid, TypePath, Debug, Clone)]
 #[uuid = "560ab431-1a54-48b3-87ea-8de8d94ceafb"]
 struct TrailMaterial {
     #[uniform(0)]

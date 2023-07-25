@@ -3,7 +3,6 @@ use std::{collections::VecDeque, time::Duration};
 use ahash::AHashMap;
 use bevy::prelude::*;
 use de_core::{
-    baseset::GameSet,
     cleanup::DespawnOnGameExit,
     gamestate::GameState,
     gconfig::GameConfig,
@@ -32,41 +31,26 @@ impl Plugin for ManufacturingPlugin {
         app.add_event::<EnqueueAssemblyEvent>()
             .add_event::<ChangeDeliveryLocationEvent>()
             .add_event::<DeliverEvent>()
-            .add_system(
-                configure
-                    .in_base_set(GameSet::PostUpdate)
-                    .run_if(in_state(AppState::InGame)),
+            .add_systems(
+                PreUpdate,
+                (
+                    change_locations
+                        .run_if(in_state(GameState::Playing))
+                        .in_set(ManufacturingSet::ChangeLocations),
+                    check_spawn_locations
+                        .run_if(in_state(GameState::Playing))
+                        .before(ManufacturingSet::Produce),
+                    produce
+                        .run_if(in_state(GameState::Playing))
+                        .in_set(ManufacturingSet::Produce),
+                    deliver
+                        .run_if(in_state(GameState::Playing))
+                        .after(ManufacturingSet::ChangeLocations)
+                        .after(ManufacturingSet::Produce),
+                ),
             )
-            .add_system(
-                change_locations
-                    .in_base_set(GameSet::PreUpdate)
-                    .run_if(in_state(GameState::Playing))
-                    .in_set(ManufacturingSet::ChangeLocations),
-            )
-            .add_system(
-                enqueue
-                    .in_base_set(GameSet::Update)
-                    .run_if(in_state(GameState::Playing)),
-            )
-            .add_system(
-                check_spawn_locations
-                    .in_base_set(GameSet::PreUpdate)
-                    .run_if(in_state(GameState::Playing))
-                    .before(ManufacturingSet::Produce),
-            )
-            .add_system(
-                produce
-                    .in_base_set(GameSet::PreUpdate)
-                    .run_if(in_state(GameState::Playing))
-                    .in_set(ManufacturingSet::Produce),
-            )
-            .add_system(
-                deliver
-                    .in_base_set(GameSet::PreUpdate)
-                    .run_if(in_state(GameState::Playing))
-                    .after(ManufacturingSet::ChangeLocations)
-                    .after(ManufacturingSet::Produce),
-            );
+            .add_systems(Update, enqueue.run_if(in_state(GameState::Playing)))
+            .add_systems(PostUpdate, configure.run_if(in_state(AppState::InGame)));
     }
 }
 
@@ -77,6 +61,7 @@ enum ManufacturingSet {
 }
 
 /// Send this event to change target location of freshly manufactured units.
+#[derive(Event)]
 pub struct ChangeDeliveryLocationEvent {
     factory: Entity,
     position: Vec2,
@@ -97,6 +82,7 @@ impl ChangeDeliveryLocationEvent {
 }
 
 /// Send this event to enqueue a unit to be manufactured by a factory.
+#[derive(Event)]
 pub struct EnqueueAssemblyEvent {
     factory: Entity,
     unit: UnitType,
@@ -121,6 +107,7 @@ impl EnqueueAssemblyEvent {
     }
 }
 
+#[derive(Event)]
 struct DeliverEvent {
     factory: Entity,
     unit: UnitType,

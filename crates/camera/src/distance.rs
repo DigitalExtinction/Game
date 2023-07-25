@@ -1,6 +1,5 @@
 use bevy::prelude::*;
 use de_core::{
-    baseset::GameSet,
     objects::{MovableSolid, StaticSolid},
     state::AppState,
 };
@@ -9,21 +8,15 @@ pub(crate) struct DistancePlugin;
 
 impl Plugin for DistancePlugin {
     fn build(&self, app: &mut App) {
-        app.add_system(
-            init::<MovableSolid>
-                .in_base_set(GameSet::PostUpdate)
-                .run_if(in_state(AppState::InGame)),
-        )
-        .add_system(
-            init::<StaticSolid>
-                .in_base_set(GameSet::PostUpdate)
-                .run_if(in_state(AppState::InGame)),
-        )
-        .add_system(
-            update
-                .in_base_set(GameSet::PostUpdate)
-                .run_if(in_state(AppState::InGame))
-                .in_set(DistanceSet::Update),
+        app.add_systems(
+            PostUpdate,
+            (
+                init::<MovableSolid>.run_if(in_state(AppState::InGame)),
+                init::<StaticSolid>.run_if(in_state(AppState::InGame)),
+                update
+                    .run_if(in_state(AppState::InGame))
+                    .in_set(DistanceSet::Update),
+            ),
         );
     }
 }

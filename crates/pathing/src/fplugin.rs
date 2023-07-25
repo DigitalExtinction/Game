@@ -5,9 +5,9 @@ use bevy::{
     tasks::{AsyncComputeTaskPool, Task},
 };
 use de_core::{
-    baseset::GameSet,
     gamestate::GameState,
     objects::{ObjectType, StaticSolid},
+    schedule::PreMovement,
     state::AppState,
 };
 use de_map::size::MapBounds;
@@ -42,31 +42,27 @@ pub struct FinderPlugin;
 impl Plugin for FinderPlugin {
     fn build(&self, app: &mut App) {
         app.add_event::<PathFinderUpdatedEvent>()
-            .add_system(setup_loading.in_schedule(OnEnter(AppState::InGame)))
-            .add_system(setup_playing.in_schedule(OnEnter(GameState::Playing)))
-            .add_system(cleanup.in_schedule(OnExit(AppState::InGame)))
-            .add_system(
-                check_removed
-                    .in_base_set(GameSet::PostUpdate)
-                    .run_if(in_state(AppState::InGame))
-                    .in_set(FinderSet::CheckRemoved),
+            .add_systems(OnEnter(AppState::InGame), setup_loading)
+            .add_systems(OnEnter(GameState::Playing), setup_playing)
+            .add_systems(OnExit(AppState::InGame), cleanup)
+            .add_systems(
+                PostUpdate,
+                (
+                    check_removed
+                        .run_if(in_state(AppState::InGame))
+                        .in_set(FinderSet::CheckRemoved),
+                    check_updated
+                        .run_if(in_state(GameState::Playing))
+                        .in_set(FinderSet::CheckUpdated),
+                    update
+                        .run_if(in_state(GameState::Playing))
+                        .after(FinderSet::CheckUpdated)
+                        .after(FinderSet::CheckRemoved),
+                ),
             )
-            .add_system(
-                check_updated
-                    .in_base_set(GameSet::PostUpdate)
-                    .run_if(in_state(GameState::Playing))
-                    .in_set(FinderSet::CheckUpdated),
-            )
-            .add_system(
-                update
-                    .in_base_set(GameSet::PostUpdate)
-                    .run_if(in_state(GameState::Playing))
-                    .after(FinderSet::CheckUpdated)
-                    .after(FinderSet::CheckRemoved),
-            )
-            .add_system(
+            .add_systems(
+                PreMovement,
                 check_update_result
-                    .in_base_set(GameSet::PreMovement)
                     .run_if(in_state(GameState::Playing))
                     .in_set(FinderSet::UpdateFinder),
             );
@@ -84,6 +80,7 @@ pub(crate) enum FinderSet {
 ///
 /// Paths found before the event was sent may no longer be optimal or may lead
 /// through non-accessible area.
+#[derive(Event)]
 pub(crate) struct PathFinderUpdatedEvent;
 
 #[derive(Clone, Resource)]

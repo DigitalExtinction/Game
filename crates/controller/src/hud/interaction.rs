@@ -1,7 +1,6 @@
 use bevy::{
     ecs::{query::ReadOnlyWorldQuery, system::SystemParam},
     prelude::*,
-    window::PrimaryWindow,
 };
 use glam::Vec3Swizzles;
 
@@ -29,7 +28,6 @@ where
         ),
         F,
     >,
-    window_query: Query<'w, 's, &'static Window, With<PrimaryWindow>>,
 }
 
 impl<'w, 's, F> HudNodes<'w, 's, F>
@@ -46,10 +44,6 @@ where
     /// The returned point is between (0, 0) (top-left corner) and (1, 1)
     /// (bottom-right corner).
     pub(crate) fn relative_position(&self, point: Vec2) -> Option<Vec2> {
-        let window = self.window_query.single();
-        // This is because screen y starts on bottom, GlobalTransform on top.
-        let point = Vec2::new(point.x, window.height() - point.y);
-
         self.hud
             .iter()
             .filter_map(|(box_transform, visibility, node)| {

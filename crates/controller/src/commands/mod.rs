@@ -16,6 +16,6 @@ pub(crate) struct CommandsPlugin;
 
 impl Plugin for CommandsPlugin {
     fn build(&self, app: &mut App) {
-        app.add_plugin(HandlersPlugin).add_plugin(ExecutorPlugin);
+        app.add_plugins((HandlersPlugin, ExecutorPlugin));
     }
 }

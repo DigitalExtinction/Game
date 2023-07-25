@@ -4,7 +4,7 @@ pub(crate) struct BatteryPlugin;
 
 impl Plugin for BatteryPlugin {
     fn build(&self, app: &mut App) {
-        app.add_system(discharge_battery);
+        app.add_systems(Update, discharge_battery);
     }
 }
 
@@ -83,6 +83,7 @@ mod tests {
     use bevy::prelude::*;
     use bevy::time::TimePlugin;
 
+    use super::*;
     use crate::battery::{Battery, DEFAULT_CAPACITY, DISCHARGE_RATE};
 
     #[test]
@@ -97,9 +98,7 @@ mod tests {
             ))
             .id();
 
-        // add the plugin
-        app.add_plugin(super::BatteryPlugin);
-        app.add_plugin(TimePlugin);
+        app.add_plugins((BatteryPlugin, TimePlugin));
 
         // run the app for 1 second
         app.update();

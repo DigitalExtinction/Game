@@ -43,8 +43,8 @@ impl KeyCondition {
                 .count()
                 > 0;
 
-            let control = keys.pressed(KeyCode::LControl) || keys.pressed(KeyCode::RControl);
-            let shift = keys.pressed(KeyCode::LShift) || keys.pressed(KeyCode::RShift);
+            let control = keys.pressed(KeyCode::ControlLeft) || keys.pressed(KeyCode::ControlRight);
+            let shift = keys.pressed(KeyCode::ShiftLeft) || keys.pressed(KeyCode::ShiftRight);
             self.control == control && shift == self.shift && proper_key
         }
     }

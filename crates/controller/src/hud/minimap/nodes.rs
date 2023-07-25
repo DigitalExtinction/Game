@@ -2,7 +2,7 @@ use bevy::{
     prelude::*,
     render::render_resource::{Extent3d, TextureDimension, TextureFormat},
 };
-use de_core::{baseset::GameSet, cleanup::DespawnOnGameExit, gamestate::GameState};
+use de_core::{cleanup::DespawnOnGameExit, gamestate::GameState, schedule::PreMovement};
 use de_map::size::MapBounds;
 
 use crate::hud::{interaction::InteractionBlocker, HUD_COLOR};
@@ -14,11 +14,10 @@ pub(super) struct NodesPlugin;
 
 impl Plugin for NodesPlugin {
     fn build(&self, app: &mut App) {
-        app.add_system(setup.in_schedule(OnEnter(GameState::Playing)))
-            .add_system(
-                update_resolution
-                    .in_base_set(GameSet::PreMovement)
-                    .run_if(in_state(GameState::Playing)),
+        app.add_systems(OnEnter(GameState::Playing), setup)
+            .add_systems(
+                PreMovement,
+                update_resolution.run_if(in_state(GameState::Playing)),
             );
     }
 }
@@ -37,13 +36,9 @@ fn setup(mut commands: Commands, mut images: ResMut<Assets<Image>>, map_bounds: 
                 style: Style {
                     position_type: PositionType::Absolute,
                     padding: UiRect::all(MINIMAP_PADDING),
-                    size: Size::width(MINIMAP_WIDTH),
-                    position: UiRect {
-                        right: Val::Px(0.),
-                        bottom: Val::Px(0.),
-                        left: Val::Auto,
-                        top: Val::Auto,
-                    },
+                    width: MINIMAP_WIDTH,
+                    right: Val::Px(0.),
+                    bottom: Val::Px(0.),
                     ..default()
                 },
                 background_color: HUD_COLOR.into(),
@@ -56,7 +51,8 @@ fn setup(mut commands: Commands, mut images: ResMut<Assets<Image>>, map_bounds: 
             parent
                 .spawn(ImageBundle {
                     style: Style {
-                        size: Size::all(Val::Percent(100.)),
+                        width: Val::Percent(100.),
+                        height: Val::Percent(100.),
                         aspect_ratio: Some(aspect),
                         ..default()
                     },

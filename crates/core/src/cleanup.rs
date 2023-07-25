@@ -6,7 +6,7 @@ pub(crate) struct CleanupPlugin;
 
 impl Plugin for CleanupPlugin {
     fn build(&self, app: &mut App) {
-        app.add_system(cleanup.in_schedule(OnExit(AppState::InGame)));
+        app.add_systems(OnExit(AppState::InGame), cleanup);
     }
 }
 

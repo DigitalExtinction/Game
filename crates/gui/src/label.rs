@@ -22,7 +22,8 @@ impl<'w, 's> LabelCommands<'w, 's> for GuiCommands<'w, 's> {
             style: Style {
                 justify_content: JustifyContent::FlexStart,
                 align_items: AlignItems::Center,
-                size: style.size,
+                width: style.width,
+                height: style.height,
                 margin: style.margin,
                 ..default()
             },

@@ -124,7 +124,7 @@ fn ray_cast_benchmark(c: &mut Criterion) {
 
         for num_entities in [100, 1000, 10_000, 100_000] {
             let mut app = App::new();
-            app.add_system(cast_ray);
+            app.add_systems(Update, cast_ray);
             setup_world(&mut app.world, num_entities, max_distance);
 
             group.throughput(Throughput::Elements(1));

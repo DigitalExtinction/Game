@@ -1,7 +1,7 @@
 use bevy::{ecs::system::SystemParam, prelude::*};
 use de_core::{
-    baseset::GameSet, gamestate::GameState, gconfig::GameConfig, objects::ObjectType,
-    player::Player, projection::ToFlat,
+    gamestate::GameState, gconfig::GameConfig, objects::ObjectType, player::Player,
+    projection::ToFlat, schedule::PostMovement,
 };
 use de_map::size::MapBounds;
 use de_objects::SolidObjects;
@@ -25,24 +25,20 @@ pub(super) struct FillPlugin;
 
 impl Plugin for FillPlugin {
     fn build(&self, app: &mut App) {
-        app.add_system(
-            clear_system
-                .in_base_set(GameSet::PostMovement)
-                .run_if(in_state(GameState::Playing))
-                .in_set(FillSet::Clear),
-        )
-        .add_system(
-            draw_entities_system
-                .in_base_set(GameSet::PostMovement)
-                .run_if(in_state(GameState::Playing))
-                .in_set(FillSet::DrawEntities)
-                .after(FillSet::Clear),
-        )
-        .add_system(
-            draw_camera_system
-                .in_base_set(GameSet::PostMovement)
-                .run_if(in_state(GameState::Playing))
-                .after(FillSet::DrawEntities),
+        app.add_systems(
+            PostMovement,
+            (
+                clear_system
+                    .run_if(in_state(GameState::Playing))
+                    .in_set(FillSet::Clear),
+                draw_entities_system
+                    .run_if(in_state(GameState::Playing))
+                    .in_set(FillSet::DrawEntities)
+                    .after(FillSet::Clear),
+                draw_camera_system
+                    .run_if(in_state(GameState::Playing))
+                    .after(FillSet::DrawEntities),
+            ),
         );
     }
 }

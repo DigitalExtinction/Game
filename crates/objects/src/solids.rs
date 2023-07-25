@@ -4,7 +4,7 @@ use bevy::{
     asset::{AssetLoader, LoadContext, LoadedAsset},
     ecs::system::SystemParam,
     prelude::*,
-    reflect::TypeUuid,
+    reflect::{TypePath, TypeUuid},
     utils::BoxedFuture,
 };
 use de_core::{objects::ObjectType, state::AppState};
@@ -29,8 +29,9 @@ impl Plugin for SolidsPlugin {
     fn build(&self, app: &mut App) {
         app.add_asset::<SolidObject>()
             .add_asset_loader(SolidObjectLoader)
-            .add_system(setup.in_schedule(OnEnter(AppState::AppLoading)))
-            .add_system(
+            .add_systems(OnEnter(AppState::AppLoading), setup)
+            .add_systems(
+                Update,
                 check_status
                     .track_progress()
                     .run_if(in_state(AppState::AppLoading)),
@@ -64,7 +65,7 @@ impl AssetCollectionLoader for Solids {
     }
 }
 
-#[derive(TypeUuid)]
+#[derive(TypeUuid, TypePath)]
 #[uuid = "7b0690cc-951e-487b-8e69-db3119f5fb32"]
 pub struct SolidObject {
     ichnography: Ichnography,

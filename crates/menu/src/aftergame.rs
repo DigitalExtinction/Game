@@ -8,8 +8,8 @@ pub(crate) struct AfterGamePlugin;
 
 impl Plugin for AfterGamePlugin {
     fn build(&self, app: &mut App) {
-        app.add_system(setup.in_schedule(OnEnter(MenuState::AfterGame)))
-            .add_system(cleanup.in_schedule(OnEnter(MenuState::AfterGame)));
+        app.add_systems(OnEnter(MenuState::AfterGame), setup)
+            .add_systems(OnEnter(MenuState::AfterGame), cleanup);
     }
 }
 

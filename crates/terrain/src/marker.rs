@@ -22,17 +22,16 @@ pub(crate) struct MarkerPlugin;
 
 impl Plugin for MarkerPlugin {
     fn build(&self, app: &mut App) {
-        app.add_system(
-            update_markers::<CircleMarker>
-                .in_base_set(CoreSet::PostUpdate)
-                .run_if(in_state(GameState::Playing))
-                .after(VisibilitySystems::CheckVisibility),
-        )
-        .add_system(
-            update_markers::<RectangleMarker>
-                .in_base_set(CoreSet::PostUpdate)
-                .run_if(in_state(GameState::Playing))
-                .after(VisibilitySystems::CheckVisibility),
+        app.add_systems(
+            PostUpdate,
+            (
+                update_markers::<CircleMarker>
+                    .run_if(in_state(GameState::Playing))
+                    .after(VisibilitySystems::CheckVisibility),
+                update_markers::<RectangleMarker>
+                    .run_if(in_state(GameState::Playing))
+                    .after(VisibilitySystems::CheckVisibility),
+            ),
         );
     }
 }
