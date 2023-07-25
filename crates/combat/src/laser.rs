@@ -2,7 +2,7 @@ use bevy::prelude::*;
 use de_core::gamestate::GameState;
 use de_objects::Health;
 use de_signs::UpdateBarValueEvent;
-use de_spawner::SpawnerSet;
+use de_spawner::DespawnerSet;
 use parry3d::query::Ray;
 
 use crate::{sightline::LineOfSight, trail::TrailEvent, AttackingSet};
@@ -15,7 +15,7 @@ impl Plugin for LaserPlugin {
             Update,
             fire.run_if(in_state(GameState::Playing))
                 .in_set(AttackingSet::Fire)
-                .before(SpawnerSet::Destroyer),
+                .before(DespawnerSet::Destruction),
         );
     }
 }
