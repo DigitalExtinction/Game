@@ -1,5 +1,6 @@
 use ahash::AHashMap;
 use bevy::{
+    ecs::query::Has,
     prelude::*,
     tasks::{AsyncComputeTaskPool, Task},
 };
@@ -169,11 +170,11 @@ fn cleanup(mut commands: Commands) {
 fn update_existing_paths(
     finder: Res<FinderRes>,
     mut state: ResMut<UpdatePathsState>,
-    entities: Query<(Entity, &Transform, &PathTarget, Option<&ScheduledPath>)>,
+    entities: Query<(Entity, &Transform, &PathTarget, Has<ScheduledPath>)>,
 ) {
-    for (entity, transform, target, path) in entities.iter() {
+    for (entity, transform, target, has_path) in entities.iter() {
         let position = transform.translation.to_flat();
-        if path.is_none() && !state.contains(entity) {
+        if !has_path && !state.contains(entity) {
             let current_distance = position.distance(target.location());
             let desired_distance = target.properties().distance();
             if (current_distance - desired_distance).abs() <= TARGET_TOLERANCE {
