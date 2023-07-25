@@ -17,8 +17,7 @@ impl Plugin for BookkeepingPlugin {
                 InputSchedule,
                 (
                     update_selection.in_set(SelectionSet::Update),
-                    selected_system.after(SelectionSet::Update),
-                    deselected_system.after(SelectionSet::Update),
+                    (selected_system, deselected_system).after(SelectionSet::Update),
                 )
                     .run_if(in_state(GameState::Playing)),
             );
