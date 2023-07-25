@@ -25,23 +25,19 @@ impl Plugin for InputPlugin {
             .add_systems(
                 InputSchedule,
                 (
-                    update_position
-                        .run_if(in_state(GameState::Playing))
-                        .in_set(MouseSet::Position),
+                    update_position.in_set(MouseSet::Position),
                     update_drags
-                        .run_if(in_state(GameState::Playing))
                         .run_if(resource_exists_and_changed::<MousePosition>())
                         .in_set(MouseSet::Drags)
                         .after(MouseSet::Position),
                     update_buttons
-                        .run_if(in_state(GameState::Playing))
                         .in_set(MouseSet::SingeButton)
                         .after(MouseSet::Drags),
                     check_double_click
-                        .run_if(in_state(GameState::Playing))
                         .in_set(MouseSet::Buttons)
                         .after(MouseSet::SingeButton),
-                ),
+                )
+                    .run_if(in_state(GameState::Playing)),
             );
     }
 }

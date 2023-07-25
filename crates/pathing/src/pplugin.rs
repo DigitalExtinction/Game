@@ -44,16 +44,13 @@ impl Plugin for PathingPlugin {
                 PreMovement,
                 (
                     update_existing_paths
-                        .run_if(in_state(GameState::Playing))
                         .run_if(on_event::<PathFinderUpdatedEvent>())
                         .in_set(PathingSet::UpdateExistingPaths)
                         .after(FinderSet::UpdateFinder),
                     update_requested_paths
-                        .run_if(in_state(GameState::Playing))
                         .in_set(PathingSet::UpdateRequestedPaths)
                         .after(PathingSet::UpdateExistingPaths),
                     check_path_results
-                        .run_if(in_state(GameState::Playing))
                         // This is needed to avoid race condition in PathTarget
                         // removal which would happen if path was not-found before
                         // this system is run.
@@ -67,7 +64,8 @@ impl Plugin for PathingPlugin {
                         // that a path is either already scheduled or being
                         // computed. Thus this system must run after it.
                         .after(PathingSet::UpdateExistingPaths),
-                ),
+                )
+                    .run_if(in_state(GameState::Playing)),
             )
             .add_systems(
                 PostMovement,

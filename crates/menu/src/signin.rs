@@ -25,13 +25,12 @@ impl Plugin for SignInPlugin {
         .add_systems(
             Update,
             (
-                button_system
-                    .run_if(resource_exists::<Inputs>())
-                    .run_if(in_state(MenuState::SignIn)),
-                response_system::<SignInRequest>.run_if(in_state(MenuState::SignIn)),
-                response_system::<SignUpRequest>.run_if(in_state(MenuState::SignIn)),
-                auth_system.run_if(in_state(MenuState::SignIn)),
-            ),
+                button_system.run_if(resource_exists::<Inputs>()),
+                response_system::<SignInRequest>,
+                response_system::<SignUpRequest>,
+                auth_system,
+            )
+                .run_if(in_state(MenuState::SignIn)),
         );
     }
 }

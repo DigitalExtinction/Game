@@ -26,8 +26,7 @@ impl Plugin for MapSelectionPlugin {
             .add_systems(
                 Update,
                 (
-                    init_buttons.run_if(in_state(MapState::On)),
-                    button_system.run_if(in_state(MapState::On)),
+                    (init_buttons, button_system).run_if(in_state(MapState::On)),
                     select_map_system
                         .run_if(in_state(AppState::InMenu))
                         .run_if(on_event::<SelectMapEvent>()),

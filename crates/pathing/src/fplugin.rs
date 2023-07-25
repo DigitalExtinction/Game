@@ -51,13 +51,13 @@ impl Plugin for FinderPlugin {
                     check_removed
                         .run_if(in_state(AppState::InGame))
                         .in_set(FinderSet::CheckRemoved),
-                    check_updated
-                        .run_if(in_state(GameState::Playing))
-                        .in_set(FinderSet::CheckUpdated),
-                    update
-                        .run_if(in_state(GameState::Playing))
-                        .after(FinderSet::CheckUpdated)
-                        .after(FinderSet::CheckRemoved),
+                    (
+                        check_updated.in_set(FinderSet::CheckUpdated),
+                        update
+                            .after(FinderSet::CheckUpdated)
+                            .after(FinderSet::CheckRemoved),
+                    )
+                        .run_if(in_state(GameState::Playing)),
                 ),
             )
             .add_systems(

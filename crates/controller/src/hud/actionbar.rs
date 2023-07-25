@@ -21,14 +21,12 @@ impl Plugin for ActionBarPlugin {
             .add_systems(
                 PostUpdate,
                 (
-                    detect_update
-                        .run_if(in_state(GameState::Playing))
-                        .in_set(ActionBarSet::DetectUpdate),
+                    detect_update.in_set(ActionBarSet::DetectUpdate),
                     update
-                        .run_if(in_state(GameState::Playing))
                         .run_if(resource_exists_and_changed::<ActiveEntity>())
                         .after(ActionBarSet::DetectUpdate),
-                ),
+                )
+                    .run_if(in_state(GameState::Playing)),
             )
             .add_systems(
                 InputSchedule,

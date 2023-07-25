@@ -20,18 +20,12 @@ impl Plugin for PolePlugin {
             .add_systems(
                 PostUpdate,
                 (
-                    location_events
-                        .run_if(in_state(AppState::InGame))
-                        .in_set(PolesSet::LocationEvents),
-                    visibility_events
-                        .run_if(in_state(AppState::InGame))
-                        .in_set(PolesSet::VisibilityEvents),
+                    location_events.in_set(PolesSet::LocationEvents),
+                    visibility_events.in_set(PolesSet::VisibilityEvents),
                     despawned
-                        .run_if(in_state(AppState::InGame))
                         .in_set(PolesSet::Despawned)
                         .after(PolesSet::LocationEvents),
                     update_poles
-                        .run_if(in_state(AppState::InGame))
                         .run_if(resource_exists_and_changed::<OwnersToPoles>())
                         .after(PolesSet::LocationEvents)
                         .after(PolesSet::VisibilityEvents)
@@ -40,17 +34,13 @@ impl Plugin for PolePlugin {
                         .before(PolesSet::DespawnPoles)
                         .before(PolesSet::MovePoles),
                     spawn_poles
-                        .run_if(in_state(AppState::InGame))
                         .run_if(on_event::<SpawnPoleEvent>())
                         .in_set(PolesSet::SpawnPoles)
                         .after(PolesSet::DespawnPoles),
-                    despawn_poles
-                        .run_if(in_state(AppState::InGame))
-                        .in_set(PolesSet::DespawnPoles),
-                    move_poles
-                        .run_if(in_state(AppState::InGame))
-                        .before(PolesSet::DespawnPoles),
-                ),
+                    despawn_poles.in_set(PolesSet::DespawnPoles),
+                    move_poles.before(PolesSet::DespawnPoles),
+                )
+                    .run_if(in_state(AppState::InGame)),
             );
     }
 }

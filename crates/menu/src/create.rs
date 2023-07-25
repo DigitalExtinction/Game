@@ -27,19 +27,15 @@ impl Plugin for CreateGamePlugin {
             .add_systems(
                 Update,
                 (
-                    button_system
-                        .run_if(in_state(MenuState::GameCreation))
-                        .in_set(CreateSet::Buttons),
-                    map_selected_system
-                        .run_if(in_state(MenuState::GameCreation))
-                        .in_set(CreateSet::MapSelected),
+                    button_system.in_set(CreateSet::Buttons),
+                    map_selected_system.in_set(CreateSet::MapSelected),
                     create_game_system
-                        .run_if(in_state(MenuState::GameCreation))
                         .run_if(on_event::<CreateGameEvent>())
                         .after(CreateSet::Buttons)
                         .after(CreateSet::MapSelected),
-                    response_system.run_if(in_state(MenuState::GameCreation)),
-                ),
+                    response_system,
+                )
+                    .run_if(in_state(MenuState::GameCreation)),
             );
     }
 }

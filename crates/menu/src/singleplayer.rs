@@ -21,10 +21,7 @@ impl Plugin for SinglePlayerPlugin {
             .add_systems(OnExit(MenuState::SinglePlayerGame), cleanup)
             .add_systems(
                 Update,
-                (
-                    button_system.run_if(in_state(MenuState::SinglePlayerGame)),
-                    map_selected_system.run_if(in_state(MenuState::SinglePlayerGame)),
-                ),
+                (button_system, map_selected_system).run_if(in_state(MenuState::SinglePlayerGame)),
             );
     }
 }

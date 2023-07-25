@@ -25,24 +25,21 @@ impl Plugin for LinePlugin {
                 PostUpdate,
                 (
                     update_line_end
-                        .run_if(in_state(AppState::InGame))
                         .run_if(on_event::<UpdateLineEndEvent>())
                         .in_set(LinesSet::LineEnd),
                     update_line_location
-                        .run_if(in_state(AppState::InGame))
                         .run_if(on_event::<UpdateLineLocationEvent>())
                         .in_set(LinesSet::LocationEvents)
                         .after(LinesSet::LineEnd),
                     update_line_visibility
-                        .run_if(in_state(AppState::InGame))
                         .run_if(on_event::<UpdateLineVisibilityEvent>())
                         .in_set(LinesSet::VisibilityEvents)
                         .after(LinesSet::LocationEvents),
                     owner_despawn
-                        .run_if(in_state(AppState::InGame))
                         .in_set(LinesSet::Despawn)
                         .after(LinesSet::VisibilityEvents),
-                ),
+                )
+                    .run_if(in_state(AppState::InGame)),
             );
     }
 }

@@ -37,17 +37,9 @@ impl Plugin for DraftPlugin {
             .add_systems(Update, new_draft.run_if(in_state(GameState::Playing)))
             .add_systems(
                 PostUpdate,
-                (
-                    update_draft
-                        .run_if(in_state(GameState::Playing))
-                        .after(IndexSet::Index),
-                    check_draft_loaded
-                        .run_if(in_state(GameState::Playing))
-                        .after(IndexSet::Index),
-                    update_draft_colour
-                        .run_if(in_state(GameState::Playing))
-                        .after(IndexSet::Index),
-                ),
+                (update_draft, check_draft_loaded, update_draft_colour)
+                    .run_if(in_state(GameState::Playing))
+                    .after(IndexSet::Index),
             );
     }
 }

@@ -21,21 +21,16 @@ impl Plugin for ObstaclesPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(
             PreMovement,
-            (
-                setup_discs.run_if(in_state(GameState::Playing)),
-                update_discs.run_if(in_state(GameState::Playing)),
-            ),
+            (setup_discs, update_discs).run_if(in_state(GameState::Playing)),
         )
         .add_systems(
             Movement,
             (
-                update_nearby::<StaticObstacles, StaticSolid>
-                    .run_if(in_state(GameState::Playing))
-                    .in_set(ObstaclesLables::UpdateNearby),
-                update_nearby::<MovableObstacles, MovableSolid>
-                    .run_if(in_state(GameState::Playing))
-                    .in_set(ObstaclesLables::UpdateNearby),
-            ),
+                update_nearby::<StaticObstacles, StaticSolid>,
+                update_nearby::<MovableObstacles, MovableSolid>,
+            )
+                .run_if(in_state(GameState::Playing))
+                .in_set(ObstaclesLables::UpdateNearby),
         );
     }
 }
