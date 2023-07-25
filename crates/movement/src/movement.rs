@@ -2,7 +2,10 @@ use std::marker::PhantomData;
 
 use bevy::prelude::*;
 use de_core::{
-    baseset::GameSet, gamestate::GameState, objects::MovableSolid, projection::ToAltitude,
+    gamestate::GameState,
+    objects::MovableSolid,
+    projection::ToAltitude,
+    schedule::{Movement, PreMovement},
     state::AppState,
 };
 use de_map::size::MapBounds;
@@ -14,14 +17,13 @@ pub(crate) struct MovementPlugin;
 
 impl Plugin for MovementPlugin {
     fn build(&self, app: &mut App) {
-        app.add_system(
-            setup_entities
-                .in_base_set(GameSet::PreMovement)
-                .run_if(in_state(AppState::InGame)),
+        app.add_systems(
+            PreMovement,
+            setup_entities.run_if(in_state(AppState::InGame)),
         )
-        .add_system(
+        .add_systems(
+            Movement,
             update_transform
-                .in_base_set(GameSet::Movement)
                 .run_if(in_state(GameState::Playing))
                 .in_set(MovementSet::UpdateTransform),
         );

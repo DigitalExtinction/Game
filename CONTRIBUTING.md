@@ -174,7 +174,7 @@ all the sub-crates. The crate inter-dependencies form an orderly DAG.
 
 ### Bevy Schedule
 
-See de_core::baseset::GameSet.
+See `de_core::schedule`
 
 ### Coordinate Systems
 

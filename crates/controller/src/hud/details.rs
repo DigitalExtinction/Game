@@ -1,5 +1,4 @@
 use bevy::prelude::*;
-use de_core::baseset::GameSet;
 use de_core::{cleanup::DespawnOnGameExit, gamestate::GameState};
 use de_energy::Battery;
 use de_gui::{BodyTextCommands, BodyTextOps, GuiCommands, OuterStyle};
@@ -13,13 +12,9 @@ pub(crate) struct DetailsPlugin;
 
 impl Plugin for DetailsPlugin {
     fn build(&self, app: &mut App) {
-        app.add_system(setup.in_schedule(OnEnter(GameState::Playing)))
-            .add_system(
-                update
-                    .in_base_set(GameSet::PostUpdate)
-                    .run_if(in_state(GameState::Playing)),
-            )
-            .add_system(clean_up.in_schedule(OnExit(GameState::Playing)));
+        app.add_systems(OnEnter(GameState::Playing), setup)
+            .add_systems(PostUpdate, update.run_if(in_state(GameState::Playing)))
+            .add_systems(OnExit(GameState::Playing), clean_up);
     }
 }
 
@@ -31,17 +26,13 @@ fn setup(mut commands: GuiCommands) {
         .spawn((
             NodeBundle {
                 style: Style {
-                    size: Size {
-                        width: Val::Percent(20.),
-                        height: Val::Percent(30.),
-                    },
+                    width: Val::Percent(20.),
+                    height: Val::Percent(30.),
                     position_type: PositionType::Absolute,
-                    position: UiRect::new(
-                        Val::Percent(0.),
-                        Val::Percent(20.),
-                        Val::Percent(70.),
-                        Val::Percent(100.),
-                    ),
+                    left: Val::Percent(0.),
+                    right: Val::Percent(20.),
+                    top: Val::Percent(70.),
+                    bottom: Val::Percent(100.),
                     ..default()
                 },
                 background_color: HUD_COLOR.into(),
@@ -54,11 +45,8 @@ fn setup(mut commands: GuiCommands) {
     let details_text = commands
         .spawn_body_text(
             OuterStyle {
-                size: Size {
-                    width: Val::Percent(20.),
-                    height: Val::Percent(30.),
-                },
                 margin: UiRect::all(Val::Percent(5.)),
+                ..default()
             },
             "",
         )

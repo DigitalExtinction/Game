@@ -8,7 +8,6 @@ use bevy::pbr::NotShadowReceiver;
 use bevy::scene::SceneInstance;
 use bevy::{pbr::NotShadowCaster, prelude::*};
 use de_core::{
-    baseset::GameSet,
     gamestate::GameState,
     objects::{ActiveObjectType, BuildingType, MovableSolid, ObjectType, StaticSolid},
     projection::ToFlat,
@@ -33,28 +32,12 @@ pub(crate) struct DraftPlugin;
 
 impl Plugin for DraftPlugin {
     fn build(&self, app: &mut App) {
-        app.add_system(insert_materials.in_schedule(OnEnter(AppState::InGame)))
-            .add_system(cleanup.in_schedule(OnExit(AppState::InGame)))
-            .add_system(
-                new_draft
-                    .in_base_set(GameSet::Update)
-                    .run_if(in_state(GameState::Playing)),
-            )
-            .add_system(
-                update_draft
-                    .in_base_set(GameSet::PostUpdate)
-                    .run_if(in_state(GameState::Playing))
-                    .after(IndexSet::Index),
-            )
-            .add_system(
-                check_draft_loaded
-                    .in_base_set(GameSet::PostUpdate)
-                    .run_if(in_state(GameState::Playing))
-                    .after(IndexSet::Index),
-            )
-            .add_system(
-                update_draft_colour
-                    .in_base_set(GameSet::PostUpdate)
+        app.add_systems(OnEnter(AppState::InGame), insert_materials)
+            .add_systems(OnExit(AppState::InGame), cleanup)
+            .add_systems(Update, new_draft.run_if(in_state(GameState::Playing)))
+            .add_systems(
+                PostUpdate,
+                (update_draft, check_draft_loaded, update_draft_colour)
                     .run_if(in_state(GameState::Playing))
                     .after(IndexSet::Index),
             );

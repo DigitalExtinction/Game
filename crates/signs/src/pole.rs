@@ -1,8 +1,8 @@
 use ahash::{AHashMap, AHashSet};
 use bevy::prelude::*;
 use de_core::{
-    baseset::GameSet, cleanup::DespawnOnGameExit, objects::ObjectType, projection::ToAltitude,
-    state::AppState, vecord::Vec2Ord,
+    cleanup::DespawnOnGameExit, objects::ObjectType, projection::ToAltitude, state::AppState,
+    vecord::Vec2Ord,
 };
 use de_objects::{AssetCollection, SceneType, Scenes};
 
@@ -15,58 +15,32 @@ impl Plugin for PolePlugin {
             .add_event::<SpawnPoleEvent>()
             .add_event::<DespawnPoleEvent>()
             .add_event::<MovePoleEvent>()
-            .add_system(setup.in_schedule(OnEnter(AppState::InGame)))
-            .add_system(cleanup.in_schedule(OnExit(AppState::InGame)))
-            .add_system(
-                location_events
-                    .in_base_set(GameSet::PostUpdate)
-                    .run_if(in_state(AppState::InGame))
-                    .in_set(PolesSet::LocationEvents),
-            )
-            .add_system(
-                visibility_events
-                    .in_base_set(GameSet::PostUpdate)
-                    .run_if(in_state(AppState::InGame))
-                    .in_set(PolesSet::VisibilityEvents),
-            )
-            .add_system(
-                despawned
-                    .in_base_set(GameSet::PostUpdate)
-                    .run_if(in_state(AppState::InGame))
-                    .in_set(PolesSet::Despawned)
-                    .after(PolesSet::LocationEvents),
-            )
-            .add_system(
-                update_poles
-                    .in_base_set(GameSet::PostUpdate)
-                    .run_if(in_state(AppState::InGame))
-                    .run_if(resource_exists_and_changed::<OwnersToPoles>())
-                    .after(PolesSet::LocationEvents)
-                    .after(PolesSet::VisibilityEvents)
-                    .after(PolesSet::Despawned)
-                    .before(PolesSet::SpawnPoles)
-                    .before(PolesSet::DespawnPoles)
-                    .before(PolesSet::MovePoles),
-            )
-            .add_system(
-                spawn_poles
-                    .in_base_set(GameSet::PostUpdate)
-                    .run_if(in_state(AppState::InGame))
-                    .run_if(on_event::<SpawnPoleEvent>())
-                    .in_set(PolesSet::SpawnPoles)
-                    .after(PolesSet::DespawnPoles),
-            )
-            .add_system(
-                despawn_poles
-                    .in_base_set(GameSet::PostUpdate)
-                    .run_if(in_state(AppState::InGame))
-                    .in_set(PolesSet::DespawnPoles),
-            )
-            .add_system(
-                move_poles
-                    .in_base_set(GameSet::PostUpdate)
-                    .run_if(in_state(AppState::InGame))
-                    .before(PolesSet::DespawnPoles),
+            .add_systems(OnEnter(AppState::InGame), setup)
+            .add_systems(OnExit(AppState::InGame), cleanup)
+            .add_systems(
+                PostUpdate,
+                (
+                    location_events.in_set(PolesSet::LocationEvents),
+                    visibility_events.in_set(PolesSet::VisibilityEvents),
+                    despawned
+                        .in_set(PolesSet::Despawned)
+                        .after(PolesSet::LocationEvents),
+                    update_poles
+                        .run_if(resource_exists_and_changed::<OwnersToPoles>())
+                        .after(PolesSet::LocationEvents)
+                        .after(PolesSet::VisibilityEvents)
+                        .after(PolesSet::Despawned)
+                        .before(PolesSet::SpawnPoles)
+                        .before(PolesSet::DespawnPoles)
+                        .before(PolesSet::MovePoles),
+                    spawn_poles
+                        .run_if(on_event::<SpawnPoleEvent>())
+                        .in_set(PolesSet::SpawnPoles)
+                        .after(PolesSet::DespawnPoles),
+                    despawn_poles.in_set(PolesSet::DespawnPoles),
+                    move_poles.before(PolesSet::DespawnPoles),
+                )
+                    .run_if(in_state(AppState::InGame)),
             );
     }
 }
@@ -90,6 +64,7 @@ enum PolesSet {
 /// Each pole is associated with an entity and each entity may have up to one
 /// associated pole. Note that this association is not managed via Bevy entity
 /// hierarchy, thus visibility or transformation is independent.
+#[derive(Event)]
 pub struct UpdatePoleLocationEvent {
     owner: Entity,
     location: Vec2,
@@ -102,6 +77,7 @@ impl UpdatePoleLocationEvent {
 }
 
 /// Send this event to change visibility of an existing pole.
+#[derive(Event)]
 pub struct UpdatePoleVisibilityEvent {
     owner: Entity,
     visible: bool,
@@ -124,12 +100,15 @@ struct Pole {
 
 /// Spawn a new pole at this location. There must not be a pole already at this
 /// location.
+#[derive(Event)]
 struct SpawnPoleEvent(Vec2);
 
 /// Despawn an existing pole at this location.
+#[derive(Event)]
 struct DespawnPoleEvent(Vec2);
 
 /// Move an existing pole from one location to another.
+#[derive(Event)]
 struct MovePoleEvent(Vec2, Vec2);
 
 #[derive(Default, Resource)]

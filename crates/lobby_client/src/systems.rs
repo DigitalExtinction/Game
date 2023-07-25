@@ -12,14 +12,16 @@ pub(crate) struct LobbyPlugin;
 
 impl Plugin for LobbyPlugin {
     fn build(&self, app: &mut App) {
-        app.init_resource::<Authentication>()
-            .add_system(
+        app.init_resource::<Authentication>().add_systems(
+            Update,
+            (
                 setup_client
                     .track_progress()
                     .run_if(in_state(AppState::AppLoading)),
-            )
-            .add_system(set_token::<SignInRequest>)
-            .add_system(set_token::<SignUpRequest>);
+                set_token::<SignInRequest>,
+                set_token::<SignUpRequest>,
+            ),
+        );
     }
 }
 

@@ -4,7 +4,6 @@ use ahash::AHashMap;
 use bevy::prelude::*;
 use de_audio::spatial::{PlaySpatialAudioEvent, Sound};
 use de_core::{
-    baseset::GameSet,
     cleanup::DespawnOnGameExit,
     gamestate::GameState,
     gconfig::GameConfig,
@@ -15,7 +14,7 @@ use de_core::{
 };
 use de_index::SpatialQuery;
 use de_objects::SolidObjects;
-use de_pathing::{PathQueryProps, PathTarget, UpdateEntityPath};
+use de_pathing::{PathQueryProps, PathTarget, UpdateEntityPathEvent};
 use de_signs::{
     LineLocation, UpdateLineEndEvent, UpdateLineLocationEvent, UpdatePoleLocationEvent,
 };
@@ -33,41 +32,20 @@ impl Plugin for ManufacturingPlugin {
         app.add_event::<EnqueueAssemblyEvent>()
             .add_event::<ChangeDeliveryLocationEvent>()
             .add_event::<DeliverEvent>()
-            .add_system(
-                configure
-                    .in_base_set(GameSet::PostUpdate)
-                    .run_if(in_state(AppState::InGame)),
-            )
-            .add_system(
-                change_locations
-                    .in_base_set(GameSet::PreUpdate)
-                    .run_if(in_state(GameState::Playing))
-                    .in_set(ManufacturingSet::ChangeLocations),
-            )
-            .add_system(
-                enqueue
-                    .in_base_set(GameSet::Update)
+            .add_systems(
+                PreUpdate,
+                (
+                    change_locations.in_set(ManufacturingSet::ChangeLocations),
+                    check_spawn_locations.before(ManufacturingSet::Produce),
+                    produce.in_set(ManufacturingSet::Produce),
+                    deliver
+                        .after(ManufacturingSet::ChangeLocations)
+                        .after(ManufacturingSet::Produce),
+                )
                     .run_if(in_state(GameState::Playing)),
             )
-            .add_system(
-                check_spawn_locations
-                    .in_base_set(GameSet::PreUpdate)
-                    .run_if(in_state(GameState::Playing))
-                    .before(ManufacturingSet::Produce),
-            )
-            .add_system(
-                produce
-                    .in_base_set(GameSet::PreUpdate)
-                    .run_if(in_state(GameState::Playing))
-                    .in_set(ManufacturingSet::Produce),
-            )
-            .add_system(
-                deliver
-                    .in_base_set(GameSet::PreUpdate)
-                    .run_if(in_state(GameState::Playing))
-                    .after(ManufacturingSet::ChangeLocations)
-                    .after(ManufacturingSet::Produce),
-            );
+            .add_systems(Update, enqueue.run_if(in_state(GameState::Playing)))
+            .add_systems(PostUpdate, configure.run_if(in_state(AppState::InGame)));
     }
 }
 
@@ -78,6 +56,7 @@ enum ManufacturingSet {
 }
 
 /// Send this event to change target location of freshly manufactured units.
+#[derive(Event)]
 pub struct ChangeDeliveryLocationEvent {
     factory: Entity,
     position: Vec2,
@@ -98,6 +77,7 @@ impl ChangeDeliveryLocationEvent {
 }
 
 /// Send this event to enqueue a unit to be manufactured by a factory.
+#[derive(Event)]
 pub struct EnqueueAssemblyEvent {
     factory: Entity,
     unit: UnitType,
@@ -122,6 +102,7 @@ impl EnqueueAssemblyEvent {
     }
 }
 
+#[derive(Event)]
 struct DeliverEvent {
     factory: Entity,
     unit: UnitType,
@@ -427,7 +408,7 @@ fn deliver(
     mut commands: Commands,
     solids: SolidObjects,
     mut deliver_events: EventReader<DeliverEvent>,
-    mut path_events: EventWriter<UpdateEntityPath>,
+    mut path_events: EventWriter<UpdateEntityPathEvent>,
     factories: Query<(&Transform, &ObjectType, &Player, &DeliveryLocation)>,
     mut play_audio: EventWriter<PlaySpatialAudioEvent>,
 ) {
@@ -453,7 +434,7 @@ fn deliver(
                 DespawnOnGameExit,
             ))
             .id();
-        path_events.send(UpdateEntityPath::new(
+        path_events.send(UpdateEntityPathEvent::new(
             unit,
             PathTarget::new(
                 delivery_location.0,

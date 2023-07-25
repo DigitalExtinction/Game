@@ -3,7 +3,7 @@ use std::time::Duration;
 use bevy::{
     pbr::{MaterialPipeline, MaterialPipelineKey, NotShadowCaster, NotShadowReceiver},
     prelude::*,
-    reflect::TypeUuid,
+    reflect::{TypePath, TypeUuid},
     render::{
         mesh::{Indices, MeshVertexAttribute, MeshVertexBufferLayout},
         render_resource::{
@@ -14,7 +14,6 @@ use bevy::{
 };
 use de_camera::{CameraDistance, DistanceSet};
 use de_core::{
-    baseset::GameSet,
     objects::{Active, ObjectType},
     state::AppState,
     visibility::{VisibilityFlags, VisibilitySet},
@@ -37,44 +36,30 @@ pub(crate) struct BarsPlugin;
 
 impl Plugin for BarsPlugin {
     fn build(&self, app: &mut App) {
-        app.add_plugin(MaterialPlugin::<BarMaterial>::default())
+        app.add_plugins(MaterialPlugin::<BarMaterial>::default())
             .add_event::<UpdateBarValueEvent>()
             .add_event::<UpdateBarVisibilityEvent>()
-            .add_system(setup.in_schedule(OnEnter(AppState::InGame)))
-            .add_system(cleanup.in_schedule(OnExit(AppState::InGame)))
-            .add_system(
-                spawn
-                    .in_base_set(GameSet::PostUpdate)
+            .add_systems(OnEnter(AppState::InGame), setup)
+            .add_systems(OnExit(AppState::InGame), cleanup)
+            .add_systems(
+                PostUpdate,
+                (
+                    spawn,
+                    update_value,
+                    (
+                        update_visibility_events,
+                        update_visibility_distance.after(DistanceSet::Update),
+                        update_visibility_timer,
+                    )
+                        .before(VisibilitySet::Update),
+                )
                     .run_if(in_state(AppState::InGame)),
-            )
-            .add_system(
-                update_value
-                    .in_base_set(GameSet::PostUpdate)
-                    .run_if(in_state(AppState::InGame)),
-            )
-            .add_system(
-                update_visibility_events
-                    .in_base_set(GameSet::PostUpdate)
-                    .run_if(in_state(AppState::InGame))
-                    .before(VisibilitySet::Update),
-            )
-            .add_system(
-                update_visibility_distance
-                    .in_base_set(GameSet::PostUpdate)
-                    .run_if(in_state(AppState::InGame))
-                    .before(VisibilitySet::Update)
-                    .after(DistanceSet::Update),
-            )
-            .add_system(
-                update_visibility_timer
-                    .in_base_set(GameSet::PostUpdate)
-                    .run_if(in_state(AppState::InGame))
-                    .before(VisibilitySet::Update),
             );
     }
 }
 
 /// An event which changes value displayed on the entity bar.
+#[derive(Event)]
 pub struct UpdateBarValueEvent {
     entity: Entity,
     value: f32,
@@ -100,6 +85,7 @@ impl UpdateBarValueEvent {
     }
 }
 
+#[derive(Event)]
 pub struct UpdateBarVisibilityEvent {
     entity: Entity,
     id: u32,
@@ -149,7 +135,7 @@ impl BarMesh {
     }
 }
 
-#[derive(AsBindGroup, TypeUuid, Debug, Clone)]
+#[derive(AsBindGroup, TypeUuid, TypePath, Debug, Clone)]
 #[uuid = "66547498-fb0d-4fb6-a8e6-c792367e53d6"]
 struct BarMaterial {
     #[uniform(0)]

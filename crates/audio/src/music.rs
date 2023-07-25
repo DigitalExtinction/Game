@@ -11,9 +11,12 @@ pub(crate) struct MusicPlugin;
 
 impl Plugin for MusicPlugin {
     fn build(&self, app: &mut App) {
-        app.add_system(setup.in_schedule(OnEnter(AppState::AppLoading)))
-            .add_system(load.track_progress().run_if(in_state(AppState::AppLoading)))
-            .add_system(start.in_schedule(OnExit(AppState::AppLoading)));
+        app.add_systems(OnEnter(AppState::AppLoading), setup)
+            .add_systems(
+                Update,
+                load.track_progress().run_if(in_state(AppState::AppLoading)),
+            )
+            .add_systems(OnExit(AppState::AppLoading), start);
     }
 }
 
@@ -36,6 +39,7 @@ fn start(audio: Res<KAudio>, tracks: Res<Tracks>, config: Res<Configuration>) {
     if !config.audio().music_enabled() {
         return;
     }
+
     audio
         .play(tracks.0.clone())
         .looped()

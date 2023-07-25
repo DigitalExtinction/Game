@@ -16,9 +16,13 @@ pub(crate) struct TextBoxPlugin;
 
 impl Plugin for TextBoxPlugin {
     fn build(&self, app: &mut App) {
-        app.add_system(focus_system).add_system(
-            input_system
-                .run_if(on_event::<ReceivedCharacter>().or_else(on_event::<KeyboardInput>())),
+        app.add_systems(
+            Update,
+            (
+                focus_system,
+                input_system
+                    .run_if(on_event::<ReceivedCharacter>().or_else(on_event::<KeyboardInput>())),
+            ),
         );
     }
 }
@@ -44,8 +48,9 @@ impl<'w, 's> TextBoxCommands<'w, 's> for GuiCommands<'w, 's> {
                 padding: UiRect::horizontal(Val::Percent(2.)),
                 justify_content: JustifyContent::FlexStart,
                 align_items: AlignItems::Center,
-                overflow: Overflow::Hidden,
-                size: style.size,
+                overflow: Overflow::clip(),
+                width: style.width,
+                height: style.height,
                 margin: style.margin,
                 ..default()
             },

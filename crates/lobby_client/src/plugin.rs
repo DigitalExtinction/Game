@@ -20,8 +20,8 @@ impl<T: LobbyRequestCreator> Plugin for EndpointPlugin<T> {
         app.add_event::<RequestEvent<T>>()
             .add_event::<ResponseEvent<T>>()
             .init_resource::<PendingTasks<T>>()
-            .add_system(fire::<T>)
-            .add_system(poll::<T>);
+            .add_systems(PostUpdate, fire::<T>)
+            .add_systems(PreUpdate, poll::<T>);
     }
 }
 
@@ -35,6 +35,7 @@ impl<T: LobbyRequestCreator> Default for EndpointPlugin<T> {
 
 /// Use this event to make a request the Lobby API. Response the request will
 /// delivered as [`ResponseEvent`].
+#[derive(Event)]
 pub struct RequestEvent<T> {
     id: String,
     request: T,
@@ -66,6 +67,7 @@ impl<T> RequestEvent<T> {
 
 /// Event corresponding to a finished Lobby API request which might have failed
 /// or succeeded.
+#[derive(Event)]
 pub struct ResponseEvent<T>
 where
     T: LobbyRequest,

@@ -2,7 +2,7 @@ use std::{cmp::Ordering, collections::BinaryHeap};
 
 use bevy::prelude::*;
 use de_behaviour::{ChaseSet, ChaseTarget, ChaseTargetEvent};
-use de_core::{baseset::GameSet, gamestate::GameState, objects::ObjectType};
+use de_core::{gamestate::GameState, objects::ObjectType};
 use de_index::SpatialQuery;
 use de_objects::{LaserCannon, SolidObjects};
 use parry3d::query::Ray;
@@ -22,35 +22,30 @@ pub(crate) struct AttackPlugin;
 impl Plugin for AttackPlugin {
     fn build(&self, app: &mut App) {
         app.add_event::<AttackEvent>()
-            .add_system(
-                attack
-                    .in_base_set(GameSet::PreUpdate)
-                    .run_if(in_state(GameState::Playing))
-                    .in_set(AttackingSet::Attack)
-                    .before(ChaseSet::ChaseTargetEvent),
+            .add_systems(
+                PreUpdate,
+                (
+                    attack
+                        .in_set(AttackingSet::Attack)
+                        .before(ChaseSet::ChaseTargetEvent),
+                    update_positions.after(AttackingSet::Attack),
+                )
+                    .run_if(in_state(GameState::Playing)),
             )
-            .add_system(
-                update_positions
-                    .in_base_set(GameSet::PreUpdate)
-                    .run_if(in_state(GameState::Playing))
-                    .after(AttackingSet::Attack),
-            )
-            .add_system(
-                charge
-                    .in_base_set(GameSet::Update)
-                    .run_if(in_state(GameState::Playing))
-                    .in_set(AttackingSet::Charge),
-            )
-            .add_system(
-                aim_and_fire
-                    .in_base_set(GameSet::Update)
-                    .run_if(in_state(GameState::Playing))
-                    .after(AttackingSet::Charge)
-                    .before(AttackingSet::Fire),
+            .add_systems(
+                Update,
+                (
+                    charge.in_set(AttackingSet::Charge),
+                    aim_and_fire
+                        .after(AttackingSet::Charge)
+                        .before(AttackingSet::Fire),
+                )
+                    .run_if(in_state(GameState::Playing)),
             );
     }
 }
 
+#[derive(Event)]
 pub struct AttackEvent {
     attacker: Entity,
     enemy: Entity,

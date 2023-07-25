@@ -22,5 +22,6 @@ iyes_progress.workspace = true
 nalgebra.workspace = true
 parry2d.workspace = true
 parry3d.workspace = true
+paste.workspace = true
 serde.workspace = true
 thiserror.workspace = true

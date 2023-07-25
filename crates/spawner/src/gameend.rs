@@ -1,8 +1,5 @@
 use bevy::prelude::*;
-use de_core::{
-    baseset::GameSet, gamestate::GameState, gconfig::GameConfig, gresult::GameResult,
-    state::AppState,
-};
+use de_core::{gamestate::GameState, gconfig::GameConfig, gresult::GameResult, state::AppState};
 
 use crate::ObjectCounter;
 
@@ -10,10 +7,9 @@ pub(crate) struct GameEndPlugin;
 
 impl Plugin for GameEndPlugin {
     fn build(&self, app: &mut App) {
-        app.add_system(
-            game_end_detection_system
-                .in_base_set(GameSet::PostUpdate)
-                .run_if(in_state(GameState::Playing)),
+        app.add_systems(
+            PostUpdate,
+            game_end_detection_system.run_if(in_state(GameState::Playing)),
         );
     }
 }

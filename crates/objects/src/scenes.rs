@@ -13,8 +13,9 @@ pub(crate) struct ScenesPlugin;
 
 impl Plugin for ScenesPlugin {
     fn build(&self, app: &mut App) {
-        app.add_system(setup.in_schedule(OnEnter(AppState::AppLoading)))
-            .add_system(
+        app.add_systems(OnEnter(AppState::AppLoading), setup)
+            .add_systems(
+                Update,
                 check_status
                     .track_progress()
                     .run_if(in_state(AppState::AppLoading)),

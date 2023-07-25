@@ -4,7 +4,7 @@ pub(crate) struct TextPlugin;
 
 impl Plugin for TextPlugin {
     fn build(&self, app: &mut App) {
-        app.add_system(setup.run_if(not(resource_exists::<TextProps>())));
+        app.add_systems(Update, setup.run_if(not(resource_exists::<TextProps>())));
     }
 }
 

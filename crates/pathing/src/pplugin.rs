@@ -1,16 +1,20 @@
 use ahash::AHashMap;
 use bevy::{
+    ecs::query::Has,
     prelude::*,
     tasks::{AsyncComputeTaskPool, Task},
 };
 use de_core::{
-    baseset::GameSet, gamestate::GameState, objects::MovableSolid, projection::ToFlat,
+    gamestate::GameState,
+    objects::MovableSolid,
+    projection::ToFlat,
+    schedule::{PostMovement, PreMovement},
     state::AppState,
 };
 use futures_lite::future;
 
 use crate::{
-    fplugin::{FinderRes, FinderSet, PathFinderUpdated},
+    fplugin::{FinderRes, FinderSet, PathFinderUpdatedEvent},
     path::{Path, ScheduledPath},
     PathQueryProps, PathTarget,
 };
@@ -33,46 +37,39 @@ pub struct PathingPlugin;
 
 impl Plugin for PathingPlugin {
     fn build(&self, app: &mut App) {
-        app.add_event::<UpdateEntityPath>()
-            .add_system(setup.in_schedule(OnEnter(AppState::InGame)))
-            .add_system(cleanup.in_schedule(OnExit(AppState::InGame)))
-            .add_system(
-                update_existing_paths
-                    .in_base_set(GameSet::PreMovement)
-                    .run_if(in_state(GameState::Playing))
-                    .run_if(on_event::<PathFinderUpdated>())
-                    .in_set(PathingSet::UpdateExistingPaths)
-                    .after(FinderSet::UpdateFinder),
+        app.add_event::<UpdateEntityPathEvent>()
+            .add_systems(OnEnter(AppState::InGame), setup)
+            .add_systems(OnExit(AppState::InGame), cleanup)
+            .add_systems(
+                PreMovement,
+                (
+                    update_existing_paths
+                        .run_if(on_event::<PathFinderUpdatedEvent>())
+                        .in_set(PathingSet::UpdateExistingPaths)
+                        .after(FinderSet::UpdateFinder),
+                    update_requested_paths
+                        .in_set(PathingSet::UpdateRequestedPaths)
+                        .after(PathingSet::UpdateExistingPaths),
+                    check_path_results
+                        // This is needed to avoid race condition in PathTarget
+                        // removal which would happen if path was not-found before
+                        // this system is run.
+                        .before(PathingSet::UpdateRequestedPaths)
+                        // This system removes finished tasks from UpdatePathsState
+                        // and inserts Scheduledpath components. When this happen,
+                        // the tasks is no longer available however the component
+                        // is not available as well until the end of the stage.
+                        //
+                        // System PathingSet::UpdateExistingPaths needs to detect
+                        // that a path is either already scheduled or being
+                        // computed. Thus this system must run after it.
+                        .after(PathingSet::UpdateExistingPaths),
+                )
+                    .run_if(in_state(GameState::Playing)),
             )
-            .add_system(
-                update_requested_paths
-                    .in_base_set(GameSet::PreMovement)
-                    .run_if(in_state(GameState::Playing))
-                    .in_set(PathingSet::UpdateRequestedPaths)
-                    .after(PathingSet::UpdateExistingPaths),
-            )
-            .add_system(
-                check_path_results
-                    .in_base_set(GameSet::PreMovement)
-                    .run_if(in_state(GameState::Playing))
-                    // This is needed to avoid race condition in PathTarget
-                    // removal which would happen if path was not-found before
-                    // this system is run.
-                    .before(PathingSet::UpdateRequestedPaths)
-                    // This system removes finished tasks from UpdatePathsState
-                    // and inserts Scheduledpath components. When this happen,
-                    // the tasks is no longer available however the component
-                    // is not available as well until the end of the stage.
-                    //
-                    // System PathingSet::UpdateExistingPaths needs to detect
-                    // that a path is either already scheduled or being
-                    // computed. Thus this system must run after it.
-                    .after(PathingSet::UpdateExistingPaths),
-            )
-            .add_system(
-                remove_path_targets
-                    .in_base_set(GameSet::PostMovement)
-                    .run_if(in_state(AppState::InGame)),
+            .add_systems(
+                PostMovement,
+                remove_path_targets.run_if(in_state(AppState::InGame)),
             );
     }
 }
@@ -85,12 +82,13 @@ enum PathingSet {
 
 /// This event triggers computation of shortest path to a target and
 /// replacement / insertion of this path to the entity.
-pub struct UpdateEntityPath {
+#[derive(Event)]
+pub struct UpdateEntityPathEvent {
     entity: Entity,
     target: PathTarget,
 }
 
-impl UpdateEntityPath {
+impl UpdateEntityPathEvent {
     /// # Arguments
     ///
     /// * `entity` - entity whose path should be updated / inserted.
@@ -170,11 +168,11 @@ fn cleanup(mut commands: Commands) {
 fn update_existing_paths(
     finder: Res<FinderRes>,
     mut state: ResMut<UpdatePathsState>,
-    entities: Query<(Entity, &Transform, &PathTarget, Option<&ScheduledPath>)>,
+    entities: Query<(Entity, &Transform, &PathTarget, Has<ScheduledPath>)>,
 ) {
-    for (entity, transform, target, path) in entities.iter() {
+    for (entity, transform, target, has_path) in entities.iter() {
         let position = transform.translation.to_flat();
-        if path.is_none() && !state.contains(entity) {
+        if !has_path && !state.contains(entity) {
             let current_distance = position.distance(target.location());
             let desired_distance = target.properties().distance();
             if (current_distance - desired_distance).abs() <= TARGET_TOLERANCE {
@@ -199,7 +197,7 @@ fn update_requested_paths(
     mut commands: Commands,
     finder: Res<FinderRes>,
     mut state: ResMut<UpdatePathsState>,
-    mut events: EventReader<UpdateEntityPath>,
+    mut events: EventReader<UpdateEntityPathEvent>,
     entities: Query<&Transform, With<MovableSolid>>,
 ) {
     for event in events.iter() {

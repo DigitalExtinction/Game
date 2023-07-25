@@ -5,9 +5,10 @@ pub(super) struct NetStatePlugin;
 
 impl Plugin for NetStatePlugin {
     fn build(&self, app: &mut App) {
-        app.add_state::<NetState>()
-            .add_plugin(ProgressPlugin::new(NetState::Connecting).continue_to(NetState::Connected))
-            .add_plugin(ProgressPlugin::new(NetState::ShuttingDown).continue_to(NetState::None));
+        app.add_state::<NetState>().add_plugins((
+            ProgressPlugin::new(NetState::Connecting).continue_to(NetState::Connected),
+            ProgressPlugin::new(NetState::ShuttingDown).continue_to(NetState::None),
+        ));
     }
 }
 

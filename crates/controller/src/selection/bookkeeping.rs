@@ -1,6 +1,6 @@
 use ahash::AHashSet;
 use bevy::{ecs::system::SystemParam, prelude::*};
-use de_core::{baseset::GameSet, gamestate::GameState};
+use de_core::{gamestate::GameState, schedule::InputSchedule};
 use de_signs::{UpdateBarVisibilityEvent, UpdateLineVisibilityEvent, UpdatePoleVisibilityEvent};
 use de_terrain::MarkerVisibility;
 
@@ -13,23 +13,13 @@ impl Plugin for BookkeepingPlugin {
         app.add_event::<SelectEvent>()
             .add_event::<SelectedEvent>()
             .add_event::<DeselectedEvent>()
-            .add_system(
-                update_selection
-                    .in_base_set(GameSet::Input)
-                    .run_if(in_state(GameState::Playing))
-                    .in_set(SelectionSet::Update),
-            )
-            .add_system(
-                selected_system
-                    .in_base_set(GameSet::Input)
-                    .run_if(in_state(GameState::Playing))
-                    .after(SelectionSet::Update),
-            )
-            .add_system(
-                deselected_system
-                    .in_base_set(GameSet::Input)
-                    .run_if(in_state(GameState::Playing))
-                    .after(SelectionSet::Update),
+            .add_systems(
+                InputSchedule,
+                (
+                    update_selection.in_set(SelectionSet::Update),
+                    (selected_system, deselected_system).after(SelectionSet::Update),
+                )
+                    .run_if(in_state(GameState::Playing)),
             );
     }
 }
@@ -39,6 +29,7 @@ pub(crate) enum SelectionSet {
     Update,
 }
 
+#[derive(Event)]
 pub(crate) struct SelectEvent {
     entities: Vec<Entity>,
     mode: SelectionMode,
@@ -72,8 +63,10 @@ impl SelectEvent {
     }
 }
 
+#[derive(Event)]
 struct SelectedEvent(Entity);
 
+#[derive(Event)]
 struct DeselectedEvent(Entity);
 
 #[derive(Component)]

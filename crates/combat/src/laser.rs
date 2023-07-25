@@ -1,9 +1,9 @@
 use bevy::prelude::*;
 use de_audio::spatial::{PlaySpatialAudioEvent, Sound};
-use de_core::{baseset::GameSet, gamestate::GameState};
+use de_core::gamestate::GameState;
 use de_objects::Health;
 use de_signs::UpdateBarValueEvent;
-use de_spawner::SpawnerSet;
+use de_spawner::DespawnerSet;
 use parry3d::query::Ray;
 
 use crate::{sightline::LineOfSight, trail::TrailEvent, AttackingSet};
@@ -12,11 +12,11 @@ pub(crate) struct LaserPlugin;
 
 impl Plugin for LaserPlugin {
     fn build(&self, app: &mut App) {
-        app.add_event::<LaserFireEvent>().add_system(
-            fire.in_base_set(GameSet::Update)
-                .run_if(in_state(GameState::Playing))
+        app.add_event::<LaserFireEvent>().add_systems(
+            Update,
+            fire.run_if(in_state(GameState::Playing))
                 .in_set(AttackingSet::Fire)
-                .before(SpawnerSet::Destroyer),
+                .before(DespawnerSet::Destruction),
         );
     }
 }
@@ -25,6 +25,7 @@ impl Plugin for LaserPlugin {
 ///
 /// This event is ignored when the attacker has 0 health or no longer exists.
 /// Thus ordering of the events is important.
+#[derive(Event)]
 pub(crate) struct LaserFireEvent {
     attacker: Entity,
     ray: Ray,

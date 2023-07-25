@@ -3,15 +3,17 @@
 use bevy::{app::PluginGroupBuilder, prelude::*};
 use counter::CounterPlugin;
 pub use counter::ObjectCounter;
-use destroyer::DestroyerPlugin;
+pub use despawner::{DespawnEvent, DespawnEventsPlugin, DespawnedComponentsEvent, DespawnerSet};
 use draft::DraftPlugin;
 pub use draft::{DraftAllowed, DraftBundle};
 use gameend::GameEndPlugin;
 pub use spawner::SpawnBundle;
 use spawner::SpawnerPlugin;
 
+use crate::despawner::DespawnerPlugin;
+
 mod counter;
-mod destroyer;
+mod despawner;
 mod draft;
 mod gameend;
 mod spawner;
@@ -24,12 +26,7 @@ impl PluginGroup for SpawnerPluginGroup {
             .add(CounterPlugin)
             .add(SpawnerPlugin)
             .add(DraftPlugin)
-            .add(DestroyerPlugin)
             .add(GameEndPlugin)
+            .add(DespawnerPlugin)
     }
-}
-
-#[derive(Copy, Clone, Hash, Debug, PartialEq, Eq, SystemSet)]
-pub enum SpawnerSet {
-    Destroyer,
 }

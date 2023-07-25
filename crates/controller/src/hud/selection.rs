@@ -1,7 +1,5 @@
 use bevy::prelude::*;
-use de_core::{
-    baseset::GameSet, cleanup::DespawnOnGameExit, gamestate::GameState, screengeom::ScreenRect,
-};
+use de_core::{cleanup::DespawnOnGameExit, gamestate::GameState, screengeom::ScreenRect};
 
 const SELECTION_BOX_COLOR: Color = Color::rgba(0., 0.5, 0.8, 0.2);
 
@@ -9,14 +7,14 @@ pub(crate) struct SelectionPlugin;
 
 impl Plugin for SelectionPlugin {
     fn build(&self, app: &mut App) {
-        app.add_event::<UpdateSelectionBoxEvent>().add_system(
-            process_events
-                .in_base_set(GameSet::PostUpdate)
-                .run_if(in_state(GameState::Playing)),
+        app.add_event::<UpdateSelectionBoxEvent>().add_systems(
+            PostUpdate,
+            process_events.run_if(in_state(GameState::Playing)),
         );
     }
 }
 
+#[derive(Event)]
 pub struct UpdateSelectionBoxEvent(Option<ScreenRect>);
 
 impl UpdateSelectionBoxEvent {
@@ -41,17 +39,17 @@ fn process_events(
         match event.0 {
             Some(rect) => {
                 let size = rect.size();
-                let ui_size = Size::new(Val::Percent(50. * size.x), Val::Percent(50. * size.y));
-                let ui_rect = UiRect {
-                    left: Val::Percent(50. * (rect.left() + 1.)),
-                    top: Val::Percent(50. * (1. - rect.top())),
-                    ..Default::default()
-                };
+                let width = Val::Percent(50. * size.x);
+                let height = Val::Percent(50. * size.y);
+                let left = Val::Percent(50. * (rect.left() + 1.));
+                let top = Val::Percent(50. * (1. - rect.top()));
 
                 match boxes.get_single_mut() {
                     Ok((_, mut style)) => {
-                        style.size = ui_size;
-                        style.position = ui_rect;
+                        style.width = width;
+                        style.height = height;
+                        style.left = left;
+                        style.top = top;
                     }
                     Err(_) => {
                         assert!(boxes.is_empty());
@@ -60,8 +58,10 @@ fn process_events(
                             NodeBundle {
                                 style: Style {
                                     position_type: PositionType::Absolute,
-                                    size: ui_size,
-                                    position: ui_rect,
+                                    width,
+                                    height,
+                                    left,
+                                    top,
                                     ..Default::default()
                                 },
                                 background_color: BackgroundColor(SELECTION_BOX_COLOR),

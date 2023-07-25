@@ -63,14 +63,16 @@ fn main() {
                     })
                     .disable::<LogPlugin>(),
             )
-            .add_plugin(AudioPlugin)
-            .add_plugin(LogDiagnosticsPlugin {
-                debug: false,
-                wait_duration: Duration::from_secs(10),
-                filter: None,
-            })
-            .add_plugin(FrameTimeDiagnosticsPlugin)
-            .add_plugin(GamePlugin)
+            .add_plugins(AudioPlugin)
+            .add_plugins((
+                LogDiagnosticsPlugin {
+                    debug: false,
+                    wait_duration: Duration::from_secs(10),
+                    filter: None,
+                },
+                FrameTimeDiagnosticsPlugin,
+                GamePlugin,
+            ))
             .add_plugins(ConfigPluginGroup)
             .add_plugins(GuiPluginGroup)
             .add_plugins(LobbyClientPluginGroup)
@@ -105,7 +107,7 @@ impl Plugin for GamePlugin {
 
         #[cfg(not(target_os = "macos"))]
         {
-            app.add_system(cursor_grab_system.in_schedule(OnEnter(AppState::AppLoading)));
+            app.add_systems(OnEnter(AppState::AppLoading), cursor_grab_system);
         }
     }
 }

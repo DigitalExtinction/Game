@@ -15,12 +15,12 @@ use de_camera::{
 };
 use de_conf::Configuration;
 use de_core::{
-    baseset::GameSet,
     gamestate::GameState,
     gconfig::GameConfig,
     objects::{BuildingType, ObjectType, Playable, PLAYER_MAX_BUILDINGS},
     player::Player,
     projection::ToFlat,
+    schedule::InputSchedule,
     screengeom::ScreenRect,
 };
 use de_spawner::{DraftAllowed, ObjectCounter};
@@ -32,10 +32,10 @@ use super::{
 };
 use crate::{
     draft::{DiscardDraftsEvent, DraftSet, NewDraftEvent, SpawnDraftsEvent},
-    hud::{GameMenuSet, ToggleGameMenu, UpdateSelectionBoxEvent},
+    hud::{GameMenuSet, ToggleGameMenuEvent, UpdateSelectionBoxEvent},
     mouse::{
-        DragUpdateType, MouseClicked, MouseDoubleClicked, MouseDragged, MouseSet, Pointer,
-        PointerSet,
+        DragUpdateType, MouseClickedEvent, MouseDoubleClickedEvent, MouseDraggedEvent, MouseSet,
+        Pointer, PointerSet,
     },
     selection::{
         AreaSelectSet, SelectEvent, SelectInRectEvent, Selected, SelectionMode, SelectionSet,
@@ -56,9 +56,9 @@ impl HandlersPlugin {
         };
 
         for (building_type, &key) in key_map.iter() {
-            app.add_system(
+            app.add_systems(
+                InputSchedule,
                 place_draft(building_type)
-                    .in_base_set(GameSet::Input)
                     .run_if(in_state(GameState::Playing))
                     .run_if(KeyCondition::single(key).build())
                     .before(DraftSet::New)
@@ -70,97 +70,56 @@ impl HandlersPlugin {
 
 impl Plugin for HandlersPlugin {
     fn build(&self, app: &mut App) {
-        app.add_system(
-            right_click_handler
-                .in_base_set(GameSet::Input)
-                .run_if(in_state(GameState::Playing))
-                .run_if(on_click(MouseButton::Right))
-                .after(PointerSet::Update)
-                .after(MouseSet::Buttons)
-                .before(CommandsSet::SendSelected)
-                .before(CommandsSet::DeliveryLocation)
-                .before(CommandsSet::Attack),
-        )
-        .add_system(
-            left_click_handler
-                .in_base_set(GameSet::Input)
-                .run_if(in_state(GameState::Playing))
-                .run_if(on_click(MouseButton::Left))
-                .in_set(HandlersSet::LeftClick)
-                .before(SelectionSet::Update)
-                .before(DraftSet::Spawn)
-                .after(PointerSet::Update)
-                .after(MouseSet::Buttons),
-        )
-        .add_system(
-            double_click_handler
-                .in_base_set(GameSet::Input)
-                .run_if(in_state(GameState::Playing))
-                .run_if(on_double_click(MouseButton::Left))
-                .before(SelectionSet::Update)
-                .before(DraftSet::Spawn)
-                .after(PointerSet::Update)
-                .after(MouseSet::Buttons)
-                .after(HandlersSet::LeftClick),
-        )
-        .add_system(
-            move_camera_arrows_system
-                .in_base_set(GameSet::Input)
-                .run_if(in_state(GameState::Playing))
-                .before(CameraSet::MoveHorizontallEvent),
-        )
-        .add_system(
-            move_camera_mouse_system
-                .in_base_set(GameSet::Input)
-                .run_if(in_state(GameState::Playing))
-                .before(CameraSet::MoveHorizontallEvent),
-        )
-        .add_system(
-            zoom_camera
-                .in_base_set(GameSet::Input)
-                .run_if(in_state(GameState::Playing))
-                .before(CameraSet::ZoomEvent),
-        )
-        .add_system(
-            pivot_camera
-                .in_base_set(GameSet::Input)
-                .run_if(in_state(GameState::Playing))
-                .before(CameraSet::RotateEvent)
-                .before(CameraSet::TiltEvent),
-        )
-        .add_system(
-            handle_escape
-                .in_base_set(GameSet::Input)
-                .run_if(in_state(GameState::Playing))
-                .run_if(KeyCondition::single(KeyCode::Escape).build())
-                .before(GameMenuSet::Toggle)
-                .before(DraftSet::Discard),
-        )
-        .add_system(
-            select_all
-                .in_base_set(GameSet::Input)
-                .run_if(in_state(GameState::Playing))
-                .run_if(KeyCondition::single(KeyCode::A).with_ctrl().build())
-                .before(SelectionSet::Update),
-        )
-        .add_system(
-            select_all_visible
-                .in_base_set(GameSet::Input)
-                .run_if(in_state(GameState::Playing))
-                .run_if(
-                    KeyCondition::single(KeyCode::A)
-                        .with_ctrl()
-                        .with_shift()
-                        .build(),
-                )
-                .before(AreaSelectSet::SelectInArea),
-        )
-        .add_system(
-            update_drags
-                .in_base_set(GameSet::Input)
-                .run_if(in_state(GameState::Playing))
-                .before(AreaSelectSet::SelectInArea)
-                .after(MouseSet::Buttons),
+        app.add_systems(
+            InputSchedule,
+            (
+                right_click_handler
+                    .run_if(on_click(MouseButton::Right))
+                    .after(PointerSet::Update)
+                    .after(MouseSet::Buttons)
+                    .before(CommandsSet::SendSelected)
+                    .before(CommandsSet::DeliveryLocation)
+                    .before(CommandsSet::Attack),
+                left_click_handler
+                    .run_if(on_click(MouseButton::Left))
+                    .in_set(HandlersSet::LeftClick)
+                    .before(SelectionSet::Update)
+                    .before(DraftSet::Spawn)
+                    .after(PointerSet::Update)
+                    .after(MouseSet::Buttons),
+                double_click_handler
+                    .run_if(on_double_click(MouseButton::Left))
+                    .before(SelectionSet::Update)
+                    .before(DraftSet::Spawn)
+                    .after(PointerSet::Update)
+                    .after(MouseSet::Buttons)
+                    .after(HandlersSet::LeftClick),
+                move_camera_arrows_system.before(CameraSet::MoveHorizontallEvent),
+                move_camera_mouse_system.before(CameraSet::MoveHorizontallEvent),
+                zoom_camera.before(CameraSet::ZoomEvent),
+                pivot_camera
+                    .before(CameraSet::RotateEvent)
+                    .before(CameraSet::TiltEvent),
+                handle_escape
+                    .run_if(KeyCondition::single(KeyCode::Escape).build())
+                    .before(GameMenuSet::Toggle)
+                    .before(DraftSet::Discard),
+                select_all
+                    .run_if(KeyCondition::single(KeyCode::A).with_ctrl().build())
+                    .before(SelectionSet::Update),
+                select_all_visible
+                    .run_if(
+                        KeyCondition::single(KeyCode::A)
+                            .with_ctrl()
+                            .with_shift()
+                            .build(),
+                    )
+                    .before(AreaSelectSet::SelectInArea),
+                update_drags
+                    .before(AreaSelectSet::SelectInArea)
+                    .after(MouseSet::Buttons),
+            )
+                .run_if(in_state(GameState::Playing)),
         );
 
         Self::add_place_draft_systems(app);
@@ -172,16 +131,16 @@ pub(crate) enum HandlersSet {
     LeftClick,
 }
 
-fn on_click(button: MouseButton) -> impl Fn(EventReader<MouseClicked>) -> bool {
-    move |mut events: EventReader<MouseClicked>| {
+fn on_click(button: MouseButton) -> impl Fn(EventReader<MouseClickedEvent>) -> bool {
+    move |mut events: EventReader<MouseClickedEvent>| {
         // It is desirable to exhaust the iterator, thus .filter().count() is
         // used instead of .any()
         events.iter().filter(|e| e.button() == button).count() > 0
     }
 }
 
-fn on_double_click(button: MouseButton) -> impl Fn(EventReader<MouseDoubleClicked>) -> bool {
-    move |mut events: EventReader<MouseDoubleClicked>| {
+fn on_double_click(button: MouseButton) -> impl Fn(EventReader<MouseDoubleClickedEvent>) -> bool {
+    move |mut events: EventReader<MouseDoubleClickedEvent>| {
         // It is desirable to exhaust the iterator, thus .filter().count() is
         // used instead of .any()
         events.iter().filter(|e| e.button() == button).count() > 0
@@ -223,7 +182,7 @@ fn double_click_handler(
     if !drafts.is_empty() {
         return;
     }
-    let selection_mode = if keys.pressed(KeyCode::LControl) {
+    let selection_mode = if keys.pressed(KeyCode::ControlLeft) {
         SelectionMode::Add
     } else {
         SelectionMode::Replace
@@ -296,9 +255,9 @@ fn move_camera_mouse_system(
         movement.x += 1.;
     }
     if cursor.y < MOVE_MARGIN {
-        movement.y -= 1.;
-    } else if cursor.y > (window.height() - MOVE_MARGIN) {
         movement.y += 1.;
+    } else if cursor.y > (window.height() - MOVE_MARGIN) {
+        movement.y -= 1.;
     }
 
     if (movement != Vec2::ZERO) == *was_moving {
@@ -331,7 +290,7 @@ fn pivot_camera(
     mut rotate_event: EventWriter<RotateCameraEvent>,
     mut tilt_event: EventWriter<TiltCameraEvent>,
 ) {
-    if !buttons.pressed(MouseButton::Middle) && !keys.pressed(KeyCode::LShift) {
+    if !buttons.pressed(MouseButton::Middle) && !keys.pressed(KeyCode::ShiftLeft) {
         return;
     }
 
@@ -354,7 +313,7 @@ fn left_click_handler(
     drafts: Query<(), With<DraftAllowed>>,
 ) {
     if drafts.is_empty() {
-        let selection_mode = if keys.pressed(KeyCode::LControl) {
+        let selection_mode = if keys.pressed(KeyCode::ControlLeft) {
             SelectionMode::AddToggle
         } else {
             SelectionMode::Replace
@@ -371,12 +330,12 @@ fn left_click_handler(
 }
 
 fn handle_escape(
-    mut toggle_menu_events: EventWriter<ToggleGameMenu>,
+    mut toggle_menu_events: EventWriter<ToggleGameMenuEvent>,
     mut discard_events: EventWriter<DiscardDraftsEvent>,
     drafts: Query<(), With<DraftAllowed>>,
 ) {
     if drafts.is_empty() {
-        toggle_menu_events.send(ToggleGameMenu);
+        toggle_menu_events.send(ToggleGameMenuEvent);
     } else {
         discard_events.send(DiscardDraftsEvent);
     }
@@ -425,7 +384,7 @@ fn select_all_visible(mut events: EventWriter<SelectInRectEvent>) {
 
 fn update_drags(
     keys: Res<Input<KeyCode>>,
-    mut drag_events: EventReader<MouseDragged>,
+    mut drag_events: EventReader<MouseDraggedEvent>,
     mut ui_events: EventWriter<UpdateSelectionBoxEvent>,
     mut select_events: EventWriter<SelectInRectEvent>,
 ) {
@@ -441,7 +400,8 @@ fn update_drags(
             },
             DragUpdateType::Released => {
                 if let Some(rect) = drag_event.rect() {
-                    let mode = if keys.pressed(KeyCode::LControl) || keys.pressed(KeyCode::RControl)
+                    let mode = if keys.pressed(KeyCode::ControlLeft)
+                        || keys.pressed(KeyCode::ControlRight)
                     {
                         SelectionMode::Add
                     } else {

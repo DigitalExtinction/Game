@@ -1,5 +1,10 @@
 use bevy::prelude::*;
-use de_core::{baseset::GameSet, gamestate::GameState, projection::ToFlat, state::AppState};
+use de_core::{
+    gamestate::GameState,
+    projection::ToFlat,
+    schedule::{Movement, PreMovement},
+    state::AppState,
+};
 use de_pathing::ScheduledPath;
 
 use crate::{
@@ -13,19 +18,16 @@ pub(crate) struct PathingPlugin;
 
 impl Plugin for PathingPlugin {
     fn build(&self, app: &mut App) {
-        app.add_system(
-            finish_paths
-                .in_base_set(GameSet::PreMovement)
-                .run_if(in_state(GameState::Playing)),
+        app.add_systems(
+            PreMovement,
+            (
+                finish_paths.run_if(in_state(GameState::Playing)),
+                add_desired_velocity::<PathVelocity>.run_if(in_state(AppState::InGame)),
+            ),
         )
-        .add_system(
-            add_desired_velocity::<PathVelocity>
-                .in_base_set(GameSet::PreMovement)
-                .run_if(in_state(AppState::InGame)),
-        )
-        .add_system(
+        .add_systems(
+            Movement,
             follow_path
-                .in_base_set(GameSet::Movement)
                 .run_if(in_state(GameState::Playing))
                 .in_set(PathingSet::FollowPath),
         );

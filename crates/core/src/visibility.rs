@@ -1,14 +1,14 @@
 use bevy::prelude::*;
 
-use crate::{baseset::GameSet, flags::Flags, state::AppState};
+use crate::{flags::Flags, state::AppState};
 
 pub(crate) struct VisibilityPlugin;
 
 impl Plugin for VisibilityPlugin {
     fn build(&self, app: &mut App) {
-        app.add_system(
+        app.add_systems(
+            PostUpdate,
             update
-                .in_base_set(GameSet::PostUpdate)
                 .run_if(in_state(AppState::InGame))
                 .in_set(VisibilitySet::Update),
         );
@@ -24,9 +24,9 @@ pub enum VisibilitySet {
 /// "visible" flag is set to true and none of "invisible" flag is true. The
 /// individual flags can be controlled independently.
 ///
-/// The system [`VisibilitySet::Update`] executed during
-/// [`GameSet::PostUpdate`] automatically updates
-/// [`bevy::render::prelude::Visibility`] of entities with this component.
+/// The system [`VisibilitySet::Update`] executed during [`PostUpdate`]
+/// automatically updates [`bevy::render::prelude::Visibility`] of entities
+/// with this component.
 #[derive(Component, Default)]
 pub struct VisibilityFlags {
     visible: Flags,
