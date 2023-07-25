@@ -19,7 +19,8 @@ impl Plugin for DespawnerPlugin {
                     .in_set(DespawnerSet::Destruction)
                     .before(DespawnerSet::Despawn),
                 despawn // This shhould always be ready to despawn marked entities
-                    .in_set(DespawnerSet::Despawn),
+                    .in_set(DespawnerSet::Despawn)
+                    .after(DespawnerSet::Destruction),
             ),
         )
         .add_event::<DespawnEvent>();
@@ -215,7 +216,12 @@ mod tests {
                 Update,
                 (despawn_all_test_system.in_set(DespawnerSet::Destruction),),
             )
-            .add_systems(Update, despawn.in_set(DespawnerSet::Despawn))
+            .add_systems(
+                Update,
+                despawn
+                    .in_set(DespawnerSet::Despawn)
+                    .after(DespawnerSet::Destruction),
+            )
             .add_event::<DespawnEvent>();
 
         let mut simple_events =
