@@ -29,7 +29,7 @@ impl Plugin for DespawnerPlugin {
 #[derive(Debug, Clone, PartialEq, Eq, Hash, SystemSet)]
 pub enum DespawnerSet {
     /// This set is run before the despawning systems run (If you expect units to die, you should
-    /// run your system in this set and the [`GameSet::Update`] base set)
+    /// run your system in this set and the [`Update`] base set)
     Destruction,
     /// All despawn logic is anchored on this (You might want to run your system after this to get
     /// [`DespawnedComponentsEvent`]s)
@@ -215,7 +215,7 @@ mod tests {
                 Update,
                 (despawn_all_test_system.in_set(DespawnerSet::Destruction),),
             )
-            .add_systems(Update, (despawn.in_set(DespawnerSet::Despawn)))
+            .add_systems(Update, despawn.in_set(DespawnerSet::Despawn))
             .add_event::<DespawnEvent>();
 
         let mut simple_events =
