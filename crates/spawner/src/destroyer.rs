@@ -1,3 +1,6 @@
+use std::marker::PhantomData;
+
+use bevy::ecs::query::{ReadOnlyWorldQuery, WorldQuery};
 use bevy::prelude::*;
 use de_core::{objects::ObjectType, player::Player, state::AppState};
 use de_objects::Health;
@@ -10,11 +13,16 @@ impl Plugin for DespawnerPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(
             Update,
-            (find_dead // finding units with no health is only relevant while in-game
-                 .run_if(in_state(AppState::InGame))
-                 .in_set(DespawnerSet::Destruction)
-                 .before(DespawnerSet::Despawn),despawn.in_set(DespawnerSet::Despawn))
-        );
+            (
+                find_dead // finding units with no health is only relevant while in-game
+                    .run_if(in_state(AppState::InGame))
+                    .in_set(DespawnerSet::Destruction)
+                    .before(DespawnerSet::Despawn),
+                despawn // This shhould always be ready to despawn marked entities
+                    .in_set(DespawnerSet::Despawn),
+            ),
+        )
+        .add_event::<DespawnEvent>();
     }
 }
 
@@ -28,6 +36,7 @@ pub enum DespawnerSet {
     Despawn,
 }
 
+#[derive(Event)]
 pub struct DespawnEvent(Entity);
 
 /// Find all entities with low health and mark them for despawning
@@ -74,7 +83,7 @@ fn despawn(mut commands: Commands, mut despawning: EventReader<DespawnEvent>) {
 /// let mut app = App::new();
 ///
 /// // watch for despawning of entities with `Bar` component
-/// app.add_plugin(DespawnEventsPlugin::<&Bar, Bar>::default());
+/// app.add_plugins(DespawnEventsPlugin::<&Bar, Bar>::default());
 /// ```
 ///
 #[derive(Debug)]
@@ -108,20 +117,21 @@ impl<
 {
     fn build(&self, app: &mut App) {
         app.add_event::<DespawnedComponentsEvent<T, F>>()
-            .add_system(
-                send_data::<Q, T, F>
+            .add_systems(
+                Update,
+                (send_data::<Q, T, F>
                     .after(DespawnerSet::Destruction)
-                    .in_set(DespawnerSet::Despawn),
+                    .in_set(DespawnerSet::Despawn),),
             );
     }
 }
 
 /// This event is sent by [`DespawnEventsPlugin`] when a matching entity is being despawned.
-#[derive(Debug)]
+#[derive(Debug, Event)]
 pub struct DespawnedComponentsEvent<T, F = ()>
 where
-    F: ReadOnlyWorldQuery + 'static,
     T: Send + Sync + Component + 'static,
+    F: ReadOnlyWorldQuery + 'static,
 {
     pub entity: Entity,
     pub data: T,
@@ -187,7 +197,7 @@ mod tests {
     #[test]
     fn despawn_events() {
         let mut app = App::new();
-        app.add_plugin(LogPlugin {
+        app.add_plugins(LogPlugin {
             level: Level::TRACE,
             ..Default::default()
         });
@@ -195,18 +205,17 @@ mod tests {
         let simple_entity = app.world.spawn((TestComponent { value: 1 },)).id();
         trace!("Simple entity spawned -> {:?}", simple_entity);
 
-        app.add_plugin(DespawnEventsPlugin::<&TestComponent, TestComponent>::default())
-            .add_plugin(DespawnEventsPlugin::<
+        app.add_plugins(DespawnEventsPlugin::<&TestComponent, TestComponent>::default())
+            .add_plugins(DespawnEventsPlugin::<
                 &ComplexComponent,
                 ComplexComponent,
                 With<TestComponent>,
             >::default())
-            .add_system(
-                despawn_all_test_system
-                    .in_base_set(GameSet::Update)
-                    .in_set(DespawnerSet::Destruction),
+            .add_systems(
+                Update,
+                (despawn_all_test_system.in_set(DespawnerSet::Destruction),),
             )
-            .add_system(despawn.in_set(DespawnerSet::Despawn))
+            .add_systems(Update, (despawn.in_set(DespawnerSet::Despawn)))
             .add_event::<DespawnEvent>();
 
         let mut simple_events =
