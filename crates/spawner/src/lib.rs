@@ -3,20 +3,17 @@
 use bevy::{app::PluginGroupBuilder, prelude::*};
 use counter::CounterPlugin;
 pub use counter::ObjectCounter;
-pub use destroyer::DespawnEvent;
-pub use destroyer::DespawnEventsPlugin;
-pub use destroyer::DespawnedComponentsEvent;
-pub use destroyer::DespawnerSet;
+pub use despawner::{DespawnEvent, DespawnEventsPlugin, DespawnedComponentsEvent, DespawnerSet};
 use draft::DraftPlugin;
 pub use draft::{DraftAllowed, DraftBundle};
 use gameend::GameEndPlugin;
 pub use spawner::SpawnBundle;
 use spawner::SpawnerPlugin;
 
-use crate::destroyer::DespawnerPlugin;
+use crate::despawner::DespawnerPlugin;
 
 mod counter;
-mod destroyer;
+mod despawner;
 mod draft;
 mod gameend;
 mod spawner;
