@@ -21,13 +21,11 @@ impl Plugin for PointerPlugin {
                 InputSchedule,
                 (
                     pointer_update_system
-                        .run_if(in_state(GameState::Playing))
                         .in_set(PointerSet::Update)
                         .after(MouseSet::Position),
-                    update_bar_visibility
-                        .run_if(in_state(GameState::Playing))
-                        .after(PointerSet::Update),
-                ),
+                    update_bar_visibility.after(PointerSet::Update),
+                )
+                    .run_if(in_state(GameState::Playing)),
             );
     }
 }

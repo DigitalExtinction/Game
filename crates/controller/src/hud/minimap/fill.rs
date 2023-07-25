@@ -28,17 +28,13 @@ impl Plugin for FillPlugin {
         app.add_systems(
             PostMovement,
             (
-                clear_system
-                    .run_if(in_state(GameState::Playing))
-                    .in_set(FillSet::Clear),
+                clear_system.in_set(FillSet::Clear),
                 draw_entities_system
-                    .run_if(in_state(GameState::Playing))
                     .in_set(FillSet::DrawEntities)
                     .after(FillSet::Clear),
-                draw_camera_system
-                    .run_if(in_state(GameState::Playing))
-                    .after(FillSet::DrawEntities),
-            ),
+                draw_camera_system.after(FillSet::DrawEntities),
+            )
+                .run_if(in_state(GameState::Playing)),
         );
     }
 }

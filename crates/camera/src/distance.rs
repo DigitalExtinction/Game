@@ -11,12 +11,11 @@ impl Plugin for DistancePlugin {
         app.add_systems(
             PostUpdate,
             (
-                init::<MovableSolid>.run_if(in_state(AppState::InGame)),
-                init::<StaticSolid>.run_if(in_state(AppState::InGame)),
-                update
-                    .run_if(in_state(AppState::InGame))
-                    .in_set(DistanceSet::Update),
-            ),
+                init::<MovableSolid>,
+                init::<StaticSolid>,
+                update.in_set(DistanceSet::Update),
+            )
+                .run_if(in_state(AppState::InGame)),
         );
     }
 }

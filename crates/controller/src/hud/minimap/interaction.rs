@@ -22,21 +22,16 @@ impl Plugin for InteractionPlugin {
         app.add_event::<MinimapClickEvent>().add_systems(
             InputSchedule,
             (
-                click_handler
-                    .run_if(in_state(GameState::Playing))
-                    .in_set(InteractionSet::ClickHandler),
-                move_camera_system
-                    .run_if(in_state(GameState::Playing))
-                    .after(InteractionSet::ClickHandler),
+                click_handler.in_set(InteractionSet::ClickHandler),
+                move_camera_system.after(InteractionSet::ClickHandler),
                 send_units_system
-                    .run_if(in_state(GameState::Playing))
                     .after(InteractionSet::ClickHandler)
                     .before(CommandsSet::SendSelected),
                 delivery_location_system
-                    .run_if(in_state(GameState::Playing))
                     .after(InteractionSet::ClickHandler)
                     .before(CommandsSet::DeliveryLocation),
-            ),
+            )
+                .run_if(in_state(GameState::Playing)),
         );
     }
 }

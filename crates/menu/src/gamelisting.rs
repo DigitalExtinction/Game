@@ -17,11 +17,8 @@ impl Plugin for GameListingPlugin {
             .add_systems(OnExit(MenuState::GameListing), cleanup)
             .add_systems(
                 Update,
-                (
-                    refresh_system.run_if(in_state(MenuState::GameListing)),
-                    list_games_system.run_if(in_state(MenuState::GameListing)),
-                    button_system.run_if(in_state(MenuState::GameListing)),
-                ),
+                (refresh_system, list_games_system, button_system)
+                    .run_if(in_state(MenuState::GameListing)),
             );
     }
 }

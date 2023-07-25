@@ -74,7 +74,6 @@ impl Plugin for HandlersPlugin {
             InputSchedule,
             (
                 right_click_handler
-                    .run_if(in_state(GameState::Playing))
                     .run_if(on_click(MouseButton::Right))
                     .after(PointerSet::Update)
                     .after(MouseSet::Buttons)
@@ -82,7 +81,6 @@ impl Plugin for HandlersPlugin {
                     .before(CommandsSet::DeliveryLocation)
                     .before(CommandsSet::Attack),
                 left_click_handler
-                    .run_if(in_state(GameState::Playing))
                     .run_if(on_click(MouseButton::Left))
                     .in_set(HandlersSet::LeftClick)
                     .before(SelectionSet::Update)
@@ -90,37 +88,26 @@ impl Plugin for HandlersPlugin {
                     .after(PointerSet::Update)
                     .after(MouseSet::Buttons),
                 double_click_handler
-                    .run_if(in_state(GameState::Playing))
                     .run_if(on_double_click(MouseButton::Left))
                     .before(SelectionSet::Update)
                     .before(DraftSet::Spawn)
                     .after(PointerSet::Update)
                     .after(MouseSet::Buttons)
                     .after(HandlersSet::LeftClick),
-                move_camera_arrows_system
-                    .run_if(in_state(GameState::Playing))
-                    .before(CameraSet::MoveHorizontallEvent),
-                move_camera_mouse_system
-                    .run_if(in_state(GameState::Playing))
-                    .before(CameraSet::MoveHorizontallEvent),
-                zoom_camera
-                    .run_if(in_state(GameState::Playing))
-                    .before(CameraSet::ZoomEvent),
+                move_camera_arrows_system.before(CameraSet::MoveHorizontallEvent),
+                move_camera_mouse_system.before(CameraSet::MoveHorizontallEvent),
+                zoom_camera.before(CameraSet::ZoomEvent),
                 pivot_camera
-                    .run_if(in_state(GameState::Playing))
                     .before(CameraSet::RotateEvent)
                     .before(CameraSet::TiltEvent),
                 handle_escape
-                    .run_if(in_state(GameState::Playing))
                     .run_if(KeyCondition::single(KeyCode::Escape).build())
                     .before(GameMenuSet::Toggle)
                     .before(DraftSet::Discard),
                 select_all
-                    .run_if(in_state(GameState::Playing))
                     .run_if(KeyCondition::single(KeyCode::A).with_ctrl().build())
                     .before(SelectionSet::Update),
                 select_all_visible
-                    .run_if(in_state(GameState::Playing))
                     .run_if(
                         KeyCondition::single(KeyCode::A)
                             .with_ctrl()
@@ -129,10 +116,10 @@ impl Plugin for HandlersPlugin {
                     )
                     .before(AreaSelectSet::SelectInArea),
                 update_drags
-                    .run_if(in_state(GameState::Playing))
                     .before(AreaSelectSet::SelectInArea)
                     .after(MouseSet::Buttons),
-            ),
+            )
+                .run_if(in_state(GameState::Playing)),
         );
 
         Self::add_place_draft_systems(app);

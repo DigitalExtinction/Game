@@ -21,17 +21,16 @@ impl Plugin for DraftPlugin {
             .add_systems(
                 InputSchedule,
                 (
-                    spawn
-                        .run_if(in_state(AppState::InGame))
-                        .run_if(on_event::<SpawnDraftsEvent>())
-                        .in_set(DraftSet::Spawn),
-                    new_drafts
-                        .run_if(in_state(AppState::InGame))
-                        .in_set(DraftSet::New),
-                    discard_drafts
-                        .run_if(in_state(AppState::InGame))
-                        .run_if(on_event::<DiscardDraftsEvent>())
-                        .in_set(DraftSet::Discard),
+                    (
+                        spawn
+                            .run_if(on_event::<SpawnDraftsEvent>())
+                            .in_set(DraftSet::Spawn),
+                        new_drafts.in_set(DraftSet::New),
+                        discard_drafts
+                            .run_if(on_event::<DiscardDraftsEvent>())
+                            .in_set(DraftSet::Discard),
+                    )
+                        .run_if(in_state(AppState::InGame)),
                     move_drafts
                         .run_if(in_state(GameState::Playing))
                         .after(PointerSet::Update),

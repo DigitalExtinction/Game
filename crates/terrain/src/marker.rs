@@ -25,13 +25,11 @@ impl Plugin for MarkerPlugin {
         app.add_systems(
             PostUpdate,
             (
-                update_markers::<CircleMarker>
-                    .run_if(in_state(GameState::Playing))
-                    .after(VisibilitySystems::CheckVisibility),
-                update_markers::<RectangleMarker>
-                    .run_if(in_state(GameState::Playing))
-                    .after(VisibilitySystems::CheckVisibility),
-            ),
+                update_markers::<CircleMarker>,
+                update_markers::<RectangleMarker>,
+            )
+                .run_if(in_state(GameState::Playing))
+                .after(VisibilitySystems::CheckVisibility),
         );
     }
 }

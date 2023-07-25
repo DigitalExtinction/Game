@@ -26,25 +26,21 @@ impl Plugin for AttackPlugin {
                 PreUpdate,
                 (
                     attack
-                        .run_if(in_state(GameState::Playing))
                         .in_set(AttackingSet::Attack)
                         .before(ChaseSet::ChaseTargetEvent),
-                    update_positions
-                        .run_if(in_state(GameState::Playing))
-                        .after(AttackingSet::Attack),
-                ),
+                    update_positions.after(AttackingSet::Attack),
+                )
+                    .run_if(in_state(GameState::Playing)),
             )
             .add_systems(
                 Update,
                 (
-                    charge
-                        .run_if(in_state(GameState::Playing))
-                        .in_set(AttackingSet::Charge),
+                    charge.in_set(AttackingSet::Charge),
                     aim_and_fire
-                        .run_if(in_state(GameState::Playing))
                         .after(AttackingSet::Charge)
                         .before(AttackingSet::Fire),
-                ),
+                )
+                    .run_if(in_state(GameState::Playing)),
             );
     }
 }

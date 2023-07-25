@@ -16,16 +16,11 @@ impl Plugin for BookkeepingPlugin {
             .add_systems(
                 InputSchedule,
                 (
-                    update_selection
-                        .run_if(in_state(GameState::Playing))
-                        .in_set(SelectionSet::Update),
-                    selected_system
-                        .run_if(in_state(GameState::Playing))
-                        .after(SelectionSet::Update),
-                    deselected_system
-                        .run_if(in_state(GameState::Playing))
-                        .after(SelectionSet::Update),
-                ),
+                    update_selection.in_set(SelectionSet::Update),
+                    selected_system.after(SelectionSet::Update),
+                    deselected_system.after(SelectionSet::Update),
+                )
+                    .run_if(in_state(GameState::Playing)),
             );
     }
 }

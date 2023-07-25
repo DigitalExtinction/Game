@@ -44,19 +44,15 @@ impl Plugin for BarsPlugin {
             .add_systems(
                 PostUpdate,
                 (
-                    spawn.run_if(in_state(AppState::InGame)),
-                    update_value.run_if(in_state(AppState::InGame)),
-                    update_visibility_events
-                        .run_if(in_state(AppState::InGame))
-                        .before(VisibilitySet::Update),
+                    spawn,
+                    update_value,
+                    update_visibility_events.before(VisibilitySet::Update),
                     update_visibility_distance
-                        .run_if(in_state(AppState::InGame))
                         .before(VisibilitySet::Update)
                         .after(DistanceSet::Update),
-                    update_visibility_timer
-                        .run_if(in_state(AppState::InGame))
-                        .before(VisibilitySet::Update),
-                ),
+                    update_visibility_timer.before(VisibilitySet::Update),
+                )
+                    .run_if(in_state(AppState::InGame)),
             );
     }
 }

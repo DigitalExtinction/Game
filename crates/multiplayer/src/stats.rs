@@ -36,15 +36,14 @@ impl StatsPlugin {
                 PreMovement,
                 (
                     pong::<R>
-                        .run_if(in_state(NetState::Joined))
                         .run_if(on_event::<FromGameServerEvent>())
                         .in_set(StatsSet::Pong)
                         .after(MessagesSet::RecvMessages),
                     unresolved::<R>
-                        .run_if(in_state(NetState::Joined))
                         .in_set(StatsSet::Unresolved)
                         .after(StatsSet::Pong),
-                ),
+                )
+                    .run_if(in_state(NetState::Joined)),
             );
     }
 }
@@ -59,14 +58,12 @@ impl Plugin for StatsPlugin {
             .add_systems(
                 PreMovement,
                 (
-                    stats_tick
-                        .run_if(in_state(NetState::Joined))
-                        .in_set(StatsSet::StatsTick),
+                    stats_tick.in_set(StatsSet::StatsTick),
                     delivery_rate
-                        .run_if(in_state(NetState::Joined))
                         .after(StatsSet::StatsTick)
                         .after(StatsSet::Unresolved),
-                ),
+                )
+                    .run_if(in_state(NetState::Joined)),
             );
     }
 }

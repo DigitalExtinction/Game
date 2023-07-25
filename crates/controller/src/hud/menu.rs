@@ -15,12 +15,8 @@ impl Plugin for MenuPlugin {
             .add_systems(OnExit(GameState::Playing), cleanup)
             .add_systems(
                 InputSchedule,
-                (
-                    toggle_system
-                        .run_if(in_state(GameState::Playing))
-                        .in_set(GameMenuSet::Toggle),
-                    button_system.run_if(in_state(GameState::Playing)),
-                ),
+                (toggle_system.in_set(GameMenuSet::Toggle), button_system)
+                    .run_if(in_state(GameState::Playing)),
             );
     }
 }

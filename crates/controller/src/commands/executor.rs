@@ -18,16 +18,11 @@ impl Plugin for ExecutorPlugin {
             .add_systems(
                 InputSchedule,
                 (
-                    send_selected_system
-                        .run_if(in_state(GameState::Playing))
-                        .in_set(CommandsSet::SendSelected),
-                    delivery_location_system
-                        .run_if(in_state(GameState::Playing))
-                        .in_set(CommandsSet::DeliveryLocation),
-                    attack_system
-                        .run_if(in_state(GameState::Playing))
-                        .in_set(CommandsSet::Attack),
-                ),
+                    send_selected_system.in_set(CommandsSet::SendSelected),
+                    delivery_location_system.in_set(CommandsSet::DeliveryLocation),
+                    attack_system.in_set(CommandsSet::Attack),
+                )
+                    .run_if(in_state(GameState::Playing)),
             );
     }
 }

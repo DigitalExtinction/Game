@@ -30,35 +30,30 @@ impl Plugin for RepulsionPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(
             PreMovement,
-            (
-                setup_entities.run_if(in_state(AppState::InGame)),
-                add_desired_velocity::<RepulsionVelocity>.run_if(in_state(AppState::InGame)),
-            ),
+            (setup_entities, add_desired_velocity::<RepulsionVelocity>)
+                .run_if(in_state(AppState::InGame)),
         )
         .add_systems(
             Movement,
             (
                 repel_static
-                    .run_if(in_state(GameState::Playing))
                     .in_set(RepulsionLables::RepelStatic)
                     .after(ObstaclesLables::UpdateNearby)
                     .after(PathingSet::FollowPath),
                 repel_movable
-                    .run_if(in_state(GameState::Playing))
                     .in_set(RepulsionLables::RepelMovable)
                     .after(ObstaclesLables::UpdateNearby)
                     .after(PathingSet::FollowPath),
                 repel_bounds
-                    .run_if(in_state(GameState::Playing))
                     .in_set(RepulsionLables::RepelBounds)
                     .after(PathingSet::FollowPath),
                 apply
-                    .run_if(in_state(GameState::Playing))
                     .in_set(RepulsionLables::Apply)
                     .after(RepulsionLables::RepelStatic)
                     .after(RepulsionLables::RepelMovable)
                     .after(RepulsionLables::RepelBounds),
-            ),
+            )
+                .run_if(in_state(GameState::Playing)),
         );
     }
 }

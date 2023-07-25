@@ -27,10 +27,7 @@ impl Plugin for TrailPlugin {
             .add_systems(OnExit(AppState::InGame), cleanup)
             .add_systems(
                 PostUpdate,
-                (
-                    spawn.run_if(in_state(GameState::Playing)),
-                    update.run_if(in_state(GameState::Playing)),
-                ),
+                (spawn, update).run_if(in_state(GameState::Playing)),
             );
     }
 }

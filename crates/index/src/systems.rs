@@ -46,14 +46,9 @@ impl Plugin for IndexPlugin {
             .add_systems(OnExit(AppState::InGame), cleanup)
             .add_systems(
                 PostUpdate,
-                (
-                    insert
-                        .run_if(in_state(GameState::Playing))
-                        .in_set(IndexSet::Index),
-                    remove
-                        .run_if(in_state(GameState::Playing))
-                        .in_set(IndexSet::Index),
-                ),
+                (insert, remove)
+                    .run_if(in_state(GameState::Playing))
+                    .in_set(IndexSet::Index),
             )
             .add_systems(
                 PostMovement,

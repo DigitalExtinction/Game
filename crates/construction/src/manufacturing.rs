@@ -34,20 +34,14 @@ impl Plugin for ManufacturingPlugin {
             .add_systems(
                 PreUpdate,
                 (
-                    change_locations
-                        .run_if(in_state(GameState::Playing))
-                        .in_set(ManufacturingSet::ChangeLocations),
-                    check_spawn_locations
-                        .run_if(in_state(GameState::Playing))
-                        .before(ManufacturingSet::Produce),
-                    produce
-                        .run_if(in_state(GameState::Playing))
-                        .in_set(ManufacturingSet::Produce),
+                    change_locations.in_set(ManufacturingSet::ChangeLocations),
+                    check_spawn_locations.before(ManufacturingSet::Produce),
+                    produce.in_set(ManufacturingSet::Produce),
                     deliver
-                        .run_if(in_state(GameState::Playing))
                         .after(ManufacturingSet::ChangeLocations)
                         .after(ManufacturingSet::Produce),
-                ),
+                )
+                    .run_if(in_state(GameState::Playing)),
             )
             .add_systems(Update, enqueue.run_if(in_state(GameState::Playing)))
             .add_systems(PostUpdate, configure.run_if(in_state(AppState::InGame)));
