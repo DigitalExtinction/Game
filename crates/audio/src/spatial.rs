@@ -6,7 +6,7 @@ use bevy_kira_audio::{
     AudioControl, AudioInstance,
 };
 use de_camera::CameraFocus;
-use de_core::{baseset::GameSet, gamestate::GameState, state::AppState};
+use de_core::{gamestate::GameState, state::AppState};
 use enum_map::{enum_map, Enum, EnumMap};
 use iyes_progress::{Progress, ProgressSystem};
 
@@ -20,17 +20,17 @@ pub(crate) struct SpatialSoundPlugin;
 impl Plugin for SpatialSoundPlugin {
     fn build(&self, app: &mut App) {
         app.add_event::<PlaySpatialAudioEvent>()
-            .add_system(setup.in_schedule(OnEnter(AppState::AppLoading)))
-            .add_system(load.track_progress().run_if(in_state(AppState::AppLoading)))
-            .add_system(
-                play.in_base_set(GameSet::PostUpdate)
-                    .run_if(in_state(GameState::Playing))
-                    .run_if(on_event::<PlaySpatialAudioEvent>()),
+            .add_systems(OnEnter(AppState::AppLoading), setup)
+            .add_systems(
+                Update,
+                load.track_progress().run_if(in_state(AppState::AppLoading)),
             )
-            .add_system(
-                update_spatial
-                    .after(play)
-                    .in_base_set(GameSet::PostUpdate)
+            .add_systems(
+                PostUpdate,
+                (
+                    play.run_if(on_event::<PlaySpatialAudioEvent>()),
+                    update_spatial.after(play),
+                )
                     .run_if(in_state(GameState::Playing)),
             );
     }
@@ -45,6 +45,7 @@ pub enum Sound {
     LaserFire,
 }
 
+#[derive(Event)]
 pub struct PlaySpatialAudioEvent {
     pub sound: Sound,
     pub position: Vec3,
@@ -170,7 +171,7 @@ fn update_spatial(
 
     for (entity, audio, transform) in &spatial_audios {
         let Some(audio_instance) = audio_instances.get_mut(audio) else {
-            commands.entity(entity).despawn();
+            commands.entity(entity).despawn_recursive();
             continue;
         };
 
