@@ -1148,9 +1148,9 @@ dependencies = [
 
 [[package]]
 name = "bevy_prototype_debug_lines"
-version = "0.10.2"
+version = "0.11.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "79b3d03aef02c038e30415712097916928bc375abeb8a6b332dae85a898c4a54"
+checksum = "bb1785a35dee1a7ce603569befa4e25ed4cb8b57341b2442c7fedb14e602b139"
 dependencies = [
  "bevy",
 ]
@@ -2319,6 +2319,7 @@ dependencies = [
  "bevy_prototype_debug_lines",
  "de_core",
  "de_index",
+ "de_spawner",
  "parry3d",
  "smallvec",
 ]
@@ -2591,7 +2592,6 @@ dependencies = [
  "ahash 0.8.3",
  "bevy",
  "de_core",
- "de_energy",
  "de_index",
  "de_map",
  "de_objects",

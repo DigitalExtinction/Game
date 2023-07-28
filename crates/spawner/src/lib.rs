@@ -9,6 +9,7 @@ pub use draft::{DraftAllowed, DraftBundle};
 use gameend::GameEndPlugin;
 pub use spawner::SpawnBundle;
 use spawner::SpawnerPlugin;
+pub use spawner::SpawnerSet;
 
 use crate::despawner::DespawnerPlugin;
 

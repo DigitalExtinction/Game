@@ -1,17 +1,15 @@
 use std::collections::HashSet;
-use std::ops::Add;
 
-use bevy::ecs::query::QueryParIter;
 use bevy::prelude::*;
 use bevy::utils::petgraph::prelude::*;
 use bevy::utils::petgraph::visit::IntoNodeReferences;
-use bevy::utils::{HashMap, Instant};
+use bevy::utils::Instant;
 use bevy_prototype_debug_lines::{DebugLines, DebugLinesPlugin};
-use de_core::baseset::GameSet;
 use de_core::gamestate::GameState;
-use de_core::objects::{MovableSolid, StaticSolid};
+use de_core::objects::Active;
 use de_core::projection::ToFlat;
 use de_index::SpatialQuery;
+use de_spawner::{DespawnedComponentsEvent, DespawnEventsPlugin, SpawnerSet};
 use parry3d::bounding_volume::Aabb;
 use parry3d::math::Point;
 use smallvec::{smallvec, SmallVec};
@@ -23,24 +21,18 @@ pub(crate) struct GraphPlugin;
 
 impl Plugin for GraphPlugin {
     fn build(&self, app: &mut App) {
-        app.add_plugin(DebugLinesPlugin::default())
-            .add_system(setup.in_schedule(OnEnter(GameState::Playing)))
-            .add_system(
-                update_nearby_recv
-                    .in_base_set(GameSet::PreUpdate)
-                    .in_set(GraphSystemSet::UpdateNearby)
-                    .run_if(in_state(GameState::Playing)),
-            )
-            .add_system(
-                update_graph
-                    .in_base_set(GameSet::PreUpdate)
-                    .in_set(GraphSystemSet::UpdateGraph)
-                    .run_if(in_state(GameState::Playing)),
-            )
-            .add_system(clean_up.in_schedule(OnExit(GameState::Playing)))
-            .add_system(
-                debug_lines
-                    .in_base_set(GameSet::PostUpdate)
+        app.add_plugins((DebugLinesPlugin::default(), DespawnEventsPlugin::<&NearbyUnits, NearbyUnits>::default()))
+            .add_systems(OnEnter(GameState::Playing), setup)
+            .add_systems(OnExit(GameState::Playing), clean_up)
+            .add_systems(Update, spawn_graph_components.after(SpawnerSet::Spawn))
+            .add_systems(
+                PreUpdate,
+                (
+                    remove_old_nodes.before(GraphSystemSet::UpdateNearby),
+                    update_nearby_recv.in_set(GraphSystemSet::UpdateNearby),
+                    update_graph.in_set(GraphSystemSet::UpdateGraph).after(GraphSystemSet::UpdateNearby),
+                    debug_lines.after(GraphSystemSet::UpdateGraph),
+                )
                     .run_if(in_state(GameState::Playing)),
             );
     }
@@ -50,7 +42,6 @@ impl Plugin for GraphPlugin {
 enum GraphSystemSet {
     UpdateNearby,
     UpdateGraph,
-    CleanUp,
 }
 
 /// The power grid resource is used to store the power grid graph.
@@ -92,9 +83,8 @@ impl Nearby {
     }
 }
 
-#[derive(Component, Default)]
+#[derive(Component, Default, Debug, Clone)]
 pub struct NearbyUnits(SmallVec<[Nearby; 2]>, Option<Vec2>);
-
 
 fn setup(mut commands: Commands) {
     commands.insert_resource(PowerGrid::default());
@@ -102,6 +92,18 @@ fn setup(mut commands: Commands) {
 
 fn clean_up(mut commands: Commands) {
     commands.remove_resource::<PowerGrid>();
+}
+
+/// This system spawns Energy Producers and Energy Receivers and nearby units.
+fn spawn_graph_components(
+    mut commands: Commands,
+    newly_spawned_units: Query<Entity, Added<Active>>,
+) {
+    for entity in newly_spawned_units.iter() {
+        commands
+            .entity(entity)
+            .insert((EnergyReceiver, NearbyUnits::default()));
+    }
 }
 
 fn update_nearby_recv(
@@ -156,6 +158,7 @@ fn update_nearby(
     ];
 }
 
+#[allow(clippy::type_complexity)]
 fn update_graph(
     mut power_grid: ResMut<PowerGrid>,
     nearby_units: Query<(Entity, &NearbyUnits), Or<(Added<NearbyUnits>, Changed<NearbyUnits>)>>,
@@ -183,7 +186,6 @@ fn update_graph(
                         edges_to_add.push((entity, *receiver));
                     }
                 }
-                _ => {}
             }
         }
 
@@ -202,35 +204,39 @@ fn update_graph(
     }
 }
 
-// fn remove_old_nodes(
-//     mut power_grid: ResMut<PowerGrid>,
-//     mut nearby_removed: RemovedComponents<NearbyUnits>,
-//     mut death_events: EventReader<DespawnedComponents<NearbyUnits>>,
-// ) {
-//     // for entity in nearby_removed.iter() {
-//     //     // for edge in power_grid.graph.edges(entity).collect::<Vec<_>>() {
-//     //     //     nearby_units.get_mut(edge.target()).unwrap().0.retain(|e| match e {
-//     //     //         Nearby::Receiver(entity) => {}
-//     //     //         Nearby::Producer(entity) => {}
-//     //     //     } != entity);
-//     //     // }
-//     //
-//     //     power_grid.graph.remove_node(entity);
-//     // }
-// }
+fn remove_old_nodes(
+    mut power_grid: ResMut<PowerGrid>,
+    mut nearby_units: Query<&mut NearbyUnits>,
+    mut death_events: EventReader<DespawnedComponentsEvent<NearbyUnits>>,
+) {
+    for event in death_events.iter() {
+        power_grid.graph.remove_node(event.entity);
+
+        for outer_nearby in event.data.0.iter().flat_map(|nearby| nearby.clone().into_inner()) {
+            for inner_nearby in nearby_units.get_mut(outer_nearby).unwrap().0.iter_mut(){
+                match inner_nearby {
+                    Nearby::Producer(producer) => {
+                        producer.retain(|entity| *entity != event.entity)
+                    }
+                    Nearby::Receiver(receiver) => {
+                        receiver.retain(|entity| *entity != event.entity)
+                    }
+                }
+            }
+        }
+    }
+}
 
 fn debug_lines(
     power_grid: Res<PowerGrid>,
     query: Query<&Transform>,
     mut debug_lines: ResMut<DebugLines>,
 ) {
-    let mut i = 0;
     for (node, _) in power_grid.graph.node_references() {
         let node_location = query.get(node).unwrap().translation;
         for neighbor in power_grid.graph.neighbors(node) {
             let neighbor_location = query.get(neighbor).unwrap().translation;
             debug_lines.line_colored(node_location, neighbor_location, 0., Color::RED);
-            i += 1;
         }
     }
 }
