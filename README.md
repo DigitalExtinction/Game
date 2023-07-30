@@ -2,10 +2,13 @@
 
 [![AGPLv3](https://img.shields.io/badge/license-AGPLv3-088F8F.svg)](https://github.com/DigitalExtinction/Game#license)
 [![CI](https://github.com/DigitalExtinction/Game/actions/workflows/rust.yml/badge.svg)](https://github.com/DigitalExtinction/Game/actions)
-[![Discord](https://img.shields.io/badge/Discord-blue.svg?logo=discord&logoColor=white)](https://discord.gg/vHMFuCWGSX)
+[![Sponsors](https://img.shields.io/github/sponsors/Indy2222)](https://github.com/sponsors/Indy2222)
 
-Digital Extinction is a 3D real-time strategy (RTS) game. It is set in the near
-future when humans and AI fight over their existence.
+Digital Extinction ([de-game.org](https://de-game.org/),
+[GitHub](https://github.com/DigitalExtinction/Game),
+[Discord](https://discord.gg/vHMFuCWGSX)) is a 3D real-time strategy (RTS)
+game. It is set in the near future when humans and AI fight over their
+existence.
 
 It is [open source & free software](#license). Forever! It runs on Linux,
 Windows and potentially other platforms.
