@@ -28,19 +28,21 @@ impl Plugin for InteractionPlugin {
             .add_systems(
                 InputSchedule,
                 (
-                    click_handler
-                        .in_set(InteractionSet::ClickHandler)
+                    press_handler
+                        .in_set(InteractionSet::PressHandler)
                         .run_if(on_event::<MouseButtonInput>()),
                     drag_handler
                         .in_set(InteractionSet::DragHandler)
-                        .after(InteractionSet::ClickHandler)
+                        .after(InteractionSet::PressHandler)
                         .run_if(on_event::<MouseMotion>()),
-                    move_camera_system.after(InteractionSet::DragHandler),
+                    move_camera_system
+                        .after(InteractionSet::PressHandler)
+                        .after(InteractionSet::DragHandler),
                     send_units_system
-                        .after(InteractionSet::ClickHandler)
+                        .after(InteractionSet::PressHandler)
                         .before(CommandsSet::SendSelected),
                     delivery_location_system
-                        .after(InteractionSet::ClickHandler)
+                        .after(InteractionSet::PressHandler)
                         .before(CommandsSet::DeliveryLocation),
                 )
                     .run_if(in_state(GameState::Playing)),
@@ -50,7 +52,7 @@ impl Plugin for InteractionPlugin {
 
 #[derive(Copy, Clone, Hash, Debug, PartialEq, Eq, SystemSet)]
 enum InteractionSet {
-    ClickHandler,
+    PressHandler,
     DragHandler,
 }
 
@@ -104,33 +106,35 @@ impl MinimapDragEvent {
     }
 }
 
-#[derive(Resource)]
+#[derive(Resource, Deref, DerefMut)]
 struct DraggingButtons(Vec<MouseButton>);
 
-fn click_handler(
+fn press_handler(
     window_query: Query<&Window, With<PrimaryWindow>>,
     mut input_events: EventReader<MouseButtonInput>,
     hud: HudNodes<With<MinimapNode>>,
     bounds: Res<MapBounds>,
     mut dragging: ResMut<DraggingButtons>,
-    mut click_events: EventWriter<MinimapPressEvent>,
+    mut press_events: EventWriter<MinimapPressEvent>,
 ) {
-    let Some(cursor) = window_query.single().cursor_position() else {
-        return;
-    };
+    let cursor = window_query.single().cursor_position();
 
     for event in input_events.iter() {
         if event.state != ButtonState::Pressed {
-            dragging.0.retain(|b| *b != event.button);
+            dragging.retain(|b| *b != event.button);
             continue;
         }
 
+        let Some(cursor) = cursor else {
+            continue;
+        };
+
         if let Some(mut relative) = hud.relative_position(cursor) {
-            dragging.0.push(event.button);
+            dragging.push(event.button);
             relative.y = 1. - relative.y;
             let event = MinimapPressEvent::new(event.button, bounds.rel_to_abs(relative));
-            info!("Sending minimap click event {event:?}.");
-            click_events.send(event);
+            info!("Sending minimap press event {event:?}.");
+            press_events.send(event);
         }
     }
 }
@@ -142,7 +146,7 @@ fn drag_handler(
     dragging: Res<DraggingButtons>,
     mut drag_events: EventWriter<MinimapDragEvent>,
 ) {
-    if dragging.0.is_empty() {
+    if dragging.is_empty() {
         return;
     }
 
@@ -154,24 +158,24 @@ fn drag_handler(
         let proportional = Vec2::new(relative.x, 1. - relative.y);
         let world = bounds.rel_to_abs(proportional);
 
-        for b in &dragging.0 {
-            let event = MinimapDragEvent::new(*b, world);
+        for button in &**dragging {
+            let event = MinimapDragEvent::new(*button, world);
             drag_events.send(event);
         }
     }
 }
 
 fn move_camera_system(
-    mut click_events: EventReader<MinimapPressEvent>,
+    mut press_events: EventReader<MinimapPressEvent>,
     mut drag_events: EventReader<MinimapDragEvent>,
     mut camera_events: EventWriter<MoveFocusEvent>,
 ) {
-    for click in click_events.iter() {
-        if click.button() != MouseButton::Left {
+    for press in press_events.iter() {
+        if press.button() != MouseButton::Left {
             continue;
         }
 
-        let event = MoveFocusEvent::new(click.position());
+        let event = MoveFocusEvent::new(press.position());
         camera_events.send(event);
     }
 
@@ -186,25 +190,25 @@ fn move_camera_system(
 }
 
 fn send_units_system(
-    mut click_events: EventReader<MinimapPressEvent>,
+    mut press_events: EventReader<MinimapPressEvent>,
     mut send_events: EventWriter<SendSelectedEvent>,
 ) {
-    for click in click_events.iter() {
-        if click.button() != MouseButton::Right {
+    for press in press_events.iter() {
+        if press.button() != MouseButton::Right {
             continue;
         }
-        send_events.send(SendSelectedEvent::new(click.position()));
+        send_events.send(SendSelectedEvent::new(press.position()));
     }
 }
 
 fn delivery_location_system(
-    mut click_events: EventReader<MinimapPressEvent>,
+    mut press_events: EventReader<MinimapPressEvent>,
     mut location_events: EventWriter<DeliveryLocationSelectedEvent>,
 ) {
-    for click in click_events.iter() {
-        if click.button() != MouseButton::Right {
+    for press in press_events.iter() {
+        if press.button() != MouseButton::Right {
             continue;
         }
-        location_events.send(DeliveryLocationSelectedEvent::new(click.position()));
+        location_events.send(DeliveryLocationSelectedEvent::new(press.position()));
     }
 }
