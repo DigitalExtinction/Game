@@ -9,7 +9,7 @@ use de_core::gamestate::GameState;
 use de_core::objects::Active;
 use de_core::projection::ToFlat;
 use de_index::SpatialQuery;
-use de_spawner::{DespawnedComponentsEvent, DespawnEventsPlugin, SpawnerSet};
+use de_spawner::{DespawnEventsPlugin, DespawnedComponentsEvent};
 use parry3d::bounding_volume::Aabb;
 use parry3d::math::Point;
 use smallvec::{smallvec, SmallVec};
@@ -21,20 +21,25 @@ pub(crate) struct GraphPlugin;
 
 impl Plugin for GraphPlugin {
     fn build(&self, app: &mut App) {
-        app.add_plugins((DebugLinesPlugin::default(), DespawnEventsPlugin::<&NearbyUnits, NearbyUnits>::default()))
-            .add_systems(OnEnter(GameState::Playing), setup)
-            .add_systems(OnExit(GameState::Playing), clean_up)
-            .add_systems(Update, spawn_graph_components.after(SpawnerSet::Spawn))
-            .add_systems(
-                PreUpdate,
-                (
-                    remove_old_nodes.before(GraphSystemSet::UpdateNearby),
-                    update_nearby_recv.in_set(GraphSystemSet::UpdateNearby),
-                    update_graph.in_set(GraphSystemSet::UpdateGraph).after(GraphSystemSet::UpdateNearby),
-                    debug_lines.after(GraphSystemSet::UpdateGraph),
-                )
-                    .run_if(in_state(GameState::Playing)),
-            );
+        app.add_plugins((
+            DebugLinesPlugin::default(),
+            DespawnEventsPlugin::<&NearbyUnits, NearbyUnits>::default(),
+        ))
+        .add_systems(OnEnter(GameState::Playing), setup)
+        .add_systems(OnExit(GameState::Playing), clean_up)
+        .add_systems(PostUpdate, spawn_graph_components)
+        .add_systems(
+            PreUpdate,
+            (
+                remove_old_nodes.before(GraphSystemSet::UpdateNearby),
+                update_nearby_recv.in_set(GraphSystemSet::UpdateNearby),
+                update_graph
+                    .in_set(GraphSystemSet::UpdateGraph)
+                    .after(GraphSystemSet::UpdateNearby),
+                debug_lines.after(GraphSystemSet::UpdateGraph),
+            )
+                .run_if(in_state(GameState::Playing)),
+        );
     }
 }
 
@@ -109,7 +114,7 @@ fn spawn_graph_components(
 fn update_nearby_recv(
     spacial_index_producer: SpatialQuery<Entity, With<EnergyProducer>>,
     spacial_index_receiver: SpatialQuery<Entity, With<EnergyReceiver>>,
-    mut nearby_units: Query<(Entity, &mut NearbyUnits, &Transform)>,
+    mut nearby_units: Query<(Entity, &mut NearbyUnits, &Transform), Changed<Transform>>,
 ) {
     let time = Instant::now();
     nearby_units
@@ -123,8 +128,8 @@ fn update_nearby_recv(
             nearby_units.1 = Some(transform.translation.to_flat());
 
             let aabb = &Aabb::new(
-                Point::from(*(transform.translation - Vec3::splat(MAX_DISTANCE)).as_ref()),
-                Point::from(*(transform.translation + Vec3::splat(MAX_DISTANCE)).as_ref()),
+                Point::from(transform.translation - Vec3::splat(MAX_DISTANCE)),
+                Point::from(transform.translation + Vec3::splat(MAX_DISTANCE)),
             );
 
             let producers = spacial_index_producer.query_aabb(aabb, Some(entity));
@@ -212,15 +217,17 @@ fn remove_old_nodes(
     for event in death_events.iter() {
         power_grid.graph.remove_node(event.entity);
 
-        for outer_nearby in event.data.0.iter().flat_map(|nearby| nearby.clone().into_inner()) {
-            for inner_nearby in nearby_units.get_mut(outer_nearby).unwrap().0.iter_mut(){
+        // Remove the entity from the nearby units of all nearby units
+        for outer_nearby in event
+            .data
+            .0
+            .iter()
+            .flat_map(|nearby| nearby.clone().into_inner())
+        {
+            for inner_nearby in nearby_units.get_mut(outer_nearby).unwrap().0.iter_mut() {
                 match inner_nearby {
-                    Nearby::Producer(producer) => {
-                        producer.retain(|entity| *entity != event.entity)
-                    }
-                    Nearby::Receiver(receiver) => {
-                        receiver.retain(|entity| *entity != event.entity)
-                    }
+                    Nearby::Producer(producer) => producer.retain(|entity| *entity != event.entity),
+                    Nearby::Receiver(receiver) => receiver.retain(|entity| *entity != event.entity),
                 }
             }
         }

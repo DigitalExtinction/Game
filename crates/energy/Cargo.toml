@@ -14,13 +14,13 @@ categories.workspace = true
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+# DE
+de_core.workspace = true
+de_index.workspace = true
 de_spawner.workspace = true
 
-
+# Other
 bevy.workspace = true
-de_core.workspace = true
-smallvec.workspace = true
-de_index.workspace = true
-parry3d.workspace = true
-
 bevy_prototype_debug_lines.workspace = true
+parry3d.workspace = true
+smallvec.workspace = true

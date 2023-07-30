@@ -16,19 +16,8 @@ pub(crate) struct SpawnerPlugin;
 
 impl Plugin for SpawnerPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(
-            Update,
-            spawn
-                .run_if(in_state(GameState::Playing))
-                .in_set(SpawnerSet::Spawn),
-        );
+        app.add_systems(Update, spawn.run_if(in_state(GameState::Playing)));
     }
-}
-
-#[derive(SystemSet, Debug, Clone, PartialEq, Eq, Hash)]
-pub enum SpawnerSet {
-    /// This exists so that we can manage newly spawned objects by `.after(SpawnerSet::Spawn)`.
-    Spawn,
 }
 
 #[derive(Bundle)]
@@ -78,9 +67,6 @@ fn spawn(
         match object_type {
             ObjectType::Active(active_type) => {
                 entity_commands.insert(Active);
-                // entity_commands.insert(Battery::default());
-                // entity_commands.insert(EnergyReceiver);
-                // entity_commands.insert(NearbyUnits::default());
 
                 let player = *player.expect("Active object without an associated was spawned.");
                 counter.player_mut(player).unwrap().update(active_type, 1);

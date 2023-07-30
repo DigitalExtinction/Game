@@ -2598,7 +2598,6 @@ dependencies = [
  "de_terrain",
  "parry2d",
  "parry3d",
- "smallvec",
 ]
 
 [[package]]

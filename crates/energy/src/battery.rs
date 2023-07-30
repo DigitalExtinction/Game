@@ -1,15 +1,12 @@
 use bevy::prelude::*;
 use de_core::objects::Active;
-use de_spawner::SpawnerSet;
 
 pub(crate) struct BatteryPlugin;
 
 impl Plugin for BatteryPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(
-            Update,
-            (discharge_battery, spawn_battery.after(SpawnerSet::Spawn)),
-        );
+        app.add_systems(Update, discharge_battery)
+            .add_systems(PostUpdate, spawn_battery);
     }
 }
 
@@ -65,7 +62,7 @@ impl Battery {
 
 fn spawn_battery(mut commands: Commands, newly_spawned_units: Query<Entity, Added<Active>>) {
     for entity in newly_spawned_units.iter() {
-        commands.entity(entity).insert((Battery::default(),));
+        commands.entity(entity).insert(Battery::default());
     }
 }
 

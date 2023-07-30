@@ -27,4 +27,3 @@ ahash.workspace = true
 bevy.workspace = true
 parry2d.workspace = true
 parry3d.workspace = true
-smallvec.workspace = true
