@@ -80,6 +80,8 @@ jobs:
         run: |
           mkdir DigitalExtinction
           mv assets DigitalExtinction/
+          mv LICENSE DigitalExtinction/LICENSE
+          mv README.md DigitalExtinction/README.md
 
       - name: Add Windows Binary
         if: ${{ matrix.target == 'x86_64-pc-windows-gnu' }}
