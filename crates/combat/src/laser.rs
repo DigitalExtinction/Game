@@ -1,4 +1,5 @@
 use bevy::prelude::*;
+use de_audio::spatial::{PlaySpatialAudioEvent, Sound};
 use de_core::gamestate::GameState;
 use de_objects::Health;
 use de_signs::UpdateBarValueEvent;
@@ -79,6 +80,7 @@ fn fire(
     mut susceptible: Query<&mut Health>,
     mut bar: EventWriter<UpdateBarValueEvent>,
     mut trail: EventWriter<TrailEvent>,
+    mut start_sound: EventWriter<PlaySpatialAudioEvent>,
 ) {
     for fire in fires.iter() {
         if susceptible
@@ -100,5 +102,10 @@ fn fire(
             health.hit(fire.damage());
             bar.send(UpdateBarValueEvent::new(entity, health.fraction()));
         }
+
+        start_sound.send(PlaySpatialAudioEvent::new(
+            Sound::LaserFire,
+            fire.ray().origin.into(),
+        ));
     }
 }

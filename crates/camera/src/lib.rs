@@ -1,8 +1,8 @@
 use bevy::{app::PluginGroupBuilder, prelude::*};
 use camera::CameraPlugin;
 pub use camera::{
-    CameraSet, MoveCameraHorizontallyEvent, MoveFocusEvent, RotateCameraEvent, TiltCameraEvent,
-    ZoomCameraEvent,
+    CameraFocus, CameraSet, MoveCameraHorizontallyEvent, MoveFocusEvent, RotateCameraEvent,
+    TiltCameraEvent, ZoomCameraEvent,
 };
 use distance::DistancePlugin;
 pub use distance::{CameraDistance, DistanceSet};

@@ -2,6 +2,7 @@ use std::{collections::VecDeque, time::Duration};
 
 use ahash::AHashMap;
 use bevy::prelude::*;
+use de_audio::spatial::{PlaySpatialAudioEvent, Sound};
 use de_core::{
     cleanup::DespawnOnGameExit,
     gamestate::GameState,
@@ -409,6 +410,7 @@ fn deliver(
     mut deliver_events: EventReader<DeliverEvent>,
     mut path_events: EventWriter<UpdateEntityPathEvent>,
     factories: Query<(&Transform, &ObjectType, &Player, &DeliveryLocation)>,
+    mut play_audio: EventWriter<PlaySpatialAudioEvent>,
 ) {
     for delivery in deliver_events.iter() {
         info!(
@@ -440,6 +442,8 @@ fn deliver(
                 false,
             ),
         ));
+
+        play_audio.send(PlaySpatialAudioEvent::new(Sound::Manufacture, spawn_point));
     }
 }
 

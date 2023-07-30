@@ -1,4 +1,8 @@
-use bevy::{asset::LoadState, audio::Volume, prelude::*};
+use bevy::{asset::LoadState, prelude::*};
+use bevy_kira_audio::{
+    prelude::{Audio as KAudio, AudioSource as KAudioSource, Volume},
+    AudioControl,
+};
 use de_conf::Configuration;
 use de_core::state::AppState;
 use iyes_progress::prelude::*;
@@ -17,7 +21,7 @@ impl Plugin for MusicPlugin {
 }
 
 #[derive(Resource)]
-struct Tracks(Handle<AudioSource>);
+struct Tracks(Handle<KAudioSource>);
 
 fn setup(mut commands: Commands, server: Res<AssetServer>) {
     commands.insert_resource(Tracks(server.load("audio/music/menu_loop.mp3")));
@@ -31,14 +35,13 @@ fn load(server: Res<AssetServer>, tracks: Res<Tracks>) -> Progress {
     }
 }
 
-fn start(mut commands: Commands, tracks: Res<Tracks>, config: Res<Configuration>) {
+fn start(audio: Res<KAudio>, tracks: Res<Tracks>, config: Res<Configuration>) {
     if !config.audio().music_enabled() {
         return;
     }
 
-    let volume = Volume::new_relative(config.audio().music_volume());
-    commands.spawn(AudioBundle {
-        source: tracks.0.clone(),
-        settings: PlaybackSettings::LOOP.with_volume(volume),
-    });
+    audio
+        .play(tracks.0.clone())
+        .looped()
+        .with_volume(Volume::Amplitude(config.audio().music_volume().into()));
 }

@@ -56,6 +56,7 @@ de_terrain.workspace = true
 
 # Other
 bevy.workspace = true
+bevy_kira_audio.workspace = true
 tracing.workspace = true
 
 [workspace]
@@ -111,7 +112,7 @@ assert_cmd = "2.0.10"
 async-compat = "0.2.1"
 async-std = "1.11"
 async-tar = "0.4.2"
-bevy = { version = "0.11", features = ["mp3"] }
+bevy_kira_audio = { version = "0.16.0", features = ["mp3"] }
 bincode = "2.0.0-rc.3"
 chrono = "0.4.24"
 clap = { version = "4.0", features = ["derive"] }
@@ -154,3 +155,33 @@ tracing-subscriber = { version = "0.3.17", features = ["json"] }
 trybuild = "1.0.80"
 url = { version = "2.3.1", features = ["serde"] }
 urlencoding = "2.1.2"
+
+[workspace.dependencies.bevy]
+version = "0.11"
+default-features = false
+features = [
+    "animation",
+    "bevy_asset",
+    "bevy_gilrs",
+    "bevy_scene",
+    "bevy_winit",
+    "bevy_core_pipeline",
+    "bevy_pbr",
+    "bevy_gltf",
+    "bevy_render",
+    "bevy_sprite",
+    "bevy_text",
+    "bevy_ui",
+    "multi-threaded",
+    "png",
+    "hdr",
+    "ktx2",
+    "zstd",
+    "x11",
+    "filesystem_watcher",
+    "bevy_gizmos",
+    "android_shared_stdcxx",
+    "tonemapping_luts",
+    "default_font",
+    "webgl2",
+]

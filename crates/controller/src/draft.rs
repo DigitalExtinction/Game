@@ -1,4 +1,5 @@
 use bevy::prelude::*;
+use de_audio::spatial::{PlaySpatialAudioEvent, Sound};
 use de_core::{
     cleanup::DespawnOnGameExit,
     gamestate::GameState,
@@ -79,6 +80,7 @@ fn spawn(
     mut commands: Commands,
     game_config: Res<GameConfig>,
     drafts: Query<(Entity, &Transform, &ObjectType, &DraftAllowed)>,
+    mut play_audio: EventWriter<PlaySpatialAudioEvent>,
 ) {
     for (entity, &transform, &object_type, draft) in drafts.iter() {
         if draft.allowed() {
@@ -87,6 +89,11 @@ fn spawn(
                 SpawnBundle::new(object_type, transform),
                 game_config.locals().playable(),
                 DespawnOnGameExit,
+            ));
+
+            play_audio.send(PlaySpatialAudioEvent::new(
+                Sound::Construct,
+                transform.translation,
             ));
         }
     }

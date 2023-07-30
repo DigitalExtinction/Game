@@ -13,6 +13,7 @@ categories.workspace = true
 
 [dependencies]
 # DE
+de_audio.workspace = true
 de_behaviour.workspace = true
 de_camera.workspace = true
 de_combat.workspace = true
