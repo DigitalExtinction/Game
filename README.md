@@ -27,7 +27,8 @@ Feedback, bug reports, and other [contributions](#contributing) are welcome.
 
 # How to Play?
 
-Game controls & gameplay tutorial is at [TUTORIAL.md](/TUTORIAL.md).
+Game controls & gameplay tutorial is at
+[docs.de-game.org/tutorial/](https://docs.de-game.org/tutorial/).
 
 ## Downloading Nightly Builds
 
@@ -84,8 +85,7 @@ buildings).
 
 # Where to Get Help?
 
-* Consult [TUTORIAL.md](/TUTORIAL.md), [CONTRIBUTING.md](/CONTRIBUTING.md),
-  [DESIGN.md](/DESIGN.md) or [the online documentation at
+* Consult [CONTRIBUTING.md](/CONTRIBUTING.md) or [the online documentation at
   docs.de-game.org](https://docs.de-game.org/).
 * Open a question in [the Q&A category of this repository's
   discussions](https://github.com/DigitalExtinction/Game/discussions/categories/q-a).
@@ -141,7 +141,7 @@ hand in hand with the spirit of the following goals.
 
 # Game Design
 
-See [Game Design document](/DESIGN.md).
+See [game design documentation](https://docs.de-game.org/design/).
 
 # Contributing
 
