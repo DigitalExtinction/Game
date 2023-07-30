@@ -76,13 +76,22 @@ jobs:
       - name: Build
         run: cargo build --release --target ${{ matrix.target }}
 
+      - name: Prepare Pack
+        run: |
+          mkdir DigitalExtinction
+          mv assets DigitalExtinction/
+
+      - name: Add Windows Binary
+        if: ${{ matrix.target == 'x86_64-pc-windows-gnu' }}
+        run: mv target/${{ matrix.target }}/release/de_game.exe DigitalExtinction/de.exe
+
+      - name: Add Non-Windows Binary
+        if: ${{ matrix.target != 'x86_64-pc-windows-gnu' }}
+        run: mv target/${{ matrix.target }}/release/de_game DigitalExtinction/de
+
       - name: Pack
         shell: bash
         run: |
-          mkdir DigitalExtinction
-          mv target/${{ matrix.target }}/release/de_game DigitalExtinction/de || :
-          mv target/${{ matrix.target }}/release/de_game.exe DigitalExtinction/de.exe || :
-          mv assets DigitalExtinction/
           mkdir -p ${{ matrix.target }}
           zip -r ${{ matrix.target }}/nightly.zip DigitalExtinction
 
