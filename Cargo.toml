@@ -69,7 +69,7 @@ authors = ["Martin Indra <martin.indra@mgn.cz>"]
 repository = "https://github.com/DigitalExtinction/Game"
 keywords = ["DigitalExtinction", "gamedev", "game", "bevy", "3d"]
 homepage = "https://de-game.org/"
-license = "GPL-3.0"
+license = "AGPL-3.0"
 categories = ["games"]
 
 [workspace.dependencies]

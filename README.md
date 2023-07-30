@@ -1,6 +1,6 @@
 # Digital Extinction
 
-[![GPLv3](https://img.shields.io/badge/license-GPLv3-088F8F.svg)](https://github.com/DigitalExtinction/Game#license)
+[![AGPLv3](https://img.shields.io/badge/license-AGPLv3-088F8F.svg)](https://github.com/DigitalExtinction/Game#license)
 [![CI](https://github.com/DigitalExtinction/Game/actions/workflows/rust.yml/badge.svg)](https://github.com/DigitalExtinction/Game/actions)
 [![Discord](https://img.shields.io/badge/Discord-blue.svg?logo=discord&logoColor=white)](https://discord.gg/vHMFuCWGSX)
 
@@ -189,8 +189,8 @@ The game mechanics are somewhat expanded so it is no longer thoroughly â€œdummyâ
 ## Source Code
 
 Digital Extinction is free and open source. All code in this repository is
-licensed under GNU GPLv3 ([LICENSE](LICENSE) or
-[https://www.gnu.org/licenses/gpl-3.0.en.html](https://www.gnu.org/licenses/gpl-3.0.en.html)).
+licensed under GNU AGPLv3 ([LICENSE](LICENSE) or
+[https://www.gnu.org/licenses/agpl-3.0.en.html](https://www.gnu.org/licenses/agpl-3.0.en.html)).
 
 Unless you explicitly state otherwise, any source code contribution
 intentionally submitted for inclusion in the work by you, shall be licensed as
