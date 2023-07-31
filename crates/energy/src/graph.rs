@@ -12,7 +12,7 @@ use de_index::SpatialQuery;
 use de_spawner::{DespawnEventsPlugin, DespawnedComponentsEvent};
 use parry3d::bounding_volume::Aabb;
 use parry3d::math::Point;
-use smallvec::{smallvec, SmallVec};
+use smallvec::{SmallVec};
 
 // The max distance (in meters) between two entities for them to be consider neighbors in the graph
 const MAX_DISTANCE: f32 = 10.0;
@@ -146,26 +146,35 @@ fn update_nearby(
     producers: Vec<Entity>,
     receivers: Vec<Entity>,
 ) {
-    let mut nearby_producers = SmallVec::new();
-    let mut nearby_receivers = SmallVec::new();
-
-    for producer in producers {
-        nearby_producers.push(producer);
+    if nearby_units.0.is_empty() {
+        nearby_units.0.push(Nearby::Producer(SmallVec::from(producers)));
+        nearby_units.0.push(Nearby::Receiver(SmallVec::from(receivers)));
+        return;
     }
 
-    for receiver in receivers {
-        nearby_receivers.push(receiver);
-    }
+    for category in &mut nearby_units.0 {
+        match category {
+            Nearby::Producer(inner) => {
+                inner.clear();
 
-    nearby_units.0 = smallvec![
-        Nearby::Producer(nearby_producers),
-        Nearby::Receiver(nearby_receivers)
-    ];
+                for producer in &producers {
+                    inner.push(*producer);
+                }
+            }
+            Nearby::Receiver(inner) => {
+                inner.clear();
+
+                for receiver in &receivers {
+                    inner.push(*receiver);
+                }
+            }
+        }
+    }
 }
 
 fn update_graph(
     mut power_grid: ResMut<PowerGrid>,
-    nearby_units: Query<(Entity, &NearbyUnits), Changed<NearbyUnits>>>,
+    nearby_units: Query<(Entity, &NearbyUnits), Changed<NearbyUnits>>,
 ) {
     for (entity, nearby_units) in nearby_units.iter() {
         let mut edges_to_remove = HashSet::new();
