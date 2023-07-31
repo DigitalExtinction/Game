@@ -163,10 +163,9 @@ fn update_nearby(
     ];
 }
 
-#[allow(clippy::type_complexity)]
 fn update_graph(
     mut power_grid: ResMut<PowerGrid>,
-    nearby_units: Query<(Entity, &NearbyUnits), Or<(Added<NearbyUnits>, Changed<NearbyUnits>)>>,
+    nearby_units: Query<(Entity, &NearbyUnits), Changed<NearbyUnits>>>,
 ) {
     for (entity, nearby_units) in nearby_units.iter() {
         let mut edges_to_remove = HashSet::new();
