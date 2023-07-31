@@ -58,9 +58,9 @@
 
 * The development process is incremental. There are no final or big versions.
 
-* Release train: after version
-  [0.1](https://github.com/DigitalExtinction/Game/milestone/2) is released, a
-  new version is released every 6 weeks.
+* Release train: after version [0.1
+  (PoC)](https://github.com/DigitalExtinction/Game/milestone/1) is released, a
+  new version is released every month.
 
 ## Coding Style
 
