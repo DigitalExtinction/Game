@@ -155,14 +155,12 @@ of Rust.
 
 Bellow is a high-level roadmap. Also, see [Issue
 #246](https://github.com/DigitalExtinction/Game/issues/246) with a detailed
-path toward version 0.1.
+path toward version 1.0.
 
 1. [Proof of Concept
    (PoC)](https://github.com/DigitalExtinction/Game/milestone/1)
 1. Release (first) [version
-   0.1](https://github.com/DigitalExtinction/Game/milestone/2)
-1. Publicly announce the game:
-   [#60](https://github.com/DigitalExtinction/Game/issues/60)
+   1.0](https://github.com/DigitalExtinction/Game/milestone/2)
 1. [Indefinitely improve the game](/CONTRIBUTING.md#development-process)
 
 ## Proof of Concept
@@ -178,7 +176,7 @@ The goal of this milestone is to lay down the foundations, setup basic
 insfrastrucutre (GitHub Actions, issues labels, …) and achieve an important
 psychological milestone.
 
-## 0.1
+## 1.0
 
 This is the first published version of the game. In theory, this should be the
 earliest possible version, minimizing development time and effort, which is
