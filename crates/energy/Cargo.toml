@@ -23,4 +23,4 @@ de_spawner.workspace = true
 bevy.workspace = true
 bevy_prototype_debug_lines.workspace = true
 parry3d.workspace = true
-smallvec.workspace = true
+tinyvec.workspace = true

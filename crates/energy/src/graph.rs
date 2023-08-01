@@ -12,7 +12,7 @@ use de_index::SpatialQuery;
 use de_spawner::{DespawnEventsPlugin, DespawnedComponentsEvent};
 use parry3d::bounding_volume::Aabb;
 use parry3d::math::Point;
-use smallvec::{SmallVec};
+use tinyvec::TinyVec;
 
 // The max distance (in meters) between two entities for them to be consider neighbors in the graph
 const MAX_DISTANCE: f32 = 10.0;
@@ -40,6 +40,28 @@ impl Plugin for GraphPlugin {
             )
                 .run_if(in_state(GameState::Playing)),
         );
+    }
+}
+
+/// wrapped entity to allow for default values (se we can work with TinyVec)
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+struct NearbyEntity(Entity);
+
+impl Default for NearbyEntity {
+    fn default() -> Self {
+        Self(Entity::PLACEHOLDER)
+    }
+}
+
+impl From<NearbyEntity> for Entity {
+    fn from(val: NearbyEntity) -> Self {
+        val.0
+    }
+}
+
+impl From<Entity> for NearbyEntity {
+    fn from(entity: Entity) -> Self {
+        Self(entity)
     }
 }
 
@@ -73,23 +95,33 @@ pub struct EnergyReceiver;
 pub struct EnergyProducer;
 
 /// The nearby component is used to store the nearby entities of an entity.
-#[derive(Debug, Clone)]
-pub enum Nearby {
-    Receiver(SmallVec<[Entity; 40]>),
-    Producer(SmallVec<[Entity; 40]>),
+#[derive(Debug, Clone, Default)]
+pub struct Nearby {
+    receivers: TinyVec<[NearbyEntity; 32]>,
+    producers: TinyVec<[NearbyEntity; 32]>,
 }
 
 impl Nearby {
-    fn into_inner(self) -> SmallVec<[Entity; 40]> {
-        match self {
-            Nearby::Receiver(inner) => inner,
-            Nearby::Producer(inner) => inner,
-        }
+    fn both(&self) -> TinyVec<[NearbyEntity; 64]> {
+        self.receivers.clone().into_iter().chain(self.producers.clone()).collect()
+    }
+
+    fn clear(&mut self) {
+        self.receivers.clear();
+        self.producers.clear();
+    }
+
+    fn remove_matching(&mut self, entity: NearbyEntity) {
+        self.receivers.retain(|&e| e != entity);
+        self.producers.retain(|&e| e != entity);
     }
 }
 
 #[derive(Component, Default, Debug, Clone)]
-pub struct NearbyUnits(SmallVec<[Nearby; 2]>, Option<Vec2>);
+pub struct NearbyUnits{
+    units: Nearby,
+    last_pos: Option<Vec2>,
+}
 
 fn setup(mut commands: Commands) {
     commands.insert_resource(PowerGrid::default());
@@ -120,12 +152,12 @@ fn update_nearby_recv(
     nearby_units
         .par_iter_mut()
         .for_each_mut(|(entity, mut nearby_units, transform)| {
-            if let Some(last_pos) = nearby_units.1 {
+            if let Some(last_pos) = nearby_units.last_pos {
                 if transform.translation.to_flat().distance_squared(last_pos) < 0.5 {
                     return;
                 }
             }
-            nearby_units.1 = Some(transform.translation.to_flat());
+            nearby_units.last_pos = Some(transform.translation.to_flat());
 
             let aabb = &Aabb::new(
                 Point::from(transform.translation - Vec3::splat(MAX_DISTANCE)),
@@ -136,40 +168,21 @@ fn update_nearby_recv(
 
             let receivers = spacial_index_receiver.query_aabb(aabb, Some(entity));
 
-            update_nearby(nearby_units, producers.collect(), receivers.collect());
+            update_nearby(nearby_units, producers.map(|entity| entity.into()).collect(), receivers.map(|entity| entity.into()).collect());
         });
     println!("update_nearby_recv: {:?}", time.elapsed());
 }
 
 fn update_nearby(
     mut nearby_units: Mut<NearbyUnits>,
-    producers: Vec<Entity>,
-    receivers: Vec<Entity>,
+    producers: Vec<NearbyEntity>,
+    receivers: Vec<NearbyEntity>,
 ) {
-    if nearby_units.0.is_empty() {
-        nearby_units.0.push(Nearby::Producer(SmallVec::from(producers)));
-        nearby_units.0.push(Nearby::Receiver(SmallVec::from(receivers)));
-        return;
-    }
+    nearby_units.units.clear();
 
-    for category in &mut nearby_units.0 {
-        match category {
-            Nearby::Producer(inner) => {
-                inner.clear();
 
-                for producer in &producers {
-                    inner.push(*producer);
-                }
-            }
-            Nearby::Receiver(inner) => {
-                inner.clear();
-
-                for receiver in &receivers {
-                    inner.push(*receiver);
-                }
-            }
-        }
-    }
+    nearby_units.units.receivers.extend(producers);
+    nearby_units.units.producers.extend(receivers);
 }
 
 fn update_graph(
@@ -187,19 +200,9 @@ fn update_graph(
         );
 
         let mut edges_to_add = vec![];
-        for group in &nearby_units.0 {
-            match group {
-                Nearby::Producer(producers) => {
-                    for producer in producers {
-                        edges_to_add.push((entity, *producer));
-                    }
-                }
-                Nearby::Receiver(receivers) => {
-                    for receiver in receivers {
-                        edges_to_add.push((entity, *receiver));
-                    }
-                }
-            }
+
+        for nearby_entity in nearby_units.units.both() {
+            edges_to_add.push((entity, nearby_entity.into()));
         }
 
         for edge in edges_to_add.iter() {
@@ -226,18 +229,8 @@ fn remove_old_nodes(
         power_grid.graph.remove_node(event.entity);
 
         // Remove the entity from the nearby units of all nearby units
-        for outer_nearby in event
-            .data
-            .0
-            .iter()
-            .flat_map(|nearby| nearby.clone().into_inner())
-        {
-            for inner_nearby in nearby_units.get_mut(outer_nearby).unwrap().0.iter_mut() {
-                match inner_nearby {
-                    Nearby::Producer(producer) => producer.retain(|entity| *entity != event.entity),
-                    Nearby::Receiver(receiver) => receiver.retain(|entity| *entity != event.entity),
-                }
-            }
+        for mut nearby_units in nearby_units.iter_mut() {
+            nearby_units.units.remove_matching(event.entity.into())
         }
     }
 }

@@ -2321,7 +2321,7 @@ dependencies = [
  "de_index",
  "de_spawner",
  "parry3d",
- "smallvec",
+ "tinyvec",
 ]
 
 [[package]]
