@@ -21,31 +21,26 @@ pub(crate) struct GraphPlugin;
 
 impl Plugin for GraphPlugin {
     fn build(&self, app: &mut App) {
-        app.add_plugins((
-            DespawnEventsPlugin::<&NearbyUnits, NearbyUnits>::default(),
-        ))
-        .add_systems(OnEnter(GameState::Playing), setup)
-        .add_systems(OnExit(GameState::Playing), clean_up)
-        .add_systems(PostUpdate, spawn_graph_components)
-        .add_systems(
-            PreUpdate,
-            (
-                remove_old_nodes.before(GraphSystemSet::UpdateNearby),
-                update_nearby_recv.in_set(GraphSystemSet::UpdateNearby),
-                update_graph
-                    .in_set(GraphSystemSet::UpdateGraph)
-                    .after(GraphSystemSet::UpdateNearby),
-
-            )
-                .run_if(in_state(GameState::Playing)),
-        );
+        app.add_plugins((DespawnEventsPlugin::<&NearbyUnits, NearbyUnits>::default(),))
+            .add_systems(OnEnter(GameState::Playing), setup)
+            .add_systems(OnExit(GameState::Playing), clean_up)
+            .add_systems(PostUpdate, spawn_graph_components)
+            .add_systems(
+                PreUpdate,
+                (
+                    remove_old_nodes.before(GraphSystemSet::UpdateNearby),
+                    update_nearby_recv.in_set(GraphSystemSet::UpdateNearby),
+                    update_graph
+                        .in_set(GraphSystemSet::UpdateGraph)
+                        .after(GraphSystemSet::UpdateNearby),
+                )
+                    .run_if(in_state(GameState::Playing)),
+            );
 
         #[cfg(feature = "graph_debug_lines")]
-        app.add_plugins(DebugLinesPlugin::default())
-            .add_systems(
+        app.add_plugins(DebugLinesPlugin::default()).add_systems(
             PostUpdate,
-            (debug_lines)
-                .run_if(in_state(GameState::Playing)),
+            (debug_lines).run_if(in_state(GameState::Playing)),
         );
     }
 }
@@ -110,7 +105,11 @@ pub struct Nearby {
 
 impl Nearby {
     fn both(&self) -> TinyVec<[NearbyEntity; 64]> {
-        self.receivers.clone().into_iter().chain(self.producers.clone()).collect()
+        self.receivers
+            .clone()
+            .into_iter()
+            .chain(self.producers.clone())
+            .collect()
     }
 
     fn clear(&mut self) {
@@ -125,7 +124,7 @@ impl Nearby {
 }
 
 #[derive(Component, Default, Debug, Clone)]
-pub struct NearbyUnits{
+pub struct NearbyUnits {
     units: Nearby,
     last_pos: Option<Vec2>,
 }
@@ -175,7 +174,11 @@ fn update_nearby_recv(
 
             let receivers = spacial_index_receiver.query_aabb(aabb, Some(entity));
 
-            update_nearby(nearby_units, producers.map(|entity| entity.into()).collect(), receivers.map(|entity| entity.into()).collect());
+            update_nearby(
+                nearby_units,
+                producers.map(|entity| entity.into()).collect(),
+                receivers.map(|entity| entity.into()).collect(),
+            );
         });
     println!("update_nearby_recv: {:?}", time.elapsed());
 }
@@ -186,7 +189,6 @@ fn update_nearby(
     receivers: Vec<NearbyEntity>,
 ) {
     nearby_units.units.clear();
-
 
     nearby_units.units.receivers.extend(producers);
     nearby_units.units.producers.extend(receivers);
