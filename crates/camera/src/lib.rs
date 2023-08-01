@@ -6,9 +6,11 @@ pub use camera::{
 };
 use distance::DistancePlugin;
 pub use distance::{CameraDistance, DistanceSet};
+use skybox::SkyboxPlugin;
 
 mod camera;
 mod distance;
+mod skybox;
 
 pub struct CameraPluginGroup;
 
@@ -17,5 +19,6 @@ impl PluginGroup for CameraPluginGroup {
         PluginGroupBuilder::start::<Self>()
             .add(CameraPlugin)
             .add(DistancePlugin)
+            .add(SkyboxPlugin)
     }
 }
