@@ -2,7 +2,7 @@ use std::f32::consts::FRAC_PI_2;
 
 use bevy::{
     ecs::query::Has,
-    pbr::{CascadeShadowConfig, CascadeShadowConfigBuilder},
+    pbr::{CascadeShadowConfig, CascadeShadowConfigBuilder, DirectionalLightShadowMap},
     prelude::*,
 };
 use de_conf::{CameraConf, Configuration};
@@ -329,6 +329,8 @@ fn setup(mut commands: Commands, conf: Res<Configuration>) {
         },
         DespawnOnGameExit,
     ));
+
+    commands.insert_resource(DirectionalLightShadowMap { size: 4096 });
 }
 
 fn cleanup(mut commands: Commands) {
