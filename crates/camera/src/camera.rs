@@ -1,6 +1,10 @@
 use std::f32::consts::FRAC_PI_2;
 
-use bevy::prelude::*;
+use bevy::{
+    ecs::query::Has,
+    pbr::{CascadeShadowConfig, CascadeShadowConfigBuilder},
+    prelude::*,
+};
 use de_conf::{CameraConf, Configuration};
 use de_core::{
     cleanup::DespawnOnGameExit,
@@ -13,6 +17,7 @@ use de_core::{
 use de_map::size::MapBounds;
 use de_terrain::{TerrainCollider, MAX_ELEVATION};
 use de_uom::{InverseSecond, Metre, Quantity, Radian, Second};
+use iyes_progress::prelude::*;
 use parry3d::{math::Vector, query::Ray};
 
 /// Camera moves horizontally at speed `distance * CAMERA_HORIZONTAL_SPEED`.
@@ -36,6 +41,7 @@ const MIN_OFF_NADIR: Radian = Quantity::new_unchecked(0.001);
 const MAX_OFF_NADIR: Radian = Quantity::new_unchecked(0.7 * FRAC_PI_2);
 /// Never move camera focus point closer than this to a map edge.
 const MAP_FOCUS_MARGIN: Metre = Quantity::new_unchecked(1.);
+const SHADOWS_NUM_CASCADES: usize = 4;
 
 pub(crate) struct CameraPlugin;
 
@@ -80,6 +86,9 @@ impl Plugin for CameraPlugin {
                 Movement,
                 (
                     zoom.in_set(InternalCameraSet::Zoom),
+                    update_shadows
+                        .after(InternalCameraSet::Zoom)
+                        .run_if(resource_exists_and_changed::<CameraFocus>()),
                     pivot
                         .run_if(
                             resource_exists_and_changed::<DesiredOffNadir>()
@@ -93,6 +102,12 @@ impl Plugin for CameraPlugin {
                         .after(InternalCameraSet::Pivot),
                 )
                     .run_if(in_state(GameState::Playing)),
+            )
+            .add_systems(
+                Update,
+                setup_shadows
+                    .track_progress()
+                    .run_if(in_state(GameState::Loading)),
             );
     }
 }
@@ -324,6 +339,30 @@ fn cleanup(mut commands: Commands) {
     commands.remove_resource::<CameraFocus>();
 }
 
+fn setup_shadows(
+    mut commands: Commands,
+    focus: Res<CameraFocus>,
+    light: Query<(Entity, Has<CascadeShadowConfig>), With<DirectionalLight>>,
+) -> Progress {
+    let Ok((entity, has_config)) = light.get_single() else {
+        return false.into();
+    };
+
+    if has_config {
+        return true.into();
+    }
+
+    let mut config = CascadeShadowConfigBuilder {
+        num_cascades: SHADOWS_NUM_CASCADES,
+        minimum_distance: 1.,
+        ..default()
+    }
+    .build();
+    update_shadows_config(focus.as_ref(), &mut config);
+    commands.entity(entity).insert(config);
+    true.into()
+}
+
 fn update_focus(
     mut focus: ResMut<CameraFocus>,
     terrain: TerrainCollider,
@@ -438,6 +477,21 @@ fn zoom(
     let delta_vec = f32::from(delta_scalar) * transform.forward();
     transform.translation += delta_vec;
     focus.update_distance(delta_scalar);
+}
+
+fn update_shadows(focus: Res<CameraFocus>, mut shadows: Query<&mut CascadeShadowConfig>) {
+    update_shadows_config(focus.as_ref(), shadows.single_mut().as_mut());
+}
+
+fn update_shadows_config(focus: &CameraFocus, shadows: &mut CascadeShadowConfig) {
+    let distnace = focus.distance().inner();
+
+    shadows.bounds[0] = 0.8 * distnace;
+
+    let base = (4f32).powf(1. / (shadows.bounds.len() - 1) as f32);
+    for i in 1..shadows.bounds.len() {
+        shadows.bounds[i] = shadows.bounds[i - 1] * base.powi(i as i32);
+    }
 }
 
 fn pivot(
