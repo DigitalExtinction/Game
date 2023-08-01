@@ -2,8 +2,8 @@ use std::collections::HashSet;
 
 use bevy::prelude::*;
 use bevy::utils::petgraph::prelude::*;
-use bevy::utils::petgraph::visit::IntoNodeReferences;
 use bevy::utils::Instant;
+#[cfg(feature = "graph_debug_lines")]
 use bevy_prototype_debug_lines::{DebugLines, DebugLinesPlugin};
 use de_core::gamestate::GameState;
 use de_core::objects::Active;
@@ -22,7 +22,6 @@ pub(crate) struct GraphPlugin;
 impl Plugin for GraphPlugin {
     fn build(&self, app: &mut App) {
         app.add_plugins((
-            DebugLinesPlugin::default(),
             DespawnEventsPlugin::<&NearbyUnits, NearbyUnits>::default(),
         ))
         .add_systems(OnEnter(GameState::Playing), setup)
@@ -36,8 +35,16 @@ impl Plugin for GraphPlugin {
                 update_graph
                     .in_set(GraphSystemSet::UpdateGraph)
                     .after(GraphSystemSet::UpdateNearby),
-                debug_lines.after(GraphSystemSet::UpdateGraph),
+
             )
+                .run_if(in_state(GameState::Playing)),
+        );
+
+        #[cfg(feature = "graph_debug_lines")]
+        app.add_plugins(DebugLinesPlugin::default())
+            .add_systems(
+            PostUpdate,
+            (debug_lines)
                 .run_if(in_state(GameState::Playing)),
         );
     }
@@ -235,6 +242,7 @@ fn remove_old_nodes(
     }
 }
 
+#[cfg(feature = "graph_debug_lines")]
 fn debug_lines(
     power_grid: Res<PowerGrid>,
     query: Query<&Transform>,

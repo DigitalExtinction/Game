@@ -28,6 +28,7 @@ opt-level = 3
 
 [features]
 godmode = ["de_spawner/godmode"]
+graph_debug_lines = ["de_energy/graph_debug_lines"]
 
 [dependencies]
 # DE
@@ -112,7 +113,6 @@ async-compat = "0.2.1"
 async-std = "1.11"
 async-tar = "0.4.2"
 bevy = { version = "0.11", features = ["mp3"] }
-bevy_prototype_debug_lines = { version="0.11", features = ["3d"] }
 bincode = "2.0.0-rc.3"
 chrono = "0.4.24"
 clap = { version = "4.0", features = ["derive"] }
