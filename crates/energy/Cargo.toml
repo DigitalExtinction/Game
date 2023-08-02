@@ -29,3 +29,12 @@ tinyvec.workspace = true
 
 # This cannot be a workspace dependency because it is optional
 bevy_prototype_debug_lines = { version="0.11", features = ["3d"], optional = true }
+
+[dev-dependencies]
+criterion.workspace = true
+fastrand.workspace = true
+de_objects.workspace = true
+
+[[bench]]
+name = "nearby"
+harness = false

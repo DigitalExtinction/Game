@@ -2317,9 +2317,12 @@ version = "0.1.0-dev"
 dependencies = [
  "bevy",
  "bevy_prototype_debug_lines",
+ "criterion",
  "de_core",
  "de_index",
+ "de_objects",
  "de_spawner",
+ "fastrand 1.9.0",
  "parry3d",
  "tinyvec",
 ]

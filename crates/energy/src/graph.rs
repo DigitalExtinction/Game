@@ -2,7 +2,6 @@ use std::collections::HashSet;
 
 use bevy::prelude::*;
 use bevy::utils::petgraph::prelude::*;
-use bevy::utils::Instant;
 #[cfg(feature = "graph_debug_lines")]
 use bevy_prototype_debug_lines::{DebugLines, DebugLinesPlugin};
 use de_core::gamestate::GameState;
@@ -99,12 +98,12 @@ pub struct EnergyProducer;
 /// The nearby component is used to store the nearby entities of an entity.
 #[derive(Debug, Clone, Default)]
 pub struct Nearby {
-    receivers: TinyVec<[NearbyEntity; 32]>,
-    producers: TinyVec<[NearbyEntity; 32]>,
+    receivers: TinyVec<[NearbyEntity; 128]>,
+    producers: TinyVec<[NearbyEntity; 128]>,
 }
 
 impl Nearby {
-    fn both(&self) -> TinyVec<[NearbyEntity; 64]> {
+    fn both(&self) -> TinyVec<[NearbyEntity; 256]> {
         self.receivers
             .clone()
             .into_iter()
@@ -149,12 +148,11 @@ fn spawn_graph_components(
     }
 }
 
-fn update_nearby_recv(
+pub fn update_nearby_recv(
     spacial_index_producer: SpatialQuery<Entity, With<EnergyProducer>>,
     spacial_index_receiver: SpatialQuery<Entity, With<EnergyReceiver>>,
     mut nearby_units: Query<(Entity, &mut NearbyUnits, &Transform), Changed<Transform>>,
 ) {
-    let time = Instant::now();
     nearby_units
         .par_iter_mut()
         .for_each_mut(|(entity, mut nearby_units, transform)| {
@@ -180,7 +178,6 @@ fn update_nearby_recv(
                 receivers.map(|entity| entity.into()).collect(),
             );
         });
-    println!("update_nearby_recv: {:?}", time.elapsed());
 }
 
 fn update_nearby(
@@ -190,8 +187,8 @@ fn update_nearby(
 ) {
     nearby_units.units.clear();
 
-    nearby_units.units.receivers.extend(producers);
-    nearby_units.units.producers.extend(receivers);
+    nearby_units.units.producers.extend(producers);
+    nearby_units.units.receivers.extend(receivers);
 }
 
 fn update_graph(
