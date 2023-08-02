@@ -106,8 +106,8 @@ fn move_entities_randomly_direction(
             direction.y = fastrand::i32(-1..2) as f32;
         }
 
-        transform.translation.x += direction.x;
-        transform.translation.y += direction.y;
+        transform.translation.x += direction.x*time.delta_seconds();
+        transform.translation.y += direction.y*time.delta_seconds();
     }
 }
 
