@@ -2,12 +2,17 @@ use bevy::prelude::*;
 use de_core::nested_state;
 use de_multiplayer::MultiplayerShuttingDownEvent;
 
-use self::{create::CreateGamePlugin, gamelisting::GameListingPlugin, signin::SignInPlugin};
+use self::{
+    create::CreateGamePlugin, gamelisting::GameListingPlugin, joined::JoinedGamePlugin,
+    setup::SetupGamePlugin, signin::SignInPlugin,
+};
 use crate::{menu::ScreenStatePlugin, MenuState};
 
 mod create;
 mod gamelisting;
+mod joined;
 mod requests;
+mod setup;
 mod signin;
 
 pub(super) struct MultiplayerPlugin;
@@ -20,6 +25,8 @@ impl Plugin for MultiplayerPlugin {
             SignInPlugin,
             GameListingPlugin,
             CreateGamePlugin,
+            SetupGamePlugin,
+            JoinedGamePlugin,
         ))
         .add_systems(
             PostUpdate,
@@ -38,6 +45,7 @@ nested_state!(
         SignIn,
         GameListing,
         GameCreation,
+        GameSetup,
         GameJoined,
     }
 );
