@@ -114,7 +114,7 @@ fn move_entities_randomly_direction(
 fn nearby_benchmark(c: &mut Criterion) {
     let mut group = c.benchmark_group("nearby entity movement scenarios");
 
-    for i in [100, 1_000, 10_000, 100_000].iter() {
+    for i in [100, 1_000, 10_000].iter() {
         let mut app = App::default();
         init_world_with_entities(&mut app.world, *i);
         app.add_systems(
@@ -130,7 +130,7 @@ fn nearby_benchmark(c: &mut Criterion) {
         });
     }
 
-    for i in [100, 1_000, 10_000, 100_000].iter() {
+    for i in [100, 1_000, 10_000].iter() {
         let mut app = App::default();
         init_world_with_entities_moving(&mut app.world, *i);
         app.add_systems(
