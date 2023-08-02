@@ -18,6 +18,7 @@ de_gui.workspace = true
 de_lobby_client.workspace = true
 de_lobby_model.workspace = true
 de_map.workspace = true
+de_multiplayer.workspace = true
 
 # Other
 async-std.workspace = true
