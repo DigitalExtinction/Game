@@ -104,7 +104,7 @@ impl validation::Validatable for GameSetup {
     }
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct GameConfig {
     name: String,

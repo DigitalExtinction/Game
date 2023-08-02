@@ -2491,6 +2491,7 @@ version = "0.1.0-dev"
 dependencies = [
  "async-std",
  "bevy",
+ "de_conf",
  "de_core",
  "de_gui",
  "de_lobby_client",
