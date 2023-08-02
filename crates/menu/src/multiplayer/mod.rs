@@ -1,5 +1,6 @@
 use bevy::prelude::*;
 use de_core::nested_state;
+use de_multiplayer::MultiplayerShuttingDownEvent;
 
 use self::{create::CreateGamePlugin, gamelisting::GameListingPlugin, signin::SignInPlugin};
 use crate::{menu::ScreenStatePlugin, MenuState};
@@ -19,14 +20,20 @@ impl Plugin for MultiplayerPlugin {
             SignInPlugin,
             GameListingPlugin,
             CreateGamePlugin,
-        ));
+        ))
+        .add_systems(
+            PostUpdate,
+            go_to_sign_in
+                .run_if(in_state(MenuState::Multiplayer))
+                .run_if(on_event::<MultiplayerShuttingDownEvent>()),
+        );
     }
 }
 
 nested_state!(
     MenuState::Multiplayer -> MultiplayerState,
     doc = "Each state corresponds to an individual multiplayer related menu screen.",
-    enter = multiplayer_entered_system,
+    enter = go_to_sign_in,
     variants = {
         SignIn,
         GameListing,
@@ -35,6 +42,6 @@ nested_state!(
     }
 );
 
-fn multiplayer_entered_system(mut next_state: ResMut<NextState<MultiplayerState>>) {
+fn go_to_sign_in(mut next_state: ResMut<NextState<MultiplayerState>>) {
     next_state.set(MultiplayerState::SignIn);
 }

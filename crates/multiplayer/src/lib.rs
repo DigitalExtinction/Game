@@ -15,7 +15,7 @@ use stats::StatsPlugin;
 
 pub use crate::{
     config::{NetGameConf, ServerPort},
-    lifecycle::{ShutdownMultiplayerEvent, StartMultiplayerEvent},
+    lifecycle::{MultiplayerShuttingDownEvent, ShutdownMultiplayerEvent, StartMultiplayerEvent},
     netstate::NetState,
 };
 use crate::{netstate::NetStatePlugin, network::NetworkPlugin};
