@@ -1,3 +1,5 @@
+use std::net::SocketAddr;
+
 use bevy::prelude::*;
 use de_core::{player::Player, schedule::PreMovement};
 use de_net::{FromGame, FromServer, GameOpenError, JoinError, ToGame, ToServer};
@@ -16,7 +18,8 @@ pub(crate) struct GamePlugin;
 
 impl Plugin for GamePlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(OnEnter(NetState::Connected), (setup, open_or_join))
+        app.add_event::<GameOpenedEvent>()
+            .add_systems(OnEnter(NetState::Connected), (setup, open_or_join))
             .add_systems(OnEnter(NetState::None), cleanup)
             .add_systems(
                 PreMovement,
@@ -32,6 +35,10 @@ impl Plugin for GamePlugin {
             .add_systems(OnEnter(NetState::ShuttingDown), leave);
     }
 }
+
+/// A new game on the given socket address was just opened.
+#[derive(Event)]
+pub struct GameOpenedEvent(pub SocketAddr);
 
 #[derive(Resource)]
 pub(crate) struct Players {
@@ -69,9 +76,11 @@ fn open_or_join(
 }
 
 fn process_from_server(
+    conf: Res<NetGameConfRes>,
     mut ports: ResMut<Ports>,
     mut events: EventReader<FromMainServerEvent>,
     mut outputs: EventWriter<ToGameServerEvent<true>>,
+    mut opened: EventWriter<GameOpenedEvent>,
     mut fatals: EventWriter<FatalErrorEvent>,
 ) {
     for event in events.iter() {
@@ -84,6 +93,7 @@ fn process_from_server(
                     info!("Game on port {} opened.", *port);
                     // Send something to open NAT.
                     outputs.send(ToGame::Ping(u32::MAX).into());
+                    opened.send(GameOpenedEvent(SocketAddr::new(conf.server_host(), *port)));
                 }
                 Err(err) => {
                     fatals.send(FatalErrorEvent::new(format!("Invalid GameOpened: {err:?}")));
