@@ -6,13 +6,13 @@ use de_gui::{
 use de_lobby_client::{Authentication, LobbyRequest, SignInRequest, SignUpRequest};
 use de_lobby_model::{User, UserWithPassword, UsernameAndPassword};
 
-use crate::{
-    menu::Menu,
+use super::{
     requests::{Receiver, RequestsPlugin, Sender},
-    MenuState,
+    MultiplayerState,
 };
+use crate::menu::Menu;
 
-pub(crate) struct SignInPlugin;
+pub(super) struct SignInPlugin;
 
 impl Plugin for SignInPlugin {
     fn build(&self, app: &mut App) {
@@ -20,8 +20,8 @@ impl Plugin for SignInPlugin {
             RequestsPlugin::<SignInRequest>::new(),
             RequestsPlugin::<SignUpRequest>::new(),
         ))
-        .add_systems(OnEnter(MenuState::SignIn), setup)
-        .add_systems(OnExit(MenuState::SignIn), cleanup)
+        .add_systems(OnEnter(MultiplayerState::SignIn), setup)
+        .add_systems(OnExit(MultiplayerState::SignIn), cleanup)
         .add_systems(
             Update,
             (
@@ -30,7 +30,7 @@ impl Plugin for SignInPlugin {
                 response_system::<SignUpRequest>,
                 auth_system,
             )
-                .run_if(in_state(MenuState::SignIn)),
+                .run_if(in_state(MultiplayerState::SignIn)),
         );
     }
 }
@@ -204,8 +204,8 @@ where
     }
 }
 
-fn auth_system(mut next_state: ResMut<NextState<MenuState>>, auth: Res<Authentication>) {
+fn auth_system(mut next_state: ResMut<NextState<MultiplayerState>>, auth: Res<Authentication>) {
     if auth.is_authenticated() {
-        next_state.set(MenuState::GameListing);
+        next_state.set(MultiplayerState::GameListing);
     }
 }

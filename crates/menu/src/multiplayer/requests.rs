@@ -1,10 +1,11 @@
 use std::marker::PhantomData;
 
 use bevy::{ecs::system::SystemParam, prelude::*};
-use de_core::state::AppState;
 use de_lobby_client::{LobbyRequest, RequestEvent, ResponseEvent, Result};
 
-pub(crate) struct RequestsPlugin<T>
+use crate::MenuState;
+
+pub(super) struct RequestsPlugin<T>
 where
     T: LobbyRequest,
 {
@@ -15,7 +16,7 @@ impl<T> RequestsPlugin<T>
 where
     T: LobbyRequest,
 {
-    pub(crate) fn new() -> Self {
+    pub(super) fn new() -> Self {
         Self {
             _marker: PhantomData,
         }
@@ -27,13 +28,13 @@ where
     T: LobbyRequest,
 {
     fn build(&self, app: &mut App) {
-        app.add_systems(OnEnter(AppState::InMenu), setup::<T>)
-            .add_systems(OnExit(AppState::InMenu), cleanup::<T>);
+        app.add_systems(OnEnter(MenuState::Multiplayer), setup::<T>)
+            .add_systems(OnExit(MenuState::Multiplayer), cleanup::<T>);
     }
 }
 
 #[derive(SystemParam)]
-pub(crate) struct Sender<'w, T>
+pub(super) struct Sender<'w, T>
 where
     T: LobbyRequest,
 {
@@ -45,14 +46,14 @@ impl<'w, T> Sender<'w, T>
 where
     T: LobbyRequest,
 {
-    pub(crate) fn send(&mut self, request: T) {
+    pub(super) fn send(&mut self, request: T) {
         self.requests
             .send(RequestEvent::new(self.counter.increment(), request));
     }
 }
 
 #[derive(SystemParam)]
-pub(crate) struct Receiver<'w, 's, T>
+pub(super) struct Receiver<'w, 's, T>
 where
     T: LobbyRequest,
 {
@@ -67,7 +68,7 @@ where
     /// Returns the response result corresponding the ID of the last request.
     /// Responses to earlier requests or requests not made via Sender are
     /// ignored.
-    pub(crate) fn receive(&mut self) -> Option<&Result<T::Response>> {
+    pub(super) fn receive(&mut self) -> Option<&Result<T::Response>> {
         self.responses
             .iter()
             .filter_map(|e| {
@@ -82,7 +83,7 @@ where
 }
 
 #[derive(Resource)]
-pub(crate) struct Counter<T>
+pub(super) struct Counter<T>
 where
     T: LobbyRequest,
 {

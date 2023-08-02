@@ -1,3 +1,5 @@
+use std::marker::PhantomData;
+
 use bevy::prelude::*;
 use de_core::state::AppState;
 use de_gui::{ButtonCommands, GuiCommands, OuterStyle};
@@ -10,7 +12,6 @@ impl Plugin for MenuPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(OnEnter(AppState::InMenu), setup)
             .add_systems(OnExit(AppState::InMenu), cleanup)
-            .add_systems(PreUpdate, clean_up_root.run_if(resource_exists::<Menu>()))
             .add_systems(
                 Update,
                 (
@@ -20,6 +21,22 @@ impl Plugin for MenuPlugin {
                     button_system.run_if(in_state(AppState::InMenu)),
                 ),
             );
+    }
+}
+
+/// This plugin handles state transitions leading to new screen (i.e. screen
+/// cleaning).
+#[derive(Default)]
+pub(crate) struct ScreenStatePlugin<S: States> {
+    _marker: PhantomData<S>,
+}
+
+impl<S: States> Plugin for ScreenStatePlugin<S> {
+    fn build(&self, app: &mut App) {
+        app.add_systems(
+            PreUpdate,
+            clean_up_root::<S>.run_if(resource_exists::<Menu>()),
+        );
     }
 }
 
@@ -51,7 +68,7 @@ enum ButtonAction {
     Close,
 }
 
-fn clean_up_root(mut commands: Commands, state: Res<NextState<MenuState>>, menu: Res<Menu>) {
+fn clean_up_root<S: States>(mut commands: Commands, state: Res<NextState<S>>, menu: Res<Menu>) {
     if state.0.is_none() {
         return;
     };
