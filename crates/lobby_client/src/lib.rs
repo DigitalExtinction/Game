@@ -34,6 +34,7 @@ impl PluginGroup for LobbyClientPluginGroup {
             .add(EndpointPlugin::<SignInRequest>::default())
             .add(EndpointPlugin::<CreateGameRequest>::default())
             .add(EndpointPlugin::<ListGamesRequest>::default())
+            .add(EndpointPlugin::<GetGameRequest>::default())
             .add(EndpointPlugin::<JoinGameRequest>::default())
             .add(EndpointPlugin::<LeaveGameRequest>::default())
     }

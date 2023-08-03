@@ -1,6 +1,6 @@
 use std::borrow::Cow;
 
-use de_lobby_model::{GameListing, GameSetup, Token, UserWithPassword, UsernameAndPassword};
+use de_lobby_model::{Game, GameListing, GameSetup, Token, UserWithPassword, UsernameAndPassword};
 use reqwest::{header::HeaderValue, Method, Request};
 use serde::Serialize;
 use url::Url;
@@ -88,6 +88,28 @@ impl LobbyRequest for ListGamesRequest {
 impl LobbyRequestCreator for ListGamesRequest {
     fn path(&self) -> Cow<str> {
         "/a/games".into()
+    }
+
+    fn create(&self, url: Url) -> Request {
+        Request::new(Method::GET, url)
+    }
+}
+
+pub struct GetGameRequest(String);
+
+impl GetGameRequest {
+    pub fn new(id: impl ToString) -> Self {
+        Self(id.to_string())
+    }
+}
+
+impl LobbyRequest for GetGameRequest {
+    type Response = Game;
+}
+
+impl LobbyRequestCreator for GetGameRequest {
+    fn path(&self) -> Cow<str> {
+        encode(&["a", "games", self.0.as_str()])
     }
 
     fn create(&self, url: Url) -> Request {

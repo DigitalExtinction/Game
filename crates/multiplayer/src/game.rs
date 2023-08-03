@@ -19,6 +19,7 @@ pub(crate) struct GamePlugin;
 impl Plugin for GamePlugin {
     fn build(&self, app: &mut App) {
         app.add_event::<GameOpenedEvent>()
+            .add_event::<GameJoinedEvent>()
             .add_systems(OnEnter(NetState::Connected), (setup, open_or_join))
             .add_systems(OnEnter(NetState::None), cleanup)
             .add_systems(
@@ -39,6 +40,10 @@ impl Plugin for GamePlugin {
 /// A new game on the given socket address was just opened.
 #[derive(Event)]
 pub struct GameOpenedEvent(pub SocketAddr);
+
+/// A game was just joined.
+#[derive(Event)]
+pub struct GameJoinedEvent;
 
 #[derive(Resource)]
 pub(crate) struct Players {
@@ -115,6 +120,7 @@ fn process_from_game(
     mut inputs: EventReader<FromGameServerEvent>,
     mut fatals: EventWriter<FatalErrorEvent>,
     state: Res<State<NetState>>,
+    mut joined_events: EventWriter<GameJoinedEvent>,
     mut next_state: ResMut<NextState<NetState>>,
 ) {
     for event in inputs.iter() {
@@ -132,6 +138,7 @@ fn process_from_game(
                     info!("Joined game as Player {player}.");
                     players.local = Some(player);
                     next_state.set(NetState::Joined);
+                    joined_events.send(GameJoinedEvent);
                 }
                 Err(err) => {
                     fatals.send(FatalErrorEvent::new(format!(

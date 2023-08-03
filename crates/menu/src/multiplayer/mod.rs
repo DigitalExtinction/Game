@@ -4,13 +4,14 @@ use de_multiplayer::MultiplayerShuttingDownEvent;
 
 use self::{
     create::CreateGamePlugin, gamelisting::GameListingPlugin, joined::JoinedGamePlugin,
-    setup::SetupGamePlugin, signin::SignInPlugin,
+    joining::JoiningGamePlugin, setup::SetupGamePlugin, signin::SignInPlugin,
 };
 use crate::{menu::ScreenStatePlugin, MenuState};
 
 mod create;
 mod gamelisting;
 mod joined;
+mod joining;
 mod requests;
 mod setup;
 mod signin;
@@ -26,6 +27,7 @@ impl Plugin for MultiplayerPlugin {
             GameListingPlugin,
             CreateGamePlugin,
             SetupGamePlugin,
+            JoiningGamePlugin,
             JoinedGamePlugin,
         ))
         .add_systems(
@@ -46,6 +48,7 @@ nested_state!(
         GameListing,
         GameCreation,
         GameSetup,
+        GameJoining,
         GameJoined,
     }
 );
