@@ -5,7 +5,7 @@ use de_gui::{ButtonCommands, GuiCommands, LabelCommands, OuterStyle, ToastEvent}
 use de_lobby_client::{ListGamesRequest, RequestEvent, ResponseEvent};
 use de_lobby_model::GamePartial;
 
-use super::MultiplayerState;
+use super::{joining::JoinGameEvent, MultiplayerState};
 use crate::menu::Menu;
 
 const REFRESH_INTERVAL: Duration = Duration::from_secs(10);
@@ -30,7 +30,7 @@ struct GamesTable(Entity);
 #[derive(Component)]
 enum ButtonAction {
     Create,
-    Join,
+    Join(String),
 }
 
 fn setup(
@@ -141,7 +141,7 @@ fn row(commands: &mut GuiCommands, game: &GamePartial) -> Entity {
                 },
                 "Join",
             )
-            .insert(ButtonAction::Join)
+            .insert(ButtonAction::Join(game.config().name().to_owned()))
             .id();
         commands.entity(row_id).add_child(button_id);
     }
@@ -186,14 +186,14 @@ fn list_games_system(
 fn button_system(
     mut next_state: ResMut<NextState<MultiplayerState>>,
     interactions: Query<(&Interaction, &ButtonAction), Changed<Interaction>>,
-    mut toasts: EventWriter<ToastEvent>,
+    mut joins: EventWriter<JoinGameEvent>,
 ) {
     for (&interaction, action) in interactions.iter() {
         if let Interaction::Pressed = interaction {
             match action {
                 ButtonAction::Create => next_state.set(MultiplayerState::GameCreation),
-                ButtonAction::Join => {
-                    toasts.send(ToastEvent::new("Not yet implemented (issue #301)."))
+                ButtonAction::Join(name) => {
+                    joins.send(JoinGameEvent::new(name.to_owned()));
                 }
             }
         }

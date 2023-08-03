@@ -15,7 +15,7 @@ use stats::StatsPlugin;
 
 pub use crate::{
     config::{ConnectionType, NetGameConf},
-    game::GameOpenedEvent,
+    game::{GameJoinedEvent, GameOpenedEvent},
     lifecycle::{MultiplayerShuttingDownEvent, ShutdownMultiplayerEvent, StartMultiplayerEvent},
     netstate::NetState,
 };
