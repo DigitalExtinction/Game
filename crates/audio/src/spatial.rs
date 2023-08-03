@@ -1,11 +1,9 @@
 use std::f32::consts::PI;
 
 use bevy::{asset::LoadState, prelude::*};
-use bevy_kira_audio::{
-    prelude::{Audio as KAudio, AudioSource as KAudioSource},
-    AudioControl, AudioInstance,
-};
+use bevy_kira_audio::{prelude::AudioSource, Audio, AudioControl, AudioInstance};
 use de_camera::CameraFocus;
+use de_conf::Configuration;
 use de_core::{gamestate::GameState, state::AppState};
 use enum_map::{enum_map, Enum, EnumMap};
 use iyes_progress::{Progress, ProgressSystem};
@@ -58,7 +56,7 @@ impl PlaySpatialAudioEvent {
 }
 
 #[derive(Resource)]
-struct Sounds(EnumMap<Sound, Handle<KAudioSource>>);
+struct Sounds(EnumMap<Sound, Handle<AudioSource>>);
 
 #[derive(Component, Default)]
 struct SpatialSound;
@@ -136,17 +134,23 @@ fn play(
     mut commands: Commands,
     camera: Query<&GlobalTransform, With<Camera>>,
     focus: Res<CameraFocus>,
-    audio: Res<KAudio>,
+    audio: Res<Audio>,
     sounds: Res<Sounds>,
+    config: Res<Configuration>,
     mut play_events: EventReader<PlaySpatialAudioEvent>,
 ) {
+    if !config.audio().sound_enabled() {
+        play_events.clear();
+    }
+
     let camera = camera.single();
+    let sound_volume = config.audio().sound_volume() as f64;
 
     for PlaySpatialAudioEvent { sound, position } in &mut play_events {
         let (volume, pan) = calculate_volume_and_pan(camera, &focus, *position);
         let handle = audio
             .play(sounds.0[*sound].clone())
-            .with_volume(volume)
+            .with_volume(volume * sound_volume)
             .with_panning(pan)
             .handle();
 
@@ -165,9 +169,11 @@ fn update_spatial(
     spatial_audios: Query<InitializedSound, With<SpatialSound>>,
     camera: Query<&GlobalTransform, With<Camera>>,
     focus: Res<CameraFocus>,
+    config: Res<Configuration>,
     mut audio_instances: ResMut<Assets<AudioInstance>>,
 ) {
     let camera = camera.single();
+    let sound_volume = config.audio().sound_volume() as f64;
 
     for (entity, audio, transform) in &spatial_audios {
         let Some(audio_instance) = audio_instances.get_mut(audio) else {
@@ -177,7 +183,7 @@ fn update_spatial(
 
         let (volume, pan) = calculate_volume_and_pan(camera, &focus, transform.translation());
 
-        audio_instance.set_volume(volume, default());
+        audio_instance.set_volume(volume * sound_volume, default());
         audio_instance.set_panning(pan, default());
     }
 }
