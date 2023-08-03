@@ -4,7 +4,7 @@ use de_gui::ToastEvent;
 use de_lobby_client::CreateGameRequest;
 use de_lobby_model::{GameConfig, GameSetup};
 use de_multiplayer::{
-    GameOpenedEvent, NetGameConf, ServerPort, ShutdownMultiplayerEvent, StartMultiplayerEvent,
+    ConnectionType, GameOpenedEvent, NetGameConf, ShutdownMultiplayerEvent, StartMultiplayerEvent,
 };
 
 use super::{
@@ -84,9 +84,11 @@ fn setup_network(
 ) {
     let connector_conf = config.multiplayer().connector();
     let net_game_conf = NetGameConf::new(
-        game_config.0.max_players().try_into().unwrap(),
         connector_conf.ip(),
-        ServerPort::Main(connector_conf.port()),
+        ConnectionType::CreateGame {
+            port: connector_conf.port(),
+            max_players: game_config.0.max_players().try_into().unwrap(),
+        },
     );
     multiplayer.send(StartMultiplayerEvent::new(net_game_conf));
 }

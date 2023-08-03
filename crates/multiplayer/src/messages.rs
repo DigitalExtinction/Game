@@ -5,7 +5,7 @@ use de_core::schedule::PreMovement;
 use de_net::{FromGame, FromServer, InPackage, PackageBuilder, Peers, ToGame, ToServer};
 
 use crate::{
-    config::ServerPort,
+    config::ConnectionType,
     lifecycle::{FatalErrorEvent, NetGameConfRes},
     netstate::NetState,
     network::{NetworkSet, PackageReceivedEvent, SendPackageEvent},
@@ -217,11 +217,11 @@ impl Ports {
     }
 }
 
-impl From<ServerPort> for Ports {
-    fn from(port: ServerPort) -> Self {
-        match port {
-            ServerPort::Main(port) => Self::Main(port),
-            ServerPort::Game(port) => Self::Game(port),
+impl From<ConnectionType> for Ports {
+    fn from(game_type: ConnectionType) -> Self {
+        match game_type {
+            ConnectionType::CreateGame { port, .. } => Self::Main(port),
+            ConnectionType::JoinGame(port) => Self::Game(port),
         }
     }
 }
@@ -233,7 +233,7 @@ enum PortType {
 }
 
 fn setup(mut commands: Commands, conf: Res<NetGameConfRes>) {
-    let ports: Ports = conf.server_port().into();
+    let ports: Ports = conf.connection_type().into();
     commands.insert_resource(ports);
 }
 
@@ -307,18 +307,23 @@ fn decode_and_send<P, E>(
 
 #[cfg(test)]
 mod tests {
+    use de_core::player::Player;
+
     use super::*;
 
     #[test]
     fn test_ports() {
-        let mut ports = Ports::from(ServerPort::Main(2));
+        let mut ports = Ports::from(ConnectionType::CreateGame {
+            port: 2,
+            max_players: Player::Player1,
+        });
         assert_eq!(ports.main(), Some(2));
         assert_eq!(ports.game(), None);
         ports.init_game_port(3).unwrap();
         assert_eq!(ports.main(), Some(2));
         assert_eq!(ports.game(), Some(3));
 
-        let mut ports = Ports::from(ServerPort::Game(4));
+        let mut ports = Ports::from(ConnectionType::JoinGame(4));
         assert_eq!(ports.main(), None);
         assert_eq!(ports.game(), Some(4));
         ports.init_game_port(4).unwrap();

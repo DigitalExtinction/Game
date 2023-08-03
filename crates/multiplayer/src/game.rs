@@ -5,13 +5,13 @@ use de_core::{player::Player, schedule::PreMovement};
 use de_net::{FromGame, FromServer, GameOpenError, JoinError, ToGame, ToServer};
 
 use crate::{
+    config::ConnectionType,
     lifecycle::{FatalErrorEvent, NetGameConfRes},
     messages::{
         FromGameServerEvent, FromMainServerEvent, MessagesSet, Ports, ToGameServerEvent,
         ToMainServerEvent,
     },
     netstate::NetState,
-    ServerPort,
 };
 
 pub(crate) struct GamePlugin;
@@ -58,17 +58,17 @@ fn open_or_join(
     mut main_server: EventWriter<ToMainServerEvent>,
     mut game_server: EventWriter<ToGameServerEvent<true>>,
 ) {
-    match conf.server_port() {
-        ServerPort::Main(_) => {
+    match conf.connection_type() {
+        ConnectionType::CreateGame { max_players, .. } => {
             info!("Sending a open-game request.");
             main_server.send(
                 ToServer::OpenGame {
-                    max_players: conf.max_players().to_num(),
+                    max_players: max_players.to_num(),
                 }
                 .into(),
             );
         }
-        ServerPort::Game(_) => {
+        ConnectionType::JoinGame(_) => {
             info!("Sending a join-game request.");
             game_server.send(ToGame::Join.into());
         }
