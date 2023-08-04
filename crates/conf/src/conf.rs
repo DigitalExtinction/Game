@@ -52,13 +52,13 @@ pub struct Camera {
 #[derive(Deserialize, Serialize, Config, Debug, Clone)]
 pub struct AudioConf {
     #[is_finite]
-    #[ensure(*music_volume >= 0., "`master_volume` must be greater than or equal to 0.0.")]
-    #[ensure(*music_volume <= 1., "`master_volume` must be smaller or equal to 1.0.")]
+    #[ensure(*master_volume >= 0., "`master_volume` must be greater than or equal to 0.0.")]
+    #[ensure(*master_volume <= 1., "`master_volume` must be smaller or equal to 1.0.")]
     master_volume: f32,
 
     #[is_finite]
-    #[ensure(*music_volume >= 0., "`sound_volume` must be greater than or equal to 0.0.")]
-    #[ensure(*music_volume <= 1., "`sound_volume` must be smaller or equal to 1.0.")]
+    #[ensure(*sound_volume >= 0., "`sound_volume` must be greater than or equal to 0.0.")]
+    #[ensure(*sound_volume <= 1., "`sound_volume` must be smaller or equal to 1.0.")]
     sound_volume: f32,
 
     #[is_finite]
