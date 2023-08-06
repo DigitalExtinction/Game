@@ -47,6 +47,10 @@ est as if all properties are missing.
   * `scroll_inverted` (bool; default: `false`) – if `true`, mouse wheel and
     touchpad scrolling is inverted.
 * `audio` (object) – audio configuration.
+  * `master_volume` (f32; default: `1.0`) – sets the master volume of all audio. It
+    must be a finite number between `0.0` and `1.0`. If set to 0 no audio will play.
+  * `sound_volume` (f32; default: `1.0`) – sets the SFX volume. It must be a finite
+    number between `0.0` and `1.0`. If set to 0 sound effects will not play.
   * `music_volume` (f32; default: `1.0`) – sets the music volume. It must be a finite
     number between `0.0` and `1.0`. If set to 0 music will not play.
 
@@ -64,5 +68,7 @@ camera:
   rotation_sensitivity: 0.01
   scroll_inverted: false
 audio:
+  master_volume: 1.0
+  sound_volume: 1.0
   music_volume: 1.0
 ```
