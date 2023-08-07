@@ -4,11 +4,12 @@ use std::path::PathBuf;
 
 use bevy::ecs::schedule::ScheduleLabel;
 use bevy::prelude::{
-    App, Changed, Component, Entity, Query, Res, ResMut, Schedule, Time, Transform, Update, Vec2,
-    World,
+    App, Changed, Component, Entity, Query, Res, ResMut, Resource, Schedule, Transform, Update,
+    Vec2, World,
 };
 use bevy::time::TimePlugin;
 use criterion::{criterion_group, criterion_main, Criterion};
+use de_core::projection::ToAltitude;
 use de_energy::{update_nearby_recv, EnergyReceiver, NearbyUnits};
 use de_index::{EntityIndex, LocalCollider};
 use de_objects::ObjectCollider;
@@ -19,10 +20,25 @@ const MAP_SIZE: f32 = 2000.;
 const DISTANCE_FROM_MAP_EDGE: f32 = 100.;
 
 #[derive(ScheduleLabel, Clone, Debug, PartialEq, Eq, Hash)]
-pub struct UpdateUnits;
+pub struct UpdateOther;
 
 #[derive(Component)]
 struct UnitNumber(u32);
+
+#[derive(Component)]
+struct Centre {
+    x: f32,
+    y: f32,
+}
+
+#[derive(Resource)]
+struct Clock(f32); // this clock is used in a substitute of time to make it more deterministic
+
+impl Clock {
+    fn inc(&mut self) {
+        self.0 += 0.008 // 125 updates a "second"
+    }
+}
 
 fn update_index(
     mut index: ResMut<EntityIndex>,
@@ -59,17 +75,20 @@ fn init_world_with_entities_moving(world: &mut World, num_entities: u32) {
     let points = load_points(num_entities);
 
     for (i, point) in points.into_iter().enumerate() {
-        let x: f32 = point.x;
-        let y: f32 = point.y;
+        let point_msl = point.to_msl();
 
         let collider = LocalCollider::new(
             ObjectCollider::from(TriMesh::from(Cuboid::new(Vector::new(3., 3., 4.)))),
-            Isometry::new(Vector::new(x, 0., y), Vector::identity()),
+            Isometry::new(point_msl.into(), Vector::identity()),
         );
 
         let entity = world
             .spawn((
-                Transform::from_xyz(x, y, 0.0),
+                Transform::from_translation(point_msl),
+                Centre {
+                    x: point_msl.x,
+                    y: point_msl.y,
+                },
                 EnergyReceiver,
                 NearbyUnits::default(),
                 UnitNumber(i as u32),
@@ -79,27 +98,31 @@ fn init_world_with_entities_moving(world: &mut World, num_entities: u32) {
         index.insert(entity, collider);
     }
 
+    world.insert_resource(Clock(0.));
     world.insert_resource(index);
 }
 
 /// Move entities in circles of radius N / 2.
-fn move_entities_in_circle(time: Res<Time>, mut query: Query<&mut Transform>) {
-    for mut transform in query.iter_mut() {
+fn move_entities_in_circle(
+    clock: Res<Clock>,
+    mut query: Query<(&mut Transform, &UnitNumber, &Centre)>,
+) {
+    for (mut transform, unit_number, centre) in query.iter_mut() {
         // Change direction (counter)clockwise based on entity_mum % 2 == 0
-        let direction = if transform.translation.x % 2. == 0. {
+        let direction = if unit_number.0 as f32 % 2. == 0. {
             1.
         } else {
             -1.
         };
 
-        let t = time.elapsed_seconds();
+        let t = clock.0;
         let radius = DISTANCE_FROM_MAP_EDGE / 2.;
 
         let x = radius * (t * 0.5 * direction).sin();
         let y = radius * (t * 0.5 * direction).cos();
 
-        transform.translation.x = x;
-        transform.translation.y = y;
+        transform.translation.x = x + centre.x;
+        transform.translation.y = y + centre.y;
     }
 }
 
@@ -113,25 +136,26 @@ fn nearby_benchmark(c: &mut Criterion) {
         app.add_plugins(TimePlugin);
 
         let update_units_schedule = Schedule::default();
-        app.add_schedule(UpdateUnits, update_units_schedule);
+        app.add_schedule(UpdateOther, update_units_schedule);
 
-        app.add_systems(UpdateUnits, (update_index, move_entities_in_circle));
+        app.add_systems(UpdateOther, (update_index, move_entities_in_circle));
 
         group.throughput(criterion::Throughput::Elements(*i as u64));
         group.bench_function(format!("{} entities all moving in circles", i), |b| {
             b.iter_custom(|iters| {
                 let time = std::time::Instant::now();
-                let mut duration_updating_units = std::time::Duration::default();
+                let mut duration_updating_other_stuff = std::time::Duration::default();
 
                 for _ in 0..iters {
-                    let update_unit_time = std::time::Instant::now();
-                    app.world.run_schedule(UpdateUnits);
-                    duration_updating_units += update_unit_time.elapsed();
+                    let update_other_stuff = std::time::Instant::now();
+                    app.world.resource_mut::<Clock>().inc();
+                    app.world.run_schedule(UpdateOther);
+                    duration_updating_other_stuff += update_other_stuff.elapsed();
 
                     app.update();
                 }
 
-                time.elapsed() - duration_updating_units
+                time.elapsed() - duration_updating_other_stuff
             })
         });
     }
