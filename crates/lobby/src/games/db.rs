@@ -2,8 +2,8 @@ use std::net::SocketAddr;
 
 use anyhow::{Context, Result};
 use de_lobby_model::{
-    Game, GameConfig, GameListing, GameMap, GamePartial, GameSetup, MAP_HASH_LEN,
-    MAX_GAME_NAME_LEN, MAX_MAP_NAME_LEN, MAX_USERNAME_LEN,
+    Game, GameConfig, GameListing, GameMap, GamePartial, GamePlayer, GamePlayerInfo, GameSetup,
+    MAP_HASH_LEN, MAX_GAME_NAME_LEN, MAX_MAP_NAME_LEN, MAX_USERNAME_LEN,
 };
 use futures_util::TryStreamExt;
 use log::info;
@@ -85,7 +85,7 @@ impl Games {
         let setup = GameSetup::try_from_row(game_row)?;
 
         let mut players = Vec::new();
-        let mut player_rows = query("SELECT username FROM players WHERE game = ?;")
+        let mut player_rows = query("SELECT ordinal, username FROM players WHERE game = ?;")
             .bind(game)
             .fetch(self.pool);
 
@@ -94,8 +94,7 @@ impl Games {
             .await
             .context("Failed to retrieve game players from the DB")?
         {
-            let username: String = player_row.try_get("username")?;
-            players.push(username);
+            players.push(GamePlayer::try_from_row(player_row)?);
         }
 
         Ok(Some(Game::new(setup, players)))
@@ -140,31 +139,40 @@ impl Games {
         Ok(())
     }
 
-    pub(super) async fn add_player(&self, username: &str, game: &str) -> Result<(), AdditionError> {
-        Self::add_player_inner(self.pool, false, username, game).await
+    pub(super) async fn add_player(
+        &self,
+        player: &GamePlayer,
+        game: &str,
+    ) -> Result<(), AdditionError> {
+        Self::add_player_inner(self.pool, false, player, game).await
     }
 
     async fn add_player_inner<'c, E>(
         executor: E,
         author: bool,
-        username: &str,
+        player: &GamePlayer,
         game: &str,
     ) -> Result<(), AdditionError>
     where
         E: SqliteExecutor<'c>,
     {
-        let result = query("INSERT INTO players (author, username, game) VALUES (?, ?, ?);")
-            .bind(author)
-            .bind(username)
-            .bind(game)
-            .execute(executor)
-            .await;
+        let result =
+            query("INSERT INTO players (ordinal, author, username, game) VALUES (?, ?, ?, ?);")
+                .bind(player.info().ordinal())
+                .bind(author)
+                .bind(player.username())
+                .bind(game)
+                .execute(executor)
+                .await;
 
         db_error!(
             result,
             AdditionError::UserOrGameDoesNotExist,
             SQLITE_CONSTRAINT_FOREIGNKEY
         );
+
+        // TODO constraint unique second type
+
         db_error!(
             result,
             AdditionError::AlreadyInAGame,
@@ -281,6 +289,16 @@ pub(super) enum RemovalError {
     NotInTheGame,
     #[error("A database error encountered")]
     Database(#[source] sqlx::Error),
+}
+
+impl FromRow for GamePlayer {
+    type Error = anyhow::Error;
+
+    fn try_from_row(row: SqliteRow) -> Result<Self, Self::Error> {
+        let username: String = row.try_get("username")?;
+        let ordinal: u8 = row.try_get("ordinal")?;
+        Ok(Self::new(username, GamePlayerInfo::new(ordinal)))
+    }
 }
 
 impl FromRow for GameSetup {

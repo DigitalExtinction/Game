@@ -134,7 +134,15 @@ paths:
                   players:
                     type: array
                     items:
-                      type: string
+                      type: object
+                      properties:
+                        username:
+                          type: string
+                        info:
+                          type: object
+                          properties:
+                            ordinal:
+                              type: number
                   setup:
                     $ref: "#/components/schemas/game-setup"
         "404":
@@ -154,6 +162,20 @@ paths:
           required: true
           schema:
             type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                ordinal:
+                  type: integer
+                  minimum: 0
+                  description: >-
+                    Each player of the game has a unique number in the range
+                    from 0 to N, where N is the maximum allowed number of
+                    players in the game. This parameter sets the number for the
+                    joining player.
       responses:
         "200":
           description: The user successfully joined the game.
@@ -165,6 +187,9 @@ paths:
           description: The user is already part of a game.
         "404":
           description: The game does not exist.
+        "409":
+          description: >-
+            Another player with the same ordinal has already joined the game.
 
   /a/games/{name}/leave:
     put:

@@ -3,8 +3,8 @@ pub use auth::{
     MIN_PASSWORD_LEN,
 };
 pub use games::{
-    Game, GameConfig, GameListing, GameMap, GamePartial, GameSetup, MAP_HASH_LEN,
-    MAX_GAME_NAME_LEN, MAX_MAP_NAME_LEN,
+    Game, GameConfig, GameListing, GameMap, GamePartial, GamePlayer, GamePlayerInfo, GameSetup,
+    MAP_HASH_LEN, MAX_GAME_NAME_LEN, MAX_MAP_NAME_LEN,
 };
 pub use validation::Validatable;
 

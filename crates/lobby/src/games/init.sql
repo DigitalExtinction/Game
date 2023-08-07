@@ -7,10 +7,12 @@ CREATE TABLE IF NOT EXISTS games (
 );
 
 CREATE TABLE IF NOT EXISTS players (
-    ordinal INTEGER PRIMARY KEY AUTOINCREMENT,
+    ordinal TINYINT NOT NULL,
     author BOOLEAN NOT NULL,
     username CHARACTER({username_len}) NOT NULL UNIQUE,
     game CHARACTER({game_name_len}) NOT NULL,
+
+    UNIQUE (game, ordinal),
 
     FOREIGN KEY(username) REFERENCES users(username)
         ON UPDATE CASCADE

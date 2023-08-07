@@ -1,5 +1,5 @@
 use actix_web::{get, post, put, web, HttpResponse, Responder};
-use de_lobby_model::{Game, GameSetup, Validatable};
+use de_lobby_model::{Game, GamePlayer, GamePlayerInfo, GameSetup, Validatable};
 use log::{error, warn};
 
 use super::db::{AdditionError, CreationError, Games, RemovalError};
@@ -76,10 +76,15 @@ async fn join(
     claims: web::ReqData<Claims>,
     games: web::Data<Games>,
     path: web::Path<String>,
+    player_info: web::Json<GamePlayerInfo>,
 ) -> impl Responder {
     let name = path.into_inner();
 
-    match games.add_player(claims.username(), name.as_str()).await {
+    // TODO error code for conflict
+    // TODO error if ordinal >= max players
+
+    let player = GamePlayer::new(claims.username().to_owned(), player_info.0);
+    match games.add_player(&player, name.as_str()).await {
         Ok(_) => HttpResponse::Ok().json(()),
         Err(AdditionError::AlreadyInAGame) => {
             warn!("Game joining error: a user is already in a different game.");
