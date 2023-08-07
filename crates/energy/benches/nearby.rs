@@ -18,6 +18,7 @@ use parry3d::shape::{Cuboid, TriMesh};
 
 const MAP_SIZE: f32 = 2000.;
 const DISTANCE_FROM_MAP_EDGE: f32 = 100.;
+const SPEED: f32 = 10.; // based on MAX_H_SPEED in movement
 
 #[derive(ScheduleLabel, Clone, Debug, PartialEq, Eq, Hash)]
 pub struct UpdateOther;
@@ -117,9 +118,11 @@ fn move_entities_in_circle(
 
         let t = clock.0;
         let radius = DISTANCE_FROM_MAP_EDGE / 2.;
+        let omega = SPEED / radius;
+        let omega_shift = unit_number.0 as f32;
 
-        let x = radius * (t * 0.5 * direction).sin();
-        let y = radius * (t * 0.5 * direction).cos();
+        let x = radius * (t * omega + omega_shift * direction).sin();
+        let y = radius * (t * omega + omega_shift * direction).cos();
 
         transform.translation.x = x + centre.x;
         transform.translation.y = y + centre.y;
