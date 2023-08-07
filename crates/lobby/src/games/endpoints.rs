@@ -80,7 +80,6 @@ async fn join(
 ) -> impl Responder {
     let name = path.into_inner();
 
-    // TODO error code for conflict
     // TODO error if ordinal >= max players
 
     let player = GamePlayer::new(claims.username().to_owned(), player_info.0);
@@ -89,6 +88,11 @@ async fn join(
         Err(AdditionError::AlreadyInAGame) => {
             warn!("Game joining error: a user is already in a different game.");
             HttpResponse::Forbidden().json("User is already in a different game.")
+        }
+        Err(AdditionError::OrdinalConflict) => {
+            warn!("Game joining error: player ordinal conflict.");
+            HttpResponse::Conflict()
+                .json("Another player has already joined the game under the given ordinal.")
         }
         Err(AdditionError::UserOrGameDoesNotExist) => {
             warn!("Game joining error: the game or the user does not exist");

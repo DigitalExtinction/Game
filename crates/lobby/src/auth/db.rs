@@ -7,7 +7,7 @@ use thiserror::Error;
 use super::passwd::{DbPassword, MAX_PASS_HASH_LEN, MAX_PASS_SALT_LEN};
 use crate::{
     db::{FromRow, SQLITE_CONSTRAINT_PRIMARYKEY},
-    db_error,
+    db_error_code,
 };
 
 #[derive(Clone)]
@@ -48,7 +48,7 @@ impl Users {
             .execute(self.pool)
             .await;
 
-        db_error!(
+        db_error_code!(
             result,
             RegistrationError::UsernameTaken,
             SQLITE_CONSTRAINT_PRIMARYKEY

@@ -11,11 +11,8 @@ use sqlx::{query, sqlite::SqliteRow, Pool, Row, Sqlite, SqliteExecutor};
 use thiserror::Error;
 
 use crate::{
-    db::{
-        FromRow, SQLITE_CONSTRAINT_FOREIGNKEY, SQLITE_CONSTRAINT_PRIMARYKEY,
-        SQLITE_CONSTRAINT_UNIQUE,
-    },
-    db_error,
+    db::{FromRow, SQLITE_CONSTRAINT_FOREIGNKEY, SQLITE_CONSTRAINT_PRIMARYKEY},
+    db_error_code, db_error_message,
 };
 
 // This should correspond to the longest valid socket address. IPv6 hast up to
@@ -116,7 +113,7 @@ impl Games {
                 .bind(game_setup.server().to_string())
                 .execute(&mut transaction)
                 .await;
-        db_error!(
+        db_error_code!(
             result,
             CreationError::NameTaken,
             SQLITE_CONSTRAINT_PRIMARYKEY
@@ -165,19 +162,23 @@ impl Games {
                 .execute(executor)
                 .await;
 
-        db_error!(
+        db_error_code!(
             result,
             AdditionError::UserOrGameDoesNotExist,
             SQLITE_CONSTRAINT_FOREIGNKEY
         );
 
-        // TODO constraint unique second type
-
-        db_error!(
+        db_error_message!(
             result,
             AdditionError::AlreadyInAGame,
-            SQLITE_CONSTRAINT_UNIQUE
+            "UNIQUE constraint failed: players.username"
         );
+        db_error_message!(
+            result,
+            AdditionError::OrdinalConflict,
+            "UNIQUE constraint failed: players.game, players.ordinal"
+        );
+
         result.map_err(AdditionError::Database)?;
 
         Ok(())
@@ -275,6 +276,8 @@ pub(super) enum CreationError {
 pub(super) enum AdditionError {
     #[error("User is already in another game")]
     AlreadyInAGame,
+    #[error("Another player already joined the game with the same ordinal")]
+    OrdinalConflict,
     #[error("The user or the game does not exist")]
     UserOrGameDoesNotExist,
     #[error("A database error encountered")]
