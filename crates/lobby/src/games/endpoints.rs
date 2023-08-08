@@ -1,5 +1,5 @@
 use actix_web::{get, post, put, web, HttpResponse, Responder};
-use de_lobby_model::{Game, GameSetup, Validatable};
+use de_lobby_model::{Game, GamePlayer, GamePlayerInfo, GameSetup, Validatable};
 use log::{error, warn};
 
 use super::db::{AdditionError, CreationError, Games, RemovalError};
@@ -76,14 +76,32 @@ async fn join(
     claims: web::ReqData<Claims>,
     games: web::Data<Games>,
     path: web::Path<String>,
+    player_info: web::Json<GamePlayerInfo>,
 ) -> impl Responder {
     let name = path.into_inner();
 
-    match games.add_player(claims.username(), name.as_str()).await {
+    let ordinal = player_info.ordinal();
+    if ordinal == 0 {
+        warn!("Game joining error: got ordinal equal to 0.");
+        return HttpResponse::BadRequest().json("Ordinals start with 0, got 1.");
+    }
+
+    let player = GamePlayer::new(claims.username().to_owned(), player_info.0);
+    match games.add_player(&player, name.as_str()).await {
         Ok(_) => HttpResponse::Ok().json(()),
         Err(AdditionError::AlreadyInAGame) => {
             warn!("Game joining error: a user is already in a different game.");
             HttpResponse::Forbidden().json("User is already in a different game.")
+        }
+        Err(AdditionError::OrdinalConflict) => {
+            warn!("Game joining error: player ordinal conflict.");
+            HttpResponse::Conflict()
+                .json("Another player has already joined the game under the given ordinal.")
+        }
+        Err(AdditionError::OrdinalTooLarge) => {
+            warn!("Game joining error: too large ordinal: {ordinal}");
+            HttpResponse::Conflict()
+                .json("The given ordinal is larger than maximum number of players.")
         }
         Err(AdditionError::UserOrGameDoesNotExist) => {
             warn!("Game joining error: the game or the user does not exist");
