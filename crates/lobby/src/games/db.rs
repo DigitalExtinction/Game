@@ -178,6 +178,7 @@ impl Games {
             AdditionError::OrdinalConflict,
             "UNIQUE constraint failed: players.game, players.ordinal"
         );
+        db_error_message!(result, AdditionError::OrdinalTooLarge, "TOO-LARGE-ORDINAL");
 
         result.map_err(AdditionError::Database)?;
 
@@ -278,6 +279,8 @@ pub(super) enum AdditionError {
     AlreadyInAGame,
     #[error("Another player already joined the game with the same ordinal")]
     OrdinalConflict,
+    #[error("Player ordinal is larger than maximum number of players in the game")]
+    OrdinalTooLarge,
     #[error("The user or the game does not exist")]
     UserOrGameDoesNotExist,
     #[error("A database error encountered")]

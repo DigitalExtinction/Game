@@ -22,3 +22,14 @@ CREATE TABLE IF NOT EXISTS players (
         ON UPDATE CASCADE
         ON DELETE CASCADE
 );
+
+
+CREATE TRIGGER IF NOT EXISTS check_ordinal
+BEFORE INSERT ON players
+FOR EACH ROW
+BEGIN
+    SELECT CASE
+        WHEN (SELECT max_players FROM games WHERE name = NEW.game) IS NOT NULL AND NEW.ordinal > (SELECT max_players FROM games WHERE name = NEW.game)
+        THEN RAISE(FAIL, 'TOO-LARGE-ORDINAL')
+    END;
+END;

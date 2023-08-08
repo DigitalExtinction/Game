@@ -17,10 +17,10 @@ pub struct Game {
 }
 
 impl Game {
-    /// Creates a new game with the author having ordinal number of 0 and being
+    /// Creates a new game with the author having ordinal number of 1 and being
     /// the only player.
     pub fn from_author(setup: GameSetup, author: String) -> Self {
-        Self::new(setup, vec![GamePlayer::new(author, GamePlayerInfo::new(0))])
+        Self::new(setup, vec![GamePlayer::new(author, GamePlayerInfo::new(1))])
     }
 
     pub fn new(setup: GameSetup, players: Vec<GamePlayer>) -> Self {
@@ -64,7 +64,11 @@ pub struct GamePlayerInfo {
 }
 
 impl GamePlayerInfo {
+    /// # Panics
+    ///
+    /// Panics if ordinal equal to 0 is used.
     pub fn new(ordinal: u8) -> Self {
+        assert!(ordinal > 0);
         Self { ordinal }
     }
 

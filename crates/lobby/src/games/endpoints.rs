@@ -80,7 +80,11 @@ async fn join(
 ) -> impl Responder {
     let name = path.into_inner();
 
-    // TODO error if ordinal >= max players
+    let ordinal = player_info.ordinal();
+    if ordinal == 0 {
+        warn!("Game joining error: got ordinal equal to 0.");
+        return HttpResponse::BadRequest().json("Ordinals start with 0, got 1.");
+    }
 
     let player = GamePlayer::new(claims.username().to_owned(), player_info.0);
     match games.add_player(&player, name.as_str()).await {
@@ -93,6 +97,11 @@ async fn join(
             warn!("Game joining error: player ordinal conflict.");
             HttpResponse::Conflict()
                 .json("Another player has already joined the game under the given ordinal.")
+        }
+        Err(AdditionError::OrdinalTooLarge) => {
+            warn!("Game joining error: too large ordinal: {ordinal}");
+            HttpResponse::Conflict()
+                .json("The given ordinal is larger than maximum number of players.")
         }
         Err(AdditionError::UserOrGameDoesNotExist) => {
             warn!("Game joining error: the game or the user does not exist");
