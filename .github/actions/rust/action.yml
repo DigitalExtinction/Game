@@ -7,14 +7,29 @@ inputs:
   components:
     required: false
     type: string
+  targets:
+    required: false
+    type: string
+  dependencies:
+    description: 'one of: linux, windows, none'
+    required: false
+    type: string
+    default: 'linux'
 
 runs:
   using: 'composite'
   steps:
-    - shell: bash
+    - if: ${{ inputs.dependencies == 'linux' }}
+      shell: bash
       run: |
         sudo apt-get update
         sudo apt-get install --no-install-recommends -y libasound2-dev libudev-dev
+
+    - if: ${{ inputs.dependencies == 'windows' }}
+      shell: bash
+      run: |
+        sudo apt-get update
+        sudo apt-get install --no-install-recommends -y mingw-w64
 
     - shell: bash
       run: "git lfs ls-files -l | cut -d' ' -f1 | sort > .lfs-assets-id"
@@ -31,6 +46,7 @@ runs:
       id: rust-toolchain
       with:
         components: ${{ inputs.components }}
+        targets: ${{ inputs.targets }}
 
     - shell: bash
       run: rustc --version && cargo --version
