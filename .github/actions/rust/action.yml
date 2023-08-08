@@ -1,0 +1,47 @@
+name: Rust Setup
+
+inputs:
+  name:
+    required: true
+    type: string
+  components:
+    required: false
+    type: string
+
+runs:
+  using: 'composite'
+  steps:
+    - shell: bash
+      run: |
+        sudo apt-get update
+        sudo apt-get install --no-install-recommends -y libasound2-dev libudev-dev
+
+    - shell: bash
+      run: "git lfs ls-files -l | cut -d' ' -f1 | sort > .lfs-assets-id"
+
+    - uses: actions/cache@v3
+      with:
+        path: .git/lfs
+        key: rust-lfs-${{ inputs.name }}-${{ hashFiles('.lfs-assets-id') }}-v1
+
+    - shell: bash
+      run: git lfs pull
+
+    - uses: dtolnay/rust-toolchain@stable
+      id: rust-toolchain
+      with:
+        components: ${{ inputs.components }}
+
+    - shell: bash
+      run: rustc --version && cargo --version
+
+    - uses: actions/cache@v3
+      id: rust-cache
+      with:
+        path: |
+          ~/.cargo/bin/
+          ~/.cargo/registry/index/
+          ~/.cargo/registry/cache/
+          ~/.cargo/git/db/
+          target/
+        key: rust-cargo-${{ inputs.name }}-${{ steps.rust-toolchain.outputs.cachekey }}-${{ hashFiles('**/Cargo.lock') }}-v1
