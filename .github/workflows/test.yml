@@ -1,4 +1,4 @@
-name: Rust
+name: Test & Check
 
 on:
   push:
@@ -21,59 +21,50 @@ env:
 
 jobs:
   build:
-    name: Build & Test
+    name: Build
     if: github.event.pull_request.draft == false
-    runs-on: ${{ matrix.os }}
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [ubuntu-latest]
+    runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
-
-      - name: Create LFS file list
-        run: git lfs ls-files -l | cut -d' ' -f1 | sort > .lfs-assets-id
-      - name: Restore LFS cache
-        uses: actions/cache@v3
+      - name: Checkout
+        uses: actions/checkout@v3
+      - uses: ./.github/actions/rust
+        name: Setup
         with:
-          path: .git/lfs
-          key: lfs-${{ runner.os }}-${{ hashFiles('.lfs-assets-id') }}-v1
-      - name: Git LFS Pull
-        run: git lfs pull
-
-      - uses: dtolnay/rust-toolchain@stable
-        with:
-          components: clippy
-
-      - name: Rust Cache
-        uses: actions/cache@v3
-        id: rust-cache
-        with:
-          path:  |
-            ~/.cargo/bin/
-            ~/.cargo/registry/index/
-            ~/.cargo/registry/cache/
-            ~/.cargo/git/db/
-            target/
-          key: tests-${{ runner.os }}-${{ hashFiles('**/Cargo.lock') }}
-          restore-keys: |
-            tests-${{ runner.os }}-
-
-      - name: Install Linux Dependencies
-        if: ${{ matrix.os == 'ubuntu-latest' }}
-        run: |
-          sudo apt-get update
-          sudo apt-get install --no-install-recommends -y libasound2-dev libudev-dev
-      - run: rustc --version && cargo --version && cargo clippy --version
+          name: test-build
       - name: Build
         run: cargo build --verbose --all-targets --all-features --locked
+
+  clippy:
+    name: Clippy
+    if: github.event.pull_request.draft == false
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      - uses: ./.github/actions/rust
+        name: Setup
+        with:
+          name: clippy
+          components: clippy
       - name: Clippy
         run: cargo clippy --all --all-targets --all-features --workspace -- --deny warnings
+
+  test:
+    name: Test
+    if: github.event.pull_request.draft == false
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      - uses: ./.github/actions/rust
+        name: Setup
+        with:
+          name: test
       - name: Test
         run: cargo test --verbose --all-features --workspace
 
   format:
-    name: Test Formatting
+    name: Formatting
     if: github.event.pull_request.draft == false
     runs-on: ubuntu-latest
     steps:
@@ -85,7 +76,7 @@ jobs:
       - run: cargo +nightly fmt --all -- --check
 
   udeps:
-    name: Check Unused Dependencies
+    name: Unused Deps
     if: github.event.pull_request.draft == false
     runs-on: ubuntu-latest
     steps:
@@ -110,7 +101,7 @@ jobs:
         run: cargo udeps
 
   comments:
-    name: Check Code Comments
+    name: Code Comments
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
