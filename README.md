@@ -1,7 +1,7 @@
 # Digital Extinction
 
 [![AGPLv3](https://img.shields.io/badge/license-AGPLv3-088F8F.svg)](https://github.com/DigitalExtinction/Game#license)
-[![CI](https://github.com/DigitalExtinction/Game/actions/workflows/rust.yml/badge.svg)](https://github.com/DigitalExtinction/Game/actions)
+[![CI](https://github.com/DigitalExtinction/Game/actions/workflows/test.yml/badge.svg)](https://github.com/DigitalExtinction/Game/actions/workflows/test.yml)
 [![Sponsors](https://img.shields.io/github/sponsors/Indy2222)](https://github.com/sponsors/Indy2222)
 
 Digital Extinction ([de-game.org](https://de-game.org/),
