@@ -1,8 +1,7 @@
-use std::net::SocketAddr;
-
 use bevy::prelude::*;
 use de_gui::ToastEvent;
 use de_lobby_client::{GetGameRequest, JoinGameRequest};
+use de_lobby_model::GamePlayerInfo;
 use de_multiplayer::{
     ConnectionType, GameJoinedEvent, NetGameConf, ShutdownMultiplayerEvent, StartMultiplayerEvent,
 };
@@ -32,8 +31,8 @@ impl Plugin for JoiningGamePlugin {
             Update,
             (
                 handle_get_response,
-                handle_join_response.run_if(resource_exists::<GameSocketAddrRes>()),
                 handle_joined_event.run_if(on_event::<GameJoinedEvent>()),
+                handle_join_response,
             )
                 .run_if(in_state(MultiplayerState::GameJoining)),
         );
@@ -56,9 +55,6 @@ impl JoinGameEvent {
 #[derive(Resource)]
 pub(crate) struct GameNameRes(String);
 
-#[derive(Resource)]
-pub(crate) struct GameSocketAddrRes(SocketAddr);
-
 fn handle_join_event(
     mut commands: Commands,
     mut next_state: ResMut<NextState<MultiplayerState>>,
@@ -78,7 +74,6 @@ fn cleanup(
     mut shutdown: EventWriter<ShutdownMultiplayerEvent>,
 ) {
     commands.remove_resource::<GameNameRes>();
-    commands.remove_resource::<GameSocketAddrRes>();
 
     if state.as_ref() != &MultiplayerState::GameJoined {
         shutdown.send(ShutdownMultiplayerEvent);
@@ -90,41 +85,18 @@ fn get_game(game_name: Res<GameNameRes>, mut sender: Sender<GetGameRequest>) {
 }
 
 fn handle_get_response(
-    mut commands: Commands,
     mut next_state: ResMut<NextState<MultiplayerState>>,
     mut receiver: Receiver<GetGameRequest>,
-    mut sender: Sender<JoinGameRequest>,
-    mut toasts: EventWriter<ToastEvent>,
-) {
-    while let Some(result) = receiver.receive() {
-        match result {
-            Ok(game) => {
-                sender.send(JoinGameRequest::new(
-                    game.setup().config().name().to_owned(),
-                ));
-                commands.insert_resource(GameSocketAddrRes(game.setup().server()));
-            }
-            Err(error) => {
-                toasts.send(ToastEvent::new(error));
-                next_state.set(MultiplayerState::SignIn);
-            }
-        }
-    }
-}
-
-fn handle_join_response(
-    server: Res<GameSocketAddrRes>,
-    mut next_state: ResMut<NextState<MultiplayerState>>,
-    mut receiver: Receiver<JoinGameRequest>,
     mut multiplayer: EventWriter<StartMultiplayerEvent>,
     mut toasts: EventWriter<ToastEvent>,
 ) {
     while let Some(result) = receiver.receive() {
         match result {
-            Ok(_) => {
+            Ok(game) => {
+                let server = game.setup().server();
                 multiplayer.send(StartMultiplayerEvent::new(NetGameConf::new(
-                    server.0.ip(),
-                    ConnectionType::JoinGame(server.0.port()),
+                    server.ip(),
+                    ConnectionType::JoinGame(server.port()),
                 )));
             }
             Err(error) => {
@@ -135,6 +107,35 @@ fn handle_join_response(
     }
 }
 
-fn handle_joined_event(mut next_state: ResMut<NextState<MultiplayerState>>) {
-    next_state.set(MultiplayerState::GameJoined);
+fn handle_joined_event(
+    game_name: Res<GameNameRes>,
+    mut events: EventReader<GameJoinedEvent>,
+    mut sender: Sender<JoinGameRequest>,
+) {
+    let Some(event) = events.iter().last() else {
+        return;
+    };
+
+    sender.send(JoinGameRequest::new(
+        game_name.0.to_owned(),
+        GamePlayerInfo::new(event.player().to_num()),
+    ));
+}
+
+fn handle_join_response(
+    mut next_state: ResMut<NextState<MultiplayerState>>,
+    mut receiver: Receiver<JoinGameRequest>,
+    mut toasts: EventWriter<ToastEvent>,
+) {
+    while let Some(result) = receiver.receive() {
+        match result {
+            Ok(_) => {
+                next_state.set(MultiplayerState::GameJoined);
+            }
+            Err(error) => {
+                toasts.send(ToastEvent::new(error));
+                next_state.set(MultiplayerState::SignIn);
+            }
+        }
+    }
 }
