@@ -43,7 +43,19 @@ pub struct GameOpenedEvent(pub SocketAddr);
 
 /// A game was just joined.
 #[derive(Event)]
-pub struct GameJoinedEvent;
+pub struct GameJoinedEvent {
+    player: Player,
+}
+
+impl GameJoinedEvent {
+    fn new(player: Player) -> Self {
+        Self { player }
+    }
+
+    pub fn player(&self) -> Player {
+        self.player
+    }
+}
 
 #[derive(Resource)]
 pub(crate) struct Players {
@@ -138,7 +150,7 @@ fn process_from_game(
                     info!("Joined game as Player {player}.");
                     players.local = Some(player);
                     next_state.set(NetState::Joined);
-                    joined_events.send(GameJoinedEvent);
+                    joined_events.send(GameJoinedEvent::new(player));
                 }
                 Err(err) => {
                     fatals.send(FatalErrorEvent::new(format!(
