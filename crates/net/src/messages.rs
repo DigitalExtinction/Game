@@ -43,6 +43,11 @@ pub enum ToGame {
     ///
     /// The game is automatically closed once all players disconnect.
     Leave,
+    /// This initiates game startup.
+    Start,
+    /// The game switches from starting state to started state once this
+    /// message is received from all players.
+    Initialized,
 }
 
 /// Message to be sent from a game server to a player/client (inside of a
@@ -73,11 +78,19 @@ pub enum FromGame {
     /// Informs the player that another player with the given ID just
     /// disconnected from the same game.
     PeerLeft(u8),
+    /// Informs the client that the game is starting. The game is no longer
+    /// available for joining. The client should start game initialization.
+    Starting,
+    /// Informs the client that the game fully started because all clients are
+    /// initiated.
+    Started,
 }
 
 #[derive(Encode, Decode)]
 pub enum JoinError {
     GameFull,
+    /// The game is no longer opened.
+    GameNotOpened,
     /// The player has already joined the game.
     AlreadyJoined,
     /// The player already participates on a different game.

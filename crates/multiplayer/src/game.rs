@@ -162,6 +162,11 @@ fn process_from_game(
                 JoinError::GameFull => {
                     fatals.send(FatalErrorEvent::new("Game is full, cannot join."));
                 }
+                JoinError::GameNotOpened => {
+                    fatals.send(FatalErrorEvent::new(
+                        "Game is no longer opened, cannot join.",
+                    ));
+                }
                 JoinError::AlreadyJoined => {
                     fatals.send(FatalErrorEvent::new(
                         "Already joined the game, cannot re-join.",
@@ -183,6 +188,14 @@ fn process_from_game(
             }
             FromGame::PeerLeft(id) => {
                 info!("Peer {id} left.");
+            }
+            FromGame::Starting => {
+                info!("Multiplayer game is starting.");
+            }
+            FromGame::Started => {
+                fatals.send(FatalErrorEvent::new(
+                    "Multiplayer game is unexpectedly fully started.",
+                ));
             }
         }
     }

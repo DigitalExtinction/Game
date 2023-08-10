@@ -38,6 +38,18 @@ impl GameState {
         self.inner.write().await.remove(addr)
     }
 
+    /// If the game is in state `Open`, changes its state to `Starting` and
+    /// returns true.
+    pub(super) async fn start(&mut self) -> bool {
+        self.inner.write().await.start()
+    }
+
+    /// Marks a player as initialized. Returns true if the game was just
+    /// started.
+    pub(super) async fn mark_initialized(&mut self, addr: SocketAddr) -> bool {
+        self.inner.write().await.mark_initialized(addr)
+    }
+
     /// Constructs and returns package targets which includes all or all but
     /// one players connected to the game. It returns None if there is no
     /// matching target.
@@ -52,6 +64,7 @@ impl GameState {
 
 struct GameStateInner {
     available_ids: AvailableIds,
+    state: GameStateX,
     players: AHashMap<SocketAddr, Player>,
 }
 
@@ -59,6 +72,7 @@ impl GameStateInner {
     fn new(max_players: u8) -> Self {
         Self {
             available_ids: AvailableIds::new(max_players),
+            state: GameStateX::Open,
             players: AHashMap::new(),
         }
     }
@@ -72,11 +86,15 @@ impl GameStateInner {
     }
 
     fn add(&mut self, addr: SocketAddr) -> Result<u8, JoinError> {
+        if self.state != GameStateX::Open {
+            return Err(JoinError::GameNotOpened);
+        }
+
         match self.players.entry(addr) {
             Entry::Occupied(_) => Err(JoinError::AlreadyJoined),
             Entry::Vacant(vacant) => match self.available_ids.lease() {
                 Some(id) => {
-                    vacant.insert(Player { id });
+                    vacant.insert(Player::new(id));
                     Ok(id)
                 }
                 None => Err(JoinError::GameFull),
@@ -92,6 +110,30 @@ impl GameStateInner {
             }
             None => None,
         }
+    }
+
+    fn start(&mut self) -> bool {
+        if self.state == GameStateX::Open {
+            self.state = GameStateX::Starting;
+            true
+        } else {
+            false
+        }
+    }
+
+    fn mark_initialized(&mut self, addr: SocketAddr) -> bool {
+        let prev = self.state;
+
+        if matches!(self.state, GameStateX::Starting) {
+            if let Some(player) = self.players.get_mut(&addr) {
+                player.initialized = true;
+            }
+            if self.players.values().all(|p| p.initialized) {
+                self.state = GameStateX::Started;
+            }
+        }
+
+        self.state == GameStateX::Started && self.state != prev
     }
 
     fn targets(&self, exclude: Option<SocketAddr>) -> Option<Targets<'static>> {
@@ -153,16 +195,36 @@ impl AvailableIds {
     }
 }
 
-#[derive(Debug, Error)]
+#[derive(Debug, Error, PartialEq)]
 pub(super) enum JoinError {
     #[error("The player has already joined the game.")]
     AlreadyJoined,
     #[error("The game is full.")]
     GameFull,
+    #[error("The game is no longer opened.")]
+    GameNotOpened,
 }
 
 struct Player {
     id: u8,
+    initialized: bool,
+}
+
+impl Player {
+    fn new(id: u8) -> Self {
+        Self {
+            id,
+            initialized: false,
+        }
+    }
+}
+
+// TODO better name
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(super) enum GameStateX {
+    Open,
+    Starting,
+    Started,
 }
 
 #[cfg(test)]
@@ -219,6 +281,26 @@ mod tests {
             ));
             assert!(!state.contains("127.0.0.1:1020".parse().unwrap()).await);
         }));
+    }
+
+    #[test]
+    fn test_transitions() {
+        let client_a: SocketAddr = "127.0.0.1:8081".parse().unwrap();
+        let client_b: SocketAddr = "127.0.0.1:8082".parse().unwrap();
+        let client_c: SocketAddr = "127.0.0.1:8083".parse().unwrap();
+
+        let mut state = GameStateInner::new(3);
+
+        state.add(client_a).unwrap();
+        state.add(client_b).unwrap();
+
+        assert!(state.start());
+        assert!(!state.start());
+
+        assert_eq!(state.add(client_c), Err(JoinError::GameNotOpened));
+
+        assert!(!state.mark_initialized(client_b));
+        assert!(state.mark_initialized(client_a));
     }
 
     #[test]
