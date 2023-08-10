@@ -3,7 +3,7 @@ use anyhow::{Context, Result};
 use auth::{Auth, AuthMiddlewareFactory};
 use games::GamesService;
 use log::info;
-use sqlx::{sqlite::SqlitePoolOptions, Pool, Sqlite};
+use sqlx::{postgres::PgPoolOptions, Pool, Postgres};
 
 mod auth;
 mod conf;
@@ -62,9 +62,9 @@ async fn main() -> std::io::Result<()> {
 }
 
 /// Loads DB configuration and setup SQLite DB pool.
-async fn db_pool() -> Result<&'static Pool<Sqlite>> {
+async fn db_pool() -> Result<&'static Pool<Postgres>> {
     let db_url: String = conf::mandatory(DB_URL_VAR_NAME)?;
-    let pool = SqlitePoolOptions::new()
+    let pool = PgPoolOptions::new()
         .connect(db_url.as_str())
         .await
         .with_context(|| format!("Failed to connect to the SQLite DB with URL {db_url}"))?;

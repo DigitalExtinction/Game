@@ -7,7 +7,10 @@ use de_lobby_model::{
 };
 use futures_util::TryStreamExt;
 use log::info;
-use sqlx::{query, sqlite::SqliteRow, Pool, Row, Sqlite, SqliteExecutor};
+use sqlx::{
+    postgres::{PgExecutor, PgRow},
+    query, Pool, Postgres, Row,
+};
 use thiserror::Error;
 
 use crate::{
@@ -21,7 +24,7 @@ const SERVER_LEN: usize = 45;
 
 #[derive(Clone)]
 pub(super) struct Games {
-    pool: &'static Pool<Sqlite>,
+    pool: &'static Pool<Postgres>,
 }
 
 impl Games {
@@ -29,7 +32,7 @@ impl Games {
     /// not already exist.
     ///
     /// It is supposed users were already setup.
-    pub(super) async fn init(pool: &'static Pool<Sqlite>) -> Result<Self> {
+    pub(super) async fn init(pool: &'static Pool<Postgres>) -> Result<Self> {
         let init_query = format!(
             include_str!("init.sql"),
             username_len = MAX_USERNAME_LEN,
@@ -107,7 +110,7 @@ impl Games {
         let result =
             query("INSERT INTO games (name, max_players, map_hash, map_name, server) VALUES(?, ?, ?, ?, ?);")
                 .bind(game_config.name())
-                .bind(game_config.max_players())
+                .bind(game_config.max_players() as i16)
                 .bind(game_config.map().hash())
                 .bind(game_config.map().name())
                 .bind(game_setup.server().to_string())
@@ -151,11 +154,11 @@ impl Games {
         game: &str,
     ) -> Result<(), AdditionError>
     where
-        E: SqliteExecutor<'c>,
+        E: PgExecutor<'c>,
     {
         let result =
             query("INSERT INTO players (ordinal, author, username, game) VALUES (?, ?, ?, ?);")
-                .bind(player.info().ordinal())
+                .bind(player.info().ordinal() as i16)
                 .bind(author)
                 .bind(player.username())
                 .bind(game)
@@ -234,7 +237,7 @@ impl Games {
         game: &str,
     ) -> Result<(), RemovalError>
     where
-        E: SqliteExecutor<'c>,
+        E: PgExecutor<'c>,
     {
         let query_result = query("DELETE FROM players WHERE username = ? AND game = ?;")
             .bind(username)
@@ -300,9 +303,9 @@ pub(super) enum RemovalError {
 impl FromRow for GamePlayer {
     type Error = anyhow::Error;
 
-    fn try_from_row(row: SqliteRow) -> Result<Self, Self::Error> {
+    fn try_from_row(row: PgRow) -> Result<Self, Self::Error> {
         let username: String = row.try_get("username")?;
-        let ordinal: u8 = row.try_get("ordinal")?;
+        let ordinal: u8 = row.try_get::<i16, &str>("ordinal")?.try_into()?;
         Ok(Self::new(username, GamePlayerInfo::new(ordinal)))
     }
 }
@@ -310,7 +313,7 @@ impl FromRow for GamePlayer {
 impl FromRow for GameSetup {
     type Error = anyhow::Error;
 
-    fn try_from_row(row: SqliteRow) -> Result<Self, Self::Error> {
+    fn try_from_row(row: PgRow) -> Result<Self, Self::Error> {
         let server: String = row.try_get("server")?;
         let server: SocketAddr = server.parse()?;
         let config = GameConfig::try_from_row(row)?;
@@ -321,8 +324,8 @@ impl FromRow for GameSetup {
 impl FromRow for GamePartial {
     type Error = anyhow::Error;
 
-    fn try_from_row(row: SqliteRow) -> Result<Self, Self::Error> {
-        let num_players: u8 = row.try_get("num_players")?;
+    fn try_from_row(row: PgRow) -> Result<Self, Self::Error> {
+        let num_players: u8 = row.try_get::<i16, &str>("num_players")?.try_into()?;
         let config = GameConfig::try_from_row(row)?;
         Ok(Self::new(config, num_players))
     }
@@ -331,9 +334,9 @@ impl FromRow for GamePartial {
 impl FromRow for GameConfig {
     type Error = anyhow::Error;
 
-    fn try_from_row(row: SqliteRow) -> Result<Self, Self::Error> {
+    fn try_from_row(row: PgRow) -> Result<Self, Self::Error> {
         let name: String = row.try_get("name")?;
-        let max_players: u8 = row.try_get("max_players")?;
+        let max_players: u8 = row.try_get::<i16, &str>("max_players")?.try_into()?;
         let map = GameMap::try_from_row(row)?;
         Ok(Self::new(name, max_players, map))
     }
@@ -342,7 +345,7 @@ impl FromRow for GameConfig {
 impl FromRow for GameMap {
     type Error = anyhow::Error;
 
-    fn try_from_row(row: SqliteRow) -> Result<Self, Self::Error> {
+    fn try_from_row(row: PgRow) -> Result<Self, Self::Error> {
         let hash: String = row.try_get("map_hash")?;
         let name: String = row.try_get("map_name")?;
         Ok(Self::new(hash, name))

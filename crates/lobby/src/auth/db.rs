@@ -1,7 +1,7 @@
 use anyhow::{Context, Result};
 use de_lobby_model::{User, UserWithPassword, UsernameAndPassword, MAX_USERNAME_LEN};
 use log::info;
-use sqlx::{query, sqlite::SqliteRow, Pool, Row, Sqlite};
+use sqlx::{postgres::PgRow, query, Pool, Postgres, Row};
 use thiserror::Error;
 
 use super::passwd::{DbPassword, MAX_PASS_HASH_LEN, MAX_PASS_SALT_LEN};
@@ -12,13 +12,13 @@ use crate::{
 
 #[derive(Clone)]
 pub struct Users {
-    pool: &'static Pool<Sqlite>,
+    pool: &'static Pool<Postgres>,
 }
 
 impl Users {
     /// This method sets up the database by creating required tables if they do
     /// not already exist.
-    pub(super) async fn init(pool: &'static Pool<Sqlite>) -> Result<Self> {
+    pub(super) async fn init(pool: &'static Pool<Postgres>) -> Result<Self> {
         let init_query = format!(
             include_str!("init.sql"),
             username_len = MAX_USERNAME_LEN,
@@ -81,10 +81,10 @@ pub(super) enum RegistrationError {
     Other(#[from] anyhow::Error),
 }
 
-impl TryFrom<SqliteRow> for DbPassword {
+impl TryFrom<PgRow> for DbPassword {
     type Error = anyhow::Error;
 
-    fn try_from(row: SqliteRow) -> Result<Self> {
+    fn try_from(row: PgRow) -> Result<Self> {
         let hashed: &str = row
             .try_get("pass_hash")
             .context("Failed to retrieve password hash from the DB")?;
@@ -98,7 +98,7 @@ impl TryFrom<SqliteRow> for DbPassword {
 impl FromRow for User {
     type Error = anyhow::Error;
 
-    fn try_from_row(row: SqliteRow) -> Result<Self, Self::Error> {
+    fn try_from_row(row: PgRow) -> Result<Self, Self::Error> {
         let username: String = row.try_get("username")?;
         Ok(Self::new(username))
     }

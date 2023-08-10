@@ -1,4 +1,4 @@
-use sqlx::sqlite::SqliteRow;
+use sqlx::postgres::PgRow;
 
 pub const SQLITE_CONSTRAINT_PRIMARYKEY: &str = "1555";
 pub const SQLITE_CONSTRAINT_FOREIGNKEY: &str = "787";
@@ -33,5 +33,5 @@ where
 {
     type Error;
 
-    fn try_from_row(row: SqliteRow) -> Result<Self, Self::Error>;
+    fn try_from_row(row: PgRow) -> Result<Self, Self::Error>;
 }

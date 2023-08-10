@@ -1,6 +1,6 @@
 use actix_web::web;
 use anyhow::{Context, Result};
-use sqlx::{Pool, Sqlite};
+use sqlx::{Pool, Postgres};
 
 use self::db::Games;
 
@@ -16,7 +16,7 @@ impl GamesService {
     /// Setup games DB and endpoints.
     ///
     /// This should be called after [`crate::auth::Auth`].
-    pub async fn setup(pool: &'static Pool<Sqlite>) -> Result<Self> {
+    pub async fn setup(pool: &'static Pool<Postgres>) -> Result<Self> {
         Ok(Self {
             games: db::Games::init(pool)
                 .await
