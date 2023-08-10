@@ -3,10 +3,7 @@ use std::{
     time::Duration,
 };
 
-use async_std::{
-    future::{timeout, TimeoutError},
-    task,
-};
+use async_std::{future::timeout, task};
 use de_net::{
     self, ConnErrorReceiver, FromGame, FromServer, JoinError, OutPackage, PackageReceiver,
     PackageSender, Peers, Socket, ToGame, ToServer,
@@ -72,14 +69,12 @@ fn test() {
 
         comms_a.send(ToGame::Initialized).await;
         // The other player is not yet initialized -> no message should be received.
-        assert!(matches!(
-            timeout(Duration::from_secs(1), comms_a.recv::<FromGame>()).await,
-            Err(TimeoutError)
-        ));
-        assert!(matches!(
-            timeout(Duration::from_secs(1), comms_b.recv::<FromGame>()).await,
-            Err(TimeoutError)
-        ));
+        assert!(timeout(Duration::from_secs(1), comms_a.recv::<FromGame>())
+            .await
+            .is_err());
+        assert!(timeout(Duration::from_secs(1), comms_b.recv::<FromGame>())
+            .await
+            .is_err());
 
         comms_b.send(ToGame::Initialized).await;
         check_response!(comms_a, FromGame::Started);
