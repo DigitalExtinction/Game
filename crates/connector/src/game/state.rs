@@ -64,7 +64,7 @@ impl GameState {
 
 struct GameStateInner {
     available_ids: AvailableIds,
-    state: GameStateX,
+    phase: GamePhase,
     players: AHashMap<SocketAddr, Player>,
 }
 
@@ -72,7 +72,7 @@ impl GameStateInner {
     fn new(max_players: u8) -> Self {
         Self {
             available_ids: AvailableIds::new(max_players),
-            state: GameStateX::Open,
+            phase: GamePhase::Open,
             players: AHashMap::new(),
         }
     }
@@ -86,7 +86,7 @@ impl GameStateInner {
     }
 
     fn add(&mut self, addr: SocketAddr) -> Result<u8, JoinError> {
-        if self.state != GameStateX::Open {
+        if self.phase != GamePhase::Open {
             return Err(JoinError::GameNotOpened);
         }
 
@@ -113,8 +113,8 @@ impl GameStateInner {
     }
 
     fn start(&mut self) -> bool {
-        if self.state == GameStateX::Open {
-            self.state = GameStateX::Starting;
+        if self.phase == GamePhase::Open {
+            self.phase = GamePhase::Starting;
             true
         } else {
             false
@@ -122,18 +122,18 @@ impl GameStateInner {
     }
 
     fn mark_initialized(&mut self, addr: SocketAddr) -> bool {
-        let prev = self.state;
+        let prev = self.phase;
 
-        if matches!(self.state, GameStateX::Starting) {
+        if matches!(self.phase, GamePhase::Starting) {
             if let Some(player) = self.players.get_mut(&addr) {
                 player.initialized = true;
             }
             if self.players.values().all(|p| p.initialized) {
-                self.state = GameStateX::Started;
+                self.phase = GamePhase::Started;
             }
         }
 
-        self.state == GameStateX::Started && self.state != prev
+        self.phase == GamePhase::Started && self.phase != prev
     }
 
     fn targets(&self, exclude: Option<SocketAddr>) -> Option<Targets<'static>> {
@@ -219,9 +219,8 @@ impl Player {
     }
 }
 
-// TODO better name
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub(super) enum GameStateX {
+pub(super) enum GamePhase {
     Open,
     Starting,
     Started,
