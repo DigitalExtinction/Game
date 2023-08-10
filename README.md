@@ -173,7 +173,7 @@ some very important features (like seeing what units are selected, ability to
 see health / energy of units, and so on).
 
 The goal of this milestone is to lay down the foundations, setup basic
-insfrastrucutre (GitHub Actions, issues labels, …) and achieve an important
+infrastructure (GitHub Actions, issues labels, …) and achieve an important
 psychological milestone.
 
 ## 1.0
