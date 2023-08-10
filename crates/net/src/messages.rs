@@ -2,7 +2,7 @@ use bincode::{Decode, Encode};
 
 /// Message to be sent from a player/client to a main server (outside of a
 /// game).
-#[derive(Encode, Decode)]
+#[derive(Debug, Encode, Decode)]
 pub enum ToServer {
     /// Prompts the server to respond [`FromServer::Pong`] with the same ping ID.
     Ping(u32),
@@ -13,7 +13,7 @@ pub enum ToServer {
 
 /// Message to be sent from a main server to a player/client (outside of a
 /// game).
-#[derive(Encode, Decode)]
+#[derive(Debug, Encode, Decode)]
 pub enum FromServer {
     /// Response to [`ToServer::Ping`].
     Pong(u32),
@@ -25,7 +25,7 @@ pub enum FromServer {
     GameOpenError(GameOpenError),
 }
 
-#[derive(Encode, Decode)]
+#[derive(Debug, Encode, Decode)]
 pub enum GameOpenError {
     /// The player opening the game has already joined a different game.
     DifferentGame,
@@ -33,7 +33,7 @@ pub enum GameOpenError {
 
 /// Message to be sent from a player/client to a game server (inside of a
 /// game).
-#[derive(Encode, Decode)]
+#[derive(Debug, Encode, Decode)]
 pub enum ToGame {
     /// Prompts the server to respond [`FromGame::Pong`] with the same ping ID.
     Ping(u32),
@@ -56,7 +56,7 @@ pub enum ToGame {
 /// # Notes
 ///
 /// * Players are numbered from 1 to `max_players` (inclusive).
-#[derive(Encode, Decode)]
+#[derive(Debug, Encode, Decode)]
 pub enum FromGame {
     /// Response to [`ToGame::Ping`].
     Pong(u32),
@@ -86,7 +86,7 @@ pub enum FromGame {
     Started,
 }
 
-#[derive(Encode, Decode)]
+#[derive(Debug, Encode, Decode)]
 pub enum JoinError {
     GameFull,
     /// The game is no longer opened.
