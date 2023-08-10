@@ -2,7 +2,7 @@ use bincode::{Decode, Encode};
 
 /// Message to be sent from a player/client to a main server (outside of a
 /// game).
-#[derive(Encode, Decode)]
+#[derive(Debug, Encode, Decode)]
 pub enum ToServer {
     /// Prompts the server to respond [`FromServer::Pong`] with the same ping ID.
     Ping(u32),
@@ -13,7 +13,7 @@ pub enum ToServer {
 
 /// Message to be sent from a main server to a player/client (outside of a
 /// game).
-#[derive(Encode, Decode)]
+#[derive(Debug, Encode, Decode)]
 pub enum FromServer {
     /// Response to [`ToServer::Ping`].
     Pong(u32),
@@ -25,7 +25,7 @@ pub enum FromServer {
     GameOpenError(GameOpenError),
 }
 
-#[derive(Encode, Decode)]
+#[derive(Debug, Encode, Decode)]
 pub enum GameOpenError {
     /// The player opening the game has already joined a different game.
     DifferentGame,
@@ -33,7 +33,7 @@ pub enum GameOpenError {
 
 /// Message to be sent from a player/client to a game server (inside of a
 /// game).
-#[derive(Encode, Decode)]
+#[derive(Debug, Encode, Decode)]
 pub enum ToGame {
     /// Prompts the server to respond [`FromGame::Pong`] with the same ping ID.
     Ping(u32),
@@ -43,6 +43,11 @@ pub enum ToGame {
     ///
     /// The game is automatically closed once all players disconnect.
     Leave,
+    /// This initiates game startup.
+    Start,
+    /// The game switches from starting state to started state once this
+    /// message is received from all players.
+    Initialized,
 }
 
 /// Message to be sent from a game server to a player/client (inside of a
@@ -51,7 +56,7 @@ pub enum ToGame {
 /// # Notes
 ///
 /// * Players are numbered from 1 to `max_players` (inclusive).
-#[derive(Encode, Decode)]
+#[derive(Debug, Encode, Decode)]
 pub enum FromGame {
     /// Response to [`ToGame::Ping`].
     Pong(u32),
@@ -73,11 +78,19 @@ pub enum FromGame {
     /// Informs the player that another player with the given ID just
     /// disconnected from the same game.
     PeerLeft(u8),
+    /// Informs the client that the game is starting. The game is no longer
+    /// available for joining. The client should start game initialization.
+    Starting,
+    /// Informs the client that the game fully started because all clients are
+    /// initiated.
+    Started,
 }
 
-#[derive(Encode, Decode)]
+#[derive(Debug, Encode, Decode)]
 pub enum JoinError {
     GameFull,
+    /// The game is no longer opened.
+    GameNotOpened,
     /// The player has already joined the game.
     AlreadyJoined,
     /// The player already participates on a different game.

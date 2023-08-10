@@ -99,6 +99,12 @@ impl GameProcessor {
                 ToGame::Leave => {
                     self.process_leave(message.meta).await;
                 }
+                ToGame::Start => {
+                    self.process_start().await;
+                }
+                ToGame::Initialized => {
+                    self.process_initialized(message.meta).await;
+                }
             }
 
             if self.state.is_empty().await {
@@ -199,6 +205,16 @@ impl GameProcessor {
                         self.send(&FromGame::JoinError(JoinError::GameFull), meta.source)
                             .await;
                     }
+                    JoinErrorInner::GameNotOpened => {
+                        warn!(
+                            "Player {:?} could not join game on port {} because the game is no \
+                             longer opened.",
+                            meta.source, self.port
+                        );
+
+                        self.send(&FromGame::JoinError(JoinError::GameNotOpened), meta.source)
+                            .await;
+                    }
                 }
             }
         }
@@ -231,6 +247,18 @@ impl GameProcessor {
 
         self.send(&FromGame::Left, meta.source).await;
         self.send_all(&FromGame::PeerLeft(id), None).await;
+    }
+
+    async fn process_start(&mut self) {
+        if self.state.start().await {
+            self.send_all(&FromGame::Starting, None).await;
+        }
+    }
+
+    async fn process_initialized(&mut self, meta: MessageMeta) {
+        if self.state.mark_initialized(meta.source).await {
+            self.send_all(&FromGame::Started, None).await;
+        }
     }
 
     /// Send a reliable message to all players of the game.
