@@ -2,6 +2,7 @@ use std::collections::HashSet;
 
 use bevy::prelude::*;
 use bevy::utils::petgraph::prelude::*;
+use bevy::utils::petgraph::visit::IntoNodeReferences;
 #[cfg(feature = "graph_debug_lines")]
 use bevy_prototype_debug_lines::{DebugLines, DebugLinesPlugin};
 use de_core::gamestate::GameState;

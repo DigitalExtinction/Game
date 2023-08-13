@@ -31,9 +31,13 @@ tinyvec.workspace = true
 bevy_prototype_debug_lines = { version="0.11", features = ["3d"], optional = true }
 
 [dev-dependencies]
+# DE
+de_objects.workspace = true
+de_test_utils.workspace = true
+
+# Other
 criterion.workspace = true
 fastrand.workspace = true
-de_objects.workspace = true
 
 [[bench]]
 name = "nearby"

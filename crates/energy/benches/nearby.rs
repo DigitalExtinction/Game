@@ -1,11 +1,7 @@
-use std::fs::File;
-use std::io::{BufRead, BufReader};
-use std::path::PathBuf;
-
 use bevy::ecs::schedule::ScheduleLabel;
 use bevy::prelude::{
     App, Changed, Component, Entity, Query, Res, ResMut, Resource, Schedule, Transform, Update,
-    Vec2, World,
+    World,
 };
 use bevy::time::TimePlugin;
 use criterion::{criterion_group, criterion_main, Criterion};
@@ -13,6 +9,7 @@ use de_core::projection::ToAltitude;
 use de_energy::{update_nearby_recv, EnergyReceiver, NearbyUnits};
 use de_index::{EntityIndex, LocalCollider};
 use de_objects::ObjectCollider;
+use de_test_utils::load_points;
 use parry3d::math::{Isometry, Vector};
 use parry3d::shape::{Cuboid, TriMesh};
 
@@ -21,7 +18,7 @@ const DISTANCE_FROM_MAP_EDGE: f32 = 100.;
 const SPEED: f32 = 10.; // based on MAX_H_SPEED in movement
 
 #[derive(ScheduleLabel, Clone, Debug, PartialEq, Eq, Hash)]
-pub struct UpdateOther;
+pub struct UpdateUnits;
 
 #[derive(Component)]
 struct UnitNumber(u32);
@@ -54,26 +51,12 @@ fn update_index(
     }
 }
 
-fn load_points(number: u32) -> Vec<Vec2> {
-    let mut points_path: PathBuf = env!("CARGO_MANIFEST_DIR").into();
-    points_path.push("test_data");
-    points_path.push(format!("{number}-points.txt"));
-    let reader = BufReader::new(File::open(points_path).unwrap());
-
-    let mut points = Vec::with_capacity(number as usize);
-    for line in reader.lines() {
-        let line = line.unwrap();
-        let mut numbers = line.split_whitespace();
-        let x: f32 = numbers.next().unwrap().parse().unwrap();
-        let y: f32 = numbers.next().unwrap().parse().unwrap();
-        points.push((MAP_SIZE - DISTANCE_FROM_MAP_EDGE) * Vec2::new(x, y));
-    }
-    points
-}
-
 fn init_world_with_entities_moving(world: &mut World, num_entities: u32) {
     let mut index = EntityIndex::new();
-    let points = load_points(num_entities);
+    let points = load_points(
+        num_entities.try_into().unwrap(),
+        MAP_SIZE - DISTANCE_FROM_MAP_EDGE,
+    );
 
     for (i, point) in points.into_iter().enumerate() {
         let point_msl = point.to_msl();
@@ -103,7 +86,7 @@ fn init_world_with_entities_moving(world: &mut World, num_entities: u32) {
     world.insert_resource(index);
 }
 
-/// Move entities in circles of radius N / 2.
+/// Move entities in circles of radius DISTANCE_FROM_MAP_EDGE / 2.
 fn move_entities_in_circle(
     clock: Res<Clock>,
     mut query: Query<(&mut Transform, &UnitNumber, &Centre)>,
@@ -130,21 +113,21 @@ fn move_entities_in_circle(
 }
 
 fn nearby_benchmark(c: &mut Criterion) {
-    let mut group = c.benchmark_group("nearby entity movement scenarios");
+    let mut group = c.benchmark_group("Nearby unit movement scenarios");
 
-    for i in [100, 1_000, 10_000].iter() {
+    for i in [100, 1_000, 10_000, 100_000].iter() {
         let mut app = App::default();
         init_world_with_entities_moving(&mut app.world, *i);
-        app.add_systems(Update, (update_nearby_recv,));
+        app.add_systems(Update, update_nearby_recv);
         app.add_plugins(TimePlugin);
 
         let update_units_schedule = Schedule::default();
-        app.add_schedule(UpdateOther, update_units_schedule);
+        app.add_schedule(UpdateUnits, update_units_schedule);
 
-        app.add_systems(UpdateOther, (update_index, move_entities_in_circle));
+        app.add_systems(UpdateUnits, (update_index, move_entities_in_circle));
 
         group.throughput(criterion::Throughput::Elements(*i as u64));
-        group.bench_function(format!("{} entities all moving in circles", i), |b| {
+        group.bench_function(format!("{} units all moving in circles", i), |b| {
             b.iter_custom(|iters| {
                 let time = std::time::Instant::now();
                 let mut duration_updating_other_stuff = std::time::Duration::default();
@@ -152,7 +135,7 @@ fn nearby_benchmark(c: &mut Criterion) {
                 for _ in 0..iters {
                     let update_other_stuff = std::time::Instant::now();
                     app.world.resource_mut::<Clock>().inc();
-                    app.world.run_schedule(UpdateOther);
+                    app.world.run_schedule(UpdateUnits);
                     duration_updating_other_stuff += update_other_stuff.elapsed();
 
                     app.update();
