@@ -7,7 +7,7 @@ use de_lobby_client::{Authentication, LobbyRequest, SignInRequest, SignUpRequest
 use de_lobby_model::{User, UserWithPassword, UsernameAndPassword};
 
 use super::{
-    requests::{Receiver, RequestsPlugin, Sender},
+    requests::{Receiver, Sender},
     MultiplayerState,
 };
 use crate::menu::Menu;
@@ -16,22 +16,18 @@ pub(super) struct SignInPlugin;
 
 impl Plugin for SignInPlugin {
     fn build(&self, app: &mut App) {
-        app.add_plugins((
-            RequestsPlugin::<SignInRequest>::new(),
-            RequestsPlugin::<SignUpRequest>::new(),
-        ))
-        .add_systems(OnEnter(MultiplayerState::SignIn), setup)
-        .add_systems(OnExit(MultiplayerState::SignIn), cleanup)
-        .add_systems(
-            Update,
-            (
-                button_system.run_if(resource_exists::<Inputs>()),
-                response_system::<SignInRequest>,
-                response_system::<SignUpRequest>,
-                auth_system,
-            )
-                .run_if(in_state(MultiplayerState::SignIn)),
-        );
+        app.add_systems(OnEnter(MultiplayerState::SignIn), setup)
+            .add_systems(OnExit(MultiplayerState::SignIn), cleanup)
+            .add_systems(
+                Update,
+                (
+                    button_system.run_if(resource_exists::<Inputs>()),
+                    response_system::<SignInRequest>,
+                    response_system::<SignUpRequest>,
+                    auth_system,
+                )
+                    .run_if(in_state(MultiplayerState::SignIn)),
+            );
     }
 }
 

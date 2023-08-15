@@ -7,7 +7,7 @@ use de_multiplayer::{
 };
 
 use super::{
-    requests::{Receiver, RequestsPlugin, Sender},
+    requests::{Receiver, Sender},
     MultiplayerState,
 };
 use crate::MenuState;
@@ -16,26 +16,22 @@ pub(crate) struct JoiningGamePlugin;
 
 impl Plugin for JoiningGamePlugin {
     fn build(&self, app: &mut App) {
-        app.add_plugins((
-            RequestsPlugin::<GetGameRequest>::new(),
-            RequestsPlugin::<JoinGameRequest>::new(),
-        ))
-        .add_event::<JoinGameEvent>()
-        .add_systems(OnEnter(MultiplayerState::GameJoining), get_game)
-        .add_systems(OnExit(MultiplayerState::GameJoining), cleanup)
-        .add_systems(
-            PreUpdate,
-            handle_join_event.run_if(in_state(MenuState::Multiplayer)),
-        )
-        .add_systems(
-            Update,
-            (
-                handle_get_response,
-                handle_joined_event.run_if(on_event::<GameJoinedEvent>()),
-                handle_join_response,
+        app.add_event::<JoinGameEvent>()
+            .add_systems(OnEnter(MultiplayerState::GameJoining), get_game)
+            .add_systems(OnExit(MultiplayerState::GameJoining), cleanup)
+            .add_systems(
+                PreUpdate,
+                handle_join_event.run_if(in_state(MenuState::Multiplayer)),
             )
-                .run_if(in_state(MultiplayerState::GameJoining)),
-        );
+            .add_systems(
+                Update,
+                (
+                    handle_get_response,
+                    handle_joined_event.run_if(on_event::<GameJoinedEvent>()),
+                    handle_join_response,
+                )
+                    .run_if(in_state(MultiplayerState::GameJoining)),
+            );
     }
 }
 
