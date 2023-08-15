@@ -2,7 +2,7 @@ use std::{collections::hash_map::Entry, net::SocketAddr};
 
 use ahash::AHashMap;
 use async_std::sync::{Arc, RwLock};
-use de_net::Targets;
+use de_net::{Readiness, Targets};
 use thiserror::Error;
 
 #[derive(Clone)]
@@ -38,16 +38,17 @@ impl GameState {
         self.inner.write().await.remove(addr)
     }
 
-    /// If the game is in state `Open`, changes its state to `Starting` and
-    /// returns true.
-    pub(super) async fn start(&mut self) -> bool {
-        self.inner.write().await.start()
-    }
-
-    /// Marks a player as initialized. Returns true if the game was just
-    /// started.
-    pub(super) async fn mark_initialized(&mut self, addr: SocketAddr) -> bool {
-        self.inner.write().await.mark_initialized(addr)
+    /// Updates readiness of a single player. Whole game readiness is updated
+    /// once all players reach another readiness stage.
+    ///
+    /// Returns true if game readiness progressed as a result (to the readiness
+    /// of the player).
+    pub(super) async fn update_readiness(
+        &mut self,
+        addr: SocketAddr,
+        readiness: Readiness,
+    ) -> Result<bool, ReadinessUpdateError> {
+        self.inner.write().await.update_readiness(addr, readiness)
     }
 
     /// Constructs and returns package targets which includes all or all but
@@ -64,7 +65,7 @@ impl GameState {
 
 struct GameStateInner {
     available_ids: AvailableIds,
-    phase: GamePhase,
+    readiness: Readiness,
     players: AHashMap<SocketAddr, Player>,
 }
 
@@ -72,7 +73,7 @@ impl GameStateInner {
     fn new(max_players: u8) -> Self {
         Self {
             available_ids: AvailableIds::new(max_players),
-            phase: GamePhase::Open,
+            readiness: Readiness::default(),
             players: AHashMap::new(),
         }
     }
@@ -86,7 +87,7 @@ impl GameStateInner {
     }
 
     fn add(&mut self, addr: SocketAddr) -> Result<u8, JoinError> {
-        if self.phase != GamePhase::Open {
+        if self.readiness != Readiness::NotReady {
             return Err(JoinError::GameNotOpened);
         }
 
@@ -112,28 +113,48 @@ impl GameStateInner {
         }
     }
 
-    fn start(&mut self) -> bool {
-        if self.phase == GamePhase::Open {
-            self.phase = GamePhase::Starting;
-            true
-        } else {
-            false
-        }
-    }
+    fn update_readiness(
+        &mut self,
+        addr: SocketAddr,
+        readiness: Readiness,
+    ) -> Result<bool, ReadinessUpdateError> {
+        let Some(player) = self.players.get_mut(&addr) else {
+            return Err(ReadinessUpdateError::UnknownClient(addr));
+        };
 
-    fn mark_initialized(&mut self, addr: SocketAddr) -> bool {
-        let prev = self.phase;
-
-        if matches!(self.phase, GamePhase::Starting) {
-            if let Some(player) = self.players.get_mut(&addr) {
-                player.initialized = true;
-            }
-            if self.players.values().all(|p| p.initialized) {
-                self.phase = GamePhase::Started;
-            }
+        if player.readiness > readiness {
+            return Err(ReadinessUpdateError::Downgrade {
+                from: player.readiness,
+                to: readiness,
+            });
         }
 
-        self.phase == GamePhase::Started && self.phase != prev
+        if player.readiness == readiness {
+            return Ok(false);
+        }
+
+        if player.readiness.progress() != Some(readiness) {
+            return Err(ReadinessUpdateError::Skip {
+                from: player.readiness,
+                to: readiness,
+            });
+        }
+
+        if player.readiness > self.readiness {
+            // The player is already ahead of the game, cannot move them further.
+            return Err(ReadinessUpdateError::Desync {
+                game: self.readiness,
+                client: readiness,
+            });
+        }
+
+        player.readiness = readiness;
+
+        let previous = self.readiness;
+        self.readiness = self.players.values().map(|p| p.readiness).min().unwrap();
+        let progressed = previous != self.readiness;
+        assert!(self.readiness == readiness || !progressed);
+        Ok(progressed)
     }
 
     fn targets(&self, exclude: Option<SocketAddr>) -> Option<Targets<'static>> {
@@ -205,25 +226,30 @@ pub(super) enum JoinError {
     GameNotOpened,
 }
 
+#[derive(Debug, Error, PartialEq)]
+pub(super) enum ReadinessUpdateError {
+    #[error("Client {0:?} is not part of the game.")]
+    UnknownClient(SocketAddr),
+    #[error("Cannot downgrade client readiness from {from:?} to {to:?}.")]
+    Downgrade { from: Readiness, to: Readiness },
+    #[error("Cannot upgrade client readiness from {from:?} to {to:?}.")]
+    Skip { from: Readiness, to: Readiness },
+    #[error("Cannot change client readiness to {client:?} when game is at {game:?}.")]
+    Desync { game: Readiness, client: Readiness },
+}
+
 struct Player {
     id: u8,
-    initialized: bool,
+    readiness: Readiness,
 }
 
 impl Player {
     fn new(id: u8) -> Self {
         Self {
             id,
-            initialized: false,
+            readiness: Readiness::default(),
         }
     }
-}
-
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub(super) enum GamePhase {
-    Open,
-    Starting,
-    Started,
 }
 
 #[cfg(test)]
@@ -293,13 +319,57 @@ mod tests {
         state.add(client_a).unwrap();
         state.add(client_b).unwrap();
 
-        assert!(state.start());
-        assert!(!state.start());
+        assert_eq!(state.readiness, Readiness::NotReady);
+
+        assert!(!state
+            .update_readiness(client_a, Readiness::NotReady)
+            .unwrap());
+        assert_eq!(state.readiness, Readiness::NotReady);
+
+        assert!(!state.update_readiness(client_b, Readiness::Ready).unwrap());
+        assert_eq!(state.readiness, Readiness::NotReady);
+        assert!(state.update_readiness(client_a, Readiness::Ready).unwrap());
+        assert_eq!(state.readiness, Readiness::Ready);
 
         assert_eq!(state.add(client_c), Err(JoinError::GameNotOpened));
 
-        assert!(!state.mark_initialized(client_b));
-        assert!(state.mark_initialized(client_a));
+        assert_eq!(
+            state
+                .update_readiness(client_a, Readiness::Initialized)
+                .unwrap_err(),
+            ReadinessUpdateError::Skip {
+                from: Readiness::Ready,
+                to: Readiness::Initialized
+            }
+        );
+
+        assert!(!state
+            .update_readiness(client_b, Readiness::Prepared)
+            .unwrap());
+        assert_eq!(
+            state
+                .update_readiness(client_b, Readiness::Initialized)
+                .unwrap_err(),
+            ReadinessUpdateError::Desync {
+                game: Readiness::Ready,
+                client: Readiness::Initialized
+            }
+        );
+        assert_eq!(state.readiness, Readiness::Ready);
+
+        assert!(state
+            .update_readiness(client_a, Readiness::Prepared)
+            .unwrap());
+        assert_eq!(state.readiness, Readiness::Prepared);
+
+        assert!(!state
+            .update_readiness(client_a, Readiness::Initialized)
+            .unwrap());
+        assert_eq!(state.readiness, Readiness::Prepared);
+        assert!(state
+            .update_readiness(client_b, Readiness::Initialized)
+            .unwrap());
+        assert_eq!(state.readiness, Readiness::Initialized);
     }
 
     #[test]

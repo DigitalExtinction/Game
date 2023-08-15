@@ -4,7 +4,7 @@ use async_std::{
     channel::{Receiver, Sender},
     task,
 };
-use de_net::{FromGame, JoinError, OutPackage, Peers, Targets, ToGame};
+use de_net::{FromGame, JoinError, OutPackage, Peers, Readiness, Targets, ToGame};
 use tracing::{error, info, warn};
 
 use super::state::{GameState, JoinError as JoinErrorInner};
@@ -99,11 +99,8 @@ impl GameProcessor {
                 ToGame::Leave => {
                     self.process_leave(message.meta).await;
                 }
-                ToGame::Start => {
-                    self.process_start().await;
-                }
-                ToGame::Initialized => {
-                    self.process_initialized(message.meta).await;
+                ToGame::Readiness(readiness) => {
+                    self.process_readiness(message.meta, readiness).await;
                 }
             }
 
@@ -249,15 +246,18 @@ impl GameProcessor {
         self.send_all(&FromGame::PeerLeft(id), None).await;
     }
 
-    async fn process_start(&mut self) {
-        if self.state.start().await {
-            self.send_all(&FromGame::Starting, None).await;
-        }
-    }
-
-    async fn process_initialized(&mut self, meta: MessageMeta) {
-        if self.state.mark_initialized(meta.source).await {
-            self.send_all(&FromGame::Started, None).await;
+    async fn process_readiness(&mut self, meta: MessageMeta, readiness: Readiness) {
+        match self.state.update_readiness(meta.source, readiness).await {
+            Ok(progressed) => {
+                if progressed {
+                    self.send_all(&FromGame::GameReadiness(readiness), None)
+                        .await;
+                }
+            }
+            Err(err) => warn!(
+                "Invalid readiness update from {source:?}: {err:?}",
+                source = meta.source
+            ),
         }
     }
 

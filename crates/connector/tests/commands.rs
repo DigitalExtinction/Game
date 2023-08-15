@@ -6,7 +6,7 @@ use std::{
 use async_std::{future::timeout, task};
 use de_net::{
     self, ConnErrorReceiver, FromGame, FromServer, JoinError, OutPackage, PackageReceiver,
-    PackageSender, Peers, Socket, ToGame, ToServer,
+    PackageSender, Peers, Readiness, Socket, ToGame, ToServer,
 };
 use ntest::timeout;
 
@@ -60,28 +60,68 @@ fn test() {
         check_response!(comms_b, FromGame::Joined(2));
         check_response!(comms_a, FromGame::PeerJoined(2));
 
-        comms_a.send(ToGame::Start).await;
-        check_response!(comms_a, FromGame::Starting);
-        check_response!(comms_b, FromGame::Starting);
+        comms_a.send(ToGame::Readiness(Readiness::Ready)).await;
+        // The other player is not yet ready -> no message should be received.
+        assert!(
+            timeout(Duration::from_millis(500), comms_a.recv::<FromGame>())
+                .await
+                .is_err()
+        );
+        assert!(
+            timeout(Duration::from_millis(500), comms_b.recv::<FromGame>())
+                .await
+                .is_err()
+        );
+        comms_b.send(ToGame::Readiness(Readiness::Ready)).await;
+
+        check_response!(comms_a, FromGame::GameReadiness(Readiness::Ready));
+        check_response!(comms_b, FromGame::GameReadiness(Readiness::Ready));
 
         comms_c.send(ToGame::Join).await;
         check_response!(comms_c, FromGame::JoinError(JoinError::GameNotOpened));
 
-        comms_a.send(ToGame::Initialized).await;
-        // The other player is not yet initialized -> no message should be received.
-        assert!(timeout(Duration::from_secs(1), comms_a.recv::<FromGame>())
-            .await
-            .is_err());
-        assert!(timeout(Duration::from_secs(1), comms_b.recv::<FromGame>())
-            .await
-            .is_err());
+        comms_a.send(ToGame::Readiness(Readiness::Prepared)).await;
+        // The other player is not yet prepared -> no message should be received.
+        assert!(
+            timeout(Duration::from_millis(500), comms_a.recv::<FromGame>())
+                .await
+                .is_err()
+        );
+        assert!(
+            timeout(Duration::from_millis(500), comms_b.recv::<FromGame>())
+                .await
+                .is_err()
+        );
 
-        comms_b.send(ToGame::Initialized).await;
-        check_response!(comms_a, FromGame::Started);
-        check_response!(comms_b, FromGame::Started);
+        comms_b.send(ToGame::Readiness(Readiness::Prepared)).await;
+
+        check_response!(comms_a, FromGame::GameReadiness(Readiness::Prepared));
+        check_response!(comms_b, FromGame::GameReadiness(Readiness::Prepared));
 
         comms_d.send(ToGame::Join).await;
         check_response!(comms_d, FromGame::JoinError(JoinError::GameNotOpened));
+
+        comms_a
+            .send(ToGame::Readiness(Readiness::Initialized))
+            .await;
+        // The other player is not yet initialized -> no message should be received.
+        assert!(
+            timeout(Duration::from_millis(500), comms_a.recv::<FromGame>())
+                .await
+                .is_err()
+        );
+        assert!(
+            timeout(Duration::from_millis(500), comms_b.recv::<FromGame>())
+                .await
+                .is_err()
+        );
+
+        comms_b
+            .send(ToGame::Readiness(Readiness::Initialized))
+            .await;
+
+        check_response!(comms_a, FromGame::GameReadiness(Readiness::Initialized));
+        check_response!(comms_b, FromGame::GameReadiness(Readiness::Initialized));
 
         assert!(comms_a.errors.is_empty());
         assert!(comms_b.errors.is_empty());
