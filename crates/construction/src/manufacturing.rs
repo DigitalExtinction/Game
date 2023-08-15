@@ -377,13 +377,10 @@ fn check_spawn_locations(
 
 fn produce(
     time: Res<Time>,
-    conf: Res<GameConfig>,
     counter: Res<ObjectCounter>,
     mut factories: Query<(Entity, &Player, &mut AssemblyLine)>,
     mut deliver_events: EventWriter<DeliverEvent>,
 ) {
-    let locals = conf.locals();
-
     let mut counts: AHashMap<Player, u32> = AHashMap::from_iter(
         counter
             .counters()
@@ -391,10 +388,6 @@ fn produce(
     );
 
     for (factory, &player, mut assembly) in factories.iter_mut() {
-        if !locals.is_local(player) {
-            continue;
-        }
-
         let player_count = counts.entry(player).or_default();
 
         loop {
