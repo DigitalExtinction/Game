@@ -189,13 +189,8 @@ fn process_from_game(
             FromGame::PeerLeft(id) => {
                 info!("Peer {id} left.");
             }
-            FromGame::Starting => {
-                info!("Multiplayer game is starting.");
-            }
-            FromGame::Started => {
-                fatals.send(FatalErrorEvent::new(
-                    "Multiplayer game is unexpectedly fully started.",
-                ));
+            FromGame::GameReadiness(readiness) => {
+                info!("Game readiness changed to: {readiness:?}");
             }
         }
     }

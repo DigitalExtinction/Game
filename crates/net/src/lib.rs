@@ -1,5 +1,5 @@
 pub use header::Peers;
-pub use messages::{FromGame, FromServer, GameOpenError, JoinError, ToGame, ToServer};
+pub use messages::{FromGame, FromServer, GameOpenError, JoinError, Readiness, ToGame, ToServer};
 pub use protocol::{Targets, MAX_PACKAGE_SIZE};
 pub use socket::{RecvError, SendError, Socket, MAX_DATAGRAM_SIZE};
 pub use tasks::{

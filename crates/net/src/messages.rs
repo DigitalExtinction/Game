@@ -43,11 +43,11 @@ pub enum ToGame {
     ///
     /// The game is automatically closed once all players disconnect.
     Leave,
-    /// This initiates game startup.
-    Start,
-    /// The game switches from starting state to started state once this
-    /// message is received from all players.
-    Initialized,
+    /// Sets readiness of the client.
+    ///
+    /// New readiness must be greater by one or equal to the current readiness.
+    /// See [`Readiness::progress`].
+    Readiness(Readiness),
 }
 
 /// Message to be sent from a game server to a player/client (inside of a
@@ -78,12 +78,8 @@ pub enum FromGame {
     /// Informs the player that another player with the given ID just
     /// disconnected from the same game.
     PeerLeft(u8),
-    /// Informs the client that the game is starting. The game is no longer
-    /// available for joining. The client should start game initialization.
-    Starting,
-    /// Informs the client that the game fully started because all clients are
-    /// initiated.
-    Started,
+    /// Game readiness has changed.
+    GameReadiness(Readiness),
 }
 
 #[derive(Debug, Encode, Decode)]
@@ -95,4 +91,49 @@ pub enum JoinError {
     AlreadyJoined,
     /// The player already participates on a different game.
     DifferentGame,
+}
+
+/// Readiness of an individual client or the game as a whole. It consists of a
+/// progression of individual variants / stages. Once all clients progress to a
+/// readiness stage, the game progresses to that stage as well.
+#[derive(Clone, Copy, Default, Debug, Encode, Decode, PartialEq, Eq, PartialOrd, Ord)]
+pub enum Readiness {
+    /// Initial stage for all clients and the game.
+    #[default]
+    NotReady,
+    /// The client / game is ready for the game to start.
+    Ready,
+    /// The client / game is prepared for game initialization to begin.
+    Prepared,
+    /// The client / game is ready for the game to start.
+    ///
+    /// The actually game-play happens in this readiness stage.
+    Initialized,
+}
+
+impl Readiness {
+    pub fn progress(self) -> Option<Self> {
+        match self {
+            Self::NotReady => Some(Self::Ready),
+            Self::Ready => Some(Self::Prepared),
+            Self::Prepared => Some(Self::Initialized),
+            Self::Initialized => None,
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_readiness() {
+        assert!(Readiness::default() < Readiness::Ready);
+        assert!(Readiness::NotReady < Readiness::Ready);
+        assert!(Readiness::Ready < Readiness::Prepared);
+        assert!(Readiness::Prepared < Readiness::Initialized);
+        assert!(Readiness::NotReady < Readiness::Initialized);
+
+        assert_eq!(Readiness::NotReady.progress().unwrap(), Readiness::Ready);
+    }
 }
