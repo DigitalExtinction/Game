@@ -46,7 +46,7 @@ pub enum ToGame {
     /// Sets readiness of the client.
     ///
     /// New readiness must be greater by one or equal to the current readiness.
-    /// See [`Readiness::next`].
+    /// See [`Readiness::progress`].
     Readiness(Readiness),
 }
 
