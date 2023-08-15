@@ -20,8 +20,7 @@ impl Plugin for GamePlugin {
     fn build(&self, app: &mut App) {
         app.add_event::<GameOpenedEvent>()
             .add_event::<GameJoinedEvent>()
-            .add_systems(OnEnter(NetState::Connected), (setup, open_or_join))
-            .add_systems(OnEnter(NetState::None), cleanup)
+            .add_systems(OnEnter(NetState::Connected), open_or_join)
             .add_systems(
                 PreMovement,
                 (
@@ -55,19 +54,6 @@ impl GameJoinedEvent {
     pub fn player(&self) -> Player {
         self.player
     }
-}
-
-#[derive(Resource)]
-pub(crate) struct Players {
-    local: Option<Player>,
-}
-
-fn setup(mut commands: Commands) {
-    commands.insert_resource(Players { local: None });
-}
-
-fn cleanup(mut commands: Commands) {
-    commands.remove_resource::<Players>();
 }
 
 fn open_or_join(
@@ -128,7 +114,6 @@ fn process_from_server(
 }
 
 fn process_from_game(
-    mut players: ResMut<Players>,
     mut inputs: EventReader<FromGameServerEvent>,
     mut fatals: EventWriter<FatalErrorEvent>,
     state: Res<State<NetState>>,
@@ -148,7 +133,6 @@ fn process_from_game(
             FromGame::Joined(id) => match Player::try_from(*id) {
                 Ok(player) => {
                     info!("Joined game as Player {player}.");
-                    players.local = Some(player);
                     next_state.set(NetState::Joined);
                     joined_events.send(GameJoinedEvent::new(player));
                 }
