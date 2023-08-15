@@ -8,7 +8,7 @@ use de_multiplayer::{
 };
 
 use super::{
-    requests::{Receiver, RequestsPlugin, Sender},
+    requests::{Receiver, Sender},
     MultiplayerState,
 };
 use crate::MenuState;
@@ -17,8 +17,7 @@ pub(crate) struct SetupGamePlugin;
 
 impl Plugin for SetupGamePlugin {
     fn build(&self, app: &mut App) {
-        app.add_plugins(RequestsPlugin::<CreateGameRequest>::new())
-            .add_event::<SetupGameEvent>()
+        app.add_event::<SetupGameEvent>()
             .add_systems(OnEnter(MultiplayerState::GameSetup), setup_network)
             .add_systems(OnExit(MultiplayerState::GameSetup), cleanup)
             .add_systems(

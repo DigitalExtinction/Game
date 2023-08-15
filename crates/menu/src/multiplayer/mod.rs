@@ -1,10 +1,14 @@
 use bevy::prelude::*;
 use de_core::nested_state;
+use de_lobby_client::{
+    CreateGameRequest, GetGameRequest, JoinGameRequest, SignInRequest, SignUpRequest,
+};
 use de_multiplayer::MultiplayerShuttingDownEvent;
 
 use self::{
     create::CreateGamePlugin, gamelisting::GameListingPlugin, joined::JoinedGamePlugin,
-    joining::JoiningGamePlugin, setup::SetupGamePlugin, signin::SignInPlugin,
+    joining::JoiningGamePlugin, requests::RequestsPlugin, setup::SetupGamePlugin,
+    signin::SignInPlugin,
 };
 use crate::{menu::ScreenStatePlugin, MenuState};
 
@@ -21,6 +25,11 @@ pub(super) struct MultiplayerPlugin;
 impl Plugin for MultiplayerPlugin {
     fn build(&self, app: &mut App) {
         app.add_plugins((
+            RequestsPlugin::<SignInRequest>::new(),
+            RequestsPlugin::<SignUpRequest>::new(),
+            RequestsPlugin::<GetGameRequest>::new(),
+            RequestsPlugin::<CreateGameRequest>::new(),
+            RequestsPlugin::<JoinGameRequest>::new(),
             MultiplayerStatePlugin,
             ScreenStatePlugin::<MultiplayerState>::default(),
             SignInPlugin,
