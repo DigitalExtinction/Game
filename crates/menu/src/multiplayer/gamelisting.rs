@@ -5,7 +5,7 @@ use de_gui::{ButtonCommands, GuiCommands, LabelCommands, OuterStyle, ToastEvent}
 use de_lobby_client::{ListGamesRequest, RequestEvent, ResponseEvent};
 use de_lobby_model::GamePartial;
 
-use super::{joining::JoinGameEvent, MultiplayerState};
+use super::{current::GameNameRes, MultiplayerState};
 use crate::menu::Menu;
 
 const REFRESH_INTERVAL: Duration = Duration::from_secs(10);
@@ -184,16 +184,17 @@ fn list_games_system(
 }
 
 fn button_system(
+    mut commands: Commands,
     mut next_state: ResMut<NextState<MultiplayerState>>,
     interactions: Query<(&Interaction, &ButtonAction), Changed<Interaction>>,
-    mut joins: EventWriter<JoinGameEvent>,
 ) {
     for (&interaction, action) in interactions.iter() {
         if let Interaction::Pressed = interaction {
             match action {
                 ButtonAction::Create => next_state.set(MultiplayerState::GameCreation),
                 ButtonAction::Join(name) => {
-                    joins.send(JoinGameEvent::new(name.to_owned()));
+                    commands.insert_resource(GameNameRes::new(name));
+                    next_state.set(MultiplayerState::GameJoining);
                 }
             }
         }

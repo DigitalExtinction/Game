@@ -6,13 +6,14 @@ use de_lobby_client::{
 use de_multiplayer::MultiplayerShuttingDownEvent;
 
 use self::{
-    create::CreateGamePlugin, gamelisting::GameListingPlugin, joined::JoinedGamePlugin,
-    joining::JoiningGamePlugin, requests::RequestsPlugin, setup::SetupGamePlugin,
-    signin::SignInPlugin,
+    create::CreateGamePlugin, current::CurrentGamePlugin, gamelisting::GameListingPlugin,
+    joined::JoinedGamePlugin, joining::JoiningGamePlugin, requests::RequestsPlugin,
+    setup::SetupGamePlugin, signin::SignInPlugin,
 };
 use crate::{menu::ScreenStatePlugin, MenuState};
 
 mod create;
+mod current;
 mod gamelisting;
 mod joined;
 mod joining;
@@ -32,6 +33,7 @@ impl Plugin for MultiplayerPlugin {
             RequestsPlugin::<JoinGameRequest>::new(),
             MultiplayerStatePlugin,
             ScreenStatePlugin::<MultiplayerState>::default(),
+            CurrentGamePlugin,
             SignInPlugin,
             GameListingPlugin,
             CreateGamePlugin,
