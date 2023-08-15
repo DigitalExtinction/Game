@@ -8,6 +8,7 @@ use de_multiplayer::{
 };
 
 use super::{
+    current::GameNameRes,
     requests::{Receiver, Sender},
     MultiplayerState,
 };
@@ -93,6 +94,7 @@ fn setup_network(
 }
 
 fn create_game_in_lobby(
+    mut commands: Commands,
     config: Res<GameConfigRes>,
     mut opened_events: EventReader<GameOpenedEvent>,
     mut sender: Sender<CreateGameRequest>,
@@ -101,7 +103,9 @@ fn create_game_in_lobby(
         return;
     };
 
-    let game_setup = GameSetup::new(opened_event.0, config.0.clone());
+    let game_config = config.0.clone();
+    commands.insert_resource(GameNameRes::new(game_config.name()));
+    let game_setup = GameSetup::new(opened_event.0, game_config);
     sender.send(CreateGameRequest::new(game_setup));
 }
 
