@@ -71,7 +71,7 @@ fn spawn(
                 entity_commands.insert(Battery::default());
 
                 let player = *player.expect("Active object without an associated was spawned.");
-                counter.player_mut(player).unwrap().update(active_type, 1);
+                counter.player_mut(player).update(active_type, 1);
 
                 if game_config.locals().is_playable(player) || cfg!(feature = "godmode") {
                     entity_commands.insert(Playable);

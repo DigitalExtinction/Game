@@ -350,8 +350,7 @@ fn place_draft(
           mut events: EventWriter<NewDraftEvent>| {
         if counter
             .player(conf.locals().playable())
-            .unwrap()
-            .building_count()
+            .map_or(0, |c| c.building_count())
             >= PLAYER_MAX_BUILDINGS
         {
             warn!("Maximum number of buildings reached.");

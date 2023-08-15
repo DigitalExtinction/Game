@@ -382,14 +382,20 @@ fn produce(
     mut factories: Query<(Entity, &Player, &mut AssemblyLine)>,
     mut deliver_events: EventWriter<DeliverEvent>,
 ) {
-    let mut counts: AHashMap<Player, u32> = AHashMap::new();
-    for player in conf.players() {
-        let count = counter.player(player).unwrap().unit_count();
-        counts.insert(player, count);
-    }
+    let locals = conf.locals();
+
+    let mut counts: AHashMap<Player, u32> = AHashMap::from_iter(
+        counter
+            .counters()
+            .map(|(&player, counter)| (player, counter.unit_count())),
+    );
 
     for (factory, &player, mut assembly) in factories.iter_mut() {
-        let player_count = counts.get_mut(&player).unwrap();
+        if !locals.is_local(player) {
+            continue;
+        }
+
+        let player_count = counts.entry(player).or_default();
 
         loop {
             assembly.blocks_mut().map_capacity = *player_count >= PLAYER_MAX_UNITS;

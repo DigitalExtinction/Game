@@ -25,3 +25,4 @@ parry3d.workspace = true
 paste.workspace = true
 serde.workspace = true
 thiserror.workspace = true
+tinyvec.workspace = true

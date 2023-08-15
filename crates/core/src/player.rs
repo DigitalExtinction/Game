@@ -4,8 +4,9 @@ use std::cmp::Ordering;
 use bevy::prelude::*;
 use serde::{Deserialize, Serialize};
 
-#[derive(Copy, Clone, Debug, Serialize, Deserialize, Component, PartialEq, Eq, Hash)]
+#[derive(Default, Copy, Clone, Debug, Serialize, Deserialize, Component, PartialEq, Eq, Hash)]
 pub enum Player {
+    #[default]
     Player1,
     Player2,
     Player3,
@@ -13,7 +14,9 @@ pub enum Player {
 }
 
 impl Player {
-    pub fn to_num(self) -> u8 {
+    pub const MAX_PLAYERS: usize = 4;
+
+    pub const fn to_num(self) -> u8 {
         match self {
             Self::Player1 => 1,
             Self::Player2 => 2,

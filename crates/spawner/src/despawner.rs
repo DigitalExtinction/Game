@@ -52,7 +52,7 @@ fn find_dead(
     for (entity, &player, &object_type, health, transform) in entities.iter() {
         if health.destroyed() {
             if let ObjectType::Active(active_type) = object_type {
-                counter.player_mut(player).unwrap().update(active_type, -1);
+                counter.player_mut(player).update(active_type, -1);
 
                 play_audio.send(PlaySpatialAudioEvent::new(
                     match active_type {
