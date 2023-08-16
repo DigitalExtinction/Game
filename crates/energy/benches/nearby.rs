@@ -9,7 +9,7 @@ use de_core::projection::ToAltitude;
 use de_energy::{update_nearby_recv, EnergyReceiver, NearbyUnits};
 use de_index::{EntityIndex, LocalCollider};
 use de_objects::ObjectCollider;
-use de_test_utils::load_points;
+use de_test_utils::{load_points, NumPoints};
 use parry3d::math::{Isometry, Vector};
 use parry3d::shape::{Cuboid, TriMesh};
 
@@ -51,12 +51,9 @@ fn update_index(
     }
 }
 
-fn init_world_with_entities_moving(world: &mut World, num_entities: u32) {
+fn init_world_with_entities_moving(world: &mut World, num_entities: &NumPoints) {
     let mut index = EntityIndex::new();
-    let points = load_points(
-        num_entities.try_into().unwrap(),
-        MAP_SIZE - DISTANCE_FROM_MAP_EDGE,
-    );
+    let points = load_points(num_entities, MAP_SIZE - DISTANCE_FROM_MAP_EDGE);
 
     for (i, point) in points.into_iter().enumerate() {
         let point_msl = point.to_msl();
@@ -93,11 +90,7 @@ fn move_entities_in_circle(
 ) {
     for (mut transform, unit_number, centre) in query.iter_mut() {
         // Change direction (counter)clockwise based on entity_mum % 2 == 0
-        let direction = if unit_number.0 as f32 % 2. == 0. {
-            1.
-        } else {
-            -1.
-        };
+        let direction = if unit_number.0 % 2 == 0 { 1. } else { -1. };
 
         let t = clock.0;
         let radius = DISTANCE_FROM_MAP_EDGE / 2.;
@@ -115,9 +108,10 @@ fn move_entities_in_circle(
 fn nearby_benchmark(c: &mut Criterion) {
     let mut group = c.benchmark_group("Nearby unit movement scenarios");
 
-    for i in [100, 1_000, 10_000, 100_000].iter() {
+    use NumPoints::*;
+    for i in [OneHundred, OneThousand, TenThousand, OneHundredThousand] {
         let mut app = App::default();
-        init_world_with_entities_moving(&mut app.world, *i);
+        init_world_with_entities_moving(&mut app.world, &i);
         app.add_systems(Update, update_nearby_recv);
         app.add_plugins(TimePlugin);
 
@@ -126,24 +120,29 @@ fn nearby_benchmark(c: &mut Criterion) {
 
         app.add_systems(UpdateUnits, (update_index, move_entities_in_circle));
 
-        group.throughput(criterion::Throughput::Elements(*i as u64));
-        group.bench_function(format!("{} units all moving in circles", i), |b| {
-            b.iter_custom(|iters| {
-                let time = std::time::Instant::now();
-                let mut duration_updating_other_stuff = std::time::Duration::default();
+        let number_of_units: usize = i.into();
 
-                for _ in 0..iters {
-                    let update_other_stuff = std::time::Instant::now();
-                    app.world.resource_mut::<Clock>().inc();
-                    app.world.run_schedule(UpdateUnits);
-                    duration_updating_other_stuff += update_other_stuff.elapsed();
+        group.throughput(criterion::Throughput::Elements(number_of_units as u64));
+        group.bench_function(
+            format!("{} units all moving in circles", number_of_units),
+            |b| {
+                b.iter_custom(|iters| {
+                    let time = std::time::Instant::now();
+                    let mut duration_updating_other_stuff = std::time::Duration::default();
 
-                    app.update();
-                }
+                    for _ in 0..iters {
+                        let update_other_stuff = std::time::Instant::now();
+                        app.world.resource_mut::<Clock>().inc();
+                        app.world.run_schedule(UpdateUnits);
+                        duration_updating_other_stuff += update_other_stuff.elapsed();
 
-                time.elapsed() - duration_updating_other_stuff
-            })
-        });
+                        app.update();
+                    }
+
+                    time.elapsed() - duration_updating_other_stuff
+                })
+            },
+        );
     }
 }
 
