@@ -20,6 +20,8 @@ impl Plugin for GamePlugin {
     fn build(&self, app: &mut App) {
         app.add_event::<GameOpenedEvent>()
             .add_event::<GameJoinedEvent>()
+            .add_event::<PeerJoinedEvent>()
+            .add_event::<PeerLeftEvent>()
             .add_systems(OnEnter(NetState::Connected), open_or_join)
             .add_systems(
                 PreMovement,
