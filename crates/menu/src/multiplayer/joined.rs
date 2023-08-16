@@ -1,15 +1,8 @@
 use bevy::prelude::*;
-use de_core::{
-    assets::asset_path,
-    gconfig::{GameConfig, LocalPlayers},
-    player::Player,
-    state::AppState,
-};
+use de_core::state::AppState;
 use de_gui::ToastEvent;
 use de_lobby_client::GetGameRequest;
-use de_map::hash::MapHash;
-use de_messages::Readiness;
-use de_multiplayer::{GameReadinessEvent, ShutdownMultiplayerEvent};
+use de_multiplayer::{PeerJoinedEvent, PeerLeftEvent, ShutdownMultiplayerEvent};
 
 use super::{
     current::GameNameRes,
@@ -21,10 +14,16 @@ pub(crate) struct JoinedGamePlugin;
 
 impl Plugin for JoinedGamePlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(OnExit(MultiplayerState::GameJoined), cleanup)
+        app.add_systems(OnEnter(MultiplayerState::GameJoined), refresh)
+            .add_systems(OnExit(MultiplayerState::GameJoined), cleanup)
             .add_systems(
                 Update,
-                (refresh, handle_get_response).run_if(in_state(MultiplayerState::GameJoined)),
+                (
+                    refresh
+                        .run_if(on_event::<PeerJoinedEvent>().or_else(on_event::<PeerLeftEvent>())),
+                    handle_get_response,
+                )
+                    .run_if(in_state(MultiplayerState::GameJoined)),
             );
     }
 }
@@ -36,14 +35,12 @@ fn cleanup(state: Res<State<AppState>>, mut shutdown: EventWriter<ShutdownMultip
 }
 
 fn refresh(game_name: Res<GameNameRes>, mut sender: Sender<GetGameRequest>) {
-    // TODO when player joins or first time
+    info!("Refreshing game info...");
     sender.send(GetGameRequest::new(game_name.name_owned()));
 }
 
 fn handle_get_response(
-    mut commands: Commands,
     mut multi_state: ResMut<NextState<MultiplayerState>>,
-    mut app_state: ResMut<NextState<AppState>>,
     mut receiver: Receiver<GetGameRequest>,
     mut toasts: EventWriter<ToastEvent>,
 ) {
