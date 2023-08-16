@@ -4,15 +4,15 @@ use de_gui::ToastEvent;
 use de_lobby_client::GetGameRequest;
 use de_multiplayer::{PeerJoinedEvent, PeerLeftEvent, ShutdownMultiplayerEvent};
 
-use super::{
+use crate::multiplayer::{
     current::GameNameRes,
     requests::{Receiver, Sender},
     MultiplayerState,
 };
 
-pub(crate) struct JoinedGamePlugin;
+pub(super) struct JoinedGameStatePlugin;
 
-impl Plugin for JoinedGamePlugin {
+impl Plugin for JoinedGameStatePlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(OnEnter(MultiplayerState::GameJoined), refresh)
             .add_systems(OnExit(MultiplayerState::GameJoined), cleanup)
