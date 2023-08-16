@@ -20,6 +20,8 @@ impl Plugin for GamePlugin {
     fn build(&self, app: &mut App) {
         app.add_event::<GameOpenedEvent>()
             .add_event::<GameJoinedEvent>()
+            .add_event::<PeerJoinedEvent>()
+            .add_event::<PeerLeftEvent>()
             .add_systems(OnEnter(NetState::Connected), open_or_join)
             .add_systems(
                 PreMovement,
@@ -53,6 +55,24 @@ impl GameJoinedEvent {
 
     pub fn player(&self) -> Player {
         self.player
+    }
+}
+
+#[derive(Event)]
+pub struct PeerJoinedEvent(u8);
+
+impl PeerJoinedEvent {
+    pub fn id(&self) -> u8 {
+        self.0
+    }
+}
+
+#[derive(Event)]
+pub struct PeerLeftEvent(u8);
+
+impl PeerLeftEvent {
+    pub fn id(&self) -> u8 {
+        self.0
     }
 }
 
@@ -118,6 +138,8 @@ fn process_from_game(
     mut fatals: EventWriter<FatalErrorEvent>,
     state: Res<State<NetState>>,
     mut joined_events: EventWriter<GameJoinedEvent>,
+    mut peer_joined_events: EventWriter<PeerJoinedEvent>,
+    mut peer_left_events: EventWriter<PeerLeftEvent>,
     mut next_state: ResMut<NextState<NetState>>,
 ) {
     for event in inputs.iter() {
@@ -169,9 +191,11 @@ fn process_from_game(
             }
             FromGame::PeerJoined(id) => {
                 info!("Peer {id} joined.");
+                peer_joined_events.send(PeerJoinedEvent(*id));
             }
             FromGame::PeerLeft(id) => {
                 info!("Peer {id} left.");
+                peer_left_events.send(PeerLeftEvent(*id));
             }
             FromGame::GameReadiness(readiness) => {
                 info!("Game readiness changed to: {readiness:?}");
