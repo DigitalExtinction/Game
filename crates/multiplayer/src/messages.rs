@@ -2,7 +2,8 @@ use std::{net::SocketAddr, time::Instant};
 
 use bevy::prelude::*;
 use de_core::schedule::PreMovement;
-use de_net::{FromGame, FromServer, InPackage, PackageBuilder, Peers, ToGame, ToServer};
+use de_messages::{FromGame, FromServer, ToGame, ToServer};
+use de_net::{InPackage, PackageBuilder, Peers};
 
 use crate::{
     config::ConnectionType,

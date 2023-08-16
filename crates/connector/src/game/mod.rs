@@ -21,7 +21,8 @@ mod state;
 /// * `socket` - socket to use for the game server.
 ///
 /// * `owner` - address of the creator of the game. This client will be
-///   automatically added to the game as if they sent [`de_net::ToGame::Join`].
+///   automatically added to the game as if they sent
+///   [`de_messages::ToGame::Join`].
 ///
 /// * `max_players` - maximum number of clients which may connect to the game
 ///   at the same time

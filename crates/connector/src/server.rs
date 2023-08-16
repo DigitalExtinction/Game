@@ -2,10 +2,8 @@ use std::net::SocketAddr;
 
 use anyhow::Context;
 use async_std::task;
-use de_net::{
-    self, FromServer, GameOpenError, MessageDecoder, OutPackage, PackageReceiver, PackageSender,
-    Peers, Socket, ToServer,
-};
+use de_messages::{FromServer, GameOpenError, ToServer};
+use de_net::{self, MessageDecoder, OutPackage, PackageReceiver, PackageSender, Peers, Socket};
 use tracing::{error, info, warn};
 
 use crate::{clients::Clients, game};

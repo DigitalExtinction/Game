@@ -19,6 +19,7 @@ name = "de_connector"
 
 [dependencies]
 # DE
+de_messages.workspace = true
 de_net.workspace = true
 
 # Other

@@ -1,7 +1,8 @@
 use std::net::SocketAddr;
 
 use async_std::channel::Receiver;
-use de_net::{FromGame, OutPackage, PackageSender, Peers};
+use de_messages::FromGame;
+use de_net::{OutPackage, PackageSender, Peers};
 use tracing::{error, info, warn};
 
 use super::state::GameState;

@@ -1,7 +1,8 @@
 use std::time::Duration;
 
 use async_std::{channel::Sender, future::timeout};
-use de_net::{ConnErrorReceiver, ToGame};
+use de_messages::ToGame;
+use de_net::ConnErrorReceiver;
 use tracing::{error, info, warn};
 
 use super::greceiver::ToGameMessage;

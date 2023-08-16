@@ -4,10 +4,8 @@ use std::{
 };
 
 use async_std::{future::timeout, task};
-use de_net::{
-    self, ConnErrorReceiver, FromGame, FromServer, JoinError, OutPackage, PackageReceiver,
-    PackageSender, Peers, Readiness, Socket, ToGame, ToServer,
-};
+use de_messages::{FromGame, FromServer, JoinError, Readiness, ToGame, ToServer};
+use de_net::{self, ConnErrorReceiver, OutPackage, PackageReceiver, PackageSender, Peers, Socket};
 use ntest::timeout;
 
 use crate::common::{spawn_and_wait, term_and_wait};
