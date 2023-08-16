@@ -6,7 +6,6 @@ use de_audio::spatial::{PlaySpatialAudioEvent, Sound};
 use de_core::{
     cleanup::DespawnOnGameExit,
     gamestate::GameState,
-    gconfig::GameConfig,
     objects::{Active, ActiveObjectType, ObjectType, UnitType, PLAYER_MAX_UNITS},
     player::Player,
     projection::{ToAltitude, ToFlat},
