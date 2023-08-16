@@ -93,6 +93,7 @@ de_lobby_model = { path = "crates/lobby_model", version = "0.1.0-dev" }
 de_log = { path = "crates/log", version = "0.1.0-dev" }
 de_map = { path = "crates/map", version = "0.1.0-dev" }
 de_menu = { path = "crates/menu", version = "0.1.0-dev" }
+de_messages = { path = "crates/messages", version = "0.1.0-dev" }
 de_movement = { path = "crates/movement", version = "0.1.0-dev" }
 de_multiplayer = { path = "crates/multiplayer", version = "0.1.0-dev" }
 de_net = { path = "crates/net", version = "0.1.0-dev" }

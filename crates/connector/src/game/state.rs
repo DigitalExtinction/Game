@@ -2,7 +2,8 @@ use std::{collections::hash_map::Entry, net::SocketAddr};
 
 use ahash::AHashMap;
 use async_std::sync::{Arc, RwLock};
-use de_net::{Readiness, Targets};
+use de_messages::Readiness;
+use de_net::Targets;
 use thiserror::Error;
 
 #[derive(Clone)]

@@ -5,7 +5,7 @@ use std::{
 
 use bevy::prelude::*;
 use de_core::schedule::PreMovement;
-use de_net::{FromGame, ToGame};
+use de_messages::{FromGame, ToGame};
 use tracing::{debug, info, trace};
 
 use crate::{

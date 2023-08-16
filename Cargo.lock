@@ -2255,6 +2255,7 @@ dependencies = [
  "assert_cmd",
  "async-std",
  "bincode",
+ "de_messages",
  "de_net",
  "futures",
  "nix 0.26.2",
@@ -2504,6 +2505,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "de_messages"
+version = "0.1.0-dev"
+dependencies = [
+ "bincode",
+]
+
+[[package]]
 name = "de_movement"
 version = "0.1.0-dev"
 dependencies = [
@@ -2528,6 +2536,7 @@ dependencies = [
  "bincode",
  "de_core",
  "de_gui",
+ "de_messages",
  "de_net",
  "futures-lite",
  "iyes_progress",

@@ -4,7 +4,8 @@ use async_std::{
     channel::{Receiver, Sender},
     task,
 };
-use de_net::{FromGame, JoinError, OutPackage, Peers, Readiness, Targets, ToGame};
+use de_messages::{FromGame, JoinError, Readiness, ToGame};
+use de_net::{OutPackage, Peers, Targets};
 use tracing::{error, info, warn};
 
 use super::state::{GameState, JoinError as JoinErrorInner};
