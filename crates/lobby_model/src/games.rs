@@ -36,7 +36,7 @@ impl Game {
     }
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct GamePlayer {
     username: String,
@@ -57,7 +57,7 @@ impl GamePlayer {
     }
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct GamePlayerInfo {
     ordinal: u8,

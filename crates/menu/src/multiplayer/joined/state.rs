@@ -4,6 +4,7 @@ use de_gui::ToastEvent;
 use de_lobby_client::GetGameRequest;
 use de_multiplayer::{PeerJoinedEvent, PeerLeftEvent, ShutdownMultiplayerEvent};
 
+use super::ui::RefreshPlayersEvent;
 use crate::multiplayer::{
     current::GameNameRes,
     requests::{Receiver, Sender},
@@ -42,12 +43,13 @@ fn refresh(game_name: Res<GameNameRes>, mut sender: Sender<GetGameRequest>) {
 fn handle_get_response(
     mut multi_state: ResMut<NextState<MultiplayerState>>,
     mut receiver: Receiver<GetGameRequest>,
+    mut refresh: EventWriter<RefreshPlayersEvent>,
     mut toasts: EventWriter<ToastEvent>,
 ) {
     while let Some(result) = receiver.receive() {
         match result {
             Ok(game) => {
-                // TODO update UI
+                refresh.send(RefreshPlayersEvent::from_slice(game.players()));
             }
             Err(error) => {
                 toasts.send(ToastEvent::new(error));
