@@ -2326,6 +2326,7 @@ dependencies = [
  "paste",
  "serde",
  "thiserror",
+ "tinyvec",
 ]
 
 [[package]]

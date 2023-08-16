@@ -112,12 +112,12 @@ fn spawn_map(
         DespawnOnGameExit,
     ));
 
-    let players = game_config.players();
+    let locals = game_config.locals();
     for object in map.content().objects() {
         let (mut entity_commands, object_type) = match object.inner() {
             InnerObject::Active(object) => {
                 let player = object.player();
-                if !players.contains(player) {
+                if !locals.is_local(player) {
                     continue;
                 }
 

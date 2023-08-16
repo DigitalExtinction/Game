@@ -1,13 +1,11 @@
-use std::ops::{Add, AddAssign};
+use std::{
+    collections::hash_map::Iter,
+    ops::{Add, AddAssign},
+};
 
 use ahash::AHashMap;
 use bevy::prelude::*;
-use de_core::{
-    gconfig::GameConfig,
-    objects::ActiveObjectType,
-    player::{Player, PlayerRange},
-    state::AppState,
-};
+use de_core::{objects::ActiveObjectType, player::Player, state::AppState};
 
 pub(crate) struct CounterPlugin;
 
@@ -24,20 +22,22 @@ pub struct ObjectCounter {
 }
 
 impl ObjectCounter {
-    fn new(players: PlayerRange) -> Self {
-        let mut map = AHashMap::with_capacity(players.len());
-        for player in players {
-            map.insert(player, PlayerObjectCounter::default());
+    fn new() -> Self {
+        Self {
+            players: AHashMap::new(),
         }
-        Self { players: map }
+    }
+
+    pub fn counters(&self) -> Iter<Player, PlayerObjectCounter> {
+        self.players.iter()
     }
 
     pub fn player(&self, player: Player) -> Option<&PlayerObjectCounter> {
         self.players.get(&player)
     }
 
-    pub(crate) fn player_mut(&mut self, player: Player) -> Option<&mut PlayerObjectCounter> {
-        self.players.get_mut(&player)
+    pub(crate) fn player_mut(&mut self, player: Player) -> &mut PlayerObjectCounter {
+        self.players.entry(player).or_default()
     }
 }
 
@@ -95,8 +95,8 @@ impl AddAssign<i32> for Count {
     }
 }
 
-fn setup(mut commands: Commands, config: Res<GameConfig>) {
-    commands.insert_resource(ObjectCounter::new(config.players()));
+fn setup(mut commands: Commands) {
+    commands.insert_resource(ObjectCounter::new());
 }
 
 fn cleanup(mut commands: Commands) {

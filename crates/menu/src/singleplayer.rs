@@ -107,8 +107,7 @@ fn button_system(
                     Some(path) => {
                         commands.insert_resource(GameConfig::new(
                             path,
-                            Player::Player4,
-                            LocalPlayers::new(Player::Player1),
+                            LocalPlayers::from_max_player(Player::Player1, Player::Player4),
                         ));
                         next_state.set(AppState::InGame);
                     }
