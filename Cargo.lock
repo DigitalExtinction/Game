@@ -2499,6 +2499,7 @@ dependencies = [
  "de_lobby_client",
  "de_lobby_model",
  "de_map",
+ "de_messages",
  "de_multiplayer",
  "futures-lite",
  "thiserror",

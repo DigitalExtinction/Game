@@ -2,7 +2,7 @@ use std::net::SocketAddr;
 
 use bevy::prelude::*;
 use de_core::{player::Player, schedule::PreMovement};
-use de_messages::{FromGame, FromServer, GameOpenError, JoinError, ToGame, ToServer};
+use de_messages::{FromGame, FromServer, GameOpenError, JoinError, Readiness, ToGame, ToServer};
 
 use crate::{
     config::ConnectionType,
@@ -22,6 +22,8 @@ impl Plugin for GamePlugin {
             .add_event::<GameJoinedEvent>()
             .add_event::<PeerJoinedEvent>()
             .add_event::<PeerLeftEvent>()
+            .add_event::<GameReadinessEvent>()
+            .add_event::<SetReadinessEvent>()
             .add_systems(OnEnter(NetState::Connected), open_or_join)
             .add_systems(
                 PreMovement,
@@ -33,6 +35,13 @@ impl Plugin for GamePlugin {
                         .run_if(on_event::<FromGameServerEvent>())
                         .after(MessagesSet::RecvMessages),
                 ),
+            )
+            .add_systems(
+                PostUpdate,
+                set_readiness
+                    .run_if(in_state(NetState::Joined))
+                    .run_if(on_event::<SetReadinessEvent>())
+                    .before(MessagesSet::SendMessages),
             )
             .add_systems(OnEnter(NetState::ShuttingDown), leave);
     }
@@ -73,6 +82,20 @@ pub struct PeerLeftEvent(u8);
 impl PeerLeftEvent {
     pub fn id(&self) -> u8 {
         self.0
+    }
+}
+
+/// This event is sent when game readiness stage of the joined game changes.
+#[derive(Event, Deref)]
+pub struct GameReadinessEvent(Readiness);
+
+/// Send this event to change player readiness stage.
+#[derive(Event)]
+pub struct SetReadinessEvent(Readiness);
+
+impl From<Readiness> for SetReadinessEvent {
+    fn from(readiness: Readiness) -> Self {
+        Self(readiness)
     }
 }
 
@@ -133,6 +156,7 @@ fn process_from_server(
     }
 }
 
+#[allow(clippy::too_many_arguments)]
 fn process_from_game(
     mut inputs: EventReader<FromGameServerEvent>,
     mut fatals: EventWriter<FatalErrorEvent>,
@@ -140,6 +164,7 @@ fn process_from_game(
     mut joined_events: EventWriter<GameJoinedEvent>,
     mut peer_joined_events: EventWriter<PeerJoinedEvent>,
     mut peer_left_events: EventWriter<PeerLeftEvent>,
+    mut readiness_events: EventWriter<GameReadinessEvent>,
     mut next_state: ResMut<NextState<NetState>>,
 ) {
     for event in inputs.iter() {
@@ -199,9 +224,21 @@ fn process_from_game(
             }
             FromGame::GameReadiness(readiness) => {
                 info!("Game readiness changed to: {readiness:?}");
+                readiness_events.send(GameReadinessEvent(*readiness));
             }
         }
     }
+}
+
+fn set_readiness(
+    mut readiness_events: EventReader<SetReadinessEvent>,
+    mut message_events: EventWriter<ToGameServerEvent<true>>,
+) {
+    let Some(readiness) = readiness_events.iter().last() else {
+        return;
+    };
+
+    message_events.send(ToGameServerEvent::from(ToGame::Readiness(readiness.0)));
 }
 
 fn leave(mut server: EventWriter<ToGameServerEvent<true>>) {
