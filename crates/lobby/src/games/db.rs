@@ -33,20 +33,44 @@ impl Games {
     ///
     /// It is supposed users were already setup.
     pub(super) async fn init(pool: &'static Pool<Postgres>) -> Result<Self> {
-        let init_query = format!(
-            include_str!("init.sql"),
-            username_len = MAX_USERNAME_LEN,
+        let init_query_a = format!(
+            include_str!("init-a.sql"),
             game_name_len = MAX_GAME_NAME_LEN,
             map_name_len = MAX_MAP_NAME_LEN,
             map_hash_len = MAP_HASH_LEN,
             server_len = SERVER_LEN,
         );
 
+        let init_query_b = format!(
+            include_str!("init-b.sql"),
+            username_len = MAX_USERNAME_LEN,
+            game_name_len = MAX_GAME_NAME_LEN,
+        );
+
+        // TODO
         info!("Initializing games...");
-        query(&init_query)
+        query(&init_query_a)
             .execute(pool)
             .await
-            .context("DB initialization failed")?;
+            .context("DB initialization failed")
+            .unwrap();
+
+        query(&init_query_b)
+            .execute(pool)
+            .await
+            .context("DB initialization failed")
+            .unwrap();
+
+        query(include_str!("a.sql"))
+            .execute(pool)
+            .await
+            .context("DB initialization failed 1")
+            .unwrap();
+        query(include_str!("b.sql"))
+            .execute(pool)
+            .await
+            .context("DB initialization failed 2")
+            .unwrap();
         Ok(Self { pool })
     }
 

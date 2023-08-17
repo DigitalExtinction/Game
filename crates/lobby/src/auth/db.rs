@@ -41,12 +41,13 @@ impl Users {
         info!("Registering user {}...", user.user().username());
 
         let password = DbPassword::generate(user.password()).map_err(RegistrationError::Other)?;
-        let result = query("INSERT INTO users (username, pass_hash, pass_salt) VALUES(?, ?, ?);")
-            .bind(user.user().username())
-            .bind(password.b64_encode_pwd_hash()?)
-            .bind(password.salt_str())
-            .execute(self.pool)
-            .await;
+        let result =
+            query("INSERT INTO users (username, pass_hash, pass_salt) VALUES ($1, $2, $3);")
+                .bind(user.user().username())
+                .bind(password.b64_encode_pwd_hash()?)
+                .bind(password.salt_str())
+                .execute(self.pool)
+                .await;
 
         db_error_code!(
             result,

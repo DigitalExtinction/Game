@@ -1,0 +1,2 @@
+- When inserting resources, use `.insert_resource_cleaned()` and similar so
+  that the resource is auto-cleaned.
