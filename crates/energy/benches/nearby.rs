@@ -1,7 +1,7 @@
 use bevy::ecs::schedule::ScheduleLabel;
 use bevy::prelude::{
-    App, Changed, Component, Entity, Query, Res, ResMut, Resource, Schedule, Transform, Update,
-    World,
+    App, Changed, Component, Entity, IntoSystemConfigs, Query, Res, ResMut, Resource, Schedule,
+    Transform, Update, World,
 };
 use bevy::time::TimePlugin;
 use criterion::{criterion_group, criterion_main, Criterion};
@@ -14,7 +14,7 @@ use parry3d::math::{Isometry, Vector};
 use parry3d::shape::{Cuboid, TriMesh};
 
 const MAP_SIZE: f32 = 2000.;
-const DISTANCE_FROM_MAP_EDGE: f32 = 100.;
+const MOVEMENT_RADIUS: f32 = 100.;
 const SPEED: f32 = 10.; // based on MAX_H_SPEED in movement
 
 #[derive(ScheduleLabel, Clone, Debug, PartialEq, Eq, Hash)]
@@ -34,7 +34,7 @@ struct Clock(f32); // this clock is used in a substitute of time to make it more
 
 impl Clock {
     fn inc(&mut self) {
-        self.0 += 0.008 // 125 updates a "second"
+        self.0 += 0.1 // 10HZ
     }
 }
 
@@ -53,7 +53,11 @@ fn update_index(
 
 fn init_world_with_entities_moving(world: &mut World, num_entities: &NumPoints) {
     let mut index = EntityIndex::new();
-    let points = load_points(num_entities, MAP_SIZE - DISTANCE_FROM_MAP_EDGE);
+    let max_point_value = MAP_SIZE - MOVEMENT_RADIUS * 2.;
+
+    assert!(max_point_value > 0.);
+
+    let points = load_points(num_entities, max_point_value);
 
     for (i, point) in points.into_iter().enumerate() {
         let point_msl = point.to_msl();
@@ -93,12 +97,12 @@ fn move_entities_in_circle(
         let direction = if unit_number.0 % 2 == 0 { 1. } else { -1. };
 
         let t = clock.0;
-        let radius = DISTANCE_FROM_MAP_EDGE / 2.;
+        let radius = MOVEMENT_RADIUS;
         let omega = SPEED / radius;
-        let omega_shift = unit_number.0 as f32;
+        let omega_shift = 0.1 * unit_number.0 as f32;
 
-        let x = radius * (t * omega + omega_shift * direction).sin();
-        let y = radius * (t * omega + omega_shift * direction).cos();
+        let x = radius * (t * omega_shift + omega * direction).sin();
+        let y = radius * (t * omega_shift + omega * direction).cos();
 
         transform.translation.x = x + centre.x;
         transform.translation.y = y + centre.y;
@@ -118,7 +122,13 @@ fn nearby_benchmark(c: &mut Criterion) {
         let update_units_schedule = Schedule::default();
         app.add_schedule(UpdateUnits, update_units_schedule);
 
-        app.add_systems(UpdateUnits, (update_index, move_entities_in_circle));
+        app.add_systems(
+            UpdateUnits,
+            (
+                move_entities_in_circle,
+                update_index.after(move_entities_in_circle),
+            ),
+        );
 
         let number_of_units: usize = i.into();
 
