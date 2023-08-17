@@ -1,5 +1,6 @@
 use sqlx::postgres::PgRow;
 
+// TODO fix thise
 pub const SQLITE_CONSTRAINT_PRIMARYKEY: &str = "1555";
 pub const SQLITE_CONSTRAINT_FOREIGNKEY: &str = "787";
 
