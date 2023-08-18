@@ -3,6 +3,7 @@ use std::net::SocketAddr;
 use bevy::prelude::*;
 use de_core::{player::Player, schedule::PreMovement};
 use de_messages::{FromGame, FromServer, GameOpenError, JoinError, Readiness, ToGame, ToServer};
+use de_net::Reliability;
 
 use crate::{
     config::ConnectionType,
@@ -102,7 +103,7 @@ impl From<Readiness> for SetReadinessEvent {
 fn open_or_join(
     conf: Res<NetGameConfRes>,
     mut main_server: EventWriter<ToMainServerEvent>,
-    mut game_server: EventWriter<ToGameServerEvent<true>>,
+    mut game_server: EventWriter<ToGameServerEvent>,
 ) {
     match conf.connection_type() {
         ConnectionType::CreateGame { max_players, .. } => {
@@ -116,7 +117,10 @@ fn open_or_join(
         }
         ConnectionType::JoinGame(_) => {
             info!("Sending a join-game request.");
-            game_server.send(ToGame::Join.into());
+            game_server.send(ToGameServerEvent::new(
+                Reliability::SemiOrdered,
+                ToGame::Join,
+            ));
         }
     }
 }
@@ -125,7 +129,7 @@ fn process_from_server(
     conf: Res<NetGameConfRes>,
     mut ports: ResMut<Ports>,
     mut events: EventReader<FromMainServerEvent>,
-    mut outputs: EventWriter<ToGameServerEvent<true>>,
+    mut outputs: EventWriter<ToGameServerEvent>,
     mut opened: EventWriter<GameOpenedEvent>,
     mut fatals: EventWriter<FatalErrorEvent>,
 ) {
@@ -138,7 +142,10 @@ fn process_from_server(
                 Ok(_) => {
                     info!("Game on port {} opened.", *port);
                     // Send something to open NAT.
-                    outputs.send(ToGame::Ping(u32::MAX).into());
+                    outputs.send(ToGameServerEvent::new(
+                        Reliability::Unordered,
+                        ToGame::Ping(u32::MAX),
+                    ));
                     opened.send(GameOpenedEvent(SocketAddr::new(conf.server_host(), *port)));
                 }
                 Err(err) => {
@@ -232,18 +239,24 @@ fn process_from_game(
 
 fn set_readiness(
     mut readiness_events: EventReader<SetReadinessEvent>,
-    mut message_events: EventWriter<ToGameServerEvent<true>>,
+    mut message_events: EventWriter<ToGameServerEvent>,
 ) {
     let Some(readiness) = readiness_events.iter().last() else {
         return;
     };
 
-    message_events.send(ToGameServerEvent::from(ToGame::Readiness(readiness.0)));
+    message_events.send(ToGameServerEvent::new(
+        Reliability::SemiOrdered,
+        ToGame::Readiness(readiness.0),
+    ));
 }
 
-fn leave(mut server: EventWriter<ToGameServerEvent<true>>) {
+fn leave(mut server: EventWriter<ToGameServerEvent>) {
     info!("Sending leave game message.");
     // Send this even if not yet joined because the join / open-game request
     // might already be processed.
-    server.send(ToGame::Leave.into());
+    server.send(ToGameServerEvent::new(
+        Reliability::SemiOrdered,
+        ToGame::Leave,
+    ));
 }
