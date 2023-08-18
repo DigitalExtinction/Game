@@ -10,19 +10,25 @@ use crate::player::{Player, PlayerRange};
 #[derive(Resource)]
 pub struct GameConfig {
     map_path: PathBuf,
+    multiplayer: bool,
     locals: LocalPlayers,
 }
 
 impl GameConfig {
-    pub fn new<P: Into<PathBuf>>(map_path: P, locals: LocalPlayers) -> Self {
+    pub fn new<P: Into<PathBuf>>(map_path: P, multiplayer: bool, locals: LocalPlayers) -> Self {
         Self {
             map_path: map_path.into(),
+            multiplayer,
             locals,
         }
     }
 
     pub fn map_path(&self) -> &Path {
         self.map_path.as_path()
+    }
+
+    pub fn multiplayer(&self) -> bool {
+        self.multiplayer
     }
 
     pub fn locals(&self) -> &LocalPlayers {
@@ -95,6 +101,7 @@ mod tests {
     fn test_game_config() {
         let config = GameConfig::new(
             "/some/path",
+            false,
             LocalPlayers::from_max_player(Player::Player1, Player::Player4),
         );
         assert_eq!(config.map_path().to_string_lossy(), "/some/path");

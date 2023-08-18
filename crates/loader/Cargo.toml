@@ -13,12 +13,14 @@ categories.workspace = true
 
 [dependencies]
 # DE
-de_core.workspace = true
-de_map.workspace = true
-de_terrain.workspace = true
-de_spawner.workspace = true
 de_camera.workspace = true
 de_conf.workspace = true
+de_core.workspace = true
+de_map.workspace = true
+de_messages.workspace = true
+de_multiplayer.workspace = true
+de_spawner.workspace = true
+de_terrain.workspace = true
 
 # Other
 bevy.workspace = true
