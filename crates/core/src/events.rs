@@ -10,6 +10,9 @@ use bevy::{
 
 use crate::gamestate::GameState;
 
+/// This plugin accumulates events received during [`GameState::Prepared`],
+/// [`GameState::Loading`] and [`GameState::Waiting`] and re-sends them on
+/// enter of [`GameState::Playing`].
 pub struct ResendEventPlugin<T: Event> {
     _marker: PhantomData<T>,
 }
@@ -24,10 +27,14 @@ impl<T: Event> Default for ResendEventPlugin<T> {
 
 impl<T: Event> Plugin for ResendEventPlugin<T> {
     fn build(&self, app: &mut App) {
-        app.add_systems(OnEnter(GameState::Loading), setup::<T>)
+        app.add_systems(OnEnter(GameState::Prepared), setup::<T>)
             .add_systems(
                 Update,
-                enqueue_events::<T>.run_if(in_state(GameState::Loading)),
+                enqueue_events::<T>.run_if(
+                    in_state(GameState::Prepared)
+                        .or_else(in_state(GameState::Loading))
+                        .or_else(in_state(GameState::Waiting)),
+                ),
             )
             .add_systems(
                 OnEnter(GameState::Playing),

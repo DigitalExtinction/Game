@@ -143,6 +143,7 @@ fn start(
 
     commands.insert_resource(GameConfig::new(
         map_path,
+        true,
         LocalPlayers::from_single(player.0),
     ));
     app_state.set(AppState::InGame);
