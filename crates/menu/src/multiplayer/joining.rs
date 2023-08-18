@@ -8,6 +8,7 @@ use de_multiplayer::{
 
 use super::{
     current::GameNameRes,
+    joined::LocalPlayerRes,
     requests::{Receiver, Sender},
     MultiplayerState,
 };
@@ -31,10 +32,12 @@ impl Plugin for JoiningGamePlugin {
 }
 
 fn cleanup(
+    mut commands: Commands,
     state: Res<State<MultiplayerState>>,
     mut shutdown: EventWriter<ShutdownMultiplayerEvent>,
 ) {
     if state.as_ref() != &MultiplayerState::GameJoined {
+        commands.remove_resource::<LocalPlayerRes>();
         shutdown.send(ShutdownMultiplayerEvent);
     }
 }
@@ -67,6 +70,7 @@ fn handle_get_response(
 }
 
 fn handle_joined_event(
+    mut commands: Commands,
     game_name: Res<GameNameRes>,
     mut events: EventReader<GameJoinedEvent>,
     mut sender: Sender<JoinGameRequest>,
@@ -75,6 +79,7 @@ fn handle_joined_event(
         return;
     };
 
+    commands.insert_resource(LocalPlayerRes::new(event.player()));
     sender.send(JoinGameRequest::new(
         game_name.name_owned(),
         GamePlayerInfo::new(event.player().to_num()),
