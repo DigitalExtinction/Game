@@ -1,7 +1,7 @@
 use std::path::{Path, PathBuf};
 
 use bevy::prelude::Resource;
-use tinyvec::ArrayVec;
+use tinyvec::{array_vec, ArrayVec};
 
 use crate::player::{Player, PlayerRange};
 
@@ -49,6 +49,10 @@ impl LocalPlayers {
 
     pub fn from_range(playable: Player, locals: PlayerRange) -> Self {
         Self::new(playable, locals.collect())
+    }
+
+    pub fn from_single(playable: Player) -> Self {
+        Self::new(playable, array_vec!(_ => playable))
     }
 
     /// # Arguments

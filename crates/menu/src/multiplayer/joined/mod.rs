@@ -1,5 +1,6 @@
 use bevy::prelude::*;
 
+pub(super) use self::state::LocalPlayerRes;
 use self::{state::JoinedGameStatePlugin, ui::JoinedGameUiPlugin};
 
 mod state;

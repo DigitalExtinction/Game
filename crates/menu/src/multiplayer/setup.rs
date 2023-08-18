@@ -4,11 +4,13 @@ use de_gui::ToastEvent;
 use de_lobby_client::CreateGameRequest;
 use de_lobby_model::{GameConfig, GameSetup};
 use de_multiplayer::{
-    ConnectionType, GameOpenedEvent, NetGameConf, ShutdownMultiplayerEvent, StartMultiplayerEvent,
+    ConnectionType, GameJoinedEvent, GameOpenedEvent, NetGameConf, ShutdownMultiplayerEvent,
+    StartMultiplayerEvent,
 };
 
 use super::{
     current::GameNameRes,
+    joined::LocalPlayerRes,
     requests::{Receiver, Sender},
     MultiplayerState,
 };
@@ -19,7 +21,7 @@ pub(crate) struct SetupGamePlugin;
 impl Plugin for SetupGamePlugin {
     fn build(&self, app: &mut App) {
         app.add_event::<SetupGameEvent>()
-            .add_systems(OnEnter(MultiplayerState::GameSetup), setup_network)
+            .add_systems(OnEnter(MultiplayerState::GameSetup), (setup, setup_network))
             .add_systems(OnExit(MultiplayerState::GameSetup), cleanup)
             .add_systems(
                 PreUpdate,
@@ -27,8 +29,16 @@ impl Plugin for SetupGamePlugin {
             )
             .add_systems(
                 Update,
-                (create_game_in_lobby, handle_lobby_response)
+                (
+                    create_game_in_lobby,
+                    handle_lobby_response,
+                    handle_joined_event,
+                )
                     .run_if(in_state(MultiplayerState::GameSetup)),
+            )
+            .add_systems(
+                PostUpdate,
+                move_once_ready.run_if(in_state(MultiplayerState::GameSetup)),
             );
     }
 }
@@ -52,6 +62,9 @@ impl SetupGameEvent {
 #[derive(Resource)]
 pub(crate) struct GameConfigRes(GameConfig);
 
+#[derive(Resource)]
+struct JoinedRes(bool);
+
 fn handle_setup_event(
     mut commands: Commands,
     mut next_state: ResMut<NextState<MultiplayerState>>,
@@ -65,16 +78,32 @@ fn handle_setup_event(
     next_state.set(MultiplayerState::GameSetup);
 }
 
+fn move_once_ready(
+    joined: Res<JoinedRes>,
+    local_player: Option<Res<LocalPlayerRes>>,
+    mut next_state: ResMut<NextState<MultiplayerState>>,
+) {
+    if joined.0 && local_player.is_some() {
+        next_state.set(MultiplayerState::GameJoined);
+    }
+}
+
 fn cleanup(
     mut commands: Commands,
     state: Res<State<MultiplayerState>>,
     mut shutdown: EventWriter<ShutdownMultiplayerEvent>,
 ) {
     commands.remove_resource::<GameConfigRes>();
+    commands.remove_resource::<JoinedRes>();
 
     if state.as_ref() != &MultiplayerState::GameJoined {
+        commands.remove_resource::<LocalPlayerRes>();
         shutdown.send(ShutdownMultiplayerEvent);
     }
+}
+
+fn setup(mut commands: Commands) {
+    commands.insert_resource(JoinedRes(false));
 }
 
 fn setup_network(
@@ -109,7 +138,15 @@ fn create_game_in_lobby(
     sender.send(CreateGameRequest::new(game_setup));
 }
 
+fn handle_joined_event(mut commands: Commands, mut events: EventReader<GameJoinedEvent>) {
+    let Some(event) = events.iter().last() else {
+        return;
+    };
+    commands.insert_resource(LocalPlayerRes::new(event.player()));
+}
+
 fn handle_lobby_response(
+    mut joined: ResMut<JoinedRes>,
     mut next_state: ResMut<NextState<MultiplayerState>>,
     mut receiver: Receiver<CreateGameRequest>,
     mut toasts: EventWriter<ToastEvent>,
@@ -118,7 +155,7 @@ fn handle_lobby_response(
         match result {
             Ok(_) => {
                 info!("Game successfully created.");
-                next_state.set(MultiplayerState::GameJoined);
+                joined.0 = true;
             }
             Err(error) => {
                 toasts.send(ToastEvent::new(error));
