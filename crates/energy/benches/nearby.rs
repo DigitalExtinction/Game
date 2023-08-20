@@ -97,12 +97,11 @@ fn move_entities_in_circle(
         let direction = if unit_number.0 % 2 == 0 { 1. } else { -1. };
 
         let t = clock.0;
-        let radius = MOVEMENT_RADIUS;
-        let omega = SPEED / radius;
+        let omega = SPEED / MOVEMENT_RADIUS;
         let omega_shift = 0.1 * unit_number.0 as f32;
 
-        let x = radius * (t * omega_shift + omega * direction).sin();
-        let y = radius * (t * omega_shift + omega * direction).cos();
+        let x = MOVEMENT_RADIUS * (omega_shift + t * omega * direction).sin();
+        let y = MOVEMENT_RADIUS * (omega_shift + t * omega * direction).cos();
 
         transform.translation.x = x + centre.x;
         transform.translation.y = y + centre.y;
