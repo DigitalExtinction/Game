@@ -13,8 +13,8 @@ use de_test_utils::{load_points, NumPoints};
 use parry3d::math::{Isometry, Vector};
 use parry3d::shape::{Cuboid, TriMesh};
 
-const MAP_SIZE: f32 = 2000.;
-const MOVEMENT_RADIUS: f32 = 100.;
+const UNIT_SPACING: f32 = 7.;
+const MOVEMENT_RADIUS: f32 = 40.;
 const SPEED: f32 = 10.; // based on MAX_H_SPEED in movement
 
 #[derive(ScheduleLabel, Clone, Debug, PartialEq, Eq, Hash)]
@@ -53,8 +53,8 @@ fn update_index(
 
 fn init_world_with_entities_moving(world: &mut World, num_entities: &NumPoints) {
     let mut index = EntityIndex::new();
-    let max_point_value = MAP_SIZE - MOVEMENT_RADIUS * 2.;
-
+    let max_point_value =
+        UNIT_SPACING * (<NumPoints as Into<usize>>::into(*num_entities) as f32).sqrt();
     assert!(max_point_value > 0.);
 
     let points = load_points(num_entities, max_point_value);
@@ -149,8 +149,16 @@ fn nearby_benchmark(c: &mut Criterion) {
                     }
 
                     time.elapsed() - duration_updating_other_stuff
-                })
+                });
             },
+        );
+        let mut amount_of_connections_formed = 0;
+        for connections in app.world.query::<&mut NearbyUnits>().iter(&app.world) {
+            amount_of_connections_formed += connections.units().len()
+        }
+        println!(
+            "We ended up with {} connections between {} units",
+            amount_of_connections_formed, number_of_units
         );
     }
 }

@@ -5,6 +5,7 @@ use std::path::PathBuf;
 use glam::Vec2;
 
 /// An enum to allow for safe selection of the number of points to load from the test data
+#[derive(Copy, Clone, Debug)]
 pub enum NumPoints {
     OneHundred,
     OneThousand,

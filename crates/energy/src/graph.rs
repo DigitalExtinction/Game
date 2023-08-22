@@ -48,7 +48,7 @@ impl Plugin for GraphPlugin {
 
 /// wrapped entity to allow for default values (se we can work with TinyVec)
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-struct NearbyEntity(Entity);
+pub struct NearbyEntity(Entity);
 
 impl Default for NearbyEntity {
     fn default() -> Self {
@@ -128,6 +128,12 @@ impl Nearby {
 pub struct NearbyUnits {
     units: Nearby,
     last_pos: Option<Vec2>,
+}
+
+impl NearbyUnits {
+    pub fn units(&self) -> TinyVec<[NearbyEntity; 256]> {
+        self.units.both()
+    }
 }
 
 fn setup(mut commands: Commands) {
