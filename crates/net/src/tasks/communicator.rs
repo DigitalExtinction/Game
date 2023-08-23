@@ -7,10 +7,7 @@ use bincode::{
     error::{DecodeError, EncodeError},
 };
 
-use crate::{
-    header::Peers,
-    protocol::{Targets, MAX_PACKAGE_SIZE},
-};
+use crate::{header::Peers, protocol::MAX_PACKAGE_SIZE};
 
 const BINCODE_CONF: Configuration<BigEndian, Varint, Limit<MAX_PACKAGE_SIZE>> =
     bincode::config::standard()
@@ -22,21 +19,18 @@ const BINCODE_CONF: Configuration<BigEndian, Varint, Limit<MAX_PACKAGE_SIZE>> =
 pub struct PackageBuilder {
     reliable: bool,
     peers: Peers,
-    targets: Targets<'static>,
+    target: SocketAddr,
     buffer: Vec<u8>,
     used: usize,
     packages: Vec<OutPackage>,
 }
 
 impl PackageBuilder {
-    pub fn new<T>(reliable: bool, peers: Peers, targets: T) -> Self
-    where
-        T: Into<Targets<'static>>,
-    {
+    pub fn new(reliable: bool, peers: Peers, target: SocketAddr) -> Self {
         Self {
             reliable,
             peers,
-            targets: targets.into(),
+            target,
             buffer: vec![0; MAX_PACKAGE_SIZE],
             used: 0,
             packages: Vec::new(),
@@ -52,8 +46,7 @@ impl PackageBuilder {
 
         if self.used > 0 {
             self.buffer.truncate(self.used);
-            let package =
-                OutPackage::new(self.buffer, self.reliable, self.peers, self.targets.clone());
+            let package = OutPackage::new(self.buffer, self.reliable, self.peers, self.target);
             packages.push(package);
         }
 
@@ -73,8 +66,7 @@ impl PackageBuilder {
                 data.truncate(self.used);
                 self.used = 0;
 
-                let package =
-                    OutPackage::new(data, self.reliable, self.peers, self.targets.clone());
+                let package = OutPackage::new(data, self.reliable, self.peers, self.target);
                 self.packages.push(package);
 
                 self.push_inner(message)
@@ -99,25 +91,24 @@ pub struct OutPackage {
     pub(super) data: Vec<u8>,
     reliable: bool,
     peers: Peers,
-    pub(super) targets: Targets<'static>,
+    pub(super) target: SocketAddr,
 }
 
 impl OutPackage {
     /// Creates a package from a single message.
     ///
     /// See also [`Self::new`].
-    pub fn encode_single<E, T>(
+    pub fn encode_single<E>(
         message: &E,
         reliable: bool,
         peers: Peers,
-        targets: T,
+        target: SocketAddr,
     ) -> Result<Self, EncodeError>
     where
         E: bincode::Encode,
-        T: Into<Targets<'static>>,
     {
         let data = encode_to_vec(message, BINCODE_CONF)?;
-        Ok(Self::new(data, reliable, peers, targets))
+        Ok(Self::new(data, reliable, peers, target))
     }
 
     /// # Arguments
@@ -126,21 +117,18 @@ impl OutPackage {
     ///
     /// * `reliable` - whether to deliver the data reliably.
     ///
-    /// * `targets` - package recipients.
+    /// * `target` - package recipient.
     ///
     /// # Panics
     ///
     /// Panics if data is longer than [`MAX_PACKAGE_SIZE`].
-    pub fn new<T>(data: Vec<u8>, reliable: bool, peers: Peers, targets: T) -> Self
-    where
-        T: Into<Targets<'static>>,
-    {
+    pub fn new(data: Vec<u8>, reliable: bool, peers: Peers, target: SocketAddr) -> Self {
         assert!(data.len() < MAX_PACKAGE_SIZE);
         Self {
             data,
             reliable,
             peers,
-            targets: targets.into(),
+            target,
         }
     }
 

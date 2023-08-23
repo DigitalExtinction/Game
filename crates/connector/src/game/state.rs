@@ -3,7 +3,6 @@ use std::{collections::hash_map::Entry, net::SocketAddr};
 use ahash::AHashMap;
 use async_std::sync::{Arc, RwLock};
 use de_messages::Readiness;
-use de_net::Targets;
 use thiserror::Error;
 
 #[derive(Clone)]
@@ -53,13 +52,12 @@ impl GameState {
     }
 
     /// Constructs and returns package targets which includes all or all but
-    /// one players connected to the game. It returns None if there is no
-    /// matching target.
+    /// one players connected to the game.
     ///
     /// # Arguments
     ///
     /// * `exclude` - if not None, this player is included among the targets.
-    pub(super) async fn targets(&self, exclude: Option<SocketAddr>) -> Option<Targets<'static>> {
+    pub(super) async fn targets(&self, exclude: Option<SocketAddr>) -> Vec<SocketAddr> {
         self.inner.read().await.targets(exclude)
     }
 }
@@ -158,32 +156,14 @@ impl GameStateInner {
         Ok(progressed)
     }
 
-    fn targets(&self, exclude: Option<SocketAddr>) -> Option<Targets<'static>> {
-        let len = if exclude.map_or(false, |e| self.players.contains_key(&e)) {
-            self.players.len() - 1
-        } else {
-            self.players.len()
-        };
-
-        if len == 0 {
-            None
-        } else if len == 1 {
-            for &addr in self.players.keys() {
-                if Some(addr) != exclude {
-                    return Some(Targets::Single(addr));
-                }
+    fn targets(&self, exclude: Option<SocketAddr>) -> Vec<SocketAddr> {
+        let mut addrs = Vec::with_capacity(self.players.len());
+        for &addr in self.players.keys() {
+            if Some(addr) != exclude {
+                addrs.push(addr);
             }
-
-            unreachable!("No non-excluded player found.");
-        } else {
-            let mut addrs = Vec::with_capacity(len);
-            for &addr in self.players.keys() {
-                if Some(addr) != exclude {
-                    addrs.push(addr);
-                }
-            }
-            Some(addrs.into())
         }
+        addrs
     }
 }
 
@@ -377,21 +357,21 @@ mod tests {
     fn test_targets() {
         let mut state = GameStateInner::new(8);
 
-        assert!(state.targets(None).is_none());
+        assert!(state.targets(None).is_empty());
 
         state.add("127.0.0.1:2001".parse().unwrap()).unwrap();
         assert_eq!(
-            HashSet::<SocketAddr>::from_iter(state.targets(None).unwrap().into_iter()),
+            HashSet::<SocketAddr>::from_iter(state.targets(None).into_iter()),
             HashSet::from_iter(["127.0.0.1:2001".parse().unwrap()])
         );
         assert!(state
             .targets(Some("127.0.0.1:2001".parse().unwrap()))
-            .is_none());
+            .is_empty());
 
         state.add("127.0.0.1:2002".parse().unwrap()).unwrap();
         state.add("127.0.0.1:2003".parse().unwrap()).unwrap();
         assert_eq!(
-            HashSet::<SocketAddr>::from_iter(state.targets(None).unwrap().into_iter()),
+            HashSet::<SocketAddr>::from_iter(state.targets(None).into_iter()),
             HashSet::from_iter([
                 "127.0.0.1:2001".parse().unwrap(),
                 "127.0.0.1:2002".parse().unwrap(),
@@ -402,7 +382,6 @@ mod tests {
             HashSet::<SocketAddr>::from_iter(
                 state
                     .targets(Some("127.0.0.1:2002".parse().unwrap()))
-                    .unwrap()
                     .into_iter()
             ),
             HashSet::from_iter([

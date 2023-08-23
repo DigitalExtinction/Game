@@ -1,28 +1,22 @@
+use std::net::SocketAddr;
+
 use async_std::channel::Receiver;
 use tracing::{error, info};
 
-use crate::{
-    header::DatagramHeader,
-    protocol::{ProtocolSocket, Targets},
-    MAX_DATAGRAM_SIZE,
-};
+use crate::{header::DatagramHeader, protocol::ProtocolSocket, MAX_DATAGRAM_SIZE};
 
 pub(crate) struct OutDatagram {
     header: DatagramHeader,
     data: Vec<u8>,
-    targets: Targets<'static>,
+    target: SocketAddr,
 }
 
 impl OutDatagram {
-    pub(crate) fn new<T: Into<Targets<'static>>>(
-        header: DatagramHeader,
-        data: Vec<u8>,
-        targets: T,
-    ) -> Self {
+    pub(crate) fn new(header: DatagramHeader, data: Vec<u8>, target: SocketAddr) -> Self {
         Self {
             header,
             data,
-            targets: targets.into(),
+            target,
         }
     }
 }
@@ -40,7 +34,7 @@ pub(super) async fn run(port: u16, datagrams: Receiver<OutDatagram>, socket: Pro
                 &mut buffer,
                 datagram.header,
                 &datagram.data,
-                datagram.targets,
+                datagram.target,
             )
             .await
         {
