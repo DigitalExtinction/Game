@@ -1,7 +1,7 @@
 pub(crate) use delivery::DeliveryHandler;
-pub(crate) use resend::Resends;
+pub(crate) use dispatch::DispatchHandler;
 
 mod book;
 mod databuf;
 mod delivery;
-mod resend;
+mod dispatch;
