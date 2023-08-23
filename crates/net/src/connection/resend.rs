@@ -253,10 +253,10 @@ impl Timing {
     }
 
     fn another(&self, now: Instant) -> Option<Self> {
-        if self.attempt == MAX_TRIES {
+        let attempt = self.attempt + 1;
+        if attempt == MAX_TRIES {
             None
         } else {
-            let attempt = self.attempt + 1;
             Some(Self {
                 attempt,
                 expiration: Self::schedule(attempt, now),
