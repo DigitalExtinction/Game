@@ -8,7 +8,7 @@ use super::{
     communicator::ConnectionError,
     dsender::OutDatagram,
 };
-use crate::{connection::Resends, MAX_DATAGRAM_SIZE};
+use crate::{connection::DispatchHandler, MAX_DATAGRAM_SIZE};
 
 const CANCELLATION_DEADLINE: Duration = Duration::from_secs(5);
 
@@ -19,7 +19,7 @@ pub(super) async fn run(
     _cancellation_send: CancellationSender,
     mut datagrams: Sender<OutDatagram>,
     errors: Sender<ConnectionError>,
-    mut resends: Resends,
+    mut dispatch_handler: DispatchHandler,
 ) {
     info!("Starting resender on port {port}...");
 
@@ -31,9 +31,9 @@ pub(super) async fn run(
             deadline = Some(Instant::now() + CANCELLATION_DEADLINE);
         }
 
-        resends.clean(Instant::now()).await;
+        dispatch_handler.clean(Instant::now()).await;
 
-        let Ok(resend_result) = resends
+        let Ok(resend_result) = dispatch_handler
             .resend(Instant::now(), &mut buf, &mut datagrams)
             .await
         else {

@@ -5,7 +5,7 @@ use tracing::{error, info};
 
 use super::{cancellation::CancellationSender, dsender::OutDatagram};
 use crate::{
-    connection::Resends,
+    connection::DispatchHandler,
     header::{DatagramHeader, PackageIdRange},
     OutPackage,
 };
@@ -16,7 +16,7 @@ pub(super) async fn run(
     _cancellation: CancellationSender,
     datagrams: Sender<OutDatagram>,
     packages: Receiver<OutPackage>,
-    mut resends: Resends,
+    mut dispatch_handler: DispatchHandler,
 ) {
     info!("Starting package sender on port {port}...");
 
@@ -40,7 +40,7 @@ pub(super) async fn run(
             if package_header.reliable() {
                 let time = Instant::now();
                 for target in &package.targets {
-                    resends
+                    dispatch_handler
                         .sent(
                             time,
                             target,

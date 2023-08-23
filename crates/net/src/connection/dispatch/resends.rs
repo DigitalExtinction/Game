@@ -1,145 +1,31 @@
 use std::{
     cmp::Ordering,
-    net::SocketAddr,
     time::{Duration, Instant},
 };
 
 use ahash::AHashMap;
-use async_std::{
-    channel::{SendError, Sender},
-    sync::{Arc, Mutex},
-};
 use priority_queue::PriorityQueue;
 
-use super::{
-    book::{Connection, ConnectionBook, MAX_CONN_AGE},
-    databuf::DataBuf,
-};
 use crate::{
-    header::{DatagramHeader, PackageId, Peers},
-    tasks::OutDatagram,
+    connection::{book::MAX_CONN_AGE, databuf::DataBuf},
+    header::PackageId,
+    Peers,
 };
 
-const START_BACKOFF_MS: u64 = 220;
+pub(super) const START_BACKOFF_MS: u64 = 220;
 const MAX_TRIES: u8 = 6;
 const MAX_BASE_RESEND_INTERVAL_MS: u64 = (MAX_CONN_AGE.as_millis() / 2) as u64;
 
-#[derive(Clone)]
-pub(crate) struct Resends {
-    book: Arc<Mutex<ConnectionBook<Queue>>>,
-}
-
-impl Resends {
-    pub(crate) fn new() -> Self {
-        Self {
-            book: Arc::new(Mutex::new(ConnectionBook::new())),
-        }
-    }
-
-    pub(crate) async fn sent(
-        &mut self,
-        time: Instant,
-        addr: SocketAddr,
-        id: PackageId,
-        peers: Peers,
-        data: &[u8],
-    ) {
-        let mut book = self.book.lock().await;
-        let queue = book.update(time, addr, Queue::new);
-        queue.push(id, peers, data, time);
-    }
-
-    /// Processes data with package confirmations.
-    ///
-    /// The data encode IDs of delivered (and confirmed) packages so that they
-    /// can be forgotten.
-    pub(crate) async fn confirmed(&mut self, time: Instant, addr: SocketAddr, data: &[u8]) {
-        let mut book = self.book.lock().await;
-        let queue = book.update(time, addr, Queue::new);
-
-        for i in 0..data.len() / 3 {
-            let offset = i * 3;
-            let id = PackageId::from_bytes(&data[offset..offset + 3]);
-            queue.resolve(id);
-        }
-    }
-
-    /// Re-send all packages already due for re-sending.
-    pub(crate) async fn resend(
-        &mut self,
-        time: Instant,
-        buf: &mut [u8],
-        datagrams: &mut Sender<OutDatagram>,
-    ) -> Result<ResendResult, SendError<OutDatagram>> {
-        let mut result = ResendResult {
-            failures: Vec::new(),
-            pending: 0,
-            next: time + Duration::from_millis(START_BACKOFF_MS),
-        };
-
-        let mut book = self.book.lock().await;
-
-        while let Some((addr, queue)) = book.next() {
-            let failure = loop {
-                match queue.reschedule(buf, time) {
-                    RescheduleResult::Resend { len, id, peers } => {
-                        datagrams
-                            .send(OutDatagram::new(
-                                DatagramHeader::new_package(true, peers, id),
-                                buf[..len].to_vec(),
-                                addr,
-                            ))
-                            .await?;
-                    }
-                    RescheduleResult::Waiting(until) => {
-                        result.next = result.next.min(until);
-                        break false;
-                    }
-                    RescheduleResult::Empty => {
-                        break false;
-                    }
-                    RescheduleResult::Failed => {
-                        result.failures.push(addr);
-                        break true;
-                    }
-                }
-            };
-
-            if failure {
-                book.remove_current();
-                result.failures.push(addr);
-            } else {
-                result.pending += queue.len();
-            }
-        }
-
-        Ok(result)
-    }
-
-    pub(crate) async fn clean(&mut self, time: Instant) {
-        self.book.lock().await.clean(time);
-    }
-}
-
-pub(crate) struct ResendResult {
-    /// Vec of failed connections.
-    pub(crate) failures: Vec<SocketAddr>,
-    /// Number of pending (not yet confirmed) datagrams.
-    pub(crate) pending: usize,
-    /// Soonest possible time of the next datagram resend.
-    pub(crate) next: Instant,
-}
-
 /// This struct governs reliable package re-sending (until each package is
 /// confirmed).
-struct Queue {
+pub(super) struct Resends {
     queue: PriorityQueue<PackageId, Timing>,
     meta: AHashMap<PackageId, Peers>,
     data: DataBuf,
 }
 
-impl Queue {
-    fn new() -> Self {
+impl Resends {
+    pub(super) fn new() -> Self {
         Self {
             queue: PriorityQueue::new(),
             meta: AHashMap::new(),
@@ -148,12 +34,17 @@ impl Queue {
     }
 
     /// Return the number of pending actions.
-    fn len(&self) -> usize {
+    pub(super) fn len(&self) -> usize {
         self.queue.len()
     }
 
+    /// Returns true if there is no pending action.
+    pub(super) fn is_empty(&self) -> bool {
+        self.queue.is_empty()
+    }
+
     /// Registers new package for re-sending until it is resolved.
-    fn push(&mut self, id: PackageId, peers: Peers, data: &[u8], now: Instant) {
+    pub(super) fn push(&mut self, id: PackageId, peers: Peers, data: &[u8], now: Instant) {
         self.queue.push(id, Timing::new(now));
         self.meta.insert(id, peers);
         self.data.push(id, data);
@@ -161,7 +52,7 @@ impl Queue {
 
     /// Marks a package as delivered. No more re-sends will be scheduled and
     /// package data will be dropped.
-    fn resolve(&mut self, id: PackageId) {
+    pub(super) fn resolve(&mut self, id: PackageId) {
         let result = self.queue.remove(&id);
         if result.is_some() {
             self.meta.remove(&id);
@@ -185,7 +76,7 @@ impl Queue {
     /// # Panics
     ///
     /// Panics if `buf` is smaller than the retrieved package payload.
-    fn reschedule(&mut self, buf: &mut [u8], now: Instant) -> RescheduleResult {
+    pub(super) fn reschedule(&mut self, buf: &mut [u8], now: Instant) -> RescheduleResult {
         match self.queue.peek() {
             Some((&id, timing)) => {
                 let until = timing.expiration();
@@ -208,12 +99,6 @@ impl Queue {
             }
             None => RescheduleResult::Empty,
         }
-    }
-}
-
-impl Connection for Queue {
-    fn pending(&self) -> bool {
-        !self.queue.is_empty()
     }
 }
 
@@ -312,30 +197,32 @@ mod tests {
     fn test_resends() {
         let time = Instant::now();
         let mut buf = [0u8; MAX_PACKAGE_SIZE];
-        let mut queue = Queue::new();
+        let mut resends = Resends::new();
 
-        queue.push(
+        assert!(resends.is_empty());
+
+        resends.push(
             PackageId::from_bytes(&[0, 0, 0]),
             Peers::Server,
             &[4, 5, 8],
             time,
         );
-        queue.push(
+        resends.push(
             PackageId::from_bytes(&[0, 0, 1]),
             Peers::Players,
             &[4, 5, 8, 9],
             time + Duration::from_millis(10_010),
         );
-        queue.push(
+        resends.push(
             PackageId::from_bytes(&[0, 0, 2]),
             Peers::Server,
             &[4, 5, 8, 9, 10],
             time + Duration::from_millis(50_020),
         );
-        assert_eq!(queue.len(), 3);
+        assert_eq!(resends.len(), 3);
 
         assert_eq!(
-            queue.reschedule(&mut buf, time + Duration::from_secs(20)),
+            resends.reschedule(&mut buf, time + Duration::from_secs(20)),
             RescheduleResult::Resend {
                 len: 3,
                 id: PackageId::from_bytes(&[0, 0, 0]),
@@ -343,10 +230,10 @@ mod tests {
             }
         );
         assert_eq!(&buf[..3], &[4, 5, 8]);
-        queue.resolve(PackageId::from_bytes(&[0, 0, 0]));
+        resends.resolve(PackageId::from_bytes(&[0, 0, 0]));
 
         assert_eq!(
-            queue.reschedule(&mut buf, time + Duration::from_secs(20)),
+            resends.reschedule(&mut buf, time + Duration::from_secs(20)),
             RescheduleResult::Resend {
                 len: 4,
                 id: PackageId::from_bytes(&[0, 0, 1]),
@@ -354,16 +241,16 @@ mod tests {
             }
         );
         assert_eq!(&buf[..4], &[4, 5, 8, 9]);
-        queue.resolve(PackageId::from_bytes(&[0, 0, 1]));
+        resends.resolve(PackageId::from_bytes(&[0, 0, 1]));
 
         assert!(matches!(
-            queue.reschedule(&mut buf, time + Duration::from_secs(20)),
+            resends.reschedule(&mut buf, time + Duration::from_secs(20)),
             RescheduleResult::Waiting(_)
         ));
 
         // 1st resend
         assert_eq!(
-            queue.reschedule(&mut buf, time + Duration::from_secs(1000)),
+            resends.reschedule(&mut buf, time + Duration::from_secs(1000)),
             RescheduleResult::Resend {
                 len: 5,
                 id: PackageId::from_bytes(&[0, 0, 2]),
@@ -372,7 +259,7 @@ mod tests {
         );
         // 2nd resend
         assert_eq!(
-            queue.reschedule(&mut buf, time + Duration::from_secs(2000)),
+            resends.reschedule(&mut buf, time + Duration::from_secs(2000)),
             RescheduleResult::Resend {
                 len: 5,
                 id: PackageId::from_bytes(&[0, 0, 2]),
@@ -381,7 +268,7 @@ mod tests {
         );
         // 3rd resend
         assert_eq!(
-            queue.reschedule(&mut buf, time + Duration::from_secs(3000)),
+            resends.reschedule(&mut buf, time + Duration::from_secs(3000)),
             RescheduleResult::Resend {
                 len: 5,
                 id: PackageId::from_bytes(&[0, 0, 2]),
@@ -390,7 +277,7 @@ mod tests {
         );
         // 4th resend
         assert_eq!(
-            queue.reschedule(&mut buf, time + Duration::from_secs(4000)),
+            resends.reschedule(&mut buf, time + Duration::from_secs(4000)),
             RescheduleResult::Resend {
                 len: 5,
                 id: PackageId::from_bytes(&[0, 0, 2]),
@@ -399,7 +286,7 @@ mod tests {
         );
         // 5th resend
         assert_eq!(
-            queue.reschedule(&mut buf, time + Duration::from_secs(5000)),
+            resends.reschedule(&mut buf, time + Duration::from_secs(5000)),
             RescheduleResult::Resend {
                 len: 5,
                 id: PackageId::from_bytes(&[0, 0, 2]),
@@ -408,12 +295,12 @@ mod tests {
         );
         // 6th resend (7th try) => failure
         assert_eq!(
-            queue.reschedule(&mut buf, time + Duration::from_secs(6000)),
+            resends.reschedule(&mut buf, time + Duration::from_secs(6000)),
             RescheduleResult::Failed
         );
 
         assert_eq!(
-            queue.reschedule(&mut buf, time + Duration::from_secs(7000)),
+            resends.reschedule(&mut buf, time + Duration::from_secs(7000)),
             RescheduleResult::Empty
         );
     }
