@@ -34,6 +34,7 @@ use tracing::{span, Level};
 
 const CARGO_PKG_VERSION: &str = env!("CARGO_PKG_VERSION");
 const GIT_SHA: &str = env!("GIT_SHA");
+const FIXED_TIMESTEP: f32 = 1. / 10.; // 10 ticks per second
 
 fn main() {
     let mut app = App::new();
@@ -50,6 +51,7 @@ fn main() {
         let _enter = span.enter();
 
         app.insert_resource(Msaa::Sample4)
+            .insert_resource(FixedTime::new_from_secs(FIXED_TIMESTEP))
             .add_plugins(
                 DefaultPlugins
                     .set(WindowPlugin {

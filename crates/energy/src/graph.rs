@@ -27,7 +27,7 @@ impl Plugin for GraphPlugin {
             .add_systems(OnExit(GameState::Playing), clean_up)
             .add_systems(PostUpdate, spawn_graph_components)
             .add_systems(
-                PreUpdate,
+                FixedUpdate,
                 (
                     remove_old_nodes.before(GraphSystemSet::UpdateNearby),
                     update_nearby_recv.in_set(GraphSystemSet::UpdateNearby),
