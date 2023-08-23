@@ -5,7 +5,7 @@ use async_std::{
     task,
 };
 use de_messages::{FromGame, JoinError, Readiness, ToGame};
-use de_net::{OutPackage, Peers, Targets};
+use de_net::{OutPackage, Peers};
 use tracing::{error, info, warn};
 
 use super::state::{GameState, JoinError as JoinErrorInner};
@@ -274,18 +274,17 @@ impl GameProcessor {
     where
         E: bincode::Encode,
     {
-        if let Some(targets) = self.state.targets(exclude).await {
-            self.send(message, targets).await;
+        for target in self.state.targets(exclude).await {
+            self.send(message, target).await;
         }
     }
 
     /// Send message to some targets.
-    async fn send<E, T>(&self, message: &E, targets: T)
+    async fn send<E>(&self, message: &E, target: SocketAddr)
     where
         E: bincode::Encode,
-        T: Into<Targets<'static>>,
     {
-        let message = OutPackage::encode_single(message, true, Peers::Server, targets).unwrap();
+        let message = OutPackage::encode_single(message, true, Peers::Server, target).unwrap();
         let _ = self.outputs.send(message).await;
     }
 }

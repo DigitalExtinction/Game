@@ -11,8 +11,9 @@ use async_std::{
 use self::resends::{RescheduleResult, Resends, START_BACKOFF_MS};
 use super::book::{Connection, ConnectionBook};
 use crate::{
-    header::{DatagramHeader, PackageId, Peers},
+    header::{DatagramHeader, PackageId, PackageIdRange},
     tasks::OutDatagram,
+    Peers,
 };
 
 mod resends;
@@ -27,6 +28,16 @@ impl DispatchHandler {
         Self {
             book: Arc::new(Mutex::new(ConnectionBook::new())),
         }
+    }
+
+    /// Returns ID to be given to a to-be-send package.
+    ///
+    /// It is assumed that this is called exactly once before each reliably
+    /// send package and that all generated IDs are used.
+    pub(crate) async fn next_package_id(&mut self, time: Instant, addr: SocketAddr) -> PackageId {
+        let mut book = self.book.lock().await;
+        let handler = book.update(time, addr, ConnDispatchHandler::new);
+        handler.next_package_id()
     }
 
     pub(crate) async fn sent(
@@ -125,13 +136,19 @@ pub(crate) struct ResendResult {
 
 struct ConnDispatchHandler {
     resends: Resends,
+    package_ids: PackageIdRange,
 }
 
 impl ConnDispatchHandler {
     fn new() -> Self {
         Self {
             resends: Resends::new(),
+            package_ids: PackageIdRange::counter(),
         }
+    }
+
+    fn next_package_id(&mut self) -> PackageId {
+        self.package_ids.next().unwrap()
     }
 }
 

@@ -32,7 +32,7 @@ pub(super) async fn run(
 ) {
     info!("Starting game player package handler on port {port}...");
 
-    loop {
+    'main: loop {
         if packages.is_closed() {
             break;
         }
@@ -66,20 +66,18 @@ pub(super) async fn run(
             continue;
         }
 
-        let Some(targets) = state.targets(Some(package.source)).await else {
-            continue;
-        };
-
-        let result = outputs
-            .send(OutPackage::new(
-                package.data,
-                package.reliable,
-                Peers::Players,
-                targets,
-            ))
-            .await;
-        if result.is_err() {
-            break;
+        for target in state.targets(Some(package.source)).await {
+            let result = outputs
+                .send(OutPackage::new(
+                    package.data.clone(),
+                    package.reliable,
+                    Peers::Players,
+                    target,
+                ))
+                .await;
+            if result.is_err() {
+                break 'main;
+            }
         }
     }
 

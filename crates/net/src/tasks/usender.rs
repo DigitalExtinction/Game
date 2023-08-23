@@ -20,7 +20,6 @@ pub(super) async fn run(
 ) {
     info!("Starting package sender on port {port}...");
 
-    let mut counter_reliable = PackageIdRange::counter();
     let mut counter_unreliable = PackageIdRange::counter();
 
     loop {
@@ -28,8 +27,10 @@ pub(super) async fn run(
             break;
         };
 
+        let time = Instant::now();
+
         let package_id = if package.reliable() {
-            counter_reliable.next().unwrap()
+            dispatch_handler.next_package_id(time, package.target).await
         } else {
             counter_unreliable.next().unwrap()
         };
@@ -38,23 +39,20 @@ pub(super) async fn run(
 
         if let DatagramHeader::Package(package_header) = header {
             if package_header.reliable() {
-                let time = Instant::now();
-                for target in &package.targets {
-                    dispatch_handler
-                        .sent(
-                            time,
-                            target,
-                            package_header.id(),
-                            package_header.peers(),
-                            &package.data,
-                        )
-                        .await;
-                }
+                dispatch_handler
+                    .sent(
+                        time,
+                        package.target,
+                        package_header.id(),
+                        package_header.peers(),
+                        &package.data,
+                    )
+                    .await;
             }
         }
 
         let closed = datagrams
-            .send(OutDatagram::new(header, package.data, package.targets))
+            .send(OutDatagram::new(header, package.data, package.target))
             .await
             .is_err();
 
