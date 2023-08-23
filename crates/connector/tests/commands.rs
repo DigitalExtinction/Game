@@ -5,7 +5,9 @@ use std::{
 
 use async_std::{future::timeout, task};
 use de_messages::{FromGame, FromServer, JoinError, Readiness, ToGame, ToServer};
-use de_net::{self, ConnErrorReceiver, OutPackage, PackageReceiver, PackageSender, Peers, Socket};
+use de_net::{
+    self, ConnErrorReceiver, OutPackage, PackageReceiver, PackageSender, Peers, Reliability, Socket,
+};
 use ntest::timeout;
 
 use crate::common::{spawn_and_wait, term_and_wait};
@@ -161,7 +163,9 @@ impl Comms {
         E: bincode::Encode,
     {
         let addr = SocketAddr::new(self.host, self.port);
-        let package = OutPackage::encode_single(&message, true, Peers::Server, addr).unwrap();
+        let package =
+            OutPackage::encode_single(&message, Reliability::SemiOrdered, Peers::Server, addr)
+                .unwrap();
         self.sender.send(package).await.unwrap();
     }
 

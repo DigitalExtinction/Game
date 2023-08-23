@@ -42,7 +42,7 @@ pub(super) async fn run(
                             let result = server
                                 .send(ToGameMessage::new(
                                     package.source(),
-                                    package.reliable(),
+                                    package.reliability(),
                                     message,
                                 ))
                                 .await;
@@ -60,7 +60,7 @@ pub(super) async fn run(
             Peers::Players => {
                 let _ = players
                     .send(PlayersPackage::new(
-                        package.reliable(),
+                        package.reliability(),
                         package.source(),
                         package.data(),
                     ))

@@ -1,4 +1,4 @@
-pub(crate) use delivery::DeliveryHandler;
+pub(crate) use delivery::{DeliveryHandler, ReceivedIdError};
 pub(crate) use dispatch::DispatchHandler;
 
 mod book;

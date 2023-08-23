@@ -8,8 +8,7 @@ use priority_queue::PriorityQueue;
 
 use crate::{
     connection::{book::MAX_CONN_AGE, databuf::DataBuf},
-    header::PackageId,
-    Peers,
+    header::{PackageHeader, PackageId},
 };
 
 pub(super) const START_BACKOFF_MS: u64 = 220;
@@ -20,7 +19,7 @@ const MAX_BASE_RESEND_INTERVAL_MS: u64 = (MAX_CONN_AGE.as_millis() / 2) as u64;
 /// confirmed).
 pub(super) struct Resends {
     queue: PriorityQueue<PackageId, Timing>,
-    meta: AHashMap<PackageId, Peers>,
+    headers: AHashMap<PackageId, PackageHeader>,
     data: DataBuf,
 }
 
@@ -28,7 +27,7 @@ impl Resends {
     pub(super) fn new() -> Self {
         Self {
             queue: PriorityQueue::new(),
-            meta: AHashMap::new(),
+            headers: AHashMap::new(),
             data: DataBuf::new(),
         }
     }
@@ -44,10 +43,10 @@ impl Resends {
     }
 
     /// Registers new package for re-sending until it is resolved.
-    pub(super) fn push(&mut self, id: PackageId, peers: Peers, data: &[u8], now: Instant) {
-        self.queue.push(id, Timing::new(now));
-        self.meta.insert(id, peers);
-        self.data.push(id, data);
+    pub(super) fn push(&mut self, header: PackageHeader, data: &[u8], now: Instant) {
+        self.queue.push(header.id(), Timing::new(now));
+        self.headers.insert(header.id(), header);
+        self.data.push(header.id(), data);
     }
 
     /// Marks a package as delivered. No more re-sends will be scheduled and
@@ -55,7 +54,7 @@ impl Resends {
     pub(super) fn resolve(&mut self, id: PackageId) {
         let result = self.queue.remove(&id);
         if result.is_some() {
-            self.meta.remove(&id);
+            self.headers.remove(&id);
             self.data.remove(id);
         }
     }
@@ -85,8 +84,8 @@ impl Resends {
                         Some(backoff) => {
                             self.queue.change_priority(&id, backoff);
                             let len = self.data.get(id, buf).unwrap();
-                            let peers = *self.meta.get(&id).unwrap();
-                            RescheduleResult::Resend { len, id, peers }
+                            let header = *self.headers.get(&id).unwrap();
+                            RescheduleResult::Resend { len, header }
                         }
                         None => {
                             self.queue.remove(&id).unwrap();
@@ -109,8 +108,7 @@ pub(crate) enum RescheduleResult {
     Resend {
         /// Length of the datagram data (written to a buffer) in bytes.
         len: usize,
-        id: PackageId,
-        peers: Peers,
+        header: PackageHeader,
     },
     /// No datagram is currently scheduled for an immediate resent. This
     /// variant holds soonest possible time of a next resend.
@@ -191,7 +189,7 @@ impl PartialEq for Timing {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::MAX_PACKAGE_SIZE;
+    use crate::{Peers, Reliability, MAX_PACKAGE_SIZE};
 
     #[test]
     fn test_resends() {
@@ -202,20 +200,29 @@ mod tests {
         assert!(resends.is_empty());
 
         resends.push(
-            PackageId::from_bytes(&[0, 0, 0]),
-            Peers::Server,
+            PackageHeader::new(
+                Reliability::Unordered,
+                Peers::Server,
+                PackageId::from_bytes(&[0, 0, 0]),
+            ),
             &[4, 5, 8],
             time,
         );
         resends.push(
-            PackageId::from_bytes(&[0, 0, 1]),
-            Peers::Players,
+            PackageHeader::new(
+                Reliability::Unordered,
+                Peers::Players,
+                PackageId::from_bytes(&[0, 0, 1]),
+            ),
             &[4, 5, 8, 9],
             time + Duration::from_millis(10_010),
         );
         resends.push(
-            PackageId::from_bytes(&[0, 0, 2]),
-            Peers::Server,
+            PackageHeader::new(
+                Reliability::Unordered,
+                Peers::Server,
+                PackageId::from_bytes(&[0, 0, 2]),
+            ),
             &[4, 5, 8, 9, 10],
             time + Duration::from_millis(50_020),
         );
@@ -225,8 +232,11 @@ mod tests {
             resends.reschedule(&mut buf, time + Duration::from_secs(20)),
             RescheduleResult::Resend {
                 len: 3,
-                id: PackageId::from_bytes(&[0, 0, 0]),
-                peers: Peers::Server,
+                header: PackageHeader::new(
+                    Reliability::Unordered,
+                    Peers::Server,
+                    PackageId::from_bytes(&[0, 0, 0]),
+                )
             }
         );
         assert_eq!(&buf[..3], &[4, 5, 8]);
@@ -236,8 +246,11 @@ mod tests {
             resends.reschedule(&mut buf, time + Duration::from_secs(20)),
             RescheduleResult::Resend {
                 len: 4,
-                id: PackageId::from_bytes(&[0, 0, 1]),
-                peers: Peers::Players,
+                header: PackageHeader::new(
+                    Reliability::Unordered,
+                    Peers::Players,
+                    PackageId::from_bytes(&[0, 0, 1])
+                )
             }
         );
         assert_eq!(&buf[..4], &[4, 5, 8, 9]);
@@ -253,8 +266,11 @@ mod tests {
             resends.reschedule(&mut buf, time + Duration::from_secs(1000)),
             RescheduleResult::Resend {
                 len: 5,
-                id: PackageId::from_bytes(&[0, 0, 2]),
-                peers: Peers::Server,
+                header: PackageHeader::new(
+                    Reliability::Unordered,
+                    Peers::Server,
+                    PackageId::from_bytes(&[0, 0, 2])
+                )
             }
         );
         // 2nd resend
@@ -262,8 +278,11 @@ mod tests {
             resends.reschedule(&mut buf, time + Duration::from_secs(2000)),
             RescheduleResult::Resend {
                 len: 5,
-                id: PackageId::from_bytes(&[0, 0, 2]),
-                peers: Peers::Server,
+                header: PackageHeader::new(
+                    Reliability::Unordered,
+                    Peers::Server,
+                    PackageId::from_bytes(&[0, 0, 2])
+                )
             }
         );
         // 3rd resend
@@ -271,8 +290,11 @@ mod tests {
             resends.reschedule(&mut buf, time + Duration::from_secs(3000)),
             RescheduleResult::Resend {
                 len: 5,
-                id: PackageId::from_bytes(&[0, 0, 2]),
-                peers: Peers::Server,
+                header: PackageHeader::new(
+                    Reliability::Unordered,
+                    Peers::Server,
+                    PackageId::from_bytes(&[0, 0, 2])
+                )
             }
         );
         // 4th resend
@@ -280,8 +302,11 @@ mod tests {
             resends.reschedule(&mut buf, time + Duration::from_secs(4000)),
             RescheduleResult::Resend {
                 len: 5,
-                id: PackageId::from_bytes(&[0, 0, 2]),
-                peers: Peers::Server,
+                header: PackageHeader::new(
+                    Reliability::Unordered,
+                    Peers::Server,
+                    PackageId::from_bytes(&[0, 0, 2])
+                )
             }
         );
         // 5th resend
@@ -289,8 +314,11 @@ mod tests {
             resends.reschedule(&mut buf, time + Duration::from_secs(5000)),
             RescheduleResult::Resend {
                 len: 5,
-                id: PackageId::from_bytes(&[0, 0, 2]),
-                peers: Peers::Server,
+                header: PackageHeader::new(
+                    Reliability::Unordered,
+                    Peers::Server,
+                    PackageId::from_bytes(&[0, 0, 2])
+                )
             }
         );
         // 6th resend (7th try) => failure

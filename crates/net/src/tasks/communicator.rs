@@ -7,7 +7,10 @@ use bincode::{
     error::{DecodeError, EncodeError},
 };
 
-use crate::{header::Peers, protocol::MAX_PACKAGE_SIZE};
+use crate::{
+    header::{Peers, Reliability},
+    protocol::MAX_PACKAGE_SIZE,
+};
 
 const BINCODE_CONF: Configuration<BigEndian, Varint, Limit<MAX_PACKAGE_SIZE>> =
     bincode::config::standard()
@@ -17,7 +20,7 @@ const BINCODE_CONF: Configuration<BigEndian, Varint, Limit<MAX_PACKAGE_SIZE>> =
 
 /// It cumulatively builds output packages from individual messages.
 pub struct PackageBuilder {
-    reliable: bool,
+    reliability: Reliability,
     peers: Peers,
     target: SocketAddr,
     buffer: Vec<u8>,
@@ -26,9 +29,9 @@ pub struct PackageBuilder {
 }
 
 impl PackageBuilder {
-    pub fn new(reliable: bool, peers: Peers, target: SocketAddr) -> Self {
+    pub fn new(reliability: Reliability, peers: Peers, target: SocketAddr) -> Self {
         Self {
-            reliable,
+            reliability,
             peers,
             target,
             buffer: vec![0; MAX_PACKAGE_SIZE],
@@ -46,7 +49,7 @@ impl PackageBuilder {
 
         if self.used > 0 {
             self.buffer.truncate(self.used);
-            let package = OutPackage::new(self.buffer, self.reliable, self.peers, self.target);
+            let package = OutPackage::new(self.buffer, self.reliability, self.peers, self.target);
             packages.push(package);
         }
 
@@ -66,7 +69,7 @@ impl PackageBuilder {
                 data.truncate(self.used);
                 self.used = 0;
 
-                let package = OutPackage::new(data, self.reliable, self.peers, self.target);
+                let package = OutPackage::new(data, self.reliability, self.peers, self.target);
                 self.packages.push(package);
 
                 self.push_inner(message)
@@ -89,7 +92,7 @@ impl PackageBuilder {
 /// A package to be send.
 pub struct OutPackage {
     pub(super) data: Vec<u8>,
-    reliable: bool,
+    reliability: Reliability,
     peers: Peers,
     pub(super) target: SocketAddr,
 }
@@ -100,7 +103,7 @@ impl OutPackage {
     /// See also [`Self::new`].
     pub fn encode_single<E>(
         message: &E,
-        reliable: bool,
+        reliability: Reliability,
         peers: Peers,
         target: SocketAddr,
     ) -> Result<Self, EncodeError>
@@ -108,32 +111,32 @@ impl OutPackage {
         E: bincode::Encode,
     {
         let data = encode_to_vec(message, BINCODE_CONF)?;
-        Ok(Self::new(data, reliable, peers, target))
+        Ok(Self::new(data, reliability, peers, target))
     }
 
     /// # Arguments
     ///
     /// * `data` - data to be send.
     ///
-    /// * `reliable` - whether to deliver the data reliably.
+    /// * `reliability` - package delivery reliability mode.
     ///
     /// * `target` - package recipient.
     ///
     /// # Panics
     ///
     /// Panics if data is longer than [`MAX_PACKAGE_SIZE`].
-    pub fn new(data: Vec<u8>, reliable: bool, peers: Peers, target: SocketAddr) -> Self {
+    pub fn new(data: Vec<u8>, reliability: Reliability, peers: Peers, target: SocketAddr) -> Self {
         assert!(data.len() < MAX_PACKAGE_SIZE);
         Self {
             data,
-            reliable,
+            reliability,
             peers,
             target,
         }
     }
 
-    pub(super) fn reliable(&self) -> bool {
-        self.reliable
+    pub(super) fn reliability(&self) -> Reliability {
+        self.reliability
     }
 
     pub(super) fn peers(&self) -> Peers {
@@ -144,7 +147,7 @@ impl OutPackage {
 /// A received message / datagram.
 pub struct InPackage {
     data: Vec<u8>,
-    reliable: bool,
+    reliability: Reliability,
     peers: Peers,
     source: SocketAddr,
     time: Instant,
@@ -153,14 +156,14 @@ pub struct InPackage {
 impl InPackage {
     pub(super) fn new(
         data: Vec<u8>,
-        reliable: bool,
+        reliability: Reliability,
         peers: Peers,
         source: SocketAddr,
         time: Instant,
     ) -> Self {
         Self {
             data,
-            reliable,
+            reliability,
             peers,
             source,
             time,
@@ -183,9 +186,8 @@ impl InPackage {
         }
     }
 
-    /// Whether the datagram was delivered reliably.
-    pub fn reliable(&self) -> bool {
-        self.reliable
+    pub fn reliability(&self) -> Reliability {
+        self.reliability
     }
 
     pub fn source(&self) -> SocketAddr {
@@ -312,7 +314,7 @@ mod tests {
         }
 
         let mut builder = PackageBuilder::new(
-            true,
+            Reliability::Unordered,
             Peers::Players,
             "127.0.0.1:1111".parse::<SocketAddr>().unwrap(),
         );
@@ -353,7 +355,7 @@ mod tests {
         let package = InPackage {
             // Message::Two([3, 4]), Message::One(1286)
             data: vec![1, 3, 4, 0, 251, 5, 6],
-            reliable: false,
+            reliability: Reliability::Unreliable,
             peers: Peers::Players,
             source: "127.0.0.1:1111".parse().unwrap(),
             time: Instant::now(),

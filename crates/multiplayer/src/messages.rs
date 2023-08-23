@@ -3,7 +3,7 @@ use std::{net::SocketAddr, time::Instant};
 use bevy::prelude::*;
 use de_core::schedule::PreMovement;
 use de_messages::{FromGame, FromServer, ToGame, ToServer};
-use de_net::{InPackage, PackageBuilder, Peers};
+use de_net::{InPackage, PackageBuilder, Peers, Reliability};
 
 use crate::{
     config::ConnectionType,
@@ -255,7 +255,12 @@ fn message_sender<E>(
         return;
     };
     let addr = SocketAddr::new(conf.server_host(), port);
-    let mut builder = PackageBuilder::new(E::RELIABLE, Peers::Server, addr);
+    let reliability = if E::RELIABLE {
+        Reliability::Unordered
+    } else {
+        Reliability::Unreliable
+    };
+    let mut builder = PackageBuilder::new(reliability, Peers::Server, addr);
 
     for event in inputs.iter() {
         builder.push(event.message()).unwrap();

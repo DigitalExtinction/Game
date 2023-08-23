@@ -11,9 +11,8 @@ use async_std::{
 use self::resends::{RescheduleResult, Resends, START_BACKOFF_MS};
 use super::book::{Connection, ConnectionBook};
 use crate::{
-    header::{DatagramHeader, PackageId, PackageIdRange},
+    header::{DatagramHeader, PackageHeader, PackageId, PackageIdRange},
     tasks::OutDatagram,
-    Peers,
 };
 
 mod resends;
@@ -44,13 +43,12 @@ impl DispatchHandler {
         &mut self,
         time: Instant,
         addr: SocketAddr,
-        id: PackageId,
-        peers: Peers,
+        header: PackageHeader,
         data: &[u8],
     ) {
         let mut book = self.book.lock().await;
         let handler = book.update(time, addr, ConnDispatchHandler::new);
-        handler.resends.push(id, peers, data, time);
+        handler.resends.push(header, data, time);
     }
 
     /// Processes data with package confirmations.
@@ -86,10 +84,10 @@ impl DispatchHandler {
         while let Some((addr, handler)) = book.next() {
             let failure = loop {
                 match handler.resends.reschedule(buf, time) {
-                    RescheduleResult::Resend { len, id, peers } => {
+                    RescheduleResult::Resend { len, header } => {
                         datagrams
                             .send(OutDatagram::new(
-                                DatagramHeader::new_package(true, peers, id),
+                                DatagramHeader::Package(header),
                                 buf[..len].to_vec(),
                                 addr,
                             ))
