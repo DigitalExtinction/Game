@@ -197,7 +197,10 @@ impl Queue {
                             let peers = *self.meta.get(&id).unwrap();
                             RescheduleResult::Resend { len, id, peers }
                         }
-                        None => RescheduleResult::Failed,
+                        None => {
+                            self.queue.remove(&id).unwrap();
+                            RescheduleResult::Failed
+                        }
                     }
                 } else {
                     RescheduleResult::Waiting(until)
@@ -215,6 +218,7 @@ impl Connection for Queue {
 }
 
 /// Rescheduling result.
+#[derive(Debug, PartialEq)]
 pub(crate) enum RescheduleResult {
     /// A datagram is scheduled for an immediate resend.
     Resend {
@@ -302,6 +306,117 @@ impl PartialEq for Timing {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::MAX_PACKAGE_SIZE;
+
+    #[test]
+    fn test_resends() {
+        let time = Instant::now();
+        let mut buf = [0u8; MAX_PACKAGE_SIZE];
+        let mut queue = Queue::new();
+
+        queue.push(
+            PackageId::from_bytes(&[0, 0, 0]),
+            Peers::Server,
+            &[4, 5, 8],
+            time,
+        );
+        queue.push(
+            PackageId::from_bytes(&[0, 0, 1]),
+            Peers::Players,
+            &[4, 5, 8, 9],
+            time + Duration::from_millis(10_010),
+        );
+        queue.push(
+            PackageId::from_bytes(&[0, 0, 2]),
+            Peers::Server,
+            &[4, 5, 8, 9, 10],
+            time + Duration::from_millis(50_020),
+        );
+        assert_eq!(queue.len(), 3);
+
+        assert_eq!(
+            queue.reschedule(&mut buf, time + Duration::from_secs(20)),
+            RescheduleResult::Resend {
+                len: 3,
+                id: PackageId::from_bytes(&[0, 0, 0]),
+                peers: Peers::Server,
+            }
+        );
+        assert_eq!(&buf[..3], &[4, 5, 8]);
+        queue.resolve(PackageId::from_bytes(&[0, 0, 0]));
+
+        assert_eq!(
+            queue.reschedule(&mut buf, time + Duration::from_secs(20)),
+            RescheduleResult::Resend {
+                len: 4,
+                id: PackageId::from_bytes(&[0, 0, 1]),
+                peers: Peers::Players,
+            }
+        );
+        assert_eq!(&buf[..4], &[4, 5, 8, 9]);
+        queue.resolve(PackageId::from_bytes(&[0, 0, 1]));
+
+        assert!(matches!(
+            queue.reschedule(&mut buf, time + Duration::from_secs(20)),
+            RescheduleResult::Waiting(_)
+        ));
+
+        // 1st resend
+        assert_eq!(
+            queue.reschedule(&mut buf, time + Duration::from_secs(1000)),
+            RescheduleResult::Resend {
+                len: 5,
+                id: PackageId::from_bytes(&[0, 0, 2]),
+                peers: Peers::Server,
+            }
+        );
+        // 2nd resend
+        assert_eq!(
+            queue.reschedule(&mut buf, time + Duration::from_secs(2000)),
+            RescheduleResult::Resend {
+                len: 5,
+                id: PackageId::from_bytes(&[0, 0, 2]),
+                peers: Peers::Server,
+            }
+        );
+        // 3rd resend
+        assert_eq!(
+            queue.reschedule(&mut buf, time + Duration::from_secs(3000)),
+            RescheduleResult::Resend {
+                len: 5,
+                id: PackageId::from_bytes(&[0, 0, 2]),
+                peers: Peers::Server,
+            }
+        );
+        // 4th resend
+        assert_eq!(
+            queue.reschedule(&mut buf, time + Duration::from_secs(4000)),
+            RescheduleResult::Resend {
+                len: 5,
+                id: PackageId::from_bytes(&[0, 0, 2]),
+                peers: Peers::Server,
+            }
+        );
+        // 5th resend
+        assert_eq!(
+            queue.reschedule(&mut buf, time + Duration::from_secs(5000)),
+            RescheduleResult::Resend {
+                len: 5,
+                id: PackageId::from_bytes(&[0, 0, 2]),
+                peers: Peers::Server,
+            }
+        );
+        // 6th resend (7th try) => failure
+        assert_eq!(
+            queue.reschedule(&mut buf, time + Duration::from_secs(6000)),
+            RescheduleResult::Failed
+        );
+
+        assert_eq!(
+            queue.reschedule(&mut buf, time + Duration::from_secs(7000)),
+            RescheduleResult::Empty
+        );
+    }
 
     #[test]
     fn test_timing() {
