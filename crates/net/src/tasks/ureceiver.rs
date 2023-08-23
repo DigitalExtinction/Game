@@ -7,7 +7,7 @@ use async_std::{
 use tracing::{error, info, trace, warn};
 
 use super::{cancellation::CancellationSender, dreceiver::InPackageDatagram};
-use crate::{connection::Confirmations, InPackage};
+use crate::{connection::DeliveryHandler, InPackage};
 
 /// Handler of user datagrams, i.e. datagrams with user data targeted to
 /// higher-level users of the network protocol.
@@ -19,7 +19,7 @@ pub(super) async fn run(
     _cancellation: CancellationSender,
     datagrams: Receiver<InPackageDatagram>,
     packages: Sender<InPackage>,
-    mut confirms: Confirmations,
+    mut delivery_handler: DeliveryHandler,
 ) {
     info!("Starting package receiver on port {port}...");
 
@@ -48,7 +48,7 @@ pub(super) async fn run(
 
         let time = Instant::now();
         if datagram.header.reliable() {
-            match confirms
+            match delivery_handler
                 .received(time, datagram.source, datagram.header.id())
                 .await
             {
