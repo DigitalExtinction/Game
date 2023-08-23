@@ -4,21 +4,21 @@ use async_std::{channel::Sender, task};
 use tracing::{error, info};
 
 use super::{cancellation::CancellationRecv, dsender::OutDatagram};
-use crate::connection::Confirmations;
+use crate::connection::DeliveryHandler;
 
 /// Scheduler of datagram confirmations.
 pub(super) async fn run(
     port: u16,
     cancellation: CancellationRecv,
     mut datagrams: Sender<OutDatagram>,
-    mut confirms: Confirmations,
+    mut delivery_handler: DeliveryHandler,
 ) {
     info!("Starting confirmer on port {port}...");
 
     loop {
-        confirms.clean(Instant::now()).await;
+        delivery_handler.clean(Instant::now()).await;
 
-        let Ok(next) = confirms
+        let Ok(next) = delivery_handler
             .send_confirms(Instant::now(), cancellation.cancelled(), &mut datagrams)
             .await
         else {

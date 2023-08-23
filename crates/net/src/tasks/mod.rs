@@ -65,7 +65,7 @@ use futures::future::BoxFuture;
 use tracing::info;
 
 use crate::{
-    connection::{Confirmations, Resends},
+    connection::{DeliveryHandler, Resends},
     protocol::ProtocolSocket,
     tasks::cancellation::cancellation,
     Socket,
@@ -132,13 +132,13 @@ where
 
     let (inputs_sender, inputs_receiver) = bounded(CHANNEL_CAPACITY);
     let (confirmer_cancellation_sender, confirmer_cancellation_receiver) = cancellation();
-    let confirms = Confirmations::new();
+    let delivery_handler = DeliveryHandler::new();
     spawn(Box::pin(ureceiver::run(
         port,
         confirmer_cancellation_sender,
         in_user_datagrams_receiver,
         inputs_sender,
-        confirms.clone(),
+        delivery_handler.clone(),
     )));
 
     let (outputs_sender, outputs_receiver) = bounded(CHANNEL_CAPACITY);
@@ -157,7 +157,7 @@ where
         port,
         confirmer_cancellation_receiver,
         out_datagrams_sender.clone(),
-        confirms,
+        delivery_handler,
     )));
     spawn(Box::pin(usender::run(
         port,

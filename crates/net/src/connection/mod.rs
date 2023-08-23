@@ -1,7 +1,7 @@
-pub(crate) use confirms::Confirmations;
+pub(crate) use delivery::DeliveryHandler;
 pub(crate) use resend::Resends;
 
 mod book;
-mod confirms;
 mod databuf;
+mod delivery;
 mod resend;
