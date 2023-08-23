@@ -280,9 +280,10 @@ impl Timing {
 
 impl Ord for Timing {
     fn cmp(&self, other: &Self) -> Ordering {
-        self.expiration
-            .cmp(&other.expiration)
-            .then_with(|| self.attempt.cmp(&other.attempt))
+        other
+            .expiration
+            .cmp(&self.expiration)
+            .then_with(|| other.attempt.cmp(&self.attempt))
     }
 }
 
@@ -295,5 +296,18 @@ impl PartialOrd for Timing {
 impl PartialEq for Timing {
     fn eq(&self, other: &Self) -> bool {
         self.expiration == other.expiration && self.attempt == other.attempt
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_timing() {
+        let time = Instant::now();
+        let first = Timing::new(time);
+        let second = Timing::new(time + Duration::from_secs(3600));
+        assert_eq!(first.cmp(&second), Ordering::Greater);
     }
 }
