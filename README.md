@@ -33,6 +33,16 @@ Game controls & gameplay tutorial is at
 
 ## Downloading Nightly Builds
 
+Build from `main` branch is automatically published every night as a ZIP
+archive. The archive contains:
+
+* all necessary game assets,
+* main game binary (`de` or `de.exe`),
+* DE Lobby binary (`de-lobby` or `de-lobby.exe`),
+* and DE Connector binary (`de-connector` or `de-connector.exe`).
+
+Follow these steps to start the game on your computer:
+
 1. Download nightly ZIP file for your OS and CPU:
 
    * [Linux (`x86_64-unknown-linux-gnu`)](https://download.de-game.org/x86_64-unknown-linux-gnu/nightly.zip)

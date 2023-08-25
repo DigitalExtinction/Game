@@ -12,6 +12,10 @@ homepage.workspace = true
 license.workspace = true
 categories.workspace = true
 
+[[bin]]
+name = "de"
+path = "src/main.rs"
+
 [profile.lto]
 inherits = "release"
 lto = true

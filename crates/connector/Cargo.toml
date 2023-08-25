@@ -15,7 +15,8 @@ categories.workspace = true
 name = "de_connector_lib" 
 
 [[bin]]
-name = "de_connector" 
+name = "de-connector"
+path = "src/main.rs"
 
 [dependencies]
 # DE

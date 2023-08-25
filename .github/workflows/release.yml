@@ -43,7 +43,7 @@ jobs:
         if: matrix.os == 'ubuntu-latest'
 
       - name: Build
-        run: cargo build --release --target ${{ matrix.target }}
+        run: cargo build --release --workspace --target ${{ matrix.target }}
 
       - name: Prepare Pack
         run: |
@@ -54,11 +54,17 @@ jobs:
 
       - name: Add Windows Binary
         if: ${{ matrix.target == 'x86_64-pc-windows-gnu' }}
-        run: mv target/${{ matrix.target }}/release/de_game.exe DigitalExtinction/de.exe
+        run: |
+          mv target/${{ matrix.target }}/release/de.exe DigitalExtinction/
+          mv target/${{ matrix.target }}/release/de-lobby.exe DigitalExtinction/
+          mv target/${{ matrix.target }}/release/de-connector.exe DigitalExtinction/
 
       - name: Add Non-Windows Binary
         if: ${{ matrix.target != 'x86_64-pc-windows-gnu' }}
-        run: mv target/${{ matrix.target }}/release/de_game DigitalExtinction/de
+        run: |
+          mv target/${{ matrix.target }}/release/de DigitalExtinction/
+          mv target/${{ matrix.target }}/release/de-lobby DigitalExtinction/
+          mv target/${{ matrix.target }}/release/de-connector DigitalExtinction/
 
       - name: Pack
         shell: bash
