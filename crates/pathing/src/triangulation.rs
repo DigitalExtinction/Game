@@ -306,7 +306,7 @@ mod tests {
         .iter()
         .map(HashableTriangle::new)
         .collect();
-        let expected: AHashSet<HashableTriangle> = vec![
+        let expected: AHashSet<HashableTriangle> = [
             Triangle::new(
                 Point::new(-0.1, 1.1),
                 Point::new(-9.5, 6.5),
