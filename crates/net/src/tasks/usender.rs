@@ -6,7 +6,7 @@ use tracing::{error, info};
 use super::{cancellation::CancellationSender, dsender::OutDatagram};
 use crate::{
     connection::DispatchHandler,
-    header::{DatagramHeader, PackageIdRange},
+    header::{DatagramHeader, PackageHeader, PackageIdRange},
     OutPackage,
 };
 
@@ -29,26 +29,19 @@ pub(super) async fn run(
 
         let time = Instant::now();
 
-        let package_id = if package.reliable() {
+        let package_id = if package.reliability().is_reliable() {
             dispatch_handler.next_package_id(time, package.target).await
         } else {
             counter_unreliable.next().unwrap()
         };
 
-        let header = DatagramHeader::new_package(package.reliable(), package.peers(), package_id);
+        let package_header = PackageHeader::new(package.reliability(), package.peers(), package_id);
+        let header = DatagramHeader::Package(package_header);
 
-        if let DatagramHeader::Package(package_header) = header {
-            if package_header.reliable() {
-                dispatch_handler
-                    .sent(
-                        time,
-                        package.target,
-                        package_header.id(),
-                        package_header.peers(),
-                        &package.data,
-                    )
-                    .await;
-            }
+        if package_header.reliability().is_reliable() {
+            dispatch_handler
+                .sent(time, package.target, package_header, &package.data)
+                .await;
         }
 
         let closed = datagrams

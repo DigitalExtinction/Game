@@ -2,17 +2,22 @@ use std::{net::SocketAddr, time::Instant};
 
 use async_std::{
     channel::{SendError, Sender},
-    sync::{Arc, Mutex},
+    sync::{Arc, Mutex, MutexGuard},
 };
 
+pub(crate) use self::received::ReceivedIdError;
 use self::{
     confirms::{ConfirmsBuffer, MAX_BUFF_AGE},
-    received::{Received, ReceivedIdError},
+    deliveries::{Deliveries, PendingDeliveries},
+    pending::Pending,
+    received::{IdContinuity, Received},
 };
 use super::book::{Connection, ConnectionBook};
-use crate::{header::PackageId, tasks::OutDatagram};
+use crate::{record::DeliveryRecord, tasks::OutDatagram, Reliability};
 
 mod confirms;
+mod deliveries;
+mod pending;
 mod received;
 
 #[derive(Clone)]
@@ -27,23 +32,10 @@ impl DeliveryHandler {
         }
     }
 
-    /// This method checks whether a package with `id` from `addr` was already
-    /// marked as received in the past. If so it returns true. Otherwise, it
-    /// marks the package as received and returns false.
-    ///
-    /// This method should be called exactly once after each reliable package
-    /// is delivered and in order.
-    pub(crate) async fn received(
-        &mut self,
-        time: Instant,
-        addr: SocketAddr,
-        id: PackageId,
-    ) -> Result<bool, ReceivedIdError> {
-        self.book
-            .lock()
-            .await
-            .update(time, addr, ConnDeliveryHandler::new)
-            .push(time, id)
+    pub(crate) async fn lock(&mut self) -> ReceiveHandlerGuard {
+        ReceiveHandlerGuard {
+            guard: self.book.lock().await,
+        }
     }
 
     /// Send package confirmation datagrams.
@@ -88,8 +80,38 @@ impl DeliveryHandler {
     }
 }
 
+/// The lock is unlocked once this guard is dropped.
+pub(crate) struct ReceiveHandlerGuard<'a> {
+    guard: MutexGuard<'a, ConnectionBook<ConnDeliveryHandler>>,
+}
+
+impl<'a> ReceiveHandlerGuard<'a> {
+    /// Validate input package and return an iterator of to be delivered
+    /// packages on success.
+    ///
+    /// All reliable sent packages are not to be delivered to the user
+    /// directly but via the returned iterator.
+    ///
+    /// # Panics
+    ///
+    /// Panics if this is called with a non-reliable package.
+    pub(crate) fn received<'buf>(
+        &mut self,
+        addr: SocketAddr,
+        record: DeliveryRecord,
+        data: Vec<u8>,
+        buf: &'buf mut [u8],
+    ) -> Result<Deliveries<'_, 'buf>, ReceivedIdError> {
+        assert!(record.header().reliability().is_reliable());
+        self.guard
+            .update(record.time(), addr, ConnDeliveryHandler::new)
+            .push(record, data, buf)
+    }
+}
+
 struct ConnDeliveryHandler {
     received: Received,
+    pending: Pending,
     confirms: ConfirmsBuffer,
 }
 
@@ -97,19 +119,50 @@ impl ConnDeliveryHandler {
     fn new() -> Self {
         Self {
             received: Received::new(),
+            pending: Pending::new(),
             confirms: ConfirmsBuffer::new(),
         }
     }
 
-    /// Registers a package as received and returns whether the it was a
-    /// duplicate delivery.
-    fn push(&mut self, time: Instant, id: PackageId) -> Result<bool, ReceivedIdError> {
-        // Return early on error to avoid confirmation of erroneous datagrams.
-        let duplicate = self.received.process(id)?;
-        // Push to the buffer even duplicate packages, because the reason
-        // behind the re-delivery might be loss of the confirmation datagram.
-        self.confirms.push(time, id);
-        Ok(duplicate)
+    /// Registers package as received and returns an iterator of the to be
+    /// delivered packages.
+    ///
+    /// # Panics
+    ///
+    /// Panics if `buf` len is smaller than length of any of the drained
+    /// buffered pending package.
+    fn push<'b>(
+        &mut self,
+        record: DeliveryRecord,
+        data: Vec<u8>,
+        buf: &'b mut [u8],
+    ) -> Result<Deliveries<'_, 'b>, ReceivedIdError> {
+        let result = self.received.process(record.header().id());
+        if let Ok(_) | Err(ReceivedIdError::Duplicate) = result {
+            // Push to the buffer even duplicate packages, because the reason
+            // behind the re-delivery might be loss of the confirmation
+            // datagram.
+            self.confirms.push(record.time(), record.header().id());
+        }
+
+        Ok(match result? {
+            IdContinuity::Continuous(bound) => Deliveries::drain(
+                PendingDeliveries::new(bound, &mut self.pending),
+                record,
+                data,
+                buf,
+            ),
+            IdContinuity::Sparse => match record.header().reliability() {
+                Reliability::SemiOrdered => {
+                    self.pending.store(record, &data);
+                    Deliveries::empty(buf)
+                }
+                Reliability::Unordered => Deliveries::current(record, data, buf),
+                Reliability::Unreliable => {
+                    unreachable!("Unreliable packages cannot be processed by receive handler.")
+                }
+            },
+        })
     }
 }
 

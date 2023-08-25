@@ -2,7 +2,7 @@ use std::time::Duration;
 
 use async_std::{channel::Sender, future::timeout};
 use de_messages::ToGame;
-use de_net::ConnErrorReceiver;
+use de_net::{ConnErrorReceiver, Reliability};
 use tracing::{error, info, warn};
 
 use super::greceiver::ToGameMessage;
@@ -26,7 +26,11 @@ pub(super) async fn run(port: u16, errors: ConnErrorReceiver, server: Sender<ToG
 
         warn!("In game connection lost with {:?}", error.target());
         let _ = server
-            .send(ToGameMessage::new(error.target(), true, ToGame::Leave))
+            .send(ToGameMessage::new(
+                error.target(),
+                Reliability::Unordered,
+                ToGame::Leave,
+            ))
             .await;
     }
 

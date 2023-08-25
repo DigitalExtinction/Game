@@ -5,7 +5,7 @@ use async_std::{
     task,
 };
 use de_messages::{FromGame, JoinError, Readiness, ToGame};
-use de_net::{OutPackage, Peers};
+use de_net::{OutPackage, Peers, Reliability};
 use tracing::{error, info, warn};
 
 use super::state::{GameState, JoinError as JoinErrorInner};
@@ -17,9 +17,12 @@ pub(super) struct ToGameMessage {
 }
 
 impl ToGameMessage {
-    pub(super) fn new(source: SocketAddr, reliable: bool, message: ToGame) -> Self {
+    pub(super) fn new(source: SocketAddr, reliability: Reliability, message: ToGame) -> Self {
         Self {
-            meta: MessageMeta { source, reliable },
+            meta: MessageMeta {
+                source,
+                reliability,
+            },
             message,
         }
     }
@@ -27,7 +30,7 @@ impl ToGameMessage {
 
 struct MessageMeta {
     source: SocketAddr,
-    reliable: bool,
+    reliability: Reliability,
 }
 
 pub(super) struct GameProcessor {
@@ -142,7 +145,7 @@ impl GameProcessor {
             .send(
                 OutPackage::encode_single(
                     &FromGame::NotJoined,
-                    message.meta.reliable,
+                    message.meta.reliability,
                     Peers::Server,
                     message.meta.source,
                 )
@@ -159,7 +162,7 @@ impl GameProcessor {
             .send(
                 OutPackage::encode_single(
                     &FromGame::Pong(id),
-                    meta.reliable,
+                    meta.reliability,
                     Peers::Server,
                     meta.source,
                 )
@@ -172,8 +175,12 @@ impl GameProcessor {
     async fn process_join(&mut self, meta: MessageMeta) {
         if let Err(err) = self.clients.reserve(meta.source).await {
             warn!("Join request error: {err}");
-            self.send(&FromGame::JoinError(JoinError::DifferentGame), meta.source)
-                .await;
+            self.send(
+                &FromGame::JoinError(JoinError::DifferentGame),
+                Reliability::Unordered,
+                meta.source,
+            )
+            .await;
             return;
         }
 
@@ -191,8 +198,12 @@ impl GameProcessor {
                             meta.source, self.port
                         );
 
-                        self.send(&FromGame::JoinError(JoinError::AlreadyJoined), meta.source)
-                            .await;
+                        self.send(
+                            &FromGame::JoinError(JoinError::AlreadyJoined),
+                            Reliability::Unordered,
+                            meta.source,
+                        )
+                        .await;
                     }
                     JoinErrorInner::GameFull => {
                         warn!(
@@ -200,8 +211,12 @@ impl GameProcessor {
                             meta.source, self.port
                         );
 
-                        self.send(&FromGame::JoinError(JoinError::GameFull), meta.source)
-                            .await;
+                        self.send(
+                            &FromGame::JoinError(JoinError::GameFull),
+                            Reliability::Unordered,
+                            meta.source,
+                        )
+                        .await;
                     }
                     JoinErrorInner::GameNotOpened => {
                         warn!(
@@ -210,8 +225,12 @@ impl GameProcessor {
                             meta.source, self.port
                         );
 
-                        self.send(&FromGame::JoinError(JoinError::GameNotOpened), meta.source)
-                            .await;
+                        self.send(
+                            &FromGame::JoinError(JoinError::GameNotOpened),
+                            Reliability::Unordered,
+                            meta.source,
+                        )
+                        .await;
                     }
                 }
             }
@@ -224,8 +243,14 @@ impl GameProcessor {
             "Player {id} on {addr:?} just joined game on port {}.",
             self.port
         );
-        self.send(&FromGame::Joined(id), addr).await;
-        self.send_all(&FromGame::PeerJoined(id), Some(addr)).await;
+        self.send(&FromGame::Joined(id), Reliability::SemiOrdered, addr)
+            .await;
+        self.send_all(
+            &FromGame::PeerJoined(id),
+            Reliability::SemiOrdered,
+            Some(addr),
+        )
+        .await;
         Ok(())
     }
 
@@ -243,16 +268,22 @@ impl GameProcessor {
             meta.source, self.port
         );
 
-        self.send(&FromGame::Left, meta.source).await;
-        self.send_all(&FromGame::PeerLeft(id), None).await;
+        self.send(&FromGame::Left, Reliability::SemiOrdered, meta.source)
+            .await;
+        self.send_all(&FromGame::PeerLeft(id), Reliability::SemiOrdered, None)
+            .await;
     }
 
     async fn process_readiness(&mut self, meta: MessageMeta, readiness: Readiness) {
         match self.state.update_readiness(meta.source, readiness).await {
             Ok(progressed) => {
                 if progressed {
-                    self.send_all(&FromGame::GameReadiness(readiness), None)
-                        .await;
+                    self.send_all(
+                        &FromGame::GameReadiness(readiness),
+                        Reliability::SemiOrdered,
+                        None,
+                    )
+                    .await;
                 }
             }
             Err(err) => warn!(
@@ -268,23 +299,25 @@ impl GameProcessor {
     ///
     /// * `message` - message to be sent.
     ///
+    /// * `reliability` - reliability mode for the message.
+    ///
     /// * `exclude` - if not None, the message will be delivered to all but
     ///   this player.
-    async fn send_all<E>(&self, message: &E, exclude: Option<SocketAddr>)
+    async fn send_all<E>(&self, message: &E, reliability: Reliability, exclude: Option<SocketAddr>)
     where
         E: bincode::Encode,
     {
         for target in self.state.targets(exclude).await {
-            self.send(message, target).await;
+            self.send(message, reliability, target).await;
         }
     }
 
-    /// Send message to some targets.
-    async fn send<E>(&self, message: &E, target: SocketAddr)
+    async fn send<E>(&self, message: &E, reliability: Reliability, target: SocketAddr)
     where
         E: bincode::Encode,
     {
-        let message = OutPackage::encode_single(message, true, Peers::Server, target).unwrap();
+        let message =
+            OutPackage::encode_single(message, reliability, Peers::Server, target).unwrap();
         let _ = self.outputs.send(message).await;
     }
 }

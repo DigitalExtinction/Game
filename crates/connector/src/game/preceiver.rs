@@ -2,22 +2,22 @@ use std::net::SocketAddr;
 
 use async_std::channel::Receiver;
 use de_messages::FromGame;
-use de_net::{OutPackage, PackageSender, Peers};
+use de_net::{OutPackage, PackageSender, Peers, Reliability};
 use tracing::{error, info, warn};
 
 use super::state::GameState;
 
 /// A package destined to other players in the game.
 pub(super) struct PlayersPackage {
-    reliable: bool,
+    reliability: Reliability,
     source: SocketAddr,
     data: Vec<u8>,
 }
 
 impl PlayersPackage {
-    pub(super) fn new(reliable: bool, source: SocketAddr, data: Vec<u8>) -> Self {
+    pub(super) fn new(reliability: Reliability, source: SocketAddr, data: Vec<u8>) -> Self {
         Self {
-            reliable,
+            reliability,
             source,
             data,
         }
@@ -56,7 +56,7 @@ pub(super) async fn run(
                 .send(
                     OutPackage::encode_single(
                         &FromGame::NotJoined,
-                        package.reliable,
+                        package.reliability,
                         Peers::Server,
                         package.source,
                     )
@@ -70,7 +70,7 @@ pub(super) async fn run(
             let result = outputs
                 .send(OutPackage::new(
                     package.data.clone(),
-                    package.reliable,
+                    package.reliability,
                     Peers::Players,
                     target,
                 ))
