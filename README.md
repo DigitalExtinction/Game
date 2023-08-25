@@ -5,6 +5,7 @@
 [![Sponsors](https://img.shields.io/github/sponsors/Indy2222)](https://github.com/sponsors/Indy2222)
 
 Digital Extinction ([de-game.org](https://de-game.org/),
+[Documentation](https://docs.de-game.org/),
 [GitHub](https://github.com/DigitalExtinction/Game),
 [Discord](https://discord.gg/vHMFuCWGSX)) is a 3D real-time strategy (RTS)
 game. It is set in the near future when humans and AI fight over their
