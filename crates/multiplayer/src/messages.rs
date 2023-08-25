@@ -17,8 +17,7 @@ pub(crate) struct MessagesPlugin;
 impl Plugin for MessagesPlugin {
     fn build(&self, app: &mut App) {
         app.add_event::<ToMainServerEvent>()
-            .add_event::<ToGameServerEvent<true>>()
-            .add_event::<ToGameServerEvent<false>>()
+            .add_event::<ToGameServerEvent>()
             .add_event::<FromMainServerEvent>()
             .add_event::<FromGameServerEvent>()
             .add_systems(OnEnter(NetState::Connecting), setup)
@@ -30,12 +29,8 @@ impl Plugin for MessagesPlugin {
                         .run_if(on_event::<ToMainServerEvent>())
                         .in_set(MessagesSet::SendMessages)
                         .before(NetworkSet::SendPackages),
-                    message_sender::<ToGameServerEvent<true>>
-                        .run_if(on_event::<ToGameServerEvent<true>>())
-                        .in_set(MessagesSet::SendMessages)
-                        .before(NetworkSet::SendPackages),
-                    message_sender::<ToGameServerEvent<false>>
-                        .run_if(on_event::<ToGameServerEvent<false>>())
+                    message_sender::<ToGameServerEvent>
+                        .run_if(on_event::<ToGameServerEvent>())
                         .in_set(MessagesSet::SendMessages)
                         .before(NetworkSet::SendPackages),
                 ),
@@ -62,8 +57,8 @@ where
 {
     type Message: bincode::Encode;
     const PORT_TYPE: PortType;
-    const RELIABLE: bool;
 
+    fn reliability(&self) -> Reliability;
     fn message(&self) -> &Self::Message;
 }
 
@@ -79,7 +74,10 @@ impl From<ToServer> for ToMainServerEvent {
 impl ToMessage for ToMainServerEvent {
     type Message = ToServer;
     const PORT_TYPE: PortType = PortType::Main;
-    const RELIABLE: bool = true;
+
+    fn reliability(&self) -> Reliability {
+        Reliability::SemiOrdered
+    }
 
     fn message(&self) -> &Self::Message {
         &self.0
@@ -87,21 +85,30 @@ impl ToMessage for ToMainServerEvent {
 }
 
 #[derive(Event)]
-pub(crate) struct ToGameServerEvent<const R: bool>(ToGame);
+pub(crate) struct ToGameServerEvent {
+    reliability: Reliability,
+    message: ToGame,
+}
 
-impl<const R: bool> From<ToGame> for ToGameServerEvent<R> {
-    fn from(message: ToGame) -> Self {
-        Self(message)
+impl ToGameServerEvent {
+    pub(crate) fn new(reliability: Reliability, message: ToGame) -> Self {
+        Self {
+            reliability,
+            message,
+        }
     }
 }
 
-impl<const R: bool> ToMessage for ToGameServerEvent<R> {
+impl ToMessage for ToGameServerEvent {
     type Message = ToGame;
     const PORT_TYPE: PortType = PortType::Game;
-    const RELIABLE: bool = R;
+
+    fn reliability(&self) -> Reliability {
+        self.reliability
+    }
 
     fn message(&self) -> &Self::Message {
-        &self.0
+        &self.message
     }
 }
 
@@ -255,18 +262,24 @@ fn message_sender<E>(
         return;
     };
     let addr = SocketAddr::new(conf.server_host(), port);
-    let reliability = if E::RELIABLE {
-        Reliability::Unordered
-    } else {
-        Reliability::Unreliable
-    };
-    let mut builder = PackageBuilder::new(reliability, Peers::Server, addr);
+
+    let mut unreliable = PackageBuilder::new(Reliability::Unreliable, Peers::Server, addr);
+    let mut unordered = PackageBuilder::new(Reliability::Unordered, Peers::Server, addr);
+    let mut semi_ordered = PackageBuilder::new(Reliability::SemiOrdered, Peers::Server, addr);
 
     for event in inputs.iter() {
+        let builder = match event.reliability() {
+            Reliability::Unreliable => &mut unreliable,
+            Reliability::Unordered => &mut unordered,
+            Reliability::SemiOrdered => &mut semi_ordered,
+        };
         builder.push(event.message()).unwrap();
     }
-    for package in builder.build() {
-        outputs.send(package.into());
+
+    for builder in [unreliable, unordered, semi_ordered] {
+        for package in builder.build() {
+            outputs.send(package.into());
+        }
     }
 }
 
