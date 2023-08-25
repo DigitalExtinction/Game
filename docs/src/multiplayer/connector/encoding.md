@@ -5,4 +5,4 @@ Individual messages, implemented as Rust enums, are encoded via
 messages are sent in a single [package](./protocol.md#package). Big endian with
 variable bit encoding is used.
 
-See individual message [documentation](/rust/de_net/protocol/).
+See individual message [documentation](/rust/de_messages/).
