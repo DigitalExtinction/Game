@@ -13,7 +13,7 @@ use nix::{
 };
 
 pub fn spawn_and_wait() -> Child {
-    let mut command = Command::cargo_bin(env!("CARGO_PKG_NAME")).unwrap();
+    let mut command = Command::cargo_bin("de-connector").unwrap();
 
     unsafe {
         command.pre_exec(|| {
