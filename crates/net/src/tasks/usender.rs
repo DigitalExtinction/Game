@@ -40,12 +40,13 @@ pub(super) async fn run(
 
         if package_header.reliability().is_reliable() {
             dispatch_handler
-                .sent(time, package.target, package_header, &package.data)
+                .sent(time, package.target, package_header, package.data_slice())
                 .await;
         }
 
+        let target = package.target;
         let closed = datagrams
-            .send(OutDatagram::new(header, package.data, package.target))
+            .send(OutDatagram::new(header, package.data(), target))
             .await
             .is_err();
 

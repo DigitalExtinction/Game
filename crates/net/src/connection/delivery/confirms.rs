@@ -81,9 +81,9 @@ impl ConfirmsBuffer {
         if force || expiration <= time || self.full() {
             while let Some(data) = self.flush(MAX_PACKAGE_SIZE) {
                 datagrams
-                    .send(OutDatagram::new(
+                    .send(OutDatagram::from_slice(
                         DatagramHeader::Confirmation,
-                        data.to_vec(),
+                        data,
                         addr,
                     ))
                     .await?;

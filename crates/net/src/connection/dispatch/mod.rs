@@ -86,9 +86,9 @@ impl DispatchHandler {
                 match handler.resends.reschedule(buf, time) {
                     RescheduleResult::Resend { len, header } => {
                         datagrams
-                            .send(OutDatagram::new(
+                            .send(OutDatagram::from_slice(
                                 DatagramHeader::Package(header),
-                                buf[..len].to_vec(),
+                                &buf[..len],
                                 addr,
                             ))
                             .await?;
