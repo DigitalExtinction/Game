@@ -58,7 +58,7 @@
 use async_std::channel::bounded;
 pub use communicator::{
     ConnErrorReceiver, ConnectionError, InPackage, MessageDecoder, OutPackage, PackageBuilder,
-    PackageReceiver, PackageSender,
+    PackageIterator, PackageReceiver, PackageSender,
 };
 pub(crate) use dsender::OutDatagram;
 use futures::future::BoxFuture;

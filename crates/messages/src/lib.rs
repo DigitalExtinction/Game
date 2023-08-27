@@ -2,7 +2,11 @@
 //! Connector during multiplayer game.
 
 pub use game::{FromGame, JoinError, Readiness, ToGame};
+pub use players::{
+    BorrowedFromPlayers, ChatMessage, ChatMessageError, FromPlayers, ToPlayers, MAX_CHAT_LEN,
+};
 pub use server::{FromServer, GameOpenError, ToServer};
 
 mod game;
+mod players;
 mod server;

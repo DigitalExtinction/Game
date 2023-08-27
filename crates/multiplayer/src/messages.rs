@@ -257,6 +257,8 @@ fn message_sender<E>(
 ) where
     E: ToMessage,
 {
+    let time = Instant::now();
+
     let Some(port) = ports.port(E::PORT_TYPE) else {
         warn!("Port not (yet) known.");
         return;
@@ -273,11 +275,13 @@ fn message_sender<E>(
             Reliability::Unordered => &mut unordered,
             Reliability::SemiOrdered => &mut semi_ordered,
         };
-        builder.push(event.message()).unwrap();
+        builder.push(event.message(), time).unwrap();
     }
 
-    for builder in [unreliable, unordered, semi_ordered] {
-        for package in builder.build() {
+    for mut builder in [unreliable, unordered, semi_ordered] {
+        // Build all packages. This system runs once per frame and thus some
+        // aggregation is done via the update frequency.
+        for package in builder.build_all() {
             outputs.send(package.into());
         }
     }

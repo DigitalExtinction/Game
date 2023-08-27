@@ -134,14 +134,24 @@ fn test() {
             .unwrap();
 
         let first_id = received
-            .find_id(Reliability::Unordered, &[5, 6, 7, 8])
+            .find_id(
+                Reliability::Unordered,
+                &[
+                    2, // from player ID
+                    0, // variant = chat
+                    4, // message length
+                    73, 110, 100, 121, // text
+                ],
+            )
             .unwrap();
 
-        let mut data = [22; 412];
+        let mut data = [50; 141];
         data[0] = 32; // Unordered
         data[1] = 0;
         data[2] = 0;
-        data[3] = 22;
+        data[3] = 22; // ID
+        data[4] = 0; // variant = chat
+        data[5] = 135; // string length
         client.send(server, &data).await.unwrap();
 
         let mut received = ReceivedBuffer::new();
@@ -149,7 +159,15 @@ fn test() {
         received.load(&mut client, &mut buffer).await;
         received.assert_confirmed(22);
         received
-            .find_id(Reliability::Unreliable, &[82, 83, 84])
+            .find_id(
+                Reliability::Unreliable,
+                &[
+                    2, // from player ID
+                    0, // variant = chat
+                    3, // message length
+                    82, 83, 84, // text
+                ],
+            )
             .unwrap();
 
         // Try to send invalid data -- wrong header
@@ -168,7 +186,7 @@ fn test() {
         received.load(&mut client, &mut buffer).await;
         assert_eq!(
             received
-                .find_id(Reliability::Unordered, &[5, 6, 7, 8])
+                .find_id(Reliability::Unordered, &[2, 0, 4, 73, 110, 100, 121])
                 .unwrap(),
             first_id
         );
@@ -176,7 +194,7 @@ fn test() {
         received.load(&mut client, &mut buffer).await;
         assert_eq!(
             received
-                .find_id(Reliability::Unordered, &[5, 6, 7, 8])
+                .find_id(Reliability::Unordered, &[2, 0, 4, 73, 110, 100, 121])
                 .unwrap(),
             first_id
         );
@@ -188,8 +206,32 @@ fn test() {
             .await
             .unwrap();
 
-        client.send(server, &[32, 0, 0, 92, 16]).await.unwrap();
-        client.send(server, &[32, 0, 0, 86, 23]).await.unwrap();
+        client
+            .send(
+                server,
+                &[
+                    32, // reliability = unordered
+                    0, 0, 92, // ID
+                    0,  // variant = chat
+                    1,  // length
+                    88, // TEXT
+                ],
+            )
+            .await
+            .unwrap();
+        client
+            .send(
+                server,
+                &[
+                    32, // reliability = unordered
+                    0, 0, 86, // ID
+                    0,  // variant = chat
+                    1,  // length
+                    89, // text
+                ],
+            )
+            .await
+            .unwrap();
         let mut received = ReceivedBuffer::new();
         received.load(&mut client, &mut buffer).await;
         received.assert_confirmed(92);
@@ -209,8 +251,16 @@ fn test() {
         let mut buffer = [0u8; 1024];
 
         client
-            // unordered
-            .send(server, &[32, 0, 0, 14, 5, 6, 7, 8])
+            .send(
+                server,
+                &[
+                    32, // reliability = unordered
+                    0, 0, 14, // ID
+                    0,  // variant = chat
+                    4,  // length
+                    73, 110, 100, 121, // text
+                ],
+            )
             .await
             .unwrap();
 
@@ -218,8 +268,14 @@ fn test() {
         received.load(&mut client, &mut buffer).await;
         received.load(&mut client, &mut buffer).await;
         received.assert_confirmed(14);
+
+        let mut expected = [50; 138];
+        expected[0] = 1; // from player
+        expected[1] = 0; // variant = chat
+        expected[2] = 135; // message length
+        let expected = expected;
         let id = received
-            .find_id(Reliability::Unordered, &[22; 408])
+            .find_id(Reliability::Unordered, &expected)
             .unwrap()
             .to_be_bytes();
         // Sending confirmation
@@ -232,27 +288,21 @@ fn test() {
         client
             .send(
                 server,
-                // Anonymous message
-                &[0, 0, 0, 0, 82, 83, 84],
+                &[
+                    0, 0, 0, 0, // Anonymous message
+                    0, // variant = chat
+                    3, // length
+                    82, 83, 84, // text
+                ],
             )
             .await
             .unwrap();
 
         let mut received = ReceivedBuffer::new();
         received.load(&mut client, &mut buffer).await;
+        // Two messages get grouped by DE Connector.
         let id = received
-            .find_id(Reliability::Unordered, &[16])
-            .unwrap()
-            .to_be_bytes();
-        client
-            .send(server, &[128, 0, 0, 0, id[1], id[2], id[3]])
-            .await
-            .unwrap();
-
-        let mut received = ReceivedBuffer::new();
-        received.load(&mut client, &mut buffer).await;
-        let id = received
-            .find_id(Reliability::Unordered, &[23])
+            .find_id(Reliability::Unordered, &[1, 0, 1, 88, 1, 0, 1, 89])
             .unwrap()
             .to_be_bytes();
         client

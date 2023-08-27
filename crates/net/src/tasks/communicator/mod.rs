@@ -1,5 +1,5 @@
 use bincode::config::{BigEndian, Configuration, Limit, Varint};
-pub use builder::PackageBuilder;
+pub use builder::{PackageBuilder, PackageIterator};
 pub use channels::{ConnErrorReceiver, ConnectionError, PackageReceiver, PackageSender};
 pub use decode::{InPackage, MessageDecoder};
 pub use encode::OutPackage;

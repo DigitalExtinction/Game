@@ -6,8 +6,10 @@ use de_net::{self, Socket};
 use self::{greceiver::GameProcessor, state::GameState};
 use crate::clients::Clients;
 
+mod buffer;
 mod ereceiver;
 mod greceiver;
+mod message;
 mod mreceiver;
 mod preceiver;
 mod state;
