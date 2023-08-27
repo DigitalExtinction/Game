@@ -32,7 +32,8 @@ impl ProtocolSocket {
     ///
     /// # Arguments
     ///
-    /// * `buf` - binary data buffer used during datagram construction.
+    /// * `buf` - buffer used for datagram construction. First [`HEADER_SIZE`]
+    ///   bytes are overwritten with the header. Payload bytes must follow.
     ///
     /// * `header` - header of the datagram.
     ///
@@ -41,16 +42,10 @@ impl ProtocolSocket {
     /// * `target` - recipient of the datagram.
     pub(crate) async fn send(
         &self,
-        buf: &mut [u8],
         header: DatagramHeader,
-        data: &[u8],
+        buf: &mut [u8],
         target: SocketAddr,
     ) -> Result<(), SendError> {
-        let len = HEADER_SIZE + data.len();
-        assert!(buf.len() >= len);
-        let buf = &mut buf[..len];
-        buf[HEADER_SIZE..len].copy_from_slice(data);
-
         trace!("Going to send datagram {}", header);
         header.write(buf);
         self.socket.send(target, buf).await?;

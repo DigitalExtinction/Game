@@ -3,13 +3,14 @@ use std::{marker::PhantomData, mem, net::SocketAddr, ops::Deref, time::Instant};
 use async_std::channel::{Receiver, Sender};
 use bincode::{
     config::{BigEndian, Configuration, Limit, Varint},
-    decode_from_slice, encode_into_slice, encode_to_vec,
+    decode_from_slice, encode_into_slice, encode_into_std_write,
     error::{DecodeError, EncodeError},
 };
 
 use crate::{
-    header::{Peers, Reliability},
+    header::{Peers, Reliability, HEADER_SIZE},
     protocol::MAX_PACKAGE_SIZE,
+    MAX_DATAGRAM_SIZE,
 };
 
 const BINCODE_CONF: Configuration<BigEndian, Varint, Limit<MAX_PACKAGE_SIZE>> =
@@ -34,8 +35,8 @@ impl PackageBuilder {
             reliability,
             peers,
             target,
-            buffer: vec![0; MAX_PACKAGE_SIZE],
-            used: 0,
+            buffer: vec![0; MAX_DATAGRAM_SIZE],
+            used: HEADER_SIZE,
             packages: Vec::new(),
         }
     }
@@ -45,15 +46,10 @@ impl PackageBuilder {
     /// The messages are distributed among the packages in a sequential order.
     /// Each package is filled with as many messages as it can accommodate.
     pub fn build(mut self) -> Vec<OutPackage> {
-        let mut packages = self.packages;
-
-        if self.used > 0 {
-            self.buffer.truncate(self.used);
-            let package = OutPackage::new(self.buffer, self.reliability, self.peers, self.target);
-            packages.push(package);
+        if self.used > HEADER_SIZE {
+            self.build_package(false);
         }
-
-        packages
+        self.packages
     }
 
     /// Push another message to the builder so that it is included in one of
@@ -64,14 +60,7 @@ impl PackageBuilder {
     {
         match self.push_inner(message) {
             Err(EncodeError::UnexpectedEnd) => {
-                let mut data = vec![0; MAX_PACKAGE_SIZE];
-                mem::swap(&mut data, &mut self.buffer);
-                data.truncate(self.used);
-                self.used = 0;
-
-                let package = OutPackage::new(data, self.reliability, self.peers, self.target);
-                self.packages.push(package);
-
+                self.build_package(true);
                 self.push_inner(message)
             }
             Err(err) => Err(err),
@@ -87,11 +76,38 @@ impl PackageBuilder {
         self.used += len;
         Ok(())
     }
+
+    /// Build and store another package from already buffered data.
+    ///
+    /// # Arguments
+    ///
+    /// * `reusable` - if false, newly created buffer for further messages will
+    ///   be empty.
+    fn build_package(&mut self, reusable: bool) {
+        let (mut data, used) = if reusable {
+            (vec![0; MAX_DATAGRAM_SIZE], HEADER_SIZE)
+        } else {
+            (Vec::new(), 0)
+        };
+
+        mem::swap(&mut data, &mut self.buffer);
+        data.truncate(self.used);
+        self.used = used;
+
+        self.packages.push(OutPackage::new(
+            data,
+            self.reliability,
+            self.peers,
+            self.target,
+        ));
+    }
 }
 
 /// A package to be send.
 pub struct OutPackage {
-    pub(super) data: Vec<u8>,
+    /// First [`HEADER_SIZE`] bytes are reserved for the header. Payload must
+    /// follow.
+    data: Vec<u8>,
     reliability: Reliability,
     peers: Peers,
     pub(super) target: SocketAddr,
@@ -99,8 +115,6 @@ pub struct OutPackage {
 
 impl OutPackage {
     /// Creates a package from a single message.
-    ///
-    /// See also [`Self::new`].
     pub fn encode_single<E>(
         message: &E,
         reliability: Reliability,
@@ -110,13 +124,34 @@ impl OutPackage {
     where
         E: bincode::Encode,
     {
-        let data = encode_to_vec(message, BINCODE_CONF)?;
+        let mut data = Vec::with_capacity(HEADER_SIZE + 1);
+        data.extend([0; HEADER_SIZE]);
+        encode_into_std_write(message, &mut data, BINCODE_CONF)?;
         Ok(Self::new(data, reliability, peers, target))
+    }
+
+    /// # Panics
+    ///
+    /// If `data` is longer than [`MAX_PACKAGE_SIZE`].
+    pub fn from_slice(
+        data: &[u8],
+        reliability: Reliability,
+        peers: Peers,
+        target: SocketAddr,
+    ) -> Self {
+        assert!(data.len() <= MAX_PACKAGE_SIZE);
+
+        let mut full_data = Vec::with_capacity(HEADER_SIZE + data.len());
+        full_data.extend([0; HEADER_SIZE]);
+        full_data.extend(data);
+        Self::new(full_data, reliability, peers, target)
     }
 
     /// # Arguments
     ///
-    /// * `data` - data to be send.
+    /// * `data` - data to be send. The message data must start exactly at
+    ///   [`HEADER_SIZE`]. The initial bytes are reserved for the header. The
+    ///   header is not filled by the caller.
     ///
     /// * `reliability` - package delivery reliability mode.
     ///
@@ -124,15 +159,31 @@ impl OutPackage {
     ///
     /// # Panics
     ///
-    /// Panics if data is longer than [`MAX_PACKAGE_SIZE`].
-    pub fn new(data: Vec<u8>, reliability: Reliability, peers: Peers, target: SocketAddr) -> Self {
-        assert!(data.len() < MAX_PACKAGE_SIZE);
+    /// * If data length is smaller or equal to header size..
+    ///
+    /// * If data is longer than [`MAX_DATAGRAM_SIZE`].
+    fn new(data: Vec<u8>, reliability: Reliability, peers: Peers, target: SocketAddr) -> Self {
+        assert!(data.len() > HEADER_SIZE);
+        assert!(data.len() <= MAX_DATAGRAM_SIZE);
         Self {
             data,
             reliability,
             peers,
             target,
         }
+    }
+
+    /// Returns package data.
+    ///
+    /// The data start at [`HEADER_SIZE`] so that header may be written
+    /// to the beginning of the vector.
+    pub(super) fn data(self) -> Vec<u8> {
+        self.data
+    }
+
+    /// Returns slice to the payload part (without header) of the data.
+    pub(super) fn data_slice(&self) -> &[u8] {
+        &self.data[HEADER_SIZE..]
     }
 
     pub(super) fn reliability(&self) -> Reliability {

@@ -68,8 +68,8 @@ pub(super) async fn run(
 
         for target in state.targets(Some(package.source)).await {
             let result = outputs
-                .send(OutPackage::new(
-                    package.data.clone(),
+                .send(OutPackage::from_slice(
+                    &package.data,
                     package.reliability,
                     Peers::Players,
                     target,
