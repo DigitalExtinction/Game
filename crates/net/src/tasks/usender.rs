@@ -28,9 +28,10 @@ pub(super) async fn run(
         };
 
         let time = Instant::now();
+        let target = package.target();
 
         let package_id = if package.reliability().is_reliable() {
-            dispatch_handler.next_package_id(time, package.target).await
+            dispatch_handler.next_package_id(time, target).await
         } else {
             counter_unreliable.next().unwrap()
         };
@@ -40,11 +41,10 @@ pub(super) async fn run(
 
         if package_header.reliability().is_reliable() {
             dispatch_handler
-                .sent(time, package.target, package_header, package.data_slice())
+                .sent(time, target, package_header, package.data_slice())
                 .await;
         }
 
-        let target = package.target;
         let closed = datagrams
             .send(OutDatagram::new(header, package.data(), target))
             .await
