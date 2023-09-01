@@ -2,9 +2,9 @@ use std::collections::HashSet;
 
 use bevy::prelude::*;
 use bevy::utils::petgraph::prelude::*;
-#[cfg(feature = "graph_debug_lines")]
+#[cfg(feature = "energy_graph_debug_lines")]
 use bevy::utils::petgraph::visit::IntoNodeReferences;
-#[cfg(feature = "graph_debug_lines")]
+#[cfg(feature = "energy_graph_debug_lines")]
 use bevy_prototype_debug_lines::{DebugLines, DebugLinesPlugin};
 use de_core::gamestate::GameState;
 use de_core::objects::Active;
@@ -22,7 +22,7 @@ pub(crate) struct GraphPlugin;
 
 impl Plugin for GraphPlugin {
     fn build(&self, app: &mut App) {
-        app.add_plugins((DespawnEventsPlugin::<&NearbyUnits, NearbyUnits>::default(),))
+        app.add_plugins(DespawnEventsPlugin::<&NearbyUnits, NearbyUnits>::default())
             .add_systems(OnEnter(GameState::Playing), setup)
             .add_systems(OnExit(GameState::Playing), clean_up)
             .add_systems(PostUpdate, spawn_graph_components)
@@ -38,7 +38,7 @@ impl Plugin for GraphPlugin {
                     .run_if(in_state(GameState::Playing)),
             );
 
-        #[cfg(feature = "graph_debug_lines")]
+        #[cfg(feature = "energy_graph_debug_lines")]
         app.add_plugins(DebugLinesPlugin::default()).add_systems(
             PostUpdate,
             (debug_lines).run_if(in_state(GameState::Playing)),
@@ -100,12 +100,12 @@ pub struct EnergyProducer;
 /// The nearby component is used to store the nearby entities of an entity.
 #[derive(Debug, Clone, Default)]
 pub struct Nearby {
-    receivers: TinyVec<[NearbyEntity; 128]>,
-    producers: TinyVec<[NearbyEntity; 128]>,
+    receivers: TinyVec<[NearbyEntity; 32]>,
+    producers: TinyVec<[NearbyEntity; 32]>,
 }
 
 impl Nearby {
-    fn both(&self) -> TinyVec<[NearbyEntity; 256]> {
+    fn both(&self) -> TinyVec<[NearbyEntity; 64]> {
         self.receivers
             .clone()
             .into_iter()
@@ -131,7 +131,7 @@ pub struct NearbyUnits {
 }
 
 impl NearbyUnits {
-    pub fn units(&self) -> TinyVec<[NearbyEntity; 256]> {
+    pub fn units(&self) -> TinyVec<[NearbyEntity; 64]> {
         self.units.both()
     }
 }
@@ -180,23 +180,17 @@ pub fn update_nearby_recv(
 
             let receivers = spacial_index_receiver.query_aabb(aabb, Some(entity));
 
-            update_nearby(
-                nearby_units,
-                producers.map(|entity| entity.into()).collect(),
-                receivers.map(|entity| entity.into()).collect(),
-            );
+            nearby_units.units.clear();
+
+            nearby_units
+                .units
+                .producers
+                .extend(producers.map(|entity| entity.into()));
+            nearby_units
+                .units
+                .receivers
+                .extend(receivers.map(|entity| entity.into()));
         });
-}
-
-fn update_nearby(
-    mut nearby_units: Mut<NearbyUnits>,
-    producers: Vec<NearbyEntity>,
-    receivers: Vec<NearbyEntity>,
-) {
-    nearby_units.units.clear();
-
-    nearby_units.units.producers.extend(producers);
-    nearby_units.units.receivers.extend(receivers);
 }
 
 fn update_graph(
@@ -249,7 +243,7 @@ fn remove_old_nodes(
     }
 }
 
-#[cfg(feature = "graph_debug_lines")]
+#[cfg(feature = "energy_graph_debug_lines")]
 fn debug_lines(
     power_grid: Res<PowerGrid>,
     query: Query<&Transform>,

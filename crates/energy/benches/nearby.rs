@@ -53,6 +53,7 @@ fn update_index(
 
 fn init_world_with_entities_moving(world: &mut World, num_entities: &NumPoints) {
     let mut index = EntityIndex::new();
+
     let max_point_value =
         UNIT_SPACING * (<NumPoints as Into<usize>>::into(*num_entities) as f32).sqrt();
     assert!(max_point_value > 0.);

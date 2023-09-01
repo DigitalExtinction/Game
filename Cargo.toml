@@ -28,7 +28,7 @@ opt-level = 3
 
 [features]
 godmode = ["de_spawner/godmode"]
-graph_debug_lines = ["de_energy/graph_debug_lines"]
+energy_graph_debug_lines = ["de_energy/energy_graph_debug_lines"]
 
 [dependencies]
 # DE

@@ -14,7 +14,7 @@ categories.workspace = true
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [features]
-graph_debug_lines = ["dep:bevy_prototype_debug_lines"]
+energy_graph_debug_lines = ["dep:bevy_prototype_debug_lines"]
 
 [dependencies]
 # DE
