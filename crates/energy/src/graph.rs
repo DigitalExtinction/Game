@@ -212,13 +212,13 @@ fn remove_old_nodes(
     mut death_events: EventReader<DespawnedComponentsEvent<NearbyUnits>>,
 ) {
     for event in death_events.iter() {
-        power_grid.graph.remove_node(event.entity);
-
         for neighbor in power_grid.graph.neighbors(event.entity) {
             if let Ok(mut nearby_units) = nearby_units_query.get_mut(neighbor) {
                 nearby_units.remove_matching(event.entity.into());
             }
         }
+
+        power_grid.graph.remove_node(event.entity);
     }
 }
 
