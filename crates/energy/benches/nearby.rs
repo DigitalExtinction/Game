@@ -6,7 +6,7 @@ use bevy::prelude::{
 use bevy::time::TimePlugin;
 use criterion::{criterion_group, criterion_main, Criterion};
 use de_core::projection::ToAltitude;
-use de_energy::{update_nearby_recv, EnergyReceiver, NearbyUnits};
+use de_energy::{update_nearby, EnergyGridMember, NearbyUnits};
 use de_index::{EntityIndex, LocalCollider};
 use de_objects::ObjectCollider;
 use de_test_utils::{load_points, NumPoints};
@@ -75,7 +75,7 @@ fn init_world_with_entities_moving(world: &mut World, num_entities: &NumPoints) 
                     x: point_msl.x,
                     y: point_msl.y,
                 },
-                EnergyReceiver,
+                EnergyGridMember,
                 NearbyUnits::default(),
                 UnitNumber(i as u32),
             ))
@@ -116,7 +116,7 @@ fn nearby_benchmark(c: &mut Criterion) {
     for i in [OneHundred, OneThousand, TenThousand, OneHundredThousand] {
         let mut app = App::default();
         init_world_with_entities_moving(&mut app.world, &i);
-        app.add_systems(Update, update_nearby_recv);
+        app.add_systems(Update, update_nearby);
         app.add_plugins(TimePlugin);
 
         let update_units_schedule = Schedule::default();
@@ -155,7 +155,7 @@ fn nearby_benchmark(c: &mut Criterion) {
         );
         let mut amount_of_connections_formed = 0;
         for connections in app.world.query::<&mut NearbyUnits>().iter(&app.world) {
-            amount_of_connections_formed += connections.units().len()
+            amount_of_connections_formed += connections.len()
         }
         println!(
             "We ended up with {} connections between {} units",

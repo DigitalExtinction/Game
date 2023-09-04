@@ -1,12 +1,13 @@
 use bevy::prelude::*;
 use de_core::objects::Active;
+use de_core::state::AppState;
 
 pub(crate) struct BatteryPlugin;
 
 impl Plugin for BatteryPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(Update, discharge_battery)
-            .add_systems(PostUpdate, spawn_battery);
+        app.add_systems(Update, discharge_battery.run_if(in_state(AppState::InGame)))
+            .add_systems(PostUpdate, spawn_battery.run_if(in_state(AppState::InGame)));
     }
 }
 
