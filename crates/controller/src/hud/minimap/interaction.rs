@@ -120,9 +120,12 @@ fn press_handler(
     let cursor = window_query.single().cursor_position();
 
     for event in input_events.iter() {
-        if event.state != ButtonState::Pressed {
-            dragging.retain(|b| *b != event.button);
-            continue;
+        match event.state {
+            ButtonState::Released => {
+                dragging.retain(|b| *b != event.button);
+                continue;
+            }
+            ButtonState::Pressed => (),
         }
 
         let Some(cursor) = cursor else {
