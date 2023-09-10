@@ -8,35 +8,16 @@ use de_messages::{FromGame, JoinError, Readiness, ToGame};
 use de_net::{OutPackage, Peers, Reliability};
 use tracing::{error, info, warn};
 
-use super::state::{GameState, JoinError as JoinErrorInner};
+use super::{
+    message::{InMessage, MessageMeta},
+    state::{GameState, JoinError as JoinErrorInner},
+};
 use crate::clients::Clients;
-
-pub(super) struct ToGameMessage {
-    meta: MessageMeta,
-    message: ToGame,
-}
-
-impl ToGameMessage {
-    pub(super) fn new(source: SocketAddr, reliability: Reliability, message: ToGame) -> Self {
-        Self {
-            meta: MessageMeta {
-                source,
-                reliability,
-            },
-            message,
-        }
-    }
-}
-
-struct MessageMeta {
-    source: SocketAddr,
-    reliability: Reliability,
-}
 
 pub(super) struct GameProcessor {
     port: u16,
     owner: SocketAddr,
-    messages: Receiver<ToGameMessage>,
+    messages: Receiver<InMessage<ToGame>>,
     outputs: Sender<OutPackage>,
     state: GameState,
     clients: Clients,
@@ -46,7 +27,7 @@ impl GameProcessor {
     pub(super) fn new(
         port: u16,
         owner: SocketAddr,
-        messages: Receiver<ToGameMessage>,
+        messages: Receiver<InMessage<ToGame>>,
         outputs: Sender<OutPackage>,
         state: GameState,
         clients: Clients,
@@ -93,18 +74,18 @@ impl GameProcessor {
                 continue;
             }
 
-            match message.message {
+            match message.message() {
                 ToGame::Ping(id) => {
-                    self.process_ping(message.meta, id).await;
+                    self.process_ping(message.meta(), *id).await;
                 }
                 ToGame::Join => {
-                    self.process_join(message.meta).await;
+                    self.process_join(message.meta()).await;
                 }
                 ToGame::Leave => {
-                    self.process_leave(message.meta).await;
+                    self.process_leave(message.meta()).await;
                 }
                 ToGame::Readiness(readiness) => {
-                    self.process_readiness(message.meta, readiness).await;
+                    self.process_readiness(message.meta(), *readiness).await;
                 }
             }
 
@@ -122,8 +103,8 @@ impl GameProcessor {
 
     /// Returns true if the massage should be ignored and further handles such
     /// messages.
-    async fn handle_ignore(&self, message: &ToGameMessage) -> bool {
-        if matches!(message.message, ToGame::Join | ToGame::Leave) {
+    async fn handle_ignore(&self, message: &InMessage<ToGame>) -> bool {
+        if matches!(message.message(), ToGame::Join | ToGame::Leave) {
             // Join must be excluded from the condition because of the
             // chicken and egg problem.
             //
@@ -132,22 +113,22 @@ impl GameProcessor {
             return false;
         }
 
-        if self.state.contains(message.meta.source).await {
+        if self.state.contains(message.meta().source).await {
             return false;
         }
 
         warn!(
             "Received a game message from a non-participating client: {:?}.",
-            message.meta.source
+            message.meta().source
         );
         let _ = self
             .outputs
             .send(
                 OutPackage::encode_single(
                     &FromGame::NotJoined,
-                    message.meta.reliability,
+                    message.meta().reliability,
                     Peers::Server,
-                    message.meta.source,
+                    message.meta().source,
                 )
                 .unwrap(),
             )

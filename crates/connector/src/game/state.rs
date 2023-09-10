@@ -1,9 +1,11 @@
 use std::{collections::hash_map::Entry, net::SocketAddr};
 
 use ahash::AHashMap;
-use async_std::sync::{Arc, RwLock};
+use async_std::sync::{Arc, RwLock, RwLockWriteGuard};
 use de_messages::Readiness;
 use thiserror::Error;
+
+use super::buffer::PlayerBuffer;
 
 #[derive(Clone)]
 pub(super) struct GameState {
@@ -17,6 +19,12 @@ impl GameState {
         }
     }
 
+    pub(crate) async fn lock(&mut self) -> GameStateGuard {
+        GameStateGuard {
+            guard: self.inner.write().await,
+        }
+    }
+
     /// Returns true if there is no players currently connected to the game.
     pub(super) async fn is_empty(&self) -> bool {
         self.inner.read().await.is_empty()
@@ -25,6 +33,12 @@ impl GameState {
     /// Returns true if a player with `addr` is connected to the game.
     pub(super) async fn contains(&self, addr: SocketAddr) -> bool {
         self.inner.read().await.contains(addr)
+    }
+
+    /// Returns ID of the player or None if such player is not part of the
+    /// game.
+    pub(super) async fn id(&self, addr: SocketAddr) -> Option<u8> {
+        self.inner.read().await.id(addr)
     }
 
     /// Adds a player to the game and returns ID of the added player.
@@ -62,6 +76,25 @@ impl GameState {
     }
 }
 
+/// The lock is unlocked once this guard is dropped.
+pub(super) struct GameStateGuard<'a> {
+    guard: RwLockWriteGuard<'a, GameStateInner>,
+}
+
+impl<'a> GameStateGuard<'a> {
+    /// Returns an iterator over message buffers of all or all but one player.
+    ///
+    /// # Arguments
+    ///
+    /// * `exclude` - exclude this player from the iterator.
+    pub(super) fn buffers_mut(
+        &mut self,
+        exclude: Option<SocketAddr>,
+    ) -> impl Iterator<Item = &mut PlayerBuffer> {
+        self.guard.buffers_mut(exclude)
+    }
+}
+
 struct GameStateInner {
     available_ids: AvailableIds,
     readiness: Readiness,
@@ -85,6 +118,10 @@ impl GameStateInner {
         self.players.contains_key(&addr)
     }
 
+    fn id(&self, addr: SocketAddr) -> Option<u8> {
+        self.players.get(&addr).map(|p| p.id)
+    }
+
     fn add(&mut self, addr: SocketAddr) -> Result<u8, JoinError> {
         if self.readiness != Readiness::NotReady {
             return Err(JoinError::GameNotOpened);
@@ -94,7 +131,7 @@ impl GameStateInner {
             Entry::Occupied(_) => Err(JoinError::AlreadyJoined),
             Entry::Vacant(vacant) => match self.available_ids.lease() {
                 Some(id) => {
-                    vacant.insert(Player::new(id));
+                    vacant.insert(Player::new(id, addr));
                     Ok(id)
                 }
                 None => Err(JoinError::GameFull),
@@ -165,6 +202,19 @@ impl GameStateInner {
         }
         addrs
     }
+
+    fn buffers_mut(
+        &mut self,
+        exclude: Option<SocketAddr>,
+    ) -> impl Iterator<Item = &mut PlayerBuffer> {
+        self.players.iter_mut().filter_map(move |(&addr, player)| {
+            if Some(addr) == exclude {
+                None
+            } else {
+                Some(&mut player.buffer)
+            }
+        })
+    }
 }
 
 struct AvailableIds(Vec<u8>);
@@ -222,13 +272,15 @@ pub(super) enum ReadinessUpdateError {
 struct Player {
     id: u8,
     readiness: Readiness,
+    buffer: PlayerBuffer,
 }
 
 impl Player {
-    fn new(id: u8) -> Self {
+    fn new(id: u8, addr: SocketAddr) -> Self {
         Self {
             id,
             readiness: Readiness::default(),
+            buffer: PlayerBuffer::new(addr),
         }
     }
 }

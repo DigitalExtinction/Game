@@ -13,3 +13,4 @@ categories.workspace = true
 
 [dependencies]
 bincode.workspace = true
+thiserror.workspace = true
