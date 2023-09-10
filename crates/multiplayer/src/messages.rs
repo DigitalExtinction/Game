@@ -2,7 +2,7 @@ use std::{net::SocketAddr, time::Instant};
 
 use bevy::prelude::*;
 use de_core::schedule::PreMovement;
-use de_messages::{FromGame, FromServer, ToGame, ToServer};
+use de_messages::{FromGame, FromPlayers, FromServer, ToGame, ToPlayers, ToServer};
 use de_net::{InPackage, PackageBuilder, Peers, Reliability};
 
 use crate::{
@@ -18,22 +18,21 @@ impl Plugin for MessagesPlugin {
     fn build(&self, app: &mut App) {
         app.add_event::<ToMainServerEvent>()
             .add_event::<ToGameServerEvent>()
+            .add_event::<ToPlayersEvent>()
             .add_event::<FromMainServerEvent>()
             .add_event::<FromGameServerEvent>()
+            .add_event::<FromPlayersEvent>()
             .add_systems(OnEnter(NetState::Connecting), setup)
             .add_systems(OnEnter(NetState::None), cleanup)
             .add_systems(
                 PostUpdate,
                 (
-                    message_sender::<ToMainServerEvent>
-                        .run_if(on_event::<ToMainServerEvent>())
-                        .in_set(MessagesSet::SendMessages)
-                        .before(NetworkSet::SendPackages),
-                    message_sender::<ToGameServerEvent>
-                        .run_if(on_event::<ToGameServerEvent>())
-                        .in_set(MessagesSet::SendMessages)
-                        .before(NetworkSet::SendPackages),
-                ),
+                    message_sender::<ToMainServerEvent>.run_if(on_event::<ToMainServerEvent>()),
+                    message_sender::<ToGameServerEvent>.run_if(on_event::<ToGameServerEvent>()),
+                    message_sender::<ToPlayersEvent>.run_if(on_event::<ToPlayersEvent>()),
+                )
+                    .in_set(MessagesSet::SendMessages)
+                    .before(NetworkSet::SendPackages),
             )
             .add_systems(
                 PreMovement,
@@ -46,7 +45,7 @@ impl Plugin for MessagesPlugin {
 }
 
 #[derive(Copy, Clone, Hash, Debug, PartialEq, Eq, SystemSet)]
-pub(crate) enum MessagesSet {
+pub enum MessagesSet {
     SendMessages,
     RecvMessages,
 }
@@ -57,6 +56,7 @@ where
 {
     type Message: bincode::Encode;
     const PORT_TYPE: PortType;
+    const PEERS: Peers;
 
     fn reliability(&self) -> Reliability;
     fn message(&self) -> &Self::Message;
@@ -74,6 +74,7 @@ impl From<ToServer> for ToMainServerEvent {
 impl ToMessage for ToMainServerEvent {
     type Message = ToServer;
     const PORT_TYPE: PortType = PortType::Main;
+    const PEERS: Peers = Peers::Server;
 
     fn reliability(&self) -> Reliability {
         Reliability::SemiOrdered
@@ -102,9 +103,47 @@ impl ToGameServerEvent {
 impl ToMessage for ToGameServerEvent {
     type Message = ToGame;
     const PORT_TYPE: PortType = PortType::Game;
+    const PEERS: Peers = Peers::Server;
 
     fn reliability(&self) -> Reliability {
         self.reliability
+    }
+
+    fn message(&self) -> &Self::Message {
+        &self.message
+    }
+}
+
+/// An event which will get transformed to a network message delivered to other
+/// players of the game.
+///
+/// This event should not be send during single player games.
+///
+/// The events are handled in [`MessagesSet::SendMessages`] set.
+#[derive(Event)]
+pub struct ToPlayersEvent {
+    message: ToPlayers,
+}
+
+impl ToPlayersEvent {
+    pub fn new(message: ToPlayers) -> Self {
+        Self { message }
+    }
+}
+
+impl ToMessage for ToPlayersEvent {
+    type Message = ToPlayers;
+    const PORT_TYPE: PortType = PortType::Game;
+    const PEERS: Peers = Peers::Players;
+
+    fn reliability(&self) -> Reliability {
+        match self.message {
+            ToPlayers::Chat(_) => Reliability::Unordered,
+            ToPlayers::Spawn { .. } => Reliability::SemiOrdered,
+            ToPlayers::Despawn { .. } => Reliability::SemiOrdered,
+            ToPlayers::SetPath { .. } => Reliability::SemiOrdered,
+            ToPlayers::Transform { .. } => Reliability::Unreliable,
+        }
     }
 
     fn message(&self) -> &Self::Message {
@@ -159,6 +198,17 @@ impl InMessageEvent for FromGameServerEvent {
 
     fn from_message(time: Instant, message: Self::M) -> Self {
         Self { time, message }
+    }
+}
+
+#[derive(Event, Deref)]
+pub(crate) struct FromPlayersEvent(FromPlayers);
+
+impl InMessageEvent for FromPlayersEvent {
+    type M = FromPlayers;
+
+    fn from_message(_time: Instant, message: Self::M) -> Self {
+        Self(message)
     }
 }
 
@@ -265,9 +315,9 @@ fn message_sender<E>(
     };
     let addr = SocketAddr::new(conf.server_host(), port);
 
-    let mut unreliable = PackageBuilder::new(Reliability::Unreliable, Peers::Server, addr);
-    let mut unordered = PackageBuilder::new(Reliability::Unordered, Peers::Server, addr);
-    let mut semi_ordered = PackageBuilder::new(Reliability::SemiOrdered, Peers::Server, addr);
+    let mut unreliable = PackageBuilder::new(Reliability::Unreliable, E::PEERS, addr);
+    let mut unordered = PackageBuilder::new(Reliability::Unordered, E::PEERS, addr);
+    let mut semi_ordered = PackageBuilder::new(Reliability::SemiOrdered, E::PEERS, addr);
 
     for event in inputs.iter() {
         let builder = match event.reliability() {
@@ -292,6 +342,7 @@ fn recv_messages(
     mut packages: EventReader<PackageReceivedEvent>,
     mut main_server: EventWriter<FromMainServerEvent>,
     mut game_server: EventWriter<FromGameServerEvent>,
+    mut players: EventWriter<FromPlayersEvent>,
     mut fatals: EventWriter<FatalErrorEvent>,
 ) {
     for event in packages.iter() {
@@ -299,7 +350,14 @@ fn recv_messages(
         if ports.is_main(package.source().port()) {
             decode_and_send::<FromServer, _>(package, &mut main_server, &mut fatals);
         } else {
-            decode_and_send::<FromGame, _>(package, &mut game_server, &mut fatals);
+            match package.peers() {
+                Peers::Server => {
+                    decode_and_send::<FromGame, _>(package, &mut game_server, &mut fatals);
+                }
+                Peers::Players => {
+                    decode_and_send::<FromPlayers, _>(package, &mut players, &mut fatals);
+                }
+            }
         }
     }
 }

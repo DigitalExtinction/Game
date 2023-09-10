@@ -3,11 +3,14 @@ use std::marker::PhantomData;
 use bevy::ecs::query::{ReadOnlyWorldQuery, WorldQuery};
 use bevy::prelude::*;
 use de_audio::spatial::{PlaySpatialAudioEvent, Sound};
+use de_core::gconfig::GameConfig;
 use de_core::{
     objects::{Local, ObjectTypeComponent},
     player::PlayerComponent,
     state::AppState,
 };
+use de_messages::ToPlayers;
+use de_multiplayer::{NetRecvDespawnActiveEvent, ToPlayersEvent};
 use de_objects::Health;
 use de_types::objects::{ActiveObjectType, ObjectType};
 
@@ -24,6 +27,9 @@ impl Plugin for DespawnerPlugin {
                     .in_set(DespawnerSet::Destruction)
                     .before(despawn_active_local),
                 despawn_active_local.before(despawn_active),
+                despawn_active_remote
+                    .run_if(on_event::<NetRecvDespawnActiveEvent>())
+                    .before(despawn_active),
                 despawn_active.before(despawn),
                 despawn.in_set(DespawnerSet::Despawn),
             )
@@ -70,11 +76,28 @@ fn find_dead(
 }
 
 fn despawn_active_local(
+    config: Res<GameConfig>,
     mut event_reader: EventReader<DespawnActiveLocalEvent>,
     mut event_writer: EventWriter<DespawnActiveEvent>,
+    mut net_events: EventWriter<ToPlayersEvent>,
 ) {
     for event in event_reader.iter() {
         event_writer.send(DespawnActiveEvent(event.0));
+
+        if config.multiplayer() {
+            net_events.send(ToPlayersEvent::new(ToPlayers::Despawn {
+                entity: event.0.into(),
+            }));
+        }
+    }
+}
+
+fn despawn_active_remote(
+    mut event_reader: EventReader<NetRecvDespawnActiveEvent>,
+    mut event_writer: EventWriter<DespawnActiveEvent>,
+) {
+    for event in event_reader.iter() {
+        event_writer.send(DespawnActiveEvent(event.entity()));
     }
 }
 

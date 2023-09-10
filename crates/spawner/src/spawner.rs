@@ -10,6 +10,8 @@ use de_core::{
     state::AppState,
 };
 use de_energy::Battery;
+use de_messages::ToPlayers;
+use de_multiplayer::{NetRecvSpawnActiveEvent, ToPlayersEvent};
 use de_objects::{AssetCollection, InitialHealths, SceneType, Scenes, SolidObjects};
 use de_pathing::{PathTarget, UpdateEntityPathEvent};
 use de_terrain::{CircleMarker, MarkerVisibility, RectangleMarker};
@@ -32,6 +34,9 @@ impl Plugin for SpawnerPlugin {
                 Update,
                 (
                     spawn_local_active.before(spawn_active),
+                    spawn_remote_active
+                        .run_if(on_event::<NetRecvSpawnActiveEvent>())
+                        .before(spawn_active),
                     spawn_active.before(spawn),
                     spawn_inactive.before(spawn),
                     spawn,
@@ -139,6 +144,7 @@ fn spawn_local_active(
     mut event_reader: EventReader<SpawnLocalActiveEvent>,
     mut event_writer: EventWriter<SpawnActiveEvent>,
     mut path_events: EventWriter<UpdateEntityPathEvent>,
+    mut net_events: EventWriter<ToPlayersEvent>,
 ) {
     for event in event_reader.iter() {
         let mut entity_commands = commands.spawn(Local);
@@ -158,6 +164,29 @@ fn spawn_local_active(
         if let Some(path_target) = event.path_target {
             path_events.send(UpdateEntityPathEvent::new(entity, path_target));
         }
+
+        if config.multiplayer() {
+            net_events.send(ToPlayersEvent::new(ToPlayers::Spawn {
+                entity: entity.into(),
+                player: event.player,
+                object_type: event.object_type,
+                transform: event.transform.into(),
+            }));
+        }
+    }
+}
+
+fn spawn_remote_active(
+    mut event_reader: EventReader<NetRecvSpawnActiveEvent>,
+    mut event_writer: EventWriter<SpawnActiveEvent>,
+) {
+    for event in event_reader.iter() {
+        event_writer.send(SpawnActiveEvent::new(
+            event.entity(),
+            event.object_type(),
+            event.transform(),
+            event.player(),
+        ));
     }
 }
 

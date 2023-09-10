@@ -2640,6 +2640,8 @@ dependencies = [
  "de_energy",
  "de_index",
  "de_map",
+ "de_messages",
+ "de_multiplayer",
  "de_objects",
  "de_pathing",
  "de_terrain",
