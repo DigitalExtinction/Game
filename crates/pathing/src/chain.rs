@@ -3,12 +3,10 @@
 
 use std::rc::Rc;
 
+use de_types::path::Path;
 use parry2d::math::Point;
 
-use crate::{
-    geometry::{which_side, Side},
-    path::Path,
-};
+use crate::geometry::{which_side, Side};
 
 /// A linked list of points which keeps track of its length in meters.
 pub(crate) struct PointChain {

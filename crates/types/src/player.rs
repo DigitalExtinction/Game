@@ -1,9 +1,12 @@
 use core::fmt;
 use std::cmp::Ordering;
 
+use bincode::{Decode, Encode};
 use serde::{Deserialize, Serialize};
 
-#[derive(Default, Copy, Clone, Debug, Serialize, Deserialize, PartialEq, Eq, Hash)]
+#[derive(
+    Default, Copy, Clone, Debug, Serialize, Deserialize, PartialEq, Eq, Hash, Encode, Decode,
+)]
 pub enum Player {
     #[default]
     Player1,

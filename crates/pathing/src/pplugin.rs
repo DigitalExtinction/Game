@@ -10,12 +10,12 @@ use de_core::{
     schedule::{PostMovement, PreMovement},
     state::AppState,
 };
-use de_types::projection::ToFlat;
+use de_types::{path::Path, projection::ToFlat};
 use futures_lite::future;
 
 use crate::{
     fplugin::{FinderRes, FinderSet, PathFinderUpdatedEvent},
-    path::{Path, ScheduledPath},
+    path::ScheduledPath,
     PathQueryProps, PathTarget,
 };
 

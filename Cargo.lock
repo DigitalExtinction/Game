@@ -2520,7 +2520,10 @@ dependencies = [
 name = "de_messages"
 version = "0.1.0-dev"
 dependencies = [
+ "bevy",
  "bincode",
+ "de_types",
+ "glam",
  "thiserror",
 ]
 
@@ -2678,6 +2681,7 @@ dependencies = [
 name = "de_types"
 version = "0.1.0-dev"
 dependencies = [
+ "bincode",
  "enum-iterator",
  "enum-map",
  "glam",

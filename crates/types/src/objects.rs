@@ -3,6 +3,7 @@
 
 use std::fmt;
 
+use bincode::{Decode, Encode};
 use enum_iterator::Sequence;
 use enum_map::Enum;
 use serde::{Deserialize, Serialize};
@@ -12,7 +13,7 @@ pub const PLAYER_MAX_BUILDINGS: u32 = 128;
 /// Maximum number of units belonging to a single player.
 pub const PLAYER_MAX_UNITS: u32 = 1024;
 
-#[derive(Enum, Sequence, Copy, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Encode, Decode, Enum, Sequence, Copy, Clone, PartialEq, Eq, Hash)]
 pub enum ObjectType {
     Active(ActiveObjectType),
     Inactive(InactiveObjectType),
@@ -27,7 +28,9 @@ impl fmt::Display for ObjectType {
     }
 }
 
-#[derive(Enum, Sequence, Copy, Clone, Debug, Serialize, Deserialize, PartialEq, Eq, Hash)]
+#[derive(
+    Debug, Encode, Decode, Enum, Sequence, Copy, Clone, Serialize, Deserialize, PartialEq, Eq, Hash,
+)]
 pub enum InactiveObjectType {
     Tree,
 }
@@ -40,7 +43,9 @@ impl fmt::Display for InactiveObjectType {
     }
 }
 
-#[derive(Enum, Sequence, Copy, Clone, Debug, Serialize, Deserialize, PartialEq, Eq, Hash)]
+#[derive(
+    Debug, Encode, Decode, Enum, Sequence, Copy, Clone, Serialize, Deserialize, PartialEq, Eq, Hash,
+)]
 pub enum ActiveObjectType {
     Building(BuildingType),
     Unit(UnitType),
@@ -55,7 +60,9 @@ impl fmt::Display for ActiveObjectType {
     }
 }
 
-#[derive(Enum, Sequence, Copy, Clone, Debug, Serialize, Deserialize, PartialEq, Eq, Hash)]
+#[derive(
+    Debug, Encode, Decode, Enum, Sequence, Copy, Clone, Serialize, Deserialize, PartialEq, Eq, Hash,
+)]
 pub enum BuildingType {
     Base,
     PowerHub,
@@ -70,7 +77,9 @@ impl fmt::Display for BuildingType {
     }
 }
 
-#[derive(Copy, Clone, Debug, Serialize, Deserialize, PartialEq, Eq, Enum, Sequence, Hash)]
+#[derive(
+    Debug, Encode, Decode, Copy, Clone, Serialize, Deserialize, PartialEq, Eq, Enum, Sequence, Hash,
+)]
 pub enum UnitType {
     Attacker,
 }
