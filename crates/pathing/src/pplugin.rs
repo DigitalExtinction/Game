@@ -7,10 +7,10 @@ use bevy::{
 use de_core::{
     gamestate::GameState,
     objects::MovableSolid,
-    projection::ToFlat,
     schedule::{PostMovement, PreMovement},
     state::AppState,
 };
+use de_types::projection::ToFlat;
 use futures_lite::future;
 
 use crate::{

@@ -14,7 +14,7 @@ use bevy::{
 };
 use de_camera::{CameraDistance, DistanceSet};
 use de_core::{
-    objects::{Active, ObjectType},
+    objects::{Active, ObjectTypeComponent},
     state::AppState,
     visibility::{VisibilityFlags, VisibilitySet},
 };
@@ -204,10 +204,10 @@ fn spawn(
     solids: SolidObjects,
     mesh: Res<BarMesh>,
     mut materials: ResMut<Assets<BarMaterial>>,
-    entities: Query<(Entity, &ObjectType), Added<Active>>,
+    entities: Query<(Entity, &ObjectTypeComponent), Added<Active>>,
 ) {
     for (entity, &object_type) in entities.iter() {
-        let height = solids.get(object_type).collider().aabb().maxs.y + BAR_HEIGHT;
+        let height = solids.get(*object_type).collider().aabb().maxs.y + BAR_HEIGHT;
         let transform = Transform::from_translation(height * Vec3::Y);
 
         let material = materials.add(BarMaterial::default());

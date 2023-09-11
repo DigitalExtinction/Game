@@ -4,10 +4,10 @@ use bevy::prelude::*;
 use de_core::{
     gamestate::GameState,
     objects::MovableSolid,
-    projection::ToAltitude,
     schedule::{Movement, PreMovement},
     state::AppState,
 };
+use de_types::projection::ToAltitude;
 
 use crate::{
     altitude::{AltitudeSet, DesiredClimbing},

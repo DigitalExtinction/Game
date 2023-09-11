@@ -1,6 +1,6 @@
 use bevy::prelude::Transform;
-use de_core::projection::ToFlat;
 use de_objects::Ichnography;
+use de_types::projection::ToFlat;
 use glam::EulerRot;
 use parry2d::{
     math::{Isometry, Point},

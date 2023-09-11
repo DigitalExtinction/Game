@@ -18,11 +18,12 @@ godmode = []
 # DE
 de_audio.workspace = true
 de_core.workspace = true
+de_energy.workspace = true
 de_index.workspace = true
 de_map.workspace = true
 de_objects.workspace = true
 de_terrain.workspace = true
-de_energy.workspace = true
+de_types.workspace = true
 
 # Other
 ahash.workspace = true

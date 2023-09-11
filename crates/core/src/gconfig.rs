@@ -1,9 +1,8 @@
 use std::path::{Path, PathBuf};
 
 use bevy::prelude::Resource;
+use de_types::player::{Player, PlayerRange};
 use tinyvec::{array_vec, ArrayVec};
-
-use crate::player::{Player, PlayerRange};
 
 /// This resource is automatically removed when
 /// [`crate::state::AppState::InGame`] is exited.

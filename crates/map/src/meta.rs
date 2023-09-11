@@ -1,4 +1,4 @@
-use de_core::player::Player;
+use de_types::player::Player;
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
@@ -28,7 +28,7 @@ impl MapMetadata {
     /// * `bounds` - bounds of the map.
     ///
     /// * `max_player` - maximum number of players which can play on the map.
-    ///   For example, if the value is [de_core::player::Player::Player3], then
+    ///   For example, if the value is [de_types::player::Player::Player3], then
     ///   Player1 to `PlayerN` can play.
     ///
     /// # Panics

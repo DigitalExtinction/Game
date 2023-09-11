@@ -1,10 +1,10 @@
 use ahash::{AHashMap, AHashSet};
 use bevy::prelude::*;
 use de_core::{
-    cleanup::DespawnOnGameExit, objects::ObjectType, projection::ToAltitude, state::AppState,
-    vecord::Vec2Ord,
+    cleanup::DespawnOnGameExit, objects::ObjectTypeComponent, state::AppState, vecord::Vec2Ord,
 };
 use de_objects::{AssetCollection, SceneType, Scenes};
+use de_types::projection::ToAltitude;
 
 pub(crate) struct PolePlugin;
 
@@ -153,7 +153,7 @@ fn visibility_events(
 
 fn despawned(
     mut owner_to_pole: ResMut<OwnersToPoles>,
-    mut despawned: RemovedComponents<ObjectType>,
+    mut despawned: RemovedComponents<ObjectTypeComponent>,
 ) {
     for entity in despawned.iter() {
         owner_to_pole.0.remove(&entity);

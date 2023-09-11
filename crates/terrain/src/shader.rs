@@ -8,10 +8,10 @@ use bevy::{
 use glam::{Mat3, Vec2};
 
 // * Keep this in sync with terrain.wgsl.
-// * Keep this smaller or equal to de_core::objects::PLAYER_MAX_UNITS.
+// * Keep this smaller or equal to de_types::objects::PLAYER_MAX_UNITS.
 pub(crate) const CIRCLE_CAPACITY: usize = 127;
 // * Keep this in sync with terrain.wgsl.
-// * Keep this smaller or equal to de_core::objects::PLAYER_MAX_BUILDINGS.
+// * Keep this smaller or equal to de_types::objects::PLAYER_MAX_BUILDINGS.
 pub(crate) const RECTANGLE_CAPACITY: usize = 31;
 
 #[derive(AsBindGroup, TypeUuid, TypePath, Debug, Clone)]

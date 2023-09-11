@@ -4,13 +4,8 @@ use bevy::{
 };
 use de_camera::MoveFocusEvent;
 use de_core::{
-    assets::asset_path,
-    cleanup::DespawnOnGameExit,
-    gamestate::GameState,
-    gconfig::GameConfig,
-    log_full_error,
-    objects::{ActiveObjectType, BuildingType, ObjectType},
-    state::AppState,
+    assets::asset_path, cleanup::DespawnOnGameExit, gamestate::GameState, gconfig::GameConfig,
+    log_full_error, player::PlayerComponent, state::AppState,
 };
 use de_map::{
     content::InnerObject,
@@ -20,6 +15,7 @@ use de_map::{
 };
 use de_spawner::SpawnBundle;
 use de_terrain::TerrainBundle;
+use de_types::objects::{ActiveObjectType, BuildingType, ObjectType};
 use futures_lite::future;
 use iyes_progress::prelude::*;
 
@@ -122,7 +118,7 @@ fn spawn_map(
                 }
 
                 (
-                    commands.spawn(player),
+                    commands.spawn(PlayerComponent::from(player)),
                     ObjectType::Active(object.object_type()),
                 )
             }

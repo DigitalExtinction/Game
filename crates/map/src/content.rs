@@ -1,5 +1,5 @@
 use ahash::AHashMap;
-use de_core::{
+use de_types::{
     objects::{ActiveObjectType, InactiveObjectType, PLAYER_MAX_BUILDINGS, PLAYER_MAX_UNITS},
     player::Player,
 };

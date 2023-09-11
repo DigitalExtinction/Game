@@ -9,13 +9,16 @@ use bevy::scene::SceneInstance;
 use bevy::{pbr::NotShadowCaster, prelude::*};
 use de_core::{
     gamestate::GameState,
-    objects::{ActiveObjectType, BuildingType, MovableSolid, ObjectType, StaticSolid},
-    projection::ToFlat,
+    objects::{MovableSolid, ObjectTypeComponent, StaticSolid},
     state::AppState,
 };
 use de_index::{ColliderWithCache, IndexSet, QueryCollider, SpatialQuery};
 use de_map::size::MapBounds;
 use de_objects::{AssetCollection, SceneType, Scenes, SolidObjects, EXCLUSION_OFFSET};
+use de_types::{
+    objects::{ActiveObjectType, BuildingType, ObjectType},
+    projection::ToFlat,
+};
 use parry2d::{
     bounding_volume::{Aabb, BoundingVolume},
     math::Vector,
@@ -47,7 +50,7 @@ impl Plugin for DraftPlugin {
 /// Bundle to spawn a construction draft.
 #[derive(Bundle)]
 pub struct DraftBundle {
-    object_type: ObjectType,
+    object_type: ObjectTypeComponent,
     transform: Transform,
     global_transform: GlobalTransform,
     visibility: Visibility,
@@ -59,7 +62,7 @@ pub struct DraftBundle {
 impl DraftBundle {
     pub fn new(building_type: BuildingType, transform: Transform) -> Self {
         Self {
-            object_type: ObjectType::Active(ActiveObjectType::Building(building_type)),
+            object_type: ObjectType::Active(ActiveObjectType::Building(building_type)).into(),
             transform,
             global_transform: transform.into(),
             visibility: Visibility::Inherited,
@@ -86,13 +89,13 @@ type Solids<'w, 's> = SpatialQuery<'w, 's, Entity, Or<(With<StaticSolid>, With<M
 
 fn new_draft(
     mut commands: Commands,
-    drafts: Query<(Entity, &ObjectType), Added<DraftAllowed>>,
+    drafts: Query<(Entity, &ObjectTypeComponent), Added<DraftAllowed>>,
     scenes: Res<Scenes>,
 ) {
     for (entity, object_type) in drafts.iter() {
         commands.entity(entity).with_children(|parent| {
             parent.spawn(SceneBundle {
-                scene: scenes.get(SceneType::Solid(*object_type)).clone(),
+                scene: scenes.get(SceneType::Solid(**object_type)).clone(),
                 ..Default::default()
             });
         });
@@ -100,14 +103,14 @@ fn new_draft(
 }
 
 fn update_draft(
-    mut drafts: Query<(&Transform, &ObjectType, &mut DraftAllowed)>,
+    mut drafts: Query<(&Transform, &ObjectTypeComponent, &mut DraftAllowed)>,
     solids: Solids,
     solid_objects: SolidObjects,
     bounds: Res<MapBounds>,
 ) {
     for (transform, &object_type, mut draft) in drafts.iter_mut() {
         let collider = QueryCollider::new(
-            solid_objects.get(object_type).collider(),
+            solid_objects.get(*object_type).collider(),
             Isometry::new(
                 transform.translation.into(),
                 transform.rotation.to_scaled_axis().into(),

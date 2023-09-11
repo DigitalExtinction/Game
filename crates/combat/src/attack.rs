@@ -2,7 +2,7 @@ use std::{cmp::Ordering, collections::BinaryHeap};
 
 use bevy::prelude::*;
 use de_behaviour::{ChaseSet, ChaseTarget, ChaseTargetEvent};
-use de_core::{gamestate::GameState, objects::ObjectType};
+use de_core::{gamestate::GameState, objects::ObjectTypeComponent};
 use de_index::SpatialQuery;
 use de_objects::{LaserCannon, SolidObjects};
 use parry3d::query::Ray;
@@ -119,7 +119,7 @@ fn update_positions(
     mut commands: Commands,
     solids: SolidObjects,
     mut cannons: Query<(Entity, &Transform, &LaserCannon, &mut Attacking)>,
-    targets: Query<(&Transform, &ObjectType)>,
+    targets: Query<(&Transform, &ObjectTypeComponent)>,
     sightline: SpatialQuery<Entity>,
 ) {
     for (attacker, transform, cannon, mut attacking) in cannons.iter_mut() {
@@ -127,7 +127,7 @@ fn update_positions(
             Ok((enemy_transform, &target_type)) => {
                 attacking.muzzle = transform.translation + cannon.muzzle();
 
-                let enemy_aabb = solids.get(target_type).collider().aabb();
+                let enemy_aabb = solids.get(*target_type).collider().aabb();
                 let enemy_centroid = enemy_transform.translation + Vec3::from(enemy_aabb.center());
                 let direction = (enemy_centroid - attacking.muzzle)
                     .try_normalize()

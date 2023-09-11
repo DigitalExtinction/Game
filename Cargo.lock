@@ -2193,6 +2193,7 @@ dependencies = [
  "de_core",
  "de_objects",
  "de_pathing",
+ "de_types",
  "glam",
  "parry3d",
 ]
@@ -2206,6 +2207,7 @@ dependencies = [
  "de_core",
  "de_map",
  "de_terrain",
+ "de_types",
  "de_uom",
  "iyes_progress",
  "parry3d",
@@ -2283,6 +2285,7 @@ dependencies = [
  "de_pathing",
  "de_signs",
  "de_spawner",
+ "de_types",
  "parry2d",
  "parry3d",
 ]
@@ -2309,6 +2312,7 @@ dependencies = [
  "de_signs",
  "de_spawner",
  "de_terrain",
+ "de_types",
  "enum-map",
  "glam",
  "parry2d",
@@ -2321,16 +2325,13 @@ version = "0.1.0-dev"
 dependencies = [
  "async-std",
  "bevy",
+ "de_types",
  "dirs",
- "enum-iterator",
- "enum-map",
  "glam",
  "iyes_progress",
- "nalgebra",
  "parry2d",
  "parry3d",
  "paste",
- "serde",
  "thiserror",
  "tinyvec",
 ]
@@ -2390,6 +2391,7 @@ dependencies = [
  "criterion",
  "de_core",
  "de_objects",
+ "de_types",
  "glam",
  "nalgebra",
  "parry2d",
@@ -2409,6 +2411,7 @@ dependencies = [
  "de_multiplayer",
  "de_spawner",
  "de_terrain",
+ "de_types",
  "futures-lite",
  "iyes_progress",
 ]
@@ -2483,7 +2486,7 @@ dependencies = [
  "async-std",
  "async-tar",
  "bevy",
- "de_core",
+ "de_types",
  "enum-map",
  "glam",
  "parry2d",
@@ -2508,6 +2511,7 @@ dependencies = [
  "de_map",
  "de_messages",
  "de_multiplayer",
+ "de_types",
  "futures-lite",
  "thiserror",
 ]
@@ -2530,6 +2534,7 @@ dependencies = [
  "de_map",
  "de_objects",
  "de_pathing",
+ "de_types",
  "glam",
  "parry2d",
  "parry3d",
@@ -2547,6 +2552,7 @@ dependencies = [
  "de_gui",
  "de_messages",
  "de_net",
+ "de_types",
  "futures-lite",
  "iyes_progress",
  "tracing",
@@ -2574,6 +2580,7 @@ dependencies = [
  "anyhow",
  "bevy",
  "de_core",
+ "de_types",
  "enum-iterator",
  "enum-map",
  "glam",
@@ -2595,6 +2602,7 @@ dependencies = [
  "de_core",
  "de_map",
  "de_objects",
+ "de_types",
  "futures-lite",
  "glam",
  "nalgebra",
@@ -2615,6 +2623,7 @@ dependencies = [
  "de_core",
  "de_objects",
  "de_terrain",
+ "de_types",
  "glam",
 ]
 
@@ -2631,6 +2640,7 @@ dependencies = [
  "de_map",
  "de_objects",
  "de_terrain",
+ "de_types",
  "parry2d",
  "parry3d",
 ]
@@ -2644,6 +2654,7 @@ dependencies = [
  "de_core",
  "de_map",
  "de_objects",
+ "de_types",
  "glam",
  "itertools 0.11.0",
  "iyes_progress",
@@ -2661,6 +2672,19 @@ dependencies = [
  "glam",
  "gltf",
  "parry3d",
+]
+
+[[package]]
+name = "de_types"
+version = "0.1.0-dev"
+dependencies = [
+ "enum-iterator",
+ "enum-map",
+ "glam",
+ "nalgebra",
+ "parry2d",
+ "parry3d",
+ "serde",
 ]
 
 [[package]]
