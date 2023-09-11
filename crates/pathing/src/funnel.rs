@@ -4,9 +4,10 @@
 
 use std::rc::Rc;
 
+use de_types::path::Path;
 use parry2d::{math::Point, shape::Segment};
 
-use crate::{chain::PointChain, geometry::Side, path::Path};
+use crate::{chain::PointChain, geometry::Side};
 
 /// The funnel consists of a tail and left & right bounds.
 ///
