@@ -1,11 +1,12 @@
 use bevy::{ecs::system::SystemParam, prelude::*};
 use de_core::{
-    gamestate::GameState, gconfig::GameConfig, objects::ObjectType, player::Player,
-    projection::ToFlat, schedule::PostMovement,
+    gamestate::GameState, gconfig::GameConfig, objects::ObjectTypeComponent,
+    player::PlayerComponent, schedule::PostMovement,
 };
 use de_map::size::MapBounds;
 use de_objects::SolidObjects;
 use de_terrain::TerrainCollider;
+use de_types::projection::ToFlat;
 use parry2d::{
     bounding_volume::Aabb,
     math::Point,
@@ -74,19 +75,19 @@ fn draw_entities_system(
     ui_coords: UiCoords,
     solids: SolidObjects,
     game: Res<GameConfig>,
-    entities: Query<(&Transform, &Player, &ObjectType)>,
+    entities: Query<(&Transform, &PlayerComponent, &ObjectTypeComponent)>,
 ) {
     let mut drawing = drawing.drawing();
 
     for (transform, &player, &object_type) in entities.iter() {
         let minimap_position = ui_coords.flat_to_rel(transform.translation.to_flat());
-        let color = if game.locals().is_playable(player) {
+        let color = if game.locals().is_playable(*player) {
             PLAYER_COLOR
         } else {
             ENEMY_COLOR
         };
 
-        let radius = solids.get(object_type).ichnography().radius();
+        let radius = solids.get(*object_type).ichnography().radius();
         let rect_size = MIN_ENTITY_SIZE.max(ui_coords.size_to_rel(Vec2::splat(radius)));
         drawing.rect(minimap_position, rect_size, color);
     }

@@ -1,5 +1,5 @@
 use bevy::prelude::*;
-use de_core::objects::{ActiveObjectType, BuildingType, UnitType};
+use de_types::objects::{ActiveObjectType, BuildingType, UnitType};
 use enum_map::{enum_map, EnumMap};
 
 pub(crate) struct HealthPlugin;

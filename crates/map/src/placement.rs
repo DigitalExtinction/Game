@@ -1,7 +1,7 @@
 use std::f32::consts::TAU;
 
 use bevy::prelude::Transform;
-use de_core::projection::ToAltitude;
+use de_types::projection::ToAltitude;
 use glam::{Quat, Vec2};
 use serde::{Deserialize, Serialize};
 use thiserror::Error;

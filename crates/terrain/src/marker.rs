@@ -7,10 +7,10 @@ use bevy::{
     utils::FloatOrd,
 };
 use de_core::{
-    frustum, gamestate::GameState, objects::ObjectType, projection::ToFlat,
-    visibility::VisibilityFlags,
+    frustum, gamestate::GameState, objects::ObjectTypeComponent, visibility::VisibilityFlags,
 };
 use de_objects::SolidObjects;
+use de_types::projection::ToFlat;
 use glam::Vec3A;
 use parry2d::bounding_volume::Aabb;
 
@@ -119,7 +119,7 @@ fn update_markers<M>(
     camera: Query<(&Transform, &Frustum), With<Camera3d>>,
     terrains: Query<(&ComputedVisibility, &Handle<TerrainMaterial>)>,
     markers: Query<(
-        &ObjectType,
+        &ObjectTypeComponent,
         &ComputedVisibility,
         &GlobalTransform,
         &M,
@@ -148,7 +148,7 @@ fn update_markers<M>(
             continue;
         }
 
-        let aabb = solids.get(object_type).collider().aabb();
+        let aabb = solids.get(*object_type).collider().aabb();
         let aabb = BevyAabb {
             center: Vec3A::from(aabb.center()),
             half_extents: Vec3A::from(aabb.half_extents()),

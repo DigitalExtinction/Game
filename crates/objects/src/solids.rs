@@ -7,7 +7,8 @@ use bevy::{
     reflect::{TypePath, TypeUuid},
     utils::BoxedFuture,
 };
-use de_core::{objects::ObjectType, state::AppState};
+use de_core::state::AppState;
+use de_types::objects::ObjectType;
 use iyes_progress::prelude::*;
 use serde::{Deserialize, Serialize};
 

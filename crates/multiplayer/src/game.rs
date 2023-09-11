@@ -1,9 +1,10 @@
 use std::net::SocketAddr;
 
 use bevy::prelude::*;
-use de_core::{player::Player, schedule::PreMovement};
+use de_core::schedule::PreMovement;
 use de_messages::{FromGame, FromServer, GameOpenError, JoinError, Readiness, ToGame, ToServer};
 use de_net::Reliability;
+use de_types::player::Player;
 
 use crate::{
     config::ConnectionType,

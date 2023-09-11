@@ -330,7 +330,7 @@ fn decode_and_send<P, E>(
 
 #[cfg(test)]
 mod tests {
-    use de_core::player::Player;
+    use de_types::player::Player;
 
     use super::*;
 

@@ -1,6 +1,6 @@
 use ahash::AHashSet;
 use bevy::utils::HashSet;
-use de_core::objects::UnitType;
+use de_types::objects::UnitType;
 use glam::Vec2;
 use serde::{Deserialize, Serialize};
 

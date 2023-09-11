@@ -13,7 +13,7 @@ categories.workspace = true
 
 [dependencies]
 # DE
-de_core.workspace = true
+de_types.workspace = true
 
 # other
 ahash.workspace = true

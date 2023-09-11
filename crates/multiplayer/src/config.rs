@@ -1,6 +1,6 @@
 use std::net::IpAddr;
 
-use de_core::player::Player;
+use de_types::player::Player;
 
 pub struct NetGameConf {
     server_host: IpAddr,

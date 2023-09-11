@@ -6,7 +6,7 @@ use bevy::{
 };
 use de_core::{
     gamestate::GameState,
-    objects::{ObjectType, StaticSolid},
+    objects::{ObjectTypeComponent, StaticSolid},
     schedule::PreMovement,
     state::AppState,
 };
@@ -121,13 +121,13 @@ impl UpdateFinderState {
 
     fn spawn_update<'a, T>(&mut self, solids: SolidObjects, bounds: MapBounds, entities: T)
     where
-        T: Iterator<Item = (&'a Transform, &'a ObjectType)>,
+        T: Iterator<Item = (&'a Transform, &'a ObjectTypeComponent)>,
     {
         debug_assert!(self.task.is_none());
 
         let exclusions: Vec<ExclusionArea> = entities
             .map(|(transform, object_type)| {
-                ExclusionArea::from_ichnography(transform, solids.get(*object_type).ichnography())
+                ExclusionArea::from_ichnography(transform, solids.get(**object_type).ichnography())
             })
             .collect();
 
@@ -192,7 +192,7 @@ fn update(
     mut state: ResMut<UpdateFinderState>,
     bounds: Res<MapBounds>,
     solids: SolidObjects,
-    entities: Query<(&Transform, &ObjectType), With<StaticSolid>>,
+    entities: Query<(&Transform, &ObjectTypeComponent), With<StaticSolid>>,
 ) {
     if state.should_update() {
         info!("Spawning path finder update task");

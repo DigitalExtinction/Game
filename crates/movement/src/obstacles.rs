@@ -1,12 +1,12 @@
 use bevy::prelude::*;
 use de_core::{
     gamestate::GameState,
-    objects::{MovableSolid, ObjectType, StaticSolid},
-    projection::ToFlat,
+    objects::{MovableSolid, ObjectTypeComponent, StaticSolid},
     schedule::{Movement, PreMovement},
 };
 use de_index::SpatialQuery;
 use de_objects::SolidObjects;
+use de_types::projection::ToFlat;
 use parry3d::{bounding_volume::Aabb, math::Point};
 
 use crate::{cache::DecayingCache, disc::Disc};
@@ -47,14 +47,14 @@ pub(crate) struct MovableObstacles;
 type Uninitialized<'w, 's> = Query<
     'w,
     's,
-    (Entity, &'static Transform, &'static ObjectType),
+    (Entity, &'static Transform, &'static ObjectTypeComponent),
     (With<MovableSolid>, Without<Disc>),
 >;
 
 fn setup_discs(mut commands: Commands, solids: SolidObjects, objects: Uninitialized) {
     for (entity, transform, &object_type) in objects.iter() {
         let center = transform.translation.to_flat();
-        let radius = solids.get(object_type).ichnography().radius();
+        let radius = solids.get(*object_type).ichnography().radius();
         commands.entity(entity).insert((
             Disc::new(center, radius),
             DecayingCache::<StaticObstacles>::default(),

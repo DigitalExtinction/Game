@@ -2,7 +2,6 @@ use bevy::prelude::*;
 use de_core::{
     assets::asset_path,
     gconfig::{GameConfig, LocalPlayers},
-    player::Player,
     state::AppState,
 };
 use de_gui::ToastEvent;
@@ -13,6 +12,7 @@ use de_messages::Readiness;
 use de_multiplayer::{
     GameReadinessEvent, PeerJoinedEvent, PeerLeftEvent, ShutdownMultiplayerEvent,
 };
+use de_types::player::Player;
 
 use super::ui::RefreshPlayersEvent;
 use crate::multiplayer::{

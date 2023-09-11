@@ -2,10 +2,10 @@ use async_std::path::PathBuf;
 use bevy::prelude::*;
 use de_core::{
     gconfig::{GameConfig, LocalPlayers},
-    player::Player,
     state::AppState,
 };
 use de_gui::{ButtonCommands, GuiCommands, OuterStyle, ToastEvent};
+use de_types::player::Player;
 
 use crate::{
     mapselection::{MapSelectedEvent, SelectMapEvent},

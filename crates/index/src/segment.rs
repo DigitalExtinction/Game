@@ -2,7 +2,7 @@
 
 use ahash::AHashSet;
 use bevy::prelude::Entity;
-use de_core::projection::ToFlat;
+use de_types::projection::ToFlat;
 use glam::{IVec2, Vec2};
 use parry3d::shape::Segment;
 

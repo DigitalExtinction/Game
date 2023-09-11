@@ -10,12 +10,12 @@ use de_core::{
     cleanup::DespawnOnGameExit,
     events::ResendEventPlugin,
     gamestate::GameState,
-    projection::ToAltitude,
     schedule::{InputSchedule, Movement, PreMovement},
     state::AppState,
 };
 use de_map::size::MapBounds;
 use de_terrain::{TerrainCollider, MAX_ELEVATION};
+use de_types::projection::ToAltitude;
 use de_uom::{InverseSecond, Metre, Quantity, Radian, Second};
 use iyes_progress::prelude::*;
 use parry3d::{math::Vector, query::Ray};

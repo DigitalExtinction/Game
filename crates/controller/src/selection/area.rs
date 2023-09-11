@@ -2,11 +2,12 @@ use bevy::prelude::*;
 use de_core::{
     frustum,
     gamestate::GameState,
-    objects::{ObjectType, Playable},
+    objects::{ObjectTypeComponent, Playable},
     schedule::InputSchedule,
     screengeom::ScreenRect,
 };
 use de_objects::SolidObjects;
+use de_types::objects::ObjectType;
 
 use crate::{
     frustum::ScreenFrustum,
@@ -68,7 +69,7 @@ impl SelectInRectEvent {
 fn select_in_area(
     screen_frustum: ScreenFrustum,
     solids: SolidObjects,
-    candidates: Query<(Entity, &ObjectType, &Transform), With<Playable>>,
+    candidates: Query<(Entity, &ObjectTypeComponent, &Transform), With<Playable>>,
     mut in_events: EventReader<SelectInRectEvent>,
     mut out_events: EventWriter<SelectEvent>,
 ) {
@@ -79,10 +80,10 @@ fn select_in_area(
             .filter(|(_, &object_type, _)| {
                 in_event
                     .filter_object_type()
-                    .map_or(true, |filter| filter == object_type)
+                    .map_or(true, |filter| filter == *object_type)
             })
             .filter_map(|(entity, &object_type, &transform)| {
-                let aabb = solids.get(object_type).collider().aabb();
+                let aabb = solids.get(*object_type).collider().aabb();
                 if frustum::intersects_parry(&event_frustum, transform, &aabb) {
                     Some(entity)
                 } else {

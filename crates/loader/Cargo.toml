@@ -21,6 +21,7 @@ de_messages.workspace = true
 de_multiplayer.workspace = true
 de_spawner.workspace = true
 de_terrain.workspace = true
+de_types.workspace = true
 
 # Other
 bevy.workspace = true

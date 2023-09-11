@@ -5,7 +5,8 @@ use std::{
 
 use ahash::AHashMap;
 use bevy::prelude::*;
-use de_core::{objects::ActiveObjectType, player::Player, state::AppState};
+use de_core::state::AppState;
+use de_types::{objects::ActiveObjectType, player::Player};
 
 pub(crate) struct CounterPlugin;
 

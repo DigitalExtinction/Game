@@ -194,7 +194,7 @@ mod test {
     use std::path::PathBuf;
 
     use async_std::task;
-    use de_core::{
+    use de_types::{
         objects::{ActiveObjectType, BuildingType},
         player::Player,
     };

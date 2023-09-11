@@ -4,12 +4,13 @@ use bevy::prelude::*;
 use de_core::{
     gamestate::GameState,
     gconfig::GameConfig,
-    objects::{Active, ActiveObjectType, MovableSolid, ObjectType, Playable, StaticSolid},
-    player::Player,
+    objects::{Active, MovableSolid, ObjectTypeComponent, Playable, StaticSolid},
+    player::PlayerComponent,
 };
 use de_energy::Battery;
 use de_objects::{AssetCollection, InitialHealths, SceneType, Scenes, SolidObjects};
 use de_terrain::{CircleMarker, MarkerVisibility, RectangleMarker};
+use de_types::objects::{ActiveObjectType, ObjectType};
 
 use crate::ObjectCounter;
 
@@ -23,7 +24,7 @@ impl Plugin for SpawnerPlugin {
 
 #[derive(Bundle)]
 pub struct SpawnBundle {
-    object_type: ObjectType,
+    object_type: ObjectTypeComponent,
     transform: Transform,
     global_transform: GlobalTransform,
     visibility: Visibility,
@@ -34,7 +35,7 @@ pub struct SpawnBundle {
 impl SpawnBundle {
     pub fn new(object_type: ObjectType, transform: Transform) -> Self {
         Self {
-            object_type,
+            object_type: object_type.into(),
             transform,
             global_transform: transform.into(),
             visibility: Visibility::Inherited,
@@ -54,7 +55,15 @@ fn spawn(
     solids: SolidObjects,
     healths: Res<InitialHealths>,
     mut counter: ResMut<ObjectCounter>,
-    to_spawn: Query<(Entity, &ObjectType, &GlobalTransform, Option<&Player>), With<Spawn>>,
+    to_spawn: Query<
+        (
+            Entity,
+            &ObjectTypeComponent,
+            &GlobalTransform,
+            Option<&PlayerComponent>,
+        ),
+        With<Spawn>,
+    >,
 ) {
     for (entity, &object_type, transform, player) in to_spawn.iter() {
         info!("Spawning object {}", object_type);
@@ -62,18 +71,18 @@ fn spawn(
         let mut entity_commands = commands.entity(entity);
         entity_commands
             .remove::<Spawn>()
-            .insert(scenes.get(SceneType::Solid(object_type)).clone());
+            .insert(scenes.get(SceneType::Solid(*object_type)).clone());
 
-        let solid = solids.get(object_type);
-        match object_type {
+        let solid = solids.get(*object_type);
+        match *object_type {
             ObjectType::Active(active_type) => {
                 entity_commands.insert(Active);
                 entity_commands.insert(Battery::default());
 
                 let player = *player.expect("Active object without an associated was spawned.");
-                counter.player_mut(player).update(active_type, 1);
+                counter.player_mut(*player).update(active_type, 1);
 
-                if game_config.locals().is_playable(player) || cfg!(feature = "godmode") {
+                if game_config.locals().is_playable(*player) || cfg!(feature = "godmode") {
                     entity_commands.insert(Playable);
                 }
 

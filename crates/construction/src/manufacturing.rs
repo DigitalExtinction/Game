@@ -6,9 +6,8 @@ use de_audio::spatial::{PlaySpatialAudioEvent, Sound};
 use de_core::{
     cleanup::DespawnOnGameExit,
     gamestate::GameState,
-    objects::{Active, ActiveObjectType, ObjectType, UnitType, PLAYER_MAX_UNITS},
-    player::Player,
-    projection::{ToAltitude, ToFlat},
+    objects::{Active, ObjectTypeComponent},
+    player::PlayerComponent,
     state::AppState,
 };
 use de_index::SpatialQuery;
@@ -18,6 +17,11 @@ use de_signs::{
     LineLocation, UpdateLineEndEvent, UpdateLineLocationEvent, UpdatePoleLocationEvent,
 };
 use de_spawner::{ObjectCounter, SpawnBundle};
+use de_types::{
+    objects::{ActiveObjectType, ObjectType, UnitType, PLAYER_MAX_UNITS},
+    player::Player,
+    projection::{ToAltitude, ToFlat},
+};
 use parry2d::bounding_volume::Aabb;
 use parry3d::math::Isometry;
 
@@ -290,12 +294,12 @@ impl ProductionItem {
 fn configure(
     mut commands: Commands,
     solids: SolidObjects,
-    new: Query<(Entity, &Transform, &ObjectType), Added<Active>>,
+    new: Query<(Entity, &Transform, &ObjectTypeComponent), Added<Active>>,
     mut pole_events: EventWriter<UpdatePoleLocationEvent>,
     mut line_events: EventWriter<UpdateLineLocationEvent>,
 ) {
     for (entity, transform, &object_type) in new.iter() {
-        let solid = solids.get(object_type);
+        let solid = solids.get(*object_type);
         if let Some(factory) = solid.factory() {
             let start = transform.transform_point(factory.position().to_msl());
             let local_aabb = solid.ichnography().local_aabb();
@@ -351,12 +355,12 @@ fn enqueue(
 fn check_spawn_locations(
     solids: SolidObjects,
     space: SpatialQuery<Entity>,
-    mut factories: Query<(Entity, &ObjectType, &Transform, &mut AssemblyLine)>,
+    mut factories: Query<(Entity, &ObjectTypeComponent, &Transform, &mut AssemblyLine)>,
 ) {
     for (entity, &object_type, transform, mut line) in factories.iter_mut() {
         line.blocks_mut().spawn_location = match line.current() {
             Some(unit_type) => {
-                let factory = solids.get(object_type).factory().unwrap();
+                let factory = solids.get(*object_type).factory().unwrap();
                 let collider = solids
                     .get(ObjectType::Active(ActiveObjectType::Unit(unit_type)))
                     .collider();
@@ -377,7 +381,7 @@ fn check_spawn_locations(
 fn produce(
     time: Res<Time>,
     counter: Res<ObjectCounter>,
-    mut factories: Query<(Entity, &Player, &mut AssemblyLine)>,
+    mut factories: Query<(Entity, &PlayerComponent, &mut AssemblyLine)>,
     mut deliver_events: EventWriter<DeliverEvent>,
 ) {
     let mut counts: AHashMap<Player, u32> = AHashMap::from_iter(
@@ -387,7 +391,7 @@ fn produce(
     );
 
     for (factory, &player, mut assembly) in factories.iter_mut() {
-        let player_count = counts.entry(player).or_default();
+        let player_count = counts.entry(*player).or_default();
 
         loop {
             assembly.blocks_mut().map_capacity = *player_count >= PLAYER_MAX_UNITS;
@@ -407,7 +411,12 @@ fn deliver(
     solids: SolidObjects,
     mut deliver_events: EventReader<DeliverEvent>,
     mut path_events: EventWriter<UpdateEntityPathEvent>,
-    factories: Query<(&Transform, &ObjectType, &Player, &DeliveryLocation)>,
+    factories: Query<(
+        &Transform,
+        &ObjectTypeComponent,
+        &PlayerComponent,
+        &DeliveryLocation,
+    )>,
     mut play_audio: EventWriter<PlaySpatialAudioEvent>,
 ) {
     for delivery in deliver_events.iter() {
@@ -421,7 +430,7 @@ fn deliver(
             factories.get(delivery.factory()).unwrap();
         let unit_object_type = ObjectType::Active(ActiveObjectType::Unit(delivery.unit()));
 
-        let factory = solids.get(factory_object_type).factory().unwrap();
+        let factory = solids.get(*factory_object_type).factory().unwrap();
         debug_assert!(factory.products().contains(&delivery.unit()));
         let spawn_point = transform.transform_point(factory.position().to_msl());
 

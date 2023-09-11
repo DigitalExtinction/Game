@@ -4,7 +4,7 @@
 use bevy::prelude::*;
 use de_core::{
     gamestate::GameState,
-    objects::{MovableSolid, ObjectType, StaticSolid},
+    objects::{MovableSolid, ObjectTypeComponent, StaticSolid},
     schedule::PostMovement,
     state::AppState,
 };
@@ -17,7 +17,7 @@ use crate::collider::LocalCollider;
 type SolidEntityQuery<'w, 's> = Query<
     'w,
     's,
-    (Entity, &'static ObjectType, &'static Transform),
+    (Entity, &'static ObjectTypeComponent, &'static Transform),
     (
         Without<Indexed>,
         Or<(With<StaticSolid>, With<MovableSolid>)>,
@@ -92,7 +92,7 @@ fn insert(
             transform.translation.into(),
             transform.rotation.to_scaled_axis().into(),
         );
-        let collider = LocalCollider::new(solids.get(*object_type).collider().clone(), position);
+        let collider = LocalCollider::new(solids.get(**object_type).collider().clone(), position);
         index.insert(entity, collider);
         commands.entity(entity).insert(Indexed);
     }

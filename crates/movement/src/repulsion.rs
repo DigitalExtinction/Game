@@ -1,13 +1,13 @@
 use bevy::prelude::*;
 use de_core::{
     gamestate::GameState,
-    objects::{MovableSolid, ObjectType, StaticSolid},
-    projection::ToFlat,
+    objects::{MovableSolid, ObjectTypeComponent, StaticSolid},
     schedule::{Movement, PreMovement},
     state::AppState,
 };
 use de_map::size::MapBounds;
 use de_objects::{SolidObjects, EXCLUSION_OFFSET};
+use de_types::projection::ToFlat;
 use parry2d::{math::Isometry, query::PointQuery};
 
 use crate::{
@@ -155,7 +155,7 @@ fn repel_static(
         &DecayingCache<StaticObstacles>,
         &mut Repulsion,
     )>,
-    obstacles: Query<(&ObjectType, &Transform), With<StaticSolid>>,
+    obstacles: Query<(&ObjectTypeComponent, &Transform), With<StaticSolid>>,
 ) {
     objects
         .par_iter_mut()
@@ -171,7 +171,7 @@ fn repel_static(
                 let isometry = Isometry::new(transform.translation.to_flat().into(), angle);
                 let local_point = isometry.inverse_transform_point(&From::from(disc.center()));
 
-                let footprint = solids.get(object_type).ichnography().convex_hull();
+                let footprint = solids.get(*object_type).ichnography().convex_hull();
                 let (projection, feature_id) =
                     footprint.project_local_point_and_get_feature(&local_point);
 

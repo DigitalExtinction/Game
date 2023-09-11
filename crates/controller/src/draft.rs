@@ -1,14 +1,12 @@
 use bevy::prelude::*;
 use de_audio::spatial::{PlaySpatialAudioEvent, Sound};
 use de_core::{
-    cleanup::DespawnOnGameExit,
-    gamestate::GameState,
-    gconfig::GameConfig,
-    objects::{BuildingType, ObjectType},
-    schedule::InputSchedule,
+    cleanup::DespawnOnGameExit, gamestate::GameState, gconfig::GameConfig,
+    objects::ObjectTypeComponent, player::PlayerComponent, schedule::InputSchedule,
     state::AppState,
 };
 use de_spawner::{DraftAllowed, DraftBundle, SpawnBundle};
+use de_types::objects::BuildingType;
 
 use crate::mouse::{Pointer, PointerSet};
 
@@ -79,15 +77,15 @@ impl NewDraftEvent {
 fn spawn(
     mut commands: Commands,
     game_config: Res<GameConfig>,
-    drafts: Query<(Entity, &Transform, &ObjectType, &DraftAllowed)>,
+    drafts: Query<(Entity, &Transform, &ObjectTypeComponent, &DraftAllowed)>,
     mut play_audio: EventWriter<PlaySpatialAudioEvent>,
 ) {
     for (entity, &transform, &object_type, draft) in drafts.iter() {
         if draft.allowed() {
             commands.entity(entity).despawn_recursive();
             commands.spawn((
-                SpawnBundle::new(object_type, transform),
-                game_config.locals().playable(),
+                SpawnBundle::new(*object_type, transform),
+                PlayerComponent::from(game_config.locals().playable()),
                 DespawnOnGameExit,
             ));
 

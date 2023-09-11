@@ -1,6 +1,7 @@
 use ahash::AHashMap;
 use bevy::prelude::*;
-use de_core::{objects::ObjectType, state::AppState};
+use de_core::state::AppState;
+use de_types::objects::ObjectType;
 use enum_iterator::Sequence;
 use iyes_progress::prelude::*;
 
