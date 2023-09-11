@@ -22,6 +22,7 @@ path = "src/main.rs"
 # DE
 de_messages.workspace = true
 de_net.workspace = true
+de_types.workspace = true
 
 # Other
 ahash.workspace = true

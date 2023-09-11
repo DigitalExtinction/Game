@@ -3,6 +3,7 @@ use std::{collections::hash_map::Entry, net::SocketAddr};
 use ahash::AHashMap;
 use async_std::sync::{Arc, RwLock, RwLockWriteGuard};
 use de_messages::Readiness;
+use de_types::player::{Player, PlayerRange};
 use thiserror::Error;
 
 use super::buffer::PlayerBuffer;
@@ -13,7 +14,7 @@ pub(super) struct GameState {
 }
 
 impl GameState {
-    pub(super) fn new(max_players: u8) -> Self {
+    pub(super) fn new(max_players: Player) -> Self {
         Self {
             inner: Arc::new(RwLock::new(GameStateInner::new(max_players))),
         }
@@ -37,18 +38,18 @@ impl GameState {
 
     /// Returns ID of the player or None if such player is not part of the
     /// game.
-    pub(super) async fn id(&self, addr: SocketAddr) -> Option<u8> {
+    pub(super) async fn id(&self, addr: SocketAddr) -> Option<Player> {
         self.inner.read().await.id(addr)
     }
 
     /// Adds a player to the game and returns ID of the added player.
-    pub(super) async fn add(&mut self, addr: SocketAddr) -> Result<u8, JoinError> {
+    pub(super) async fn add(&mut self, addr: SocketAddr) -> Result<Player, JoinError> {
         self.inner.write().await.add(addr)
     }
 
     /// Removes a single player from the game. It returns ID of the player if
     /// the player was part of the game or None otherwise.
-    pub(super) async fn remove(&mut self, addr: SocketAddr) -> Option<u8> {
+    pub(super) async fn remove(&mut self, addr: SocketAddr) -> Option<Player> {
         self.inner.write().await.remove(addr)
     }
 
@@ -98,11 +99,11 @@ impl<'a> GameStateGuard<'a> {
 struct GameStateInner {
     available_ids: AvailableIds,
     readiness: Readiness,
-    players: AHashMap<SocketAddr, Player>,
+    players: AHashMap<SocketAddr, PlayerSlot>,
 }
 
 impl GameStateInner {
-    fn new(max_players: u8) -> Self {
+    fn new(max_players: Player) -> Self {
         Self {
             available_ids: AvailableIds::new(max_players),
             readiness: Readiness::default(),
@@ -118,11 +119,11 @@ impl GameStateInner {
         self.players.contains_key(&addr)
     }
 
-    fn id(&self, addr: SocketAddr) -> Option<u8> {
+    fn id(&self, addr: SocketAddr) -> Option<Player> {
         self.players.get(&addr).map(|p| p.id)
     }
 
-    fn add(&mut self, addr: SocketAddr) -> Result<u8, JoinError> {
+    fn add(&mut self, addr: SocketAddr) -> Result<Player, JoinError> {
         if self.readiness != Readiness::NotReady {
             return Err(JoinError::GameNotOpened);
         }
@@ -131,7 +132,7 @@ impl GameStateInner {
             Entry::Occupied(_) => Err(JoinError::AlreadyJoined),
             Entry::Vacant(vacant) => match self.available_ids.lease() {
                 Some(id) => {
-                    vacant.insert(Player::new(id, addr));
+                    vacant.insert(PlayerSlot::new(id, addr));
                     Ok(id)
                 }
                 None => Err(JoinError::GameFull),
@@ -139,7 +140,7 @@ impl GameStateInner {
         }
     }
 
-    fn remove(&mut self, addr: SocketAddr) -> Option<u8> {
+    fn remove(&mut self, addr: SocketAddr) -> Option<Player> {
         match self.players.remove_entry(&addr) {
             Some((_, player)) => {
                 self.available_ids.release(player.id);
@@ -217,15 +218,17 @@ impl GameStateInner {
     }
 }
 
-struct AvailableIds(Vec<u8>);
+struct AvailableIds(Vec<Player>);
 
 impl AvailableIds {
-    fn new(max_players: u8) -> Self {
-        Self(Vec::from_iter((1..=max_players).rev()))
+    fn new(max_players: Player) -> Self {
+        let mut ids = Vec::from_iter(PlayerRange::up_to(max_players));
+        ids.reverse();
+        Self(ids)
     }
 
     /// Borrows a new ID or returns None if all are already borrowed.
-    fn lease(&mut self) -> Option<u8> {
+    fn lease(&mut self) -> Option<Player> {
         self.0.pop()
     }
 
@@ -234,7 +237,7 @@ impl AvailableIds {
     /// # Panics
     ///
     /// Panics if the ID is not borrowed.
-    fn release(&mut self, id: u8) {
+    fn release(&mut self, id: Player) {
         let index = match self.0.iter().position(|other| *other <= id) {
             Some(index) => {
                 assert_ne!(self.0[index], id);
@@ -269,14 +272,14 @@ pub(super) enum ReadinessUpdateError {
     Desync { game: Readiness, client: Readiness },
 }
 
-struct Player {
-    id: u8,
+struct PlayerSlot {
+    id: Player,
     readiness: Readiness,
     buffer: PlayerBuffer,
 }
 
-impl Player {
-    fn new(id: u8, addr: SocketAddr) -> Self {
+impl PlayerSlot {
+    fn new(id: Player, addr: SocketAddr) -> Self {
         Self {
             id,
             readiness: Readiness::default(),
@@ -296,8 +299,8 @@ mod tests {
     #[test]
     fn test_state() {
         task::block_on(task::spawn(async {
-            let mut state = GameState::new(8);
-            let mut ids: HashSet<u8> = HashSet::new();
+            let mut state = GameState::new(Player::Player4);
+            let mut ids: HashSet<Player> = HashSet::new();
 
             assert!(ids.insert(state.add("127.0.0.1:1001".parse().unwrap()).await.unwrap()));
             assert!(state.contains("127.0.0.1:1001".parse().unwrap()).await);
@@ -324,7 +327,7 @@ mod tests {
                 Err(JoinError::AlreadyJoined),
             ));
 
-            for i in 3..=8 {
+            for i in 3..=4 {
                 assert!(ids.insert(
                     state
                         .add(format!("127.0.0.1:100{i}").parse().unwrap())
@@ -347,7 +350,7 @@ mod tests {
         let client_b: SocketAddr = "127.0.0.1:8082".parse().unwrap();
         let client_c: SocketAddr = "127.0.0.1:8083".parse().unwrap();
 
-        let mut state = GameStateInner::new(3);
+        let mut state = GameStateInner::new(Player::Player3);
 
         state.add(client_a).unwrap();
         state.add(client_b).unwrap();
@@ -407,7 +410,7 @@ mod tests {
 
     #[test]
     fn test_targets() {
-        let mut state = GameStateInner::new(8);
+        let mut state = GameStateInner::new(Player::Player4);
 
         assert!(state.targets(None).is_empty());
 
@@ -445,19 +448,19 @@ mod tests {
 
     #[test]
     fn test_available_ids() {
-        let mut ids = AvailableIds::new(3);
+        let mut ids = AvailableIds::new(Player::Player3);
 
-        assert_eq!(ids.lease().unwrap(), 1);
-        assert_eq!(ids.lease().unwrap(), 2);
-        assert_eq!(ids.lease().unwrap(), 3);
+        assert_eq!(ids.lease().unwrap(), Player::Player1);
+        assert_eq!(ids.lease().unwrap(), Player::Player2);
+        assert_eq!(ids.lease().unwrap(), Player::Player3);
         assert!(ids.lease().is_none());
 
-        ids.release(2);
-        ids.release(3);
-        ids.release(1);
-        assert_eq!(ids.lease().unwrap(), 1);
-        assert_eq!(ids.lease().unwrap(), 2);
-        assert_eq!(ids.lease().unwrap(), 3);
+        ids.release(Player::Player2);
+        ids.release(Player::Player3);
+        ids.release(Player::Player1);
+        assert_eq!(ids.lease().unwrap(), Player::Player1);
+        assert_eq!(ids.lease().unwrap(), Player::Player2);
+        assert_eq!(ids.lease().unwrap(), Player::Player3);
         assert!(ids.lease().is_none());
     }
 }
