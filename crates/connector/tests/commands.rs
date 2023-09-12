@@ -8,6 +8,7 @@ use de_messages::{FromGame, FromServer, JoinError, Readiness, ToGame, ToServer};
 use de_net::{
     self, ConnErrorReceiver, OutPackage, PackageReceiver, PackageSender, Peers, Reliability, Socket,
 };
+use de_types::player::Player;
 use ntest::timeout;
 
 use crate::common::{spawn_and_wait, term_and_wait};
@@ -40,7 +41,11 @@ fn test() {
         let mut comms_c = Comms::init().await;
         let mut comms_d = Comms::init().await;
 
-        comms_a.send(ToServer::OpenGame { max_players: 3 }).await;
+        comms_a
+            .send(ToServer::OpenGame {
+                max_players: 3.try_into().unwrap(),
+            })
+            .await;
         let mut response = comms_a.recv::<FromServer>().await;
         assert_eq!(response.len(), 1);
         let response = response.pop().unwrap();
@@ -54,11 +59,11 @@ fn test() {
         comms_c.port = game_port;
         comms_d.port = game_port;
 
-        check_response!(comms_a, FromGame::Joined(1));
+        check_response!(comms_a, FromGame::Joined(Player::Player1));
 
         comms_b.send(ToGame::Join).await;
-        check_response!(comms_b, FromGame::Joined(2));
-        check_response!(comms_a, FromGame::PeerJoined(2));
+        check_response!(comms_b, FromGame::Joined(Player::Player2));
+        check_response!(comms_a, FromGame::PeerJoined(Player::Player2));
 
         comms_a.send(ToGame::Readiness(Readiness::Ready)).await;
         // The other player is not yet ready -> no message should be received.

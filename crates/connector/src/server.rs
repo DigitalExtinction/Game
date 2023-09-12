@@ -6,6 +6,7 @@ use de_messages::{FromServer, GameOpenError, ToServer};
 use de_net::{
     self, MessageDecoder, OutPackage, PackageReceiver, PackageSender, Peers, Reliability, Socket,
 };
+use de_types::player::Player;
 use tracing::{error, info, warn};
 
 use crate::{clients::Clients, game};
@@ -73,7 +74,7 @@ impl MainServer {
         Ok(())
     }
 
-    async fn open_game(&mut self, source: SocketAddr, max_players: u8) -> anyhow::Result<()> {
+    async fn open_game(&mut self, source: SocketAddr, max_players: Player) -> anyhow::Result<()> {
         if let Err(err) = self.clients.reserve(source).await {
             warn!("OpenGame request error: {err}");
             self.reply(

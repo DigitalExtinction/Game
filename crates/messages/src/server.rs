@@ -1,4 +1,5 @@
 use bincode::{Decode, Encode};
+use de_types::player::Player;
 
 /// Message to be sent from a player/client to a main server (outside of a
 /// game).
@@ -8,7 +9,7 @@ pub enum ToServer {
     Ping(u32),
     /// This message opens a new game on the server. The server responds with
     /// [`FromServer::GameOpened`].
-    OpenGame { max_players: u8 },
+    OpenGame { max_players: Player },
 }
 
 /// Message to be sent from a main server to a player/client (outside of a

@@ -2264,6 +2264,7 @@ dependencies = [
  "bincode",
  "de_messages",
  "de_net",
+ "de_types",
  "futures",
  "nix 0.26.2",
  "ntest",

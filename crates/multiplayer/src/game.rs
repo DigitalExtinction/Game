@@ -70,19 +70,19 @@ impl GameJoinedEvent {
 }
 
 #[derive(Event)]
-pub struct PeerJoinedEvent(u8);
+pub struct PeerJoinedEvent(Player);
 
 impl PeerJoinedEvent {
-    pub fn id(&self) -> u8 {
+    pub fn id(&self) -> Player {
         self.0
     }
 }
 
 #[derive(Event)]
-pub struct PeerLeftEvent(u8);
+pub struct PeerLeftEvent(Player);
 
 impl PeerLeftEvent {
-    pub fn id(&self) -> u8 {
+    pub fn id(&self) -> Player {
         self.0
     }
 }
@@ -109,12 +109,7 @@ fn open_or_join(
     match conf.connection_type() {
         ConnectionType::CreateGame { max_players, .. } => {
             info!("Sending a open-game request.");
-            main_server.send(
-                ToServer::OpenGame {
-                    max_players: max_players.to_num(),
-                }
-                .into(),
-            );
+            main_server.send(ToServer::OpenGame { max_players }.into());
         }
         ConnectionType::JoinGame(_) => {
             info!("Sending a join-game request.");
@@ -185,18 +180,11 @@ fn process_from_game(
                     "Player is no longer part of the game.",
                 ));
             }
-            FromGame::Joined(id) => match Player::try_from(*id) {
-                Ok(player) => {
-                    info!("Joined game as Player {player}.");
-                    next_state.set(NetState::Joined);
-                    joined_events.send(GameJoinedEvent::new(player));
-                }
-                Err(err) => {
-                    fatals.send(FatalErrorEvent::new(format!(
-                        "Invalid player assigned by the server: {err:?}"
-                    )));
-                }
-            },
+            FromGame::Joined(player) => {
+                info!("Joined game as {player}.");
+                next_state.set(NetState::Joined);
+                joined_events.send(GameJoinedEvent::new(*player));
+            }
             FromGame::JoinError(error) => match error {
                 JoinError::GameFull => {
                     fatals.send(FatalErrorEvent::new("Game is full, cannot join."));

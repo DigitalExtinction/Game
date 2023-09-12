@@ -1,4 +1,5 @@
 use bincode::{Decode, Encode};
+use de_types::player::Player;
 
 /// Message to be sent from a player/client to a game server (inside of a
 /// game).
@@ -33,8 +34,8 @@ pub enum FromGame {
     /// messages (to any peer) due to the player not being part of the game.
     NotJoined,
     /// Informs the player that they were just connected to the game under the
-    /// ID.
-    Joined(u8),
+    /// player number.
+    Joined(Player),
     /// Informs the player that they were not connected to the game due to an
     /// error.
     JoinError(JoinError),
@@ -42,11 +43,11 @@ pub enum FromGame {
     /// has been kicked out of the game or left voluntarily.
     Left,
     /// Informs the player that another player just connected to the same game
-    /// under the given ID.
-    PeerJoined(u8),
-    /// Informs the player that another player with the given ID just
-    /// disconnected from the same game.
-    PeerLeft(u8),
+    /// under the given player number.
+    PeerJoined(Player),
+    /// Informs the player that another player with the given player number
+    /// just disconnected from the same game.
+    PeerLeft(Player),
     /// Game readiness has changed.
     GameReadiness(Readiness),
 }

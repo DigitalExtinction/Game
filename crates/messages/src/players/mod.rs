@@ -15,14 +15,14 @@ mod path;
 #[derive(Debug, Decode)]
 pub struct FromPlayers {
     /// ID of the sending player.
-    source: u8,
+    source: Player,
     /// Original message.
     message: ToPlayers,
 }
 
 impl FromPlayers {
     /// ID of the sending player
-    pub fn source(&self) -> u8 {
+    pub fn source(&self) -> Player {
         self.source
     }
 
@@ -36,13 +36,13 @@ impl FromPlayers {
 #[derive(Debug, Encode, Clone, Copy)]
 pub struct BorrowedFromPlayers<'a> {
     /// ID of the sending player.
-    source: u8,
+    source: Player,
     /// Original message.
     message: &'a ToPlayers,
 }
 
 impl<'a> BorrowedFromPlayers<'a> {
-    pub fn new(source: u8, message: &'a ToPlayers) -> Self {
+    pub fn new(source: Player, message: &'a ToPlayers) -> Self {
         Self { source, message }
     }
 }
