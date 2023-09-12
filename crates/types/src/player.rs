@@ -105,7 +105,12 @@ impl Iterator for PlayerRange {
     fn next(&mut self) -> Option<Self::Item> {
         match self.current {
             Some(current) => {
-                self.current = current.next();
+                if current == self.stop {
+                    self.current = None;
+                } else {
+                    self.current = current.next();
+                }
+
                 Some(current)
             }
             None => {
@@ -142,6 +147,15 @@ mod tests {
         assert_eq!(range.next(), Some(Player::Player2));
         assert_eq!(range.next(), Some(Player::Player3));
         assert_eq!(range.next(), Some(Player::Player4));
+        assert_eq!(range.next(), None);
+    }
+
+    #[test]
+    fn test_range_up_to() {
+        let mut range = PlayerRange::up_to(Player::Player3);
+        assert_eq!(range.next(), Some(Player::Player1));
+        assert_eq!(range.next(), Some(Player::Player2));
+        assert_eq!(range.next(), Some(Player::Player3));
         assert_eq!(range.next(), None);
     }
 }
