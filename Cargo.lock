@@ -1147,15 +1147,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "bevy_prototype_debug_lines"
-version = "0.11.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "bb1785a35dee1a7ce603569befa4e25ed4cb8b57341b2442c7fedb14e602b139"
-dependencies = [
- "bevy",
-]
-
-[[package]]
 name = "bevy_ptr"
 version = "0.11.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2316,7 +2307,6 @@ name = "de_energy"
 version = "0.1.0-dev"
 dependencies = [
  "bevy",
- "bevy_prototype_debug_lines",
  "criterion",
  "de_core",
  "de_index",

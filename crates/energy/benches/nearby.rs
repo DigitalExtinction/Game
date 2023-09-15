@@ -13,7 +13,7 @@ use de_test_utils::{load_points, NumPoints};
 use parry3d::math::{Isometry, Vector};
 use parry3d::shape::{Cuboid, TriMesh};
 
-const UNIT_SPACING: f32 = 7.;
+const UNIT_SPACING: f32 = 5.;
 const MOVEMENT_RADIUS: f32 = 40.;
 const SPEED: f32 = 10.; // based on MAX_H_SPEED in movement
 
@@ -155,7 +155,7 @@ fn nearby_benchmark(c: &mut Criterion) {
         );
         let mut amount_of_connections_formed = 0;
         for connections in app.world.query::<&mut NearbyUnits>().iter(&app.world) {
-            amount_of_connections_formed += connections.len()
+            amount_of_connections_formed += connections.len();
         }
         println!(
             "We ended up with {} connections between {} units",

@@ -1,14 +1,11 @@
-use std::collections::HashSet;
+use std::sync::Mutex;
 
 use bevy::prelude::*;
-use bevy::utils::petgraph::prelude::*;
-#[cfg(feature = "energy_graph_debug_lines")]
-use bevy_prototype_debug_lines::{DebugLines, DebugLinesPlugin};
 use de_core::gamestate::GameState;
 use de_core::projection::ToFlat;
 use de_core::state::AppState;
 use de_index::SpatialQuery;
-use de_spawner::{DespawnEventsPlugin, DespawnedComponentsEvent};
+use de_spawner::DespawnedComponentsEvent;
 use parry3d::bounding_volume::Aabb;
 use parry3d::math::Point;
 use tinyvec::TinyVec;
@@ -24,40 +21,25 @@ pub(crate) struct GraphPlugin;
 
 impl Plugin for GraphPlugin {
     fn build(&self, app: &mut App) {
-        app.add_plugins(DespawnEventsPlugin::<&NearbyUnits, NearbyUnits>::default())
-            .add_systems(OnEnter(AppState::InGame), setup)
-            .add_systems(OnExit(AppState::InGame), clean_up)
-            .add_systems(
-                PostUpdate,
-                spawn_graph_components.run_if(in_state(AppState::InGame)),
-            )
-            .add_systems(
-                Update,
-                remove_old_nodes
-                    .before(GraphSystemSet::UpdateNearby)
-                    .run_if(in_state(GameState::Playing)),
-            )
-            .add_systems(
-                FixedUpdate,
-                (
-                    update_nearby.in_set(GraphSystemSet::UpdateNearby),
-                    update_graph
-                        .in_set(GraphSystemSet::UpdateGraph)
-                        .after(GraphSystemSet::UpdateNearby),
-                )
-                    .run_if(in_state(AppState::InGame)),
-            );
-
-        #[cfg(feature = "energy_graph_debug_lines")]
-        app.add_plugins(DebugLinesPlugin::default())
-            .add_systems(PostUpdate, debug_lines.run_if(in_state(AppState::InGame)));
+        app.add_systems(
+            PostUpdate,
+            spawn_graph_components.run_if(in_state(AppState::InGame)),
+        )
+        .add_systems(
+            Update,
+            remove_old_nodes.run_if(in_state(GameState::Playing)),
+        )
+        .add_systems(
+            FixedUpdate,
+            (update_nearby.in_set(GraphSystemSet::UpdateNearby),)
+                .run_if(in_state(AppState::InGame)),
+        );
     }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, SystemSet)]
 enum GraphSystemSet {
     UpdateNearby,
-    UpdateGraph,
 }
 
 /// wrapped entity to allow for default values (so we can work with TinyVec)
@@ -82,21 +64,6 @@ impl From<Entity> for NearbyEntity {
     }
 }
 
-/// The power grid resource is used to store the power grid graph.
-#[derive(Resource, Debug, Clone)]
-pub(crate) struct PowerGrid {
-    /// The power grid graph.
-    graph: GraphMap<Entity, f64, Undirected>,
-}
-
-impl Default for PowerGrid {
-    fn default() -> Self {
-        Self {
-            graph: GraphMap::new(),
-        }
-    }
-}
-
 /// The energy grid member component is used to store the energy grid member entities.
 #[derive(Component, Debug, Clone)]
 pub struct EnergyGridMember;
@@ -110,8 +77,12 @@ pub struct NearbyUnits {
 
 impl NearbyUnits {
     fn remove_matching(&mut self, entity: NearbyEntity) {
-        self.units.retain(|e| *e != entity);
-        println!("removed {:?} from {:?}", entity, self.units);
+        let index = match self.units.iter().position(|e| *e == entity) {
+            Some(index) => index,
+            None => return,
+        };
+
+        self.units.swap_remove(index);
     }
 
     pub fn len(&self) -> usize {
@@ -123,15 +94,7 @@ impl NearbyUnits {
     }
 }
 
-fn setup(mut commands: Commands) {
-    commands.insert_resource(PowerGrid::default());
-}
-
-fn clean_up(mut commands: Commands) {
-    commands.remove_resource::<PowerGrid>();
-}
-
-/// This system spawns Energy Producers and Energy Receivers and nearby units.
+/// This system inserts newly spawned units into the energy grid.
 fn spawn_graph_components(
     mut commands: Commands,
     newly_spawned_units: Query<Entity, Added<Battery>>,
@@ -145,95 +108,101 @@ fn spawn_graph_components(
 
 pub fn update_nearby(
     spacial_index_member: SpatialQuery<Entity, With<EnergyGridMember>>,
-    mut nearby_units: Query<(Entity, &mut NearbyUnits, &Transform), Changed<Transform>>,
+    mut units: Query<(Entity, &mut NearbyUnits, &Transform), Changed<Transform>>,
 ) {
-    nearby_units
+    let add_to: Mutex<Vec<(Entity, Entity)>> = Mutex::new(Vec::new());
+    let remove_from: Mutex<Vec<(Entity, Entity)>> = Mutex::new(Vec::new());
+
+    units
         .par_iter_mut()
-        .for_each_mut(|(entity, mut nearby_units, transform)| {
+        .for_each_mut(|(entity, mut nearby, transform)| {
             let current_pos = transform.translation.to_flat();
-            if let Some(last_pos) = nearby_units.last_pos {
+            if let Some(last_pos) = nearby.last_pos {
                 if current_pos.distance_squared(last_pos) < MIN_DISTANCE_FOR_UPDATE {
                     return;
                 }
             }
-            nearby_units.last_pos = Some(current_pos);
+            nearby.last_pos = Some(current_pos);
 
             let aabb = &Aabb::new(
                 Point::from(transform.translation - Vec3::splat(MAX_DISTANCE)),
                 Point::from(transform.translation + Vec3::splat(MAX_DISTANCE)),
             );
 
-            let members = spacial_index_member.query_aabb(aabb, Some(entity));
+            let original_units = nearby
+                .units
+                .drain(..)
+                .collect::<TinyVec<[NearbyEntity; 16]>>();
+            let new_nearby_units = spacial_index_member
+                .query_aabb(aabb, Some(entity))
+                .map(NearbyEntity)
+                .collect::<TinyVec<[NearbyEntity; 16]>>();
 
-            nearby_units.units.clear();
+            // get difference between original and new nearby units
+            let mut to_add = Vec::new();
+            let mut to_remove = Vec::new();
 
-            nearby_units.units.extend(members.map(NearbyEntity));
+            for nearby_entity in &new_nearby_units {
+                if !original_units.contains(nearby_entity) {
+                    to_add.push(nearby_entity);
+                }
+            }
+
+            for original_entity in &original_units {
+                if !new_nearby_units.contains(original_entity) {
+                    to_remove.push(original_entity);
+                }
+            }
+
+            // by deferring the locking to here we dont waste too much time locking or keep it
+            // locked for too long
+
+            let mut add_to = add_to.lock().unwrap();
+            for nearby_entity in to_add {
+                add_to.push((nearby_entity.0, entity));
+            }
+
+            let mut remove_from = remove_from.lock().unwrap();
+            for original_entity in to_remove {
+                remove_from.push((original_entity.0, entity));
+            }
+
+            nearby.units = new_nearby_units;
         });
-}
 
-fn update_graph(
-    mut power_grid: ResMut<PowerGrid>,
-    nearby_units: Query<(Entity, &NearbyUnits), Changed<NearbyUnits>>,
-) {
-    for (entity, nearby_units) in nearby_units.iter() {
-        let mut edges_to_remove = HashSet::new();
+    let add_to = add_to.into_inner().unwrap();
+    let remove_from = remove_from.into_inner().unwrap();
 
-        edges_to_remove.extend(
-            &mut power_grid
-                .graph
-                .edges(entity)
-                .map(|edge| (edge.source(), edge.target())),
-        );
-
-        let mut edges_to_add = vec![];
-
-        for nearby_entity in &nearby_units.units {
-            edges_to_add.push((entity, nearby_entity.0));
+    for (entity, nearby_entity) in add_to {
+        if let Ok((_, mut nearby, _)) = units.get_mut(entity) {
+            nearby.units.push(nearby_entity.into());
         }
+    }
 
-        for edge in edges_to_add.iter() {
-            if !power_grid.graph.contains_edge(edge.0, edge.1) {
-                power_grid.graph.add_edge(edge.0, edge.1, 1.0);
-            }
-            if edges_to_remove.contains(edge) {
-                edges_to_remove.remove(edge);
-            }
-        }
-
-        for edge in edges_to_remove.iter() {
-            power_grid.graph.remove_edge(edge.0, edge.1);
+    for (entity, nearby_entity) in remove_from {
+        if let Ok((_, mut nearby, _)) = units.get_mut(entity) {
+            nearby.remove_matching(nearby_entity.into());
         }
     }
 }
 
 fn remove_old_nodes(
-    mut power_grid: ResMut<PowerGrid>,
     mut nearby_units_query: Query<&mut NearbyUnits>,
     mut death_events: EventReader<DespawnedComponentsEvent<NearbyUnits>>,
 ) {
     for event in death_events.iter() {
-        for neighbor in power_grid.graph.neighbors(event.entity) {
-            if let Ok(mut nearby_units) = nearby_units_query.get_mut(neighbor) {
-                nearby_units.remove_matching(event.entity.into());
+        let mut units_to_process = Vec::new();
+
+        if let Ok(mut nearby_units) = nearby_units_query.get_mut(event.entity) {
+            for unit in nearby_units.units.drain(..) {
+                units_to_process.push(unit);
             }
         }
 
-        power_grid.graph.remove_node(event.entity);
-    }
-}
-
-#[cfg(feature = "energy_graph_debug_lines")]
-fn debug_lines(
-    power_grid: Res<PowerGrid>,
-    query: Query<&Transform>,
-    mut debug_lines: ResMut<DebugLines>,
-) {
-    for (from, to, _) in power_grid.graph.all_edges() {
-        let from = query.get(from).unwrap();
-        let to = query.get(to).unwrap();
-
-        // if let (Ok(from), Ok(to)) = (from, to) {
-        debug_lines.line_colored(from.translation, to.translation, 0., Color::RED);
-        // }
+        for unit in units_to_process {
+            if let Ok(mut nearby_units) = nearby_units_query.get_mut(unit.0) {
+                nearby_units.remove_matching(NearbyEntity(event.entity));
+            }
+        }
     }
 }

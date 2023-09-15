@@ -11,11 +11,6 @@ homepage.workspace = true
 license.workspace = true
 categories.workspace = true
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
-[features]
-energy_graph_debug_lines = ["dep:bevy_prototype_debug_lines"]
-
 [dependencies]
 # DE
 de_core.workspace = true
@@ -26,9 +21,6 @@ de_spawner.workspace = true
 bevy.workspace = true
 parry3d.workspace = true
 tinyvec.workspace = true
-
-# This cannot be a workspace dependency because it is optional
-bevy_prototype_debug_lines = { workspace = true, optional = true }
 
 [dev-dependencies]
 # DE
