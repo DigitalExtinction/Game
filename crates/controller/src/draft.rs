@@ -1,12 +1,10 @@
 use bevy::prelude::*;
-use de_audio::spatial::{PlaySpatialAudioEvent, Sound};
 use de_core::{
     cleanup::DespawnOnGameExit, gamestate::GameState, gconfig::GameConfig,
-    objects::ObjectTypeComponent, player::PlayerComponent, schedule::InputSchedule,
-    state::AppState,
+    objects::ObjectTypeComponent, schedule::InputSchedule, state::AppState,
 };
-use de_spawner::{DraftAllowed, DraftBundle, SpawnBundle};
-use de_types::objects::BuildingType;
+use de_spawner::{DraftAllowed, DraftBundle, SpawnLocalActiveEvent};
+use de_types::objects::{BuildingType, ObjectType};
 
 use crate::mouse::{Pointer, PointerSet};
 
@@ -78,20 +76,19 @@ fn spawn(
     mut commands: Commands,
     game_config: Res<GameConfig>,
     drafts: Query<(Entity, &Transform, &ObjectTypeComponent, &DraftAllowed)>,
-    mut play_audio: EventWriter<PlaySpatialAudioEvent>,
+    mut spawn_active_events: EventWriter<SpawnLocalActiveEvent>,
 ) {
     for (entity, &transform, &object_type, draft) in drafts.iter() {
         if draft.allowed() {
             commands.entity(entity).despawn_recursive();
-            commands.spawn((
-                SpawnBundle::new(*object_type, transform),
-                PlayerComponent::from(game_config.locals().playable()),
-                DespawnOnGameExit,
-            ));
+            let ObjectType::Active(object_type) = *object_type else {
+                panic!("Cannot place draft of an inactive object.");
+            };
 
-            play_audio.send(PlaySpatialAudioEvent::new(
-                Sound::Construct,
-                transform.translation,
+            spawn_active_events.send(SpawnLocalActiveEvent::stationary(
+                object_type,
+                transform,
+                game_config.locals().playable(),
             ));
         }
     }

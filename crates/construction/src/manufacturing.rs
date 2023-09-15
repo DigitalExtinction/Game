@@ -2,9 +2,7 @@ use std::{collections::VecDeque, time::Duration};
 
 use ahash::AHashMap;
 use bevy::prelude::*;
-use de_audio::spatial::{PlaySpatialAudioEvent, Sound};
 use de_core::{
-    cleanup::DespawnOnGameExit,
     gamestate::GameState,
     objects::{Active, ObjectTypeComponent},
     player::PlayerComponent,
@@ -12,11 +10,11 @@ use de_core::{
 };
 use de_index::SpatialQuery;
 use de_objects::SolidObjects;
-use de_pathing::{PathQueryProps, PathTarget, UpdateEntityPathEvent};
+use de_pathing::{PathQueryProps, PathTarget};
 use de_signs::{
     LineLocation, UpdateLineEndEvent, UpdateLineLocationEvent, UpdatePoleLocationEvent,
 };
-use de_spawner::{ObjectCounter, SpawnBundle};
+use de_spawner::{ObjectCounter, SpawnLocalActiveEvent};
 use de_types::{
     objects::{ActiveObjectType, ObjectType, UnitType, PLAYER_MAX_UNITS},
     player::Player,
@@ -407,17 +405,15 @@ fn produce(
 }
 
 fn deliver(
-    mut commands: Commands,
     solids: SolidObjects,
     mut deliver_events: EventReader<DeliverEvent>,
-    mut path_events: EventWriter<UpdateEntityPathEvent>,
+    mut spawn_active_events: EventWriter<SpawnLocalActiveEvent>,
     factories: Query<(
         &Transform,
         &ObjectTypeComponent,
         &PlayerComponent,
         &DeliveryLocation,
     )>,
-    mut play_audio: EventWriter<PlaySpatialAudioEvent>,
 ) {
     for delivery in deliver_events.iter() {
         info!(
@@ -428,29 +424,23 @@ fn deliver(
 
         let (transform, &factory_object_type, &player, delivery_location) =
             factories.get(delivery.factory()).unwrap();
-        let unit_object_type = ObjectType::Active(ActiveObjectType::Unit(delivery.unit()));
+        let object_type = ActiveObjectType::Unit(delivery.unit());
 
         let factory = solids.get(*factory_object_type).factory().unwrap();
         debug_assert!(factory.products().contains(&delivery.unit()));
         let spawn_point = transform.transform_point(factory.position().to_msl());
 
-        let unit = commands
-            .spawn((
-                SpawnBundle::new(unit_object_type, Transform::from_translation(spawn_point)),
-                player,
-                DespawnOnGameExit,
-            ))
-            .id();
-        path_events.send(UpdateEntityPathEvent::new(
-            unit,
-            PathTarget::new(
-                delivery_location.0,
-                PathQueryProps::new(0., f32::INFINITY),
-                false,
-            ),
+        let path_target = PathTarget::new(
+            delivery_location.0,
+            PathQueryProps::new(0., f32::INFINITY),
+            false,
+        );
+        spawn_active_events.send(SpawnLocalActiveEvent::new(
+            object_type,
+            Transform::from_translation(spawn_point),
+            *player,
+            Some(path_target),
         ));
-
-        play_audio.send(PlaySpatialAudioEvent::new(Sound::Manufacture, spawn_point));
     }
 }
 

@@ -3,12 +3,12 @@
 use bevy::{app::PluginGroupBuilder, prelude::*};
 use counter::CounterPlugin;
 pub use counter::ObjectCounter;
-pub use despawner::{DespawnEvent, DespawnEventsPlugin, DespawnedComponentsEvent, DespawnerSet};
+pub use despawner::{DespawnEventsPlugin, DespawnedComponentsEvent, DespawnerSet};
 use draft::DraftPlugin;
 pub use draft::{DraftAllowed, DraftBundle};
 use gameend::GameEndPlugin;
-pub use spawner::SpawnBundle;
 use spawner::SpawnerPlugin;
+pub use spawner::{SpawnInactiveEvent, SpawnLocalActiveEvent, SpawnerSet};
 
 use crate::despawner::DespawnerPlugin;
 

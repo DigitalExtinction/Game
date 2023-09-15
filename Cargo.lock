@@ -2279,7 +2279,6 @@ version = "0.1.0-dev"
 dependencies = [
  "ahash 0.8.3",
  "bevy",
- "de_audio",
  "de_core",
  "de_index",
  "de_objects",
@@ -2297,7 +2296,6 @@ version = "0.1.0-dev"
 dependencies = [
  "ahash 0.8.3",
  "bevy",
- "de_audio",
  "de_behaviour",
  "de_camera",
  "de_combat",
@@ -2643,6 +2641,7 @@ dependencies = [
  "de_index",
  "de_map",
  "de_objects",
+ "de_pathing",
  "de_terrain",
  "de_types",
  "parry2d",
