@@ -9,9 +9,9 @@
 
 use bevy::{app::PluginGroupBuilder, prelude::*};
 use game::GamePlugin;
-use playermsg::PlayerMsgPlugin;
 use lifecycle::LifecyclePlugin;
 use messages::MessagesPlugin;
+use playermsg::PlayerMsgPlugin;
 use stats::StatsPlugin;
 
 pub use crate::{
@@ -20,20 +20,20 @@ pub use crate::{
         GameJoinedEvent, GameOpenedEvent, GameReadinessEvent, PeerJoinedEvent, PeerLeftEvent,
         SetReadinessEvent,
     },
-    playermsg::{GameNetSet, NetRecvDespawnActiveEvent, NetRecvSpawnActiveEvent},
     lifecycle::{MultiplayerShuttingDownEvent, ShutdownMultiplayerEvent, StartMultiplayerEvent},
     messages::ToPlayersEvent,
     netstate::NetState,
+    playermsg::{GameNetSet, NetRecvDespawnActiveEvent, NetRecvSpawnActiveEvent},
 };
 use crate::{netstate::NetStatePlugin, network::NetworkPlugin};
 
 mod config;
 mod game;
-mod playermsg;
 mod lifecycle;
 mod messages;
 mod netstate;
 mod network;
+mod playermsg;
 mod stats;
 
 pub struct MultiplayerPluginGroup;
