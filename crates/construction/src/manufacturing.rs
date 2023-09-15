@@ -4,7 +4,7 @@ use ahash::AHashMap;
 use bevy::prelude::*;
 use de_core::{
     gamestate::GameState,
-    objects::{Active, ObjectTypeComponent},
+    objects::{Local, ObjectTypeComponent},
     player::PlayerComponent,
     state::AppState,
 };
@@ -292,7 +292,7 @@ impl ProductionItem {
 fn configure(
     mut commands: Commands,
     solids: SolidObjects,
-    new: Query<(Entity, &Transform, &ObjectTypeComponent), Added<Active>>,
+    new: Query<(Entity, &Transform, &ObjectTypeComponent), Added<Local>>,
     mut pole_events: EventWriter<UpdatePoleLocationEvent>,
     mut line_events: EventWriter<UpdateLineLocationEvent>,
 ) {
