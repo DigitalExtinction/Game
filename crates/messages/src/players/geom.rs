@@ -5,11 +5,12 @@ use bincode::{Decode, Encode};
 use glam::Quat;
 use glam::{Vec2, Vec3, Vec4};
 
+/// Network representation of translation and rotation. Note that scale is
+/// assumed to be always 1.0 along all axes.
 #[derive(Debug, Encode, Decode)]
 pub struct TransformNet {
     translation: Vec3Net,
     rotation: Vec4Net,
-    scale: Vec3Net,
 }
 
 #[cfg(feature = "bevy")]
@@ -23,7 +24,6 @@ impl From<Transform> for TransformNet {
                 z: transform.rotation.z,
                 w: transform.rotation.w,
             },
-            scale: transform.scale.into(),
         }
     }
 }
@@ -34,7 +34,7 @@ impl From<TransformNet> for Transform {
         Self {
             translation: transform.translation.into(),
             rotation: Quat::from_vec4(transform.rotation.into()),
-            scale: transform.scale.into(),
+            scale: Vec3::ONE,
         }
     }
 }
