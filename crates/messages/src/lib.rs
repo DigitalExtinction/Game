@@ -3,7 +3,8 @@
 
 pub use game::{FromGame, JoinError, Readiness, ToGame};
 pub use players::{
-    BorrowedFromPlayers, ChatMessage, ChatMessageError, FromPlayers, ToPlayers, MAX_CHAT_LEN,
+    BorrowedFromPlayers, ChatMessage, ChatMessageError, EntityNet, FromPlayers, ToPlayers,
+    MAX_CHAT_LEN,
 };
 pub use server::{FromServer, GameOpenError, ToServer};
 
