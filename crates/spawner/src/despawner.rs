@@ -3,7 +3,11 @@ use std::marker::PhantomData;
 use bevy::ecs::query::{ReadOnlyWorldQuery, WorldQuery};
 use bevy::prelude::*;
 use de_audio::spatial::{PlaySpatialAudioEvent, Sound};
-use de_core::{objects::ObjectTypeComponent, player::PlayerComponent, state::AppState};
+use de_core::{
+    objects::{Local, ObjectTypeComponent},
+    player::PlayerComponent,
+    state::AppState,
+};
 use de_objects::Health;
 use de_types::objects::{ActiveObjectType, ObjectType};
 
@@ -50,9 +54,12 @@ struct DespawnActiveEvent(Entity);
 #[derive(Event)]
 struct DespawnEvent(Entity);
 
+type LocallyChangedHealth<'w, 's> =
+    Query<'w, 's, (Entity, &'static Health), (With<Local>, Changed<Health>)>;
+
 /// Find all entities with low health and mark them for despawning
 fn find_dead(
-    entities: Query<(Entity, &Health), Changed<Health>>,
+    entities: LocallyChangedHealth,
     mut event_writer: EventWriter<DespawnActiveLocalEvent>,
 ) {
     for (entity, health) in entities.iter() {
