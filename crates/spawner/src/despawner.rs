@@ -16,15 +16,17 @@ impl Plugin for DespawnerPlugin {
         app.add_systems(
             Update,
             (
-                find_dead // finding units with no health is only relevant while in-game
-                    .run_if(in_state(AppState::InGame))
+                find_dead
                     .in_set(DespawnerSet::Destruction)
-                    .before(DespawnerSet::Despawn),
-                despawn // This should always be ready to despawn marked entities
-                    .in_set(DespawnerSet::Despawn)
-                    .after(DespawnerSet::Destruction),
-            ),
+                    .before(despawn_active_local),
+                despawn_active_local.before(despawn_active),
+                despawn_active.before(despawn),
+                despawn.in_set(DespawnerSet::Despawn),
+            )
+                .run_if(in_state(AppState::InGame)),
         )
+        .add_event::<DespawnActiveLocalEvent>()
+        .add_event::<DespawnActiveEvent>()
         .add_event::<DespawnEvent>();
     }
 }
@@ -40,39 +42,61 @@ pub enum DespawnerSet {
 }
 
 #[derive(Event)]
-pub struct DespawnEvent(Entity);
+struct DespawnActiveLocalEvent(Entity);
+
+#[derive(Event)]
+struct DespawnActiveEvent(Entity);
+
+#[derive(Event)]
+struct DespawnEvent(Entity);
 
 /// Find all entities with low health and mark them for despawning
 fn find_dead(
+    entities: Query<(Entity, &Health), Changed<Health>>,
+    mut event_writer: EventWriter<DespawnActiveLocalEvent>,
+) {
+    for (entity, health) in entities.iter() {
+        if health.destroyed() {
+            event_writer.send(DespawnActiveLocalEvent(entity));
+        }
+    }
+}
+
+fn despawn_active_local(
+    mut event_reader: EventReader<DespawnActiveLocalEvent>,
+    mut event_writer: EventWriter<DespawnActiveEvent>,
+) {
+    for event in event_reader.iter() {
+        event_writer.send(DespawnActiveEvent(event.0));
+    }
+}
+
+fn despawn_active(
     mut counter: ResMut<ObjectCounter>,
-    entities: Query<
-        (
-            Entity,
-            &PlayerComponent,
-            &ObjectTypeComponent,
-            &Health,
-            &Transform,
-        ),
-        Changed<Health>,
-    >,
+    entities: Query<(&PlayerComponent, &ObjectTypeComponent, &Transform), Changed<Health>>,
+    mut event_reader: EventReader<DespawnActiveEvent>,
     mut event_writer: EventWriter<DespawnEvent>,
     mut play_audio: EventWriter<PlaySpatialAudioEvent>,
 ) {
-    for (entity, &player, &object_type, health, transform) in entities.iter() {
-        if health.destroyed() {
-            if let ObjectType::Active(active_type) = *object_type {
-                counter.player_mut(*player).update(active_type, -1);
+    for event in event_reader.iter() {
+        let Ok((&player, &object_type, transform)) = entities.get(event.0) else {
+            panic!("Despawn of non-existing active object requested.");
+        };
 
-                play_audio.send(PlaySpatialAudioEvent::new(
-                    match active_type {
-                        ActiveObjectType::Building(_) => Sound::DestroyBuilding,
-                        ActiveObjectType::Unit(_) => Sound::DestroyUnit,
-                    },
-                    transform.translation,
-                ));
-            }
-            event_writer.send(DespawnEvent(entity));
-        }
+        let ObjectType::Active(active_type) = *object_type else {
+            panic!("Non-active object cannot be despawned with DespawnActiveEvent.");
+        };
+
+        counter.player_mut(*player).update(active_type, -1);
+        play_audio.send(PlaySpatialAudioEvent::new(
+            match active_type {
+                ActiveObjectType::Building(_) => Sound::DestroyBuilding,
+                ActiveObjectType::Unit(_) => Sound::DestroyUnit,
+            },
+            transform.translation,
+        ));
+
+        event_writer.send(DespawnEvent(event.0));
     }
 }
 

@@ -83,7 +83,7 @@ pub struct RectangleMarker {
 
 impl RectangleMarker {
     /// Creates a new rectangle marker.
-    pub fn new(transform: &GlobalTransform, half_size: Vec2) -> Self {
+    pub fn new(transform: &Transform, half_size: Vec2) -> Self {
         Self {
             inverse_transform: transform.compute_matrix().inverse().to_flat(),
             half_size,
@@ -91,7 +91,7 @@ impl RectangleMarker {
     }
 
     /// Creates a new rectangle marker with the size of the AABB plus a margin.
-    pub fn from_aabb_transform(local_aabb: Aabb, transform: &GlobalTransform) -> Self {
+    pub fn from_aabb_transform(local_aabb: Aabb, transform: &Transform) -> Self {
         let half_extents: Vec2 = local_aabb.half_extents().into();
         Self::new(
             transform,

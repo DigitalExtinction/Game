@@ -3,7 +3,7 @@ use std::fmt;
 use bevy::prelude::*;
 use de_types::objects::ObjectType;
 
-/// Active object which can be played by any player.
+/// Active object which can be played by any player (including AI).
 #[derive(Component)]
 pub struct Active;
 
