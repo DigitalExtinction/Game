@@ -7,6 +7,11 @@ use de_types::objects::ObjectType;
 #[derive(Component)]
 pub struct Active;
 
+/// Active object which is locally simulated (e.g. played by a local AI or
+/// local player).
+#[derive(Component)]
+pub struct Local;
+
 /// Active object which can be played by the local player.
 #[derive(Component)]
 pub struct Playable;

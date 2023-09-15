@@ -5,7 +5,7 @@ use de_audio::spatial::{PlaySpatialAudioEvent, Sound};
 use de_core::{
     cleanup::DespawnOnGameExit,
     gconfig::GameConfig,
-    objects::{Active, MovableSolid, ObjectTypeComponent, Playable, StaticSolid},
+    objects::{Active, Local, MovableSolid, ObjectTypeComponent, Playable, StaticSolid},
     player::PlayerComponent,
     state::AppState,
 };
@@ -141,7 +141,7 @@ fn spawn_local_active(
     mut path_events: EventWriter<UpdateEntityPathEvent>,
 ) {
     for event in event_reader.iter() {
-        let mut entity_commands = commands.spawn_empty();
+        let mut entity_commands = commands.spawn(Local);
 
         if config.locals().is_playable(event.player) || cfg!(feature = "godmode") {
             entity_commands.insert(Playable);
