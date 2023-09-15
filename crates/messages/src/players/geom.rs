@@ -14,8 +14,8 @@ pub struct TransformNet {
 }
 
 #[cfg(feature = "bevy")]
-impl From<Transform> for TransformNet {
-    fn from(transform: Transform) -> Self {
+impl From<&Transform> for TransformNet {
+    fn from(transform: &Transform) -> Self {
         Self {
             translation: transform.translation.into(),
             rotation: Vec4Net {
@@ -29,8 +29,15 @@ impl From<Transform> for TransformNet {
 }
 
 #[cfg(feature = "bevy")]
-impl From<TransformNet> for Transform {
-    fn from(transform: TransformNet) -> Self {
+impl From<Transform> for TransformNet {
+    fn from(transform: Transform) -> Self {
+        Self::from(&transform)
+    }
+}
+
+#[cfg(feature = "bevy")]
+impl From<&TransformNet> for Transform {
+    fn from(transform: &TransformNet) -> Self {
         Self {
             translation: transform.translation.into(),
             rotation: Quat::from_vec4(transform.rotation.into()),

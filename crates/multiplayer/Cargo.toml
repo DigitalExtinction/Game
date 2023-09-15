@@ -15,7 +15,7 @@ categories.workspace = true
 # DE
 de_core.workspace = true
 de_gui.workspace = true
-de_messages.workspace = true
+de_messages = { workspace = true, features = ["bevy"] }
 de_net.workspace = true
 de_types.workspace = true
 
