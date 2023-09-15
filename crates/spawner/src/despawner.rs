@@ -94,9 +94,8 @@ fn despawn(mut commands: Commands, mut despawning: EventReader<DespawnEvent>) {
 /// # Usage
 ///
 /// ```
-/// use bevy::ecs::system::SystemState;
 /// use bevy::prelude::*;
-/// use de_spawner::{DespawnedComponentsEvent, DespawnEvent, DespawnEventsPlugin, SpawnerPluginGroup};
+/// use de_spawner::DespawnEventsPlugin;
 ///
 /// #[derive(Clone, Component)] // we must Clone implement here
 /// struct Bar(f32);
