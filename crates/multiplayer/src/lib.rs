@@ -23,7 +23,7 @@ pub use crate::{
     lifecycle::{MultiplayerShuttingDownEvent, ShutdownMultiplayerEvent, StartMultiplayerEvent},
     messages::{MessagesSet, ToPlayersEvent},
     netstate::NetState,
-    playermsg::{GameNetSet, NetRecvDespawnActiveEvent, NetRecvSpawnActiveEvent},
+    playermsg::{GameNetSet, NetEntities, NetRecvDespawnActiveEvent, NetRecvSpawnActiveEvent},
 };
 use crate::{netstate::NetStatePlugin, network::NetworkPlugin};
 

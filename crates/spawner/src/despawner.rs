@@ -10,7 +10,7 @@ use de_core::{
     state::AppState,
 };
 use de_messages::ToPlayers;
-use de_multiplayer::{NetRecvDespawnActiveEvent, ToPlayersEvent};
+use de_multiplayer::{NetEntities, NetRecvDespawnActiveEvent, ToPlayersEvent};
 use de_objects::Health;
 use de_types::objects::{ActiveObjectType, ObjectType};
 
@@ -77,6 +77,7 @@ fn find_dead(
 
 fn despawn_active_local(
     config: Res<GameConfig>,
+    net_entities: NetEntities,
     mut event_reader: EventReader<DespawnActiveLocalEvent>,
     mut event_writer: EventWriter<DespawnActiveEvent>,
     mut net_events: EventWriter<ToPlayersEvent>,
@@ -86,7 +87,7 @@ fn despawn_active_local(
 
         if config.multiplayer() {
             net_events.send(ToPlayersEvent::new(ToPlayers::Despawn {
-                entity: event.0.into(),
+                entity: net_entities.local_net_id(event.0),
             }));
         }
     }

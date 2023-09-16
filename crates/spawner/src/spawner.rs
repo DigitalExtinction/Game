@@ -11,7 +11,7 @@ use de_core::{
 };
 use de_energy::Battery;
 use de_messages::ToPlayers;
-use de_multiplayer::{NetRecvSpawnActiveEvent, ToPlayersEvent};
+use de_multiplayer::{NetEntities, NetRecvSpawnActiveEvent, ToPlayersEvent};
 use de_objects::{AssetCollection, InitialHealths, SceneType, Scenes, SolidObjects};
 use de_pathing::{PathTarget, UpdateEntityPathEvent};
 use de_terrain::{CircleMarker, MarkerVisibility, RectangleMarker};
@@ -141,6 +141,7 @@ impl SpawnEvent {
 fn spawn_local_active(
     mut commands: Commands,
     config: Res<GameConfig>,
+    net_entities: NetEntities,
     mut event_reader: EventReader<SpawnLocalActiveEvent>,
     mut event_writer: EventWriter<SpawnActiveEvent>,
     mut path_events: EventWriter<UpdateEntityPathEvent>,
@@ -167,7 +168,7 @@ fn spawn_local_active(
 
         if config.multiplayer() {
             net_events.send(ToPlayersEvent::new(ToPlayers::Spawn {
-                entity: entity.into(),
+                entity: net_entities.local_net_id(entity),
                 player: event.player,
                 object_type: event.object_type,
                 transform: event.transform.into(),
