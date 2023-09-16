@@ -1,6 +1,6 @@
 use ahash::AHashMap;
-use bevy::prelude::*;
-use de_core::{schedule::PreMovement, state::AppState};
+use bevy::{ecs::system::SystemParam, prelude::*};
+use de_core::{gconfig::GameConfig, schedule::PreMovement, state::AppState};
 use de_messages::{EntityNet, ToPlayers};
 use de_types::{objects::ActiveObjectType, player::Player};
 
@@ -96,29 +96,53 @@ impl NetRecvDespawnActiveEvent {
     }
 }
 
-/// Mapping between remote and local entity IDs.
+#[derive(SystemParam)]
+pub struct NetEntities<'w> {
+    config: Res<'w, GameConfig>,
+    map: Res<'w, EntityIdMapRes>,
+}
+
+impl<'w> NetEntities<'w> {
+    /// Translates a local entity ID to a remote entity ID. This works for both
+    /// locally simulated and non-local entities.
+    ///
+    /// It is assumed that the entity exists.
+    pub fn net_id(&self, entity: Entity) -> EntityNet {
+        match self.map.translate_local(entity) {
+            Some(id) => id,
+            None => self.local_net_id(entity),
+        }
+    }
+
+    /// Translates a local entity ID to a remote entity ID. This works only for
+    /// locally simulated entities.
+    ///
+    /// It is assumed that the entity exists.
+    pub fn local_net_id(&self, entity: Entity) -> EntityNet {
+        let player = self.config.locals().playable();
+        EntityNet::new(player, entity.index())
+    }
+}
+
+/// Mapping between remote and local entity IDs for non-locally simulated
+/// entities.
 #[derive(Resource)]
 struct EntityIdMapRes {
-    /// Associated player is not the player owning the entity but the only
-    /// human player co-located with the player of the entity. Thus the player
-    /// is either the same (if it is a human) or a different player (if the
-    /// owning player is AI).
-    remote_to_local: AHashMap<(Player, EntityNet), Entity>,
+    remote_to_local: AHashMap<EntityNet, Entity>,
+    local_to_remote: AHashMap<Entity, EntityNet>,
 }
 
 impl EntityIdMapRes {
     fn new() -> Self {
         Self {
             remote_to_local: AHashMap::new(),
+            local_to_remote: AHashMap::new(),
         }
     }
 
     /// Registers a new remote entity.
     ///
     /// # Arguments
-    ///
-    /// * `source` - human player executing the remote side (not necessarily
-    ///   the player of the registered entity which may be AI simulated).
     ///
     /// * `remote` - remote entity identification.
     ///
@@ -127,8 +151,10 @@ impl EntityIdMapRes {
     /// # Panics
     ///
     /// Panics if the remote entity is already registered.
-    fn register(&mut self, source: Player, remote: EntityNet, local: Entity) {
-        let result = self.remote_to_local.insert((source, remote), local);
+    fn register(&mut self, remote: EntityNet, local: Entity) {
+        let result = self.remote_to_local.insert(remote, local);
+        assert!(result.is_none());
+        let result = self.local_to_remote.insert(local, remote);
         assert!(result.is_none());
     }
 
@@ -139,8 +165,16 @@ impl EntityIdMapRes {
     /// # Panics
     ///
     /// Panics if the entity is not registered.
-    fn deregister(&mut self, source: Player, remote: EntityNet) -> Entity {
-        self.remote_to_local.remove(&(source, remote)).unwrap()
+    fn deregister(&mut self, remote: EntityNet) -> Entity {
+        let local = self.remote_to_local.remove(&remote).unwrap();
+        self.local_to_remote.remove(&local).unwrap();
+        local
+    }
+
+    /// Translates local entity ID to a remote entity ID in case the entity is
+    /// not locally simulated.
+    fn translate_local(&self, local: Entity) -> Option<EntityNet> {
+        self.local_to_remote.get(&local).copied()
     }
 }
 
@@ -168,7 +202,7 @@ fn recv_messages(
                 transform,
             } => {
                 let local = commands.spawn_empty().id();
-                map.register(input.source(), *entity, local);
+                map.register(*entity, local);
 
                 spawn_events.send(NetRecvSpawnActiveEvent::new(
                     *player,
@@ -178,7 +212,7 @@ fn recv_messages(
                 ));
             }
             ToPlayers::Despawn { entity } => {
-                let local = map.deregister(input.source(), *entity);
+                let local = map.deregister(*entity);
                 despawn_events.send(NetRecvDespawnActiveEvent::new(local));
             }
             _ => (),

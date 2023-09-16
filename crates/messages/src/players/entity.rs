@@ -1,14 +1,21 @@
-#[cfg(feature = "bevy")]
-use bevy::ecs::entity::Entity;
 use bincode::{Decode, Encode};
+use de_types::player::Player;
 
 /// Bevy ECS Entity derived identification of an entity.
 #[derive(Clone, Copy, Debug, Encode, Decode, Hash, PartialEq, Eq)]
-pub struct EntityNet(u32);
+pub struct EntityNet {
+    player: Player,
+    index: u32,
+}
 
-#[cfg(feature = "bevy")]
-impl From<Entity> for EntityNet {
-    fn from(entity: Entity) -> Self {
-        Self(entity.index())
+impl EntityNet {
+    /// # Arguments
+    ///
+    /// * `player` - the human player executing the entity simulating game
+    ///   instance.
+    ///
+    /// * `index` - locally unique index of the entity.
+    pub fn new(player: Player, index: u32) -> Self {
+        Self { player, index }
     }
 }
