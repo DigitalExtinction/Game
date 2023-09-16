@@ -1,5 +1,8 @@
 use ahash::AHashMap;
-use bevy::{ecs::system::SystemParam, prelude::*};
+use bevy::{
+    ecs::{entity::Entities, system::SystemParam},
+    prelude::*,
+};
 use de_core::{gconfig::GameConfig, schedule::PreMovement, state::AppState};
 use de_messages::{EntityNet, ToPlayers};
 use de_types::{objects::ActiveObjectType, player::Player};
@@ -13,6 +16,7 @@ impl Plugin for PlayerMsgPlugin {
     fn build(&self, app: &mut App) {
         app.add_event::<NetRecvSpawnActiveEvent>()
             .add_event::<NetRecvDespawnActiveEvent>()
+            .add_event::<NetRecvHealthEvent>()
             .add_systems(OnEnter(AppState::InGame), setup)
             .add_systems(OnExit(AppState::InGame), cleanup)
             .add_systems(
@@ -96,6 +100,30 @@ impl NetRecvDespawnActiveEvent {
     }
 }
 
+#[derive(Event)]
+pub struct NetRecvHealthEvent {
+    entity: Entity,
+    delta: f32,
+}
+
+impl NetRecvHealthEvent {
+    /// # Panics
+    ///
+    /// Panics if delta is not a finite number.
+    fn new(entity: Entity, delta: f32) -> Self {
+        assert!(delta.is_finite());
+        Self { entity, delta }
+    }
+
+    pub fn entity(&self) -> Entity {
+        self.entity
+    }
+
+    pub fn delta(&self) -> f32 {
+        self.delta
+    }
+}
+
 #[derive(SystemParam)]
 pub struct NetEntities<'w> {
     config: Res<'w, GameConfig>,
@@ -121,6 +149,28 @@ impl<'w> NetEntities<'w> {
     pub fn local_net_id(&self, entity: Entity) -> EntityNet {
         let player = self.config.locals().playable();
         EntityNet::new(player, entity.index())
+    }
+}
+
+#[derive(SystemParam)]
+pub struct NetEntityCommands<'w> {
+    entities: &'w Entities,
+    map: ResMut<'w, EntityIdMapRes>,
+}
+
+impl<'w> NetEntityCommands<'w> {
+    fn register(&mut self, remote: EntityNet, local: Entity) {
+        self.map.register(remote, local)
+    }
+
+    fn deregister(&mut self, remote: EntityNet) -> Entity {
+        self.map.deregister(remote)
+    }
+
+    fn local_id(&self, entity: EntityNet) -> Option<Entity> {
+        self.map
+            .translate_remote(entity)
+            .or_else(|| self.entities.resolve_from_id(entity.index()))
     }
 }
 
@@ -176,6 +226,12 @@ impl EntityIdMapRes {
     fn translate_local(&self, local: Entity) -> Option<EntityNet> {
         self.local_to_remote.get(&local).copied()
     }
+
+    /// Translates remote entity ID to a local entity ID in case the entity is
+    /// not locally simulated.
+    fn translate_remote(&self, remote: EntityNet) -> Option<Entity> {
+        self.remote_to_local.get(&remote).copied()
+    }
 }
 
 fn setup(mut commands: Commands) {
@@ -188,10 +244,11 @@ fn cleanup(mut commands: Commands) {
 
 fn recv_messages(
     mut commands: Commands,
-    mut map: ResMut<EntityIdMapRes>,
+    mut net_commands: NetEntityCommands,
     mut inputs: EventReader<FromPlayersEvent>,
     mut spawn_events: EventWriter<NetRecvSpawnActiveEvent>,
     mut despawn_events: EventWriter<NetRecvDespawnActiveEvent>,
+    mut health_events: EventWriter<NetRecvHealthEvent>,
 ) {
     for input in inputs.iter() {
         match input.message() {
@@ -202,7 +259,7 @@ fn recv_messages(
                 transform,
             } => {
                 let local = commands.spawn_empty().id();
-                map.register(*entity, local);
+                net_commands.register(*entity, local);
 
                 spawn_events.send(NetRecvSpawnActiveEvent::new(
                     *player,
@@ -212,8 +269,16 @@ fn recv_messages(
                 ));
             }
             ToPlayers::Despawn { entity } => {
-                let local = map.deregister(*entity);
+                let local = net_commands.deregister(*entity);
                 despawn_events.send(NetRecvDespawnActiveEvent::new(local));
+            }
+            ToPlayers::ChangeHealth { entity, delta } => {
+                let Some(local) = net_commands.local_id(*entity) else {
+                    warn!("Received net health update of unrecognized entity: {entity:?}");
+                    continue;
+                };
+
+                health_events.send(NetRecvHealthEvent::new(local, delta.into()));
             }
             _ => (),
         }
