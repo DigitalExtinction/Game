@@ -103,7 +103,7 @@ fn despawn_active_remote(
 
 fn despawn_active(
     mut counter: ResMut<ObjectCounter>,
-    entities: Query<(&PlayerComponent, &ObjectTypeComponent, &Transform), Changed<Health>>,
+    entities: Query<(&PlayerComponent, &ObjectTypeComponent, &Transform)>,
     mut event_reader: EventReader<DespawnActiveEvent>,
     mut event_writer: EventWriter<DespawnEvent>,
     mut play_audio: EventWriter<PlaySpatialAudioEvent>,
