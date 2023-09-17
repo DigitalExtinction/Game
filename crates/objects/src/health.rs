@@ -70,17 +70,14 @@ impl Health {
     ///
     /// # Arguments
     ///
-    /// * `damage` - amount of damage, i.e. by how much is the health
-    ///   decreased. This has to be a non-negative finite number or positive
-    ///   infinity.
+    /// * `delta` - amount of change, i.e. by how much is the health increased.
     ///
     /// # Panics
     ///
-    /// This method might panic if `damage` is not a non-negative finite number
-    /// or positive infinity.
-    pub fn hit(&mut self, damage: f32) {
-        debug_assert!(damage >= 0.);
-        self.health = 0f32.max(self.health - damage);
+    /// This method might panic if `delta` is not a finite number.
+    pub fn update(&mut self, delta: f32) {
+        debug_assert!(delta.is_finite());
+        self.health = (self.health + delta).clamp(0., self.max);
     }
 
     pub fn destroyed(&self) -> bool {

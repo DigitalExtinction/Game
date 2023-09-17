@@ -1,12 +1,14 @@
 use bevy::prelude::*;
 use de_audio::spatial::{PlaySpatialAudioEvent, Sound};
 use de_core::gamestate::GameState;
-use de_objects::Health;
-use de_signs::UpdateBarValueEvent;
-use de_spawner::DespawnerSet;
 use parry3d::query::Ray;
 
-use crate::{sightline::LineOfSight, trail::TrailEvent, AttackingSet};
+use crate::{
+    health::{HealthSet, LocalUpdateHealthEvent},
+    sightline::LineOfSight,
+    trail::TrailEvent,
+    AttackingSet,
+};
 
 pub(crate) struct LaserPlugin;
 
@@ -16,7 +18,7 @@ impl Plugin for LaserPlugin {
             Update,
             fire.run_if(in_state(GameState::Playing))
                 .in_set(AttackingSet::Fire)
-                .before(DespawnerSet::Destruction),
+                .before(HealthSet::Update),
         );
     }
 }
@@ -77,19 +79,11 @@ impl LaserFireEvent {
 fn fire(
     mut fires: EventReader<LaserFireEvent>,
     sightline: LineOfSight,
-    mut susceptible: Query<&mut Health>,
-    mut bar: EventWriter<UpdateBarValueEvent>,
+    mut health: EventWriter<LocalUpdateHealthEvent>,
     mut trail: EventWriter<TrailEvent>,
     mut start_sound: EventWriter<PlaySpatialAudioEvent>,
 ) {
     for fire in fires.iter() {
-        if susceptible
-            .get(fire.attacker())
-            .map_or(true, |health| health.destroyed())
-        {
-            continue;
-        }
-
         let observation = sightline.sight(fire.ray(), fire.max_toi(), fire.attacker());
 
         trail.send(TrailEvent::new(Ray::new(
@@ -98,9 +92,7 @@ fn fire(
         )));
 
         if let Some(entity) = observation.entity() {
-            let mut health = susceptible.get_mut(entity).unwrap();
-            health.hit(fire.damage());
-            bar.send(UpdateBarValueEvent::new(entity, health.fraction()));
+            health.send(LocalUpdateHealthEvent::new(entity, -fire.damage()));
         }
 
         start_sound.send(PlaySpatialAudioEvent::new(

@@ -4,14 +4,9 @@ use bevy::ecs::query::{ReadOnlyWorldQuery, WorldQuery};
 use bevy::prelude::*;
 use de_audio::spatial::{PlaySpatialAudioEvent, Sound};
 use de_core::gconfig::GameConfig;
-use de_core::{
-    objects::{Local, ObjectTypeComponent},
-    player::PlayerComponent,
-    state::AppState,
-};
+use de_core::{objects::ObjectTypeComponent, player::PlayerComponent, state::AppState};
 use de_messages::ToPlayers;
 use de_multiplayer::{NetEntities, NetRecvDespawnActiveEvent, ToPlayersEvent};
-use de_objects::Health;
 use de_types::objects::{ActiveObjectType, ObjectType};
 
 use crate::ObjectCounter;
@@ -23,17 +18,15 @@ impl Plugin for DespawnerPlugin {
         app.add_systems(
             Update,
             (
-                find_dead
-                    .in_set(DespawnerSet::Destruction)
-                    .before(despawn_active_local),
                 despawn_active_local.before(despawn_active),
                 despawn_active_remote
                     .run_if(on_event::<NetRecvDespawnActiveEvent>())
                     .before(despawn_active),
                 despawn_active.before(despawn),
-                despawn.in_set(DespawnerSet::Despawn),
+                despawn,
             )
-                .run_if(in_state(AppState::InGame)),
+                .run_if(in_state(AppState::InGame))
+                .in_set(DespawnerSet::Despawn),
         )
         .add_event::<DespawnActiveLocalEvent>()
         .add_event::<DespawnActiveEvent>()
@@ -43,37 +36,26 @@ impl Plugin for DespawnerPlugin {
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, SystemSet)]
 pub enum DespawnerSet {
-    /// This set is run before the despawning systems run (If you expect units to die, you should
-    /// run your system in this set and the [`Update`] base set)
-    Destruction,
-    /// All despawn logic is anchored on this (You might want to run your system after this to get
-    /// [`DespawnedComponentsEvent`]s)
+    /// Despawn systems are part of this set.
     Despawn,
+    /// Despawn related events are send from systems of this set.
+    Events,
 }
 
 #[derive(Event)]
-struct DespawnActiveLocalEvent(Entity);
+pub struct DespawnActiveLocalEvent(Entity);
+
+impl DespawnActiveLocalEvent {
+    pub fn new(entity: Entity) -> Self {
+        Self(entity)
+    }
+}
 
 #[derive(Event)]
 struct DespawnActiveEvent(Entity);
 
 #[derive(Event)]
 struct DespawnEvent(Entity);
-
-type LocallyChangedHealth<'w, 's> =
-    Query<'w, 's, (Entity, &'static Health), (With<Local>, Changed<Health>)>;
-
-/// Find all entities with low health and mark them for despawning
-fn find_dead(
-    entities: LocallyChangedHealth,
-    mut event_writer: EventWriter<DespawnActiveLocalEvent>,
-) {
-    for (entity, health) in entities.iter() {
-        if health.destroyed() {
-            event_writer.send(DespawnActiveLocalEvent(entity));
-        }
-    }
-}
 
 fn despawn_active_local(
     config: Res<GameConfig>,
@@ -138,7 +120,9 @@ fn despawn(mut commands: Commands, mut despawning: EventReader<DespawnEvent>) {
     }
 }
 
-/// This plugin sends events with data of type `T`when entities with `Q` and matching `F` are despawned.
+/// This plugin sends events with data of type `T` when entities with `Q` and
+/// matching `F` are despawned. The events are send from systems in set
+/// [`DespawnerSet::Events`].
 ///
 /// # Type Parameters
 ///
@@ -194,9 +178,9 @@ impl<
         app.add_event::<DespawnedComponentsEvent<T, F>>()
             .add_systems(
                 Update,
-                (send_data::<Q, T, F>
-                    .after(DespawnerSet::Destruction)
-                    .in_set(DespawnerSet::Despawn),),
+                send_data::<Q, T, F>
+                    .after(DespawnerSet::Despawn)
+                    .in_set(DespawnerSet::Events),
             );
     }
 }
@@ -288,14 +272,9 @@ mod tests {
             >::default())
             .add_systems(
                 Update,
-                (despawn_all_test_system.in_set(DespawnerSet::Destruction),),
+                (despawn_all_test_system.before(DespawnerSet::Despawn),),
             )
-            .add_systems(
-                Update,
-                despawn
-                    .in_set(DespawnerSet::Despawn)
-                    .after(DespawnerSet::Destruction),
-            )
+            .add_systems(Update, despawn.in_set(DespawnerSet::Despawn))
             .add_event::<DespawnEvent>();
 
         let mut simple_events =
