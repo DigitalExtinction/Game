@@ -143,6 +143,7 @@ impl ToMessage for ToPlayersEvent {
             ToPlayers::Despawn { .. } => Reliability::SemiOrdered,
             ToPlayers::SetPath { .. } => Reliability::SemiOrdered,
             ToPlayers::Transform { .. } => Reliability::Unreliable,
+            ToPlayers::ChangeHealth { .. } => Reliability::SemiOrdered,
         }
     }
 

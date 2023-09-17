@@ -18,4 +18,8 @@ impl EntityNet {
     pub fn new(player: Player, index: u32) -> Self {
         Self { player, index }
     }
+
+    pub fn index(&self) -> u32 {
+        self.index
+    }
 }

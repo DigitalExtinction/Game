@@ -52,6 +52,12 @@ pub struct AttackEvent {
 }
 
 impl AttackEvent {
+    /// # Arguments
+    ///
+    /// * `attacker` - an attacking entity. It must be a locally simulated
+    ///   entity.
+    ///
+    /// * `enemy` - an attacked entity. It may be non-locally simulated entity.
     pub fn new(attacker: Entity, enemy: Entity) -> Self {
         Self { attacker, enemy }
     }

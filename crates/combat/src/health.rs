@@ -1,5 +1,7 @@
 use bevy::prelude::*;
-use de_core::{objects::Local, state::AppState};
+use de_core::{gconfig::GameConfig, objects::Local, state::AppState};
+use de_messages::ToPlayers;
+use de_multiplayer::{NetEntities, NetRecvHealthEvent, ToPlayersEvent};
 use de_objects::Health;
 use de_signs::UpdateBarValueEvent;
 use de_spawner::{DespawnActiveLocalEvent, DespawnerSet};
@@ -16,6 +18,9 @@ impl Plugin for HealthPlugin {
                     (
                         update_local_health
                             .run_if(on_event::<LocalUpdateHealthEvent>())
+                            .before(update_health),
+                        update_remote_health
+                            .run_if(on_event::<NetRecvHealthEvent>())
                             .before(update_health),
                         update_health.run_if(on_event::<UpdateHealthEvent>()),
                     )
@@ -70,11 +75,30 @@ impl UpdateHealthEvent {
 }
 
 fn update_local_health(
+    config: Res<GameConfig>,
+    net_entities: NetEntities,
     mut in_events: EventReader<LocalUpdateHealthEvent>,
     mut out_events: EventWriter<UpdateHealthEvent>,
+    mut net_events: EventWriter<ToPlayersEvent>,
 ) {
     for event in in_events.iter() {
         out_events.send(UpdateHealthEvent::new(event.entity, event.delta));
+
+        if config.multiplayer() {
+            net_events.send(ToPlayersEvent::new(ToPlayers::ChangeHealth {
+                entity: net_entities.net_id(event.entity),
+                delta: event.delta.try_into().unwrap(),
+            }));
+        }
+    }
+}
+
+fn update_remote_health(
+    mut in_events: EventReader<NetRecvHealthEvent>,
+    mut out_events: EventWriter<UpdateHealthEvent>,
+) {
+    for event in in_events.iter() {
+        out_events.send(UpdateHealthEvent::new(event.entity(), event.delta()));
     }
 }
 

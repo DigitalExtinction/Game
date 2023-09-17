@@ -60,14 +60,10 @@ impl Health {
     pub fn fraction(&self) -> f32 {
         debug_assert!(self.health.is_finite());
         debug_assert!(self.max.is_finite());
-        debug_assert!(0. <= self.health);
-        debug_assert!(self.health <= self.max);
-
-        self.health / self.max
+        debug_assert!(self.max > 0.);
+        self.health.clamp(0., self.max) / self.max
     }
 
-    /// This method decreases health.
-    ///
     /// # Arguments
     ///
     /// * `delta` - amount of change, i.e. by how much is the health increased.
@@ -76,8 +72,14 @@ impl Health {
     ///
     /// This method might panic if `delta` is not a finite number.
     pub fn update(&mut self, delta: f32) {
+        // Health may go beyond maximum or below 0. This is necessary due to
+        // variable update ordering (timing) originating from different game
+        // instances during a multiplayer game.
+        //
+        // The health is dynamically clamped during health fraction
+        // computation.
         debug_assert!(delta.is_finite());
-        self.health = (self.health + delta).clamp(0., self.max);
+        self.health += delta;
     }
 
     pub fn destroyed(&self) -> bool {

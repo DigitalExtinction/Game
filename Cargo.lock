@@ -2222,10 +2222,13 @@ dependencies = [
  "de_behaviour",
  "de_core",
  "de_index",
+ "de_messages",
+ "de_multiplayer",
  "de_objects",
  "de_signs",
  "de_spawner",
  "de_terrain",
+ "de_types",
  "glam",
  "parry3d",
 ]

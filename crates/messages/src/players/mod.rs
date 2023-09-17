@@ -80,4 +80,30 @@ pub enum ToPlayers {
         entity: EntityNet,
         transform: TransformNet,
     },
+    /// Changes entity health by an amount.
+    ChangeHealth {
+        entity: EntityNet,
+        delta: HealthDelta,
+    },
+}
+
+#[derive(Debug, Encode, Decode)]
+pub struct HealthDelta(f32);
+
+impl TryFrom<f32> for HealthDelta {
+    type Error = &'static str;
+
+    fn try_from(value: f32) -> Result<Self, Self::Error> {
+        if value.is_finite() {
+            Ok(Self(value))
+        } else {
+            Err("Got non-finite health delta.")
+        }
+    }
+}
+
+impl From<&HealthDelta> for f32 {
+    fn from(delta: &HealthDelta) -> f32 {
+        delta.0
+    }
 }
