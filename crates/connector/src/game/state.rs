@@ -47,9 +47,9 @@ impl GameState {
         self.inner.write().await.add(addr)
     }
 
-    /// Removes a single player from the game. It returns ID of the player if
-    /// the player was part of the game or None otherwise.
-    pub(super) async fn remove(&mut self, addr: SocketAddr) -> Option<Player> {
+    /// Removes a single player from the game. It returns state object of the
+    /// player if the player was part of the game or None otherwise.
+    pub(super) async fn remove(&mut self, addr: SocketAddr) -> Option<PlayerSlot> {
         self.inner.write().await.remove(addr)
     }
 
@@ -140,11 +140,11 @@ impl GameStateInner {
         }
     }
 
-    fn remove(&mut self, addr: SocketAddr) -> Option<Player> {
+    fn remove(&mut self, addr: SocketAddr) -> Option<PlayerSlot> {
         match self.players.remove_entry(&addr) {
             Some((_, player)) => {
                 self.available_ids.release(player.id);
-                Some(player.id)
+                Some(player)
             }
             None => None,
         }
@@ -272,7 +272,7 @@ pub(super) enum ReadinessUpdateError {
     Desync { game: Readiness, client: Readiness },
 }
 
-struct PlayerSlot {
+pub(super) struct PlayerSlot {
     id: Player,
     readiness: Readiness,
     buffer: PlayerBuffer,
@@ -285,6 +285,14 @@ impl PlayerSlot {
             readiness: Readiness::default(),
             buffer: PlayerBuffer::new(addr),
         }
+    }
+
+    pub(super) fn id(&self) -> Player {
+        self.id
+    }
+
+    pub(super) fn buffer_mut(&mut self) -> &mut PlayerBuffer {
+        &mut self.buffer
     }
 }
 
@@ -314,6 +322,7 @@ mod tests {
                     .remove("127.0.0.1:1001".parse().unwrap())
                     .await
                     .unwrap()
+                    .id()
             ));
             assert!(!state.contains("127.0.0.1:1001".parse().unwrap()).await);
             assert!(state.contains("127.0.0.1:1002".parse().unwrap()).await);
