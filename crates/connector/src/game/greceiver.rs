@@ -237,7 +237,7 @@ impl GameProcessor {
 
     /// Process disconnect message.
     async fn process_leave(&mut self, meta: MessageMeta) {
-        let Some(id) = self.state.remove(meta.source).await else {
+        let Some(mut player_state) = self.state.remove(meta.source).await else {
             warn!("Tried to remove non-existent player {:?}.", meta.source);
             return;
         };
@@ -245,14 +245,24 @@ impl GameProcessor {
         self.clients.free(meta.source).await;
 
         info!(
-            "Player {id} on {:?} just left game on port {}.",
-            meta.source, self.port
+            "Player {} on {:?} just left game on port {}.",
+            player_state.id(),
+            meta.source,
+            self.port
         );
+
+        for output in player_state.buffer_mut().build_all() {
+            let _ = self.outputs.send(output).await;
+        }
 
         self.send(&FromGame::Left, Reliability::SemiOrdered, meta.source)
             .await;
-        self.send_all(&FromGame::PeerLeft(id), Reliability::SemiOrdered, None)
-            .await;
+        self.send_all(
+            &FromGame::PeerLeft(player_state.id()),
+            Reliability::SemiOrdered,
+            None,
+        )
+        .await;
     }
 
     async fn process_readiness(&mut self, meta: MessageMeta, readiness: Readiness) {

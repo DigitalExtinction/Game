@@ -67,6 +67,19 @@ impl PlayerBuffer {
         }
     }
 
+    /// Builds packages from all buffered messages and removes the packages
+    /// from the buffer.
+    pub(super) fn build_all(&mut self) -> PlayerPackageIterator<'_> {
+        PlayerPackageIterator {
+            index: 0,
+            iterators: [
+                self.unreliable.build_all(),
+                self.unordered.build_all(),
+                self.semi_ordered.build_all(),
+            ],
+        }
+    }
+
     fn builder_mut(&mut self, reliability: Reliability) -> &mut PackageBuilder {
         match reliability {
             Reliability::Unreliable => &mut self.unreliable,
