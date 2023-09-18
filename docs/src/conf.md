@@ -58,7 +58,8 @@ est as if all properties are missing.
 
 ```yaml
 multiplayer:
-  server: http://lobby.de_game.org/
+  lobby: 'http://lobby.de_game.org/'
+  connector: '127.0.0.1:8082'
 camera:
   move_margin: 40.0
   min_distance: 20.0
