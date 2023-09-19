@@ -2610,6 +2610,8 @@ dependencies = [
  "criterion",
  "de_core",
  "de_map",
+ "de_messages",
+ "de_multiplayer",
  "de_objects",
  "de_types",
  "futures-lite",

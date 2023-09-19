@@ -5,7 +5,7 @@ use bevy::{
 };
 use de_core::{gconfig::GameConfig, schedule::PreMovement, state::AppState};
 use de_messages::{EntityNet, NetEntityIndex, ToPlayers};
-use de_types::{objects::ActiveObjectType, player::Player};
+use de_types::{objects::ActiveObjectType, path::Path, player::Player};
 
 use crate::messages::{FromPlayersEvent, MessagesSet};
 
@@ -18,6 +18,7 @@ impl Plugin for PlayerMsgPlugin {
             .add_event::<NetRecvDespawnActiveEvent>()
             .add_event::<NetRecvHealthEvent>()
             .add_event::<NetRecvTransformEvent>()
+            .add_event::<NetRecvSetPathEvent>()
             .add_systems(OnEnter(AppState::InGame), setup)
             .add_systems(OnExit(AppState::InGame), cleanup)
             .add_systems(
@@ -142,6 +143,26 @@ impl NetRecvTransformEvent {
 
     pub fn transform(&self) -> Transform {
         self.transform
+    }
+}
+
+#[derive(Event)]
+pub struct NetRecvSetPathEvent {
+    entity: Entity,
+    path: Option<Path>,
+}
+
+impl NetRecvSetPathEvent {
+    fn new(entity: Entity, path: Option<Path>) -> Self {
+        Self { entity, path }
+    }
+
+    pub fn entity(&self) -> Entity {
+        self.entity
+    }
+
+    pub fn path(&self) -> Option<&Path> {
+        self.path.as_ref()
     }
 }
 
@@ -323,12 +344,14 @@ fn cleanup(mut commands: Commands) {
     commands.remove_resource::<EntityIdMapRes>();
 }
 
+#[allow(clippy::too_many_arguments)]
 fn recv_messages(
     mut commands: Commands,
     mut net_commands: NetEntityCommands,
     mut inputs: EventReader<FromPlayersEvent>,
     mut spawn_events: EventWriter<NetRecvSpawnActiveEvent>,
     mut despawn_events: EventWriter<NetRecvDespawnActiveEvent>,
+    mut path_events: EventWriter<NetRecvSetPathEvent>,
     mut transform_events: EventWriter<NetRecvTransformEvent>,
     mut health_events: EventWriter<NetRecvHealthEvent>,
 ) {
@@ -353,6 +376,17 @@ fn recv_messages(
             ToPlayers::Despawn { entity } => {
                 let local = net_commands.deregister(*entity);
                 despawn_events.send(NetRecvDespawnActiveEvent::new(local));
+            }
+            ToPlayers::SetPath { entity, waypoints } => {
+                let Some(local) = net_commands.remote_local_id(*entity) else {
+                    warn!("Received net path update of unrecognized entity: {entity:?}");
+                    continue;
+                };
+
+                path_events.send(NetRecvSetPathEvent::new(
+                    local,
+                    waypoints.as_ref().map(|p| p.into()),
+                ));
             }
             ToPlayers::Transform { entity, transform } => {
                 if let Some(local) = net_commands.remote_local_id(*entity) {

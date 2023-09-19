@@ -2,6 +2,7 @@ use glam::Vec2;
 
 /// A path on the map defined by a sequence of way points. Start and target
 /// position are included.
+#[derive(Clone)]
 pub struct Path {
     length: f32,
     waypoints: Vec<Vec2>,
