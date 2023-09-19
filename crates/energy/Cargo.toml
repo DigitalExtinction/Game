@@ -25,7 +25,6 @@ tinyvec.workspace = true
 [dev-dependencies]
 # DE
 de_objects.workspace = true
-de_test_utils.workspace = true
 
 # Other
 criterion.workspace = true

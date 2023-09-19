@@ -55,7 +55,7 @@ impl EntityIndex {
         self.grid.remove(entity, collider.world_aabb());
     }
 
-    pub fn update(&mut self, entity: Entity, position: Isometry<f32>) {
+    pub(crate) fn update(&mut self, entity: Entity, position: Isometry<f32>) {
         let collider = self
             .colliders
             .get_mut(&entity)

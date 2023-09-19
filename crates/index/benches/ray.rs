@@ -1,3 +1,9 @@
+use std::{
+    fs::File,
+    io::{BufRead, BufReader},
+    path::PathBuf,
+};
+
 use bevy::prelude::*;
 use criterion::{
     criterion_group, criterion_main, AxisScale, BenchmarkId, Criterion, PlotConfiguration,
@@ -5,7 +11,6 @@ use criterion::{
 };
 use de_index::{EntityIndex, LocalCollider, SpatialQuery};
 use de_objects::ObjectCollider;
-use de_test_utils::load_points;
 use glam::Vec2;
 use parry3d::{
     math::{Isometry, Point, Vector},
@@ -52,8 +57,25 @@ impl Iterator for Rays {
     }
 }
 
+fn load_points(number: u32) -> Vec<Vec2> {
+    let mut points_path: PathBuf = env!("CARGO_MANIFEST_DIR").into();
+    points_path.push("test_data");
+    points_path.push(format!("{number}-points.txt"));
+    let reader = BufReader::new(File::open(points_path).unwrap());
+
+    let mut points = Vec::with_capacity(number as usize);
+    for line in reader.lines() {
+        let line = line.unwrap();
+        let mut numbers = line.split_whitespace();
+        let x: f32 = numbers.next().unwrap().parse().unwrap();
+        let y: f32 = numbers.next().unwrap().parse().unwrap();
+        points.push(MAP_SIZE * Vec2::new(x, y));
+    }
+    points
+}
+
 fn setup_world(world: &mut World, num_entities: u32, max_distance: f32) {
-    let points = load_points(num_entities.try_into().unwrap(), MAP_SIZE);
+    let points = load_points(num_entities);
     let mut index = EntityIndex::new();
 
     for (i, point) in points.iter().enumerate() {
@@ -65,8 +87,8 @@ fn setup_world(world: &mut World, num_entities: u32, max_distance: f32) {
     }
 
     let mut rays = Rays::new();
-    let ray_origins = load_points(1000.try_into().unwrap(), MAP_SIZE);
-    let ray_dirs = load_points(1000.try_into().unwrap(), MAP_SIZE);
+    let ray_origins = load_points(1000);
+    let ray_dirs = load_points(1000);
     for (origin, dir) in ray_origins.iter().zip(ray_dirs.iter()) {
         let dir = if dir.length() < 0.0001 {
             Vec2::new(1., 0.)

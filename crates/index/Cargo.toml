@@ -25,10 +25,6 @@ ahash.workspace = true
 nalgebra.workspace = true
 
 [dev-dependencies]
-# DE
-de_test_utils.workspace = true
-
-# Other
 criterion.workspace = true
 
 [[bench]]

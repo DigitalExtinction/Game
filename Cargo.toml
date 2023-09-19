@@ -100,7 +100,6 @@ de_pathing = { path = "crates/pathing", version = "0.1.0-dev" }
 de_signs = { path = "crates/signs", version = "0.1.0-dev" }
 de_spawner = { path = "crates/spawner", version = "0.1.0-dev" }
 de_terrain = { path = "crates/terrain", version = "0.1.0-dev" }
-de_test_utils = { path = "crates/test_utils", version = "0.1.0-dev" }
 de_uom = { path = "crates/uom", version = "0.1.0-dev" }
 
 # Other

@@ -2312,7 +2312,6 @@ dependencies = [
  "de_index",
  "de_objects",
  "de_spawner",
- "de_test_utils",
  "fastrand 1.9.0",
  "parry3d",
  "tinyvec",
@@ -2365,7 +2364,6 @@ dependencies = [
  "criterion",
  "de_core",
  "de_objects",
- "de_test_utils",
  "glam",
  "nalgebra",
  "parry2d",
@@ -2609,13 +2607,6 @@ dependencies = [
  "iyes_progress",
  "parry2d",
  "parry3d",
-]
-
-[[package]]
-name = "de_test_utils"
-version = "0.1.0-dev"
-dependencies = [
- "glam",
 ]
 
 [[package]]
