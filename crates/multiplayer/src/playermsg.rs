@@ -17,6 +17,7 @@ impl Plugin for PlayerMsgPlugin {
         app.add_event::<NetRecvSpawnActiveEvent>()
             .add_event::<NetRecvDespawnActiveEvent>()
             .add_event::<NetRecvHealthEvent>()
+            .add_event::<NetRecvTransformEvent>()
             .add_systems(OnEnter(AppState::InGame), setup)
             .add_systems(OnExit(AppState::InGame), cleanup)
             .add_systems(
@@ -124,6 +125,26 @@ impl NetRecvHealthEvent {
     }
 }
 
+#[derive(Event)]
+pub struct NetRecvTransformEvent {
+    entity: Entity,
+    transform: Transform,
+}
+
+impl NetRecvTransformEvent {
+    fn new(entity: Entity, transform: Transform) -> Self {
+        Self { entity, transform }
+    }
+
+    pub fn entity(&self) -> Entity {
+        self.entity
+    }
+
+    pub fn transform(&self) -> Transform {
+        self.transform
+    }
+}
+
 #[derive(SystemParam)]
 pub struct NetEntities<'w> {
     config: Res<'w, GameConfig>,
@@ -172,9 +193,12 @@ impl<'w> NetEntityCommands<'w> {
     }
 
     fn local_id(&self, entity: EntityNet) -> Option<Entity> {
-        self.map
-            .translate_remote(entity)
+        self.remote_local_id(entity)
             .or_else(|| self.entities.resolve_from_id(entity.index().into()))
+    }
+
+    fn remote_local_id(&self, entity: EntityNet) -> Option<Entity> {
+        self.map.translate_remote(entity)
     }
 }
 
@@ -305,6 +329,7 @@ fn recv_messages(
     mut inputs: EventReader<FromPlayersEvent>,
     mut spawn_events: EventWriter<NetRecvSpawnActiveEvent>,
     mut despawn_events: EventWriter<NetRecvDespawnActiveEvent>,
+    mut transform_events: EventWriter<NetRecvTransformEvent>,
     mut health_events: EventWriter<NetRecvHealthEvent>,
 ) {
     for input in inputs.iter() {
@@ -328,6 +353,11 @@ fn recv_messages(
             ToPlayers::Despawn { entity } => {
                 let local = net_commands.deregister(*entity);
                 despawn_events.send(NetRecvDespawnActiveEvent::new(local));
+            }
+            ToPlayers::Transform { entity, transform } => {
+                if let Some(local) = net_commands.remote_local_id(*entity) {
+                    transform_events.send(NetRecvTransformEvent::new(local, transform.into()));
+                }
             }
             ToPlayers::ChangeHealth { entity, delta } => {
                 let Some(local) = net_commands.local_id(*entity) else {
