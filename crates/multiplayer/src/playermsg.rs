@@ -4,7 +4,7 @@ use bevy::{
     prelude::*,
 };
 use de_core::{gconfig::GameConfig, schedule::PreMovement, state::AppState};
-use de_messages::{EntityNet, ToPlayers};
+use de_messages::{EntityNet, NetEntityIndex, ToPlayers};
 use de_types::{objects::ActiveObjectType, player::Player};
 
 use crate::messages::{FromPlayersEvent, MessagesSet};
@@ -148,7 +148,7 @@ impl<'w> NetEntities<'w> {
     /// It is assumed that the entity exists.
     pub fn local_net_id(&self, entity: Entity) -> EntityNet {
         let player = self.config.locals().playable();
-        EntityNet::new(player, entity.index())
+        EntityNet::new(player, entity.into())
     }
 }
 
@@ -159,6 +159,10 @@ pub struct NetEntityCommands<'w> {
 }
 
 impl<'w> NetEntityCommands<'w> {
+    pub fn remove_player(&mut self, player: Player) -> Option<PlayerNetToLocal> {
+        self.map.remove_player(player)
+    }
+
     fn register(&mut self, remote: EntityNet, local: Entity) {
         self.map.register(remote, local)
     }
@@ -170,7 +174,7 @@ impl<'w> NetEntityCommands<'w> {
     fn local_id(&self, entity: EntityNet) -> Option<Entity> {
         self.map
             .translate_remote(entity)
-            .or_else(|| self.entities.resolve_from_id(entity.index()))
+            .or_else(|| self.entities.resolve_from_id(entity.index().into()))
     }
 }
 
@@ -178,7 +182,7 @@ impl<'w> NetEntityCommands<'w> {
 /// entities.
 #[derive(Resource)]
 struct EntityIdMapRes {
-    remote_to_local: AHashMap<EntityNet, Entity>,
+    remote_to_local: AHashMap<Player, PlayerNetToLocal>,
     local_to_remote: AHashMap<Entity, EntityNet>,
 }
 
@@ -202,8 +206,10 @@ impl EntityIdMapRes {
     ///
     /// Panics if the remote entity is already registered.
     fn register(&mut self, remote: EntityNet, local: Entity) {
-        let result = self.remote_to_local.insert(remote, local);
-        assert!(result.is_none());
+        self.remote_to_local
+            .entry(remote.player())
+            .or_default()
+            .insert(remote.index(), local);
         let result = self.local_to_remote.insert(local, remote);
         assert!(result.is_none());
     }
@@ -216,7 +222,8 @@ impl EntityIdMapRes {
     ///
     /// Panics if the entity is not registered.
     fn deregister(&mut self, remote: EntityNet) -> Entity {
-        let local = self.remote_to_local.remove(&remote).unwrap();
+        let player_entities = self.remote_to_local.get_mut(&remote.player()).unwrap();
+        let local = player_entities.remove(remote.index()).unwrap();
         self.local_to_remote.remove(&local).unwrap();
         local
     }
@@ -230,7 +237,57 @@ impl EntityIdMapRes {
     /// Translates remote entity ID to a local entity ID in case the entity is
     /// not locally simulated.
     fn translate_remote(&self, remote: EntityNet) -> Option<Entity> {
-        self.remote_to_local.get(&remote).copied()
+        self.remote_to_local
+            .get(&remote.player())
+            .and_then(|h| h.translate(remote.index()))
+    }
+
+    /// Removes entity mapping for the player.
+    ///
+    /// This should not be called unless the player leaves the multiplayer
+    /// game.
+    fn remove_player(&mut self, player: Player) -> Option<PlayerNetToLocal> {
+        let Some(map) = self.remote_to_local.remove(&player) else {
+            return None;
+        };
+
+        for local in map.locals() {
+            self.local_to_remote.remove(&local).unwrap();
+        }
+
+        Some(map)
+    }
+}
+
+/// Mapping from remote entity indices to local ECS entities.
+#[derive(Default)]
+pub struct PlayerNetToLocal(AHashMap<NetEntityIndex, Entity>);
+
+impl PlayerNetToLocal {
+    /// Inserts a new remote to local entity link.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the remote entity is already registered.
+    fn insert(&mut self, remote: NetEntityIndex, local: Entity) {
+        let result = self.0.insert(remote, local);
+        debug_assert!(result.is_none());
+    }
+
+    /// Removes a remote to local entity link and returns the local entity if
+    /// it was registered.
+    fn remove(&mut self, index: NetEntityIndex) -> Option<Entity> {
+        self.0.remove(&index)
+    }
+
+    /// Translates a remote entity to a local entity.
+    fn translate(&self, remote: NetEntityIndex) -> Option<Entity> {
+        self.0.get(&remote).copied()
+    }
+
+    /// Returns an iterator over all local entities from the mapping.
+    pub fn locals(&self) -> impl Iterator<Item = Entity> + '_ {
+        self.0.values().copied()
     }
 }
 

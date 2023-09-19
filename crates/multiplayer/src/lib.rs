@@ -24,7 +24,7 @@ pub use crate::{
     messages::{MessagesSet, ToPlayersEvent},
     netstate::NetState,
     playermsg::{
-        GameNetSet, NetEntities, NetRecvDespawnActiveEvent, NetRecvHealthEvent,
+        GameNetSet, NetEntities, NetEntityCommands, NetRecvDespawnActiveEvent, NetRecvHealthEvent,
         NetRecvSpawnActiveEvent,
     },
 };

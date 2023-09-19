@@ -6,10 +6,12 @@ use de_audio::spatial::{PlaySpatialAudioEvent, Sound};
 use de_core::gconfig::GameConfig;
 use de_core::{objects::ObjectTypeComponent, player::PlayerComponent, state::AppState};
 use de_messages::ToPlayers;
-use de_multiplayer::{NetEntities, NetRecvDespawnActiveEvent, ToPlayersEvent};
+use de_multiplayer::{
+    NetEntities, NetEntityCommands, NetRecvDespawnActiveEvent, PeerLeftEvent, ToPlayersEvent,
+};
 use de_types::objects::{ActiveObjectType, ObjectType};
 
-use crate::ObjectCounter;
+use crate::{ObjectCounter, SpawnerSet};
 
 pub(crate) struct DespawnerPlugin;
 
@@ -22,11 +24,16 @@ impl Plugin for DespawnerPlugin {
                 despawn_active_remote
                     .run_if(on_event::<NetRecvDespawnActiveEvent>())
                     .before(despawn_active),
+                despawn_active_peer_left
+                    .run_if(on_event::<PeerLeftEvent>())
+                    .after(despawn_active_remote)
+                    .before(despawn_active),
                 despawn_active.before(despawn),
                 despawn,
             )
                 .run_if(in_state(AppState::InGame))
-                .in_set(DespawnerSet::Despawn),
+                .in_set(DespawnerSet::Despawn)
+                .after(SpawnerSet::Spawner),
         )
         .add_event::<DespawnActiveLocalEvent>()
         .add_event::<DespawnActiveEvent>()
@@ -81,6 +88,20 @@ fn despawn_active_remote(
 ) {
     for event in event_reader.iter() {
         event_writer.send(DespawnActiveEvent(event.entity()));
+    }
+}
+
+fn despawn_active_peer_left(
+    mut net_commands: NetEntityCommands,
+    mut peer_left_events: EventReader<PeerLeftEvent>,
+    mut event_writer: EventWriter<DespawnActiveEvent>,
+) {
+    for event in peer_left_events.iter() {
+        if let Some(entity_map) = net_commands.remove_player(event.id()) {
+            for entity in entity_map.locals() {
+                event_writer.send(DespawnActiveEvent(entity));
+            }
+        }
     }
 }
 
