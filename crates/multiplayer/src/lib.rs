@@ -25,7 +25,7 @@ pub use crate::{
     netstate::NetState,
     playermsg::{
         GameNetSet, NetEntities, NetEntityCommands, NetRecvDespawnActiveEvent, NetRecvHealthEvent,
-        NetRecvSpawnActiveEvent,
+        NetRecvSpawnActiveEvent, NetRecvTransformEvent,
     },
 };
 use crate::{netstate::NetStatePlugin, network::NetworkPlugin};

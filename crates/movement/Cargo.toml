@@ -16,12 +16,15 @@ categories.workspace = true
 de_core.workspace = true
 de_index.workspace = true
 de_map.workspace = true
+de_messages.workspace = true
+de_multiplayer.workspace = true
 de_objects.workspace = true
 de_pathing.workspace = true
 de_types.workspace = true
 
 # Other
 bevy.workspace = true
-parry3d.workspace = true
-parry2d.workspace = true
+fastrand.workspace = true
 glam.workspace = true
+parry2d.workspace = true
+parry3d.workspace = true
