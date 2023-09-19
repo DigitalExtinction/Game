@@ -1,7 +1,7 @@
 use bincode::{Decode, Encode};
 pub use chat::{ChatMessage, ChatMessageError, MAX_CHAT_LEN};
 use de_types::{objects::ActiveObjectType, player::Player};
-pub use entity::EntityNet;
+pub use entity::{EntityNet, NetEntityIndex};
 pub use geom::{TransformNet, Vec2Net, Vec3Net, Vec4Net};
 pub use path::{PathError, PathNet};
 
