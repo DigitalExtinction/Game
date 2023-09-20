@@ -2393,6 +2393,7 @@ dependencies = [
  "criterion",
  "de_core",
  "de_objects",
+ "de_test_utils",
  "de_types",
  "glam",
  "nalgebra",
@@ -2671,6 +2672,13 @@ dependencies = [
  "iyes_progress",
  "parry2d",
  "parry3d",
+]
+
+[[package]]
+name = "de_test_utils"
+version = "0.1.0-dev"
+dependencies = [
+ "glam",
 ]
 
 [[package]]
