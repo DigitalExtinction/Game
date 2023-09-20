@@ -5,7 +5,7 @@ use criterion::{
 };
 use de_index::{EntityIndex, LocalCollider, SpatialQuery};
 use de_objects::ObjectCollider;
-use de_test_utils::load_points;
+use de_test_utils::{load_points, NumPoints};
 use glam::Vec2;
 use parry3d::{
     math::{Isometry, Point, Vector},
@@ -65,8 +65,8 @@ fn setup_world(world: &mut World, num_entities: u32, max_distance: f32) {
     }
 
     let mut rays = Rays::new();
-    let ray_origins = load_points(&1000.try_into().unwrap(), MAP_SIZE);
-    let ray_dirs = load_points(&1000.try_into().unwrap(), MAP_SIZE);
+    let ray_origins = load_points(&NumPoints::OneThousand, MAP_SIZE);
+    let ray_dirs = load_points(&NumPoints::OneThousand, MAP_SIZE);
     for (origin, dir) in ray_origins.iter().zip(ray_dirs.iter()) {
         let dir = if dir.length() < 0.0001 {
             Vec2::new(1., 0.)

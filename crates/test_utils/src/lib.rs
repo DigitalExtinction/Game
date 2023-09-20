@@ -27,8 +27,8 @@ impl TryFrom<u32> for NumPoints {
     }
 }
 
-impl From<NumPoints> for usize {
-    fn from(value: NumPoints) -> Self {
+impl From<&NumPoints> for usize {
+    fn from(value: &NumPoints) -> Self {
         match value {
             NumPoints::OneHundred => 100,
             NumPoints::OneThousand => 1000,
@@ -38,14 +38,9 @@ impl From<NumPoints> for usize {
     }
 }
 
-impl From<&NumPoints> for usize {
-    fn from(value: &NumPoints) -> Self {
-        match value {
-            NumPoints::OneHundred => 100,
-            NumPoints::OneThousand => 1000,
-            NumPoints::TenThousand => 10_000,
-            NumPoints::OneHundredThousand => 100_000,
-        }
+impl From<NumPoints> for usize {
+    fn from(value: NumPoints) -> Self {
+        Self::from(&value)
     }
 }
 
