@@ -70,7 +70,7 @@ pub enum ToPlayers {
     /// replaced by this one.
     SetPath {
         entity: EntityNet,
-        waypoints: PathNet,
+        waypoints: Option<PathNet>,
     },
     /// Instantaneously transform an object.
     ///
