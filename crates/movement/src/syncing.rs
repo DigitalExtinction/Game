@@ -3,7 +3,7 @@ use std::time::Duration;
 use bevy::prelude::*;
 use de_core::{
     gamestate::GameState,
-    gconfig::GameConfig,
+    gconfig::{is_multiplayer, GameConfig},
     objects::{Local, MovableSolid},
     schedule::{Movement, PreMovement},
     state::AppState,
@@ -66,13 +66,6 @@ impl SyncTimer {
 }
 
 type NotSetUp = (With<MovableSolid>, With<Local>, Without<SyncTimer>);
-
-fn is_multiplayer(config: Option<Res<GameConfig>>) -> bool {
-    match config {
-        Some(config) => config.multiplayer(),
-        None => false,
-    }
-}
 
 fn setup_entities(mut commands: Commands, time: Res<Time>, entities: Query<Entity, NotSetUp>) {
     let time = time.elapsed();
