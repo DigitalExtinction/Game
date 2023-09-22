@@ -1,6 +1,6 @@
 use std::path::{Path, PathBuf};
 
-use bevy::prelude::Resource;
+use bevy::prelude::*;
 use de_types::player::{Player, PlayerRange};
 use tinyvec::{array_vec, ArrayVec};
 
@@ -89,6 +89,14 @@ impl LocalPlayers {
     /// Returns true if the player is simulated by this computer.
     pub fn is_local(&self, player: Player) -> bool {
         self.locals.contains(&player)
+    }
+}
+
+/// System condition which returns true during a multiplayer game.
+pub fn is_multiplayer(config: Option<Res<GameConfig>>) -> bool {
+    match config {
+        Some(config) => config.multiplayer(),
+        None => false,
     }
 }
 
