@@ -13,8 +13,8 @@ use de_multiplayer::{NetEntities, NetRecvTransformEvent, ToPlayersEvent};
 
 use crate::movement::MovementSet;
 
-const MIN_SYNC_PERIOD: Duration = Duration::from_secs(2);
-const SYNC_RANDOMIZATION_MS: u64 = 2_000;
+const MIN_SYNC_PERIOD: Duration = Duration::from_millis(800);
+const SYNC_RANDOMIZATION_MS: u64 = 250;
 
 pub(crate) struct SyncingPlugin;
 
