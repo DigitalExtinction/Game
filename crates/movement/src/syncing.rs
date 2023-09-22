@@ -3,7 +3,7 @@ use std::time::Duration;
 use bevy::prelude::*;
 use de_core::{
     gamestate::GameState,
-    gconfig::{is_multiplayer, GameConfig},
+    gconfig::is_multiplayer,
     objects::{Local, MovableSolid},
     schedule::{Movement, PreMovement},
     state::AppState,
