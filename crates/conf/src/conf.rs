@@ -73,7 +73,7 @@ pub struct AudioConf {
 impl Default for MultiplayerConf {
     fn default() -> Self {
         Self {
-            lobby: Url::parse("http://lobby.de_game.org").unwrap(),
+            lobby: Url::parse("http://lobby.de-game.org:8080").unwrap(),
             connector: SocketAddr::new(IpAddr::V4(Ipv4Addr::LOCALHOST), 8082),
         }
     }
