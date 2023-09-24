@@ -1,0 +1,22 @@
+[package]
+name = "de_types"
+description = "Various types for Digital Extinction."
+
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+repository.workspace = true
+keywords.workspace = true
+homepage.workspace = true
+license.workspace = true
+categories.workspace = true
+
+[dependencies]
+bincode.workspace = true
+enum-iterator.workspace = true
+enum-map.workspace = true
+glam.workspace = true
+nalgebra.workspace = true
+parry2d.workspace = true
+parry3d.workspace = true
+serde.workspace = true

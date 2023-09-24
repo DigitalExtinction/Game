@@ -1,7 +1,7 @@
 use bevy::prelude::*;
 use de_core::{
     gamestate::GameState,
-    objects::{MovableSolid, ObjectType},
+    objects::{MovableSolid, ObjectTypeComponent},
     schedule::{Movement, PreMovement},
     state::AppState,
 };
@@ -61,15 +61,15 @@ fn setup_entities(
 fn update(
     solids: SolidObjects,
     mut objects: Query<(
-        &ObjectType,
+        &ObjectTypeComponent,
         &mut DesiredVelocity<RepulsionVelocity>,
         &mut DesiredClimbing,
         &Transform,
     )>,
 ) {
     objects.par_iter_mut().for_each_mut(
-        |(&object_type, mut horizontal, mut climbing, transform)| {
-            let Some(flight) = solids.get(object_type).flight() else {
+        |(object_type, mut horizontal, mut climbing, transform)| {
+            let Some(flight) = solids.get(**object_type).flight() else {
                 return;
             };
             let height = transform.translation.y;

@@ -1,4 +1,4 @@
-use de_core::objects::{ActiveObjectType, BuildingType, InactiveObjectType, ObjectType, UnitType};
+use de_types::objects::{ActiveObjectType, BuildingType, InactiveObjectType, ObjectType, UnitType};
 
 pub(crate) trait FileStem: Copy {
     fn stem(self) -> &'static str;

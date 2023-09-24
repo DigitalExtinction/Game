@@ -5,8 +5,8 @@ use tracing::{error, info};
 
 use super::{cancellation::CancellationSender, dsender::OutDatagram};
 use crate::{
-    connection::Resends,
-    header::{DatagramHeader, PackageIdRange},
+    connection::DispatchHandler,
+    header::{DatagramHeader, PackageHeader, PackageIdRange},
     OutPackage,
 };
 
@@ -16,11 +16,10 @@ pub(super) async fn run(
     _cancellation: CancellationSender,
     datagrams: Sender<OutDatagram>,
     packages: Receiver<OutPackage>,
-    mut resends: Resends,
+    mut dispatch_handler: DispatchHandler,
 ) {
     info!("Starting package sender on port {port}...");
 
-    let mut counter_reliable = PackageIdRange::counter();
     let mut counter_unreliable = PackageIdRange::counter();
 
     loop {
@@ -28,33 +27,26 @@ pub(super) async fn run(
             break;
         };
 
-        let package_id = if package.reliable() {
-            counter_reliable.next().unwrap()
+        let time = Instant::now();
+        let target = package.target();
+
+        let package_id = if package.reliability().is_reliable() {
+            dispatch_handler.next_package_id(time, target).await
         } else {
             counter_unreliable.next().unwrap()
         };
 
-        let header = DatagramHeader::new_package(package.reliable(), package.peers(), package_id);
+        let package_header = PackageHeader::new(package.reliability(), package.peers(), package_id);
+        let header = DatagramHeader::Package(package_header);
 
-        if let DatagramHeader::Package(package_header) = header {
-            if package_header.reliable() {
-                let time = Instant::now();
-                for target in &package.targets {
-                    resends
-                        .sent(
-                            time,
-                            target,
-                            package_header.id(),
-                            package_header.peers(),
-                            &package.data,
-                        )
-                        .await;
-                }
-            }
+        if package_header.reliability().is_reliable() {
+            dispatch_handler
+                .sent(time, target, package_header, package.data_slice())
+                .await;
         }
 
         let closed = datagrams
-            .send(OutDatagram::new(header, package.data, package.targets))
+            .send(OutDatagram::new(header, package.data(), target))
             .await
             .is_err();
 

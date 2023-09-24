@@ -12,6 +12,10 @@ homepage.workspace = true
 license.workspace = true
 categories.workspace = true
 
+[[bin]]
+name = "de-lobby"
+path = "src/main.rs"
+
 [dependencies]
 # DE
 de_lobby_model.workspace = true

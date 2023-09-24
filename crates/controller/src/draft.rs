@@ -1,13 +1,10 @@
 use bevy::prelude::*;
 use de_core::{
-    cleanup::DespawnOnGameExit,
-    gamestate::GameState,
-    gconfig::GameConfig,
-    objects::{BuildingType, ObjectType},
-    schedule::InputSchedule,
-    state::AppState,
+    cleanup::DespawnOnGameExit, gamestate::GameState, gconfig::GameConfig,
+    objects::ObjectTypeComponent, schedule::InputSchedule, state::AppState,
 };
-use de_spawner::{DraftAllowed, DraftBundle, SpawnBundle};
+use de_spawner::{DraftAllowed, DraftBundle, SpawnLocalActiveEvent};
+use de_types::objects::{BuildingType, ObjectType};
 
 use crate::mouse::{Pointer, PointerSet};
 
@@ -78,15 +75,20 @@ impl NewDraftEvent {
 fn spawn(
     mut commands: Commands,
     game_config: Res<GameConfig>,
-    drafts: Query<(Entity, &Transform, &ObjectType, &DraftAllowed)>,
+    drafts: Query<(Entity, &Transform, &ObjectTypeComponent, &DraftAllowed)>,
+    mut spawn_active_events: EventWriter<SpawnLocalActiveEvent>,
 ) {
     for (entity, &transform, &object_type, draft) in drafts.iter() {
         if draft.allowed() {
             commands.entity(entity).despawn_recursive();
-            commands.spawn((
-                SpawnBundle::new(object_type, transform),
+            let ObjectType::Active(object_type) = *object_type else {
+                panic!("Cannot place draft of an inactive object.");
+            };
+
+            spawn_active_events.send(SpawnLocalActiveEvent::stationary(
+                object_type,
+                transform,
                 game_config.locals().playable(),
-                DespawnOnGameExit,
             ));
         }
     }

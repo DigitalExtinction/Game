@@ -2,10 +2,11 @@ use std::{net::SocketAddr, time::Instant};
 
 use bevy::prelude::*;
 use de_core::schedule::PreMovement;
-use de_net::{FromGame, FromServer, InPackage, PackageBuilder, Peers, ToGame, ToServer};
+use de_messages::{FromGame, FromPlayers, FromServer, ToGame, ToPlayers, ToServer};
+use de_net::{InPackage, PackageBuilder, Peers, Reliability};
 
 use crate::{
-    config::ServerPort,
+    config::ConnectionType,
     lifecycle::{FatalErrorEvent, NetGameConfRes},
     netstate::NetState,
     network::{NetworkSet, PackageReceivedEvent, SendPackageEvent},
@@ -16,28 +17,22 @@ pub(crate) struct MessagesPlugin;
 impl Plugin for MessagesPlugin {
     fn build(&self, app: &mut App) {
         app.add_event::<ToMainServerEvent>()
-            .add_event::<ToGameServerEvent<true>>()
-            .add_event::<ToGameServerEvent<false>>()
+            .add_event::<ToGameServerEvent>()
+            .add_event::<ToPlayersEvent>()
             .add_event::<FromMainServerEvent>()
             .add_event::<FromGameServerEvent>()
+            .add_event::<FromPlayersEvent>()
             .add_systems(OnEnter(NetState::Connecting), setup)
             .add_systems(OnEnter(NetState::None), cleanup)
             .add_systems(
                 PostUpdate,
                 (
-                    message_sender::<ToMainServerEvent>
-                        .run_if(on_event::<ToMainServerEvent>())
-                        .in_set(MessagesSet::SendMessages)
-                        .before(NetworkSet::SendPackages),
-                    message_sender::<ToGameServerEvent<true>>
-                        .run_if(on_event::<ToGameServerEvent<true>>())
-                        .in_set(MessagesSet::SendMessages)
-                        .before(NetworkSet::SendPackages),
-                    message_sender::<ToGameServerEvent<false>>
-                        .run_if(on_event::<ToGameServerEvent<false>>())
-                        .in_set(MessagesSet::SendMessages)
-                        .before(NetworkSet::SendPackages),
-                ),
+                    message_sender::<ToMainServerEvent>.run_if(on_event::<ToMainServerEvent>()),
+                    message_sender::<ToGameServerEvent>.run_if(on_event::<ToGameServerEvent>()),
+                    message_sender::<ToPlayersEvent>.run_if(on_event::<ToPlayersEvent>()),
+                )
+                    .in_set(MessagesSet::SendMessages)
+                    .before(NetworkSet::SendPackages),
             )
             .add_systems(
                 PreMovement,
@@ -50,7 +45,7 @@ impl Plugin for MessagesPlugin {
 }
 
 #[derive(Copy, Clone, Hash, Debug, PartialEq, Eq, SystemSet)]
-pub(crate) enum MessagesSet {
+pub enum MessagesSet {
     SendMessages,
     RecvMessages,
 }
@@ -61,8 +56,9 @@ where
 {
     type Message: bincode::Encode;
     const PORT_TYPE: PortType;
-    const RELIABLE: bool;
+    const PEERS: Peers;
 
+    fn reliability(&self) -> Reliability;
     fn message(&self) -> &Self::Message;
 }
 
@@ -78,7 +74,11 @@ impl From<ToServer> for ToMainServerEvent {
 impl ToMessage for ToMainServerEvent {
     type Message = ToServer;
     const PORT_TYPE: PortType = PortType::Main;
-    const RELIABLE: bool = true;
+    const PEERS: Peers = Peers::Server;
+
+    fn reliability(&self) -> Reliability {
+        Reliability::SemiOrdered
+    }
 
     fn message(&self) -> &Self::Message {
         &self.0
@@ -86,21 +86,69 @@ impl ToMessage for ToMainServerEvent {
 }
 
 #[derive(Event)]
-pub(crate) struct ToGameServerEvent<const R: bool>(ToGame);
+pub(crate) struct ToGameServerEvent {
+    reliability: Reliability,
+    message: ToGame,
+}
 
-impl<const R: bool> From<ToGame> for ToGameServerEvent<R> {
-    fn from(message: ToGame) -> Self {
-        Self(message)
+impl ToGameServerEvent {
+    pub(crate) fn new(reliability: Reliability, message: ToGame) -> Self {
+        Self {
+            reliability,
+            message,
+        }
     }
 }
 
-impl<const R: bool> ToMessage for ToGameServerEvent<R> {
+impl ToMessage for ToGameServerEvent {
     type Message = ToGame;
     const PORT_TYPE: PortType = PortType::Game;
-    const RELIABLE: bool = R;
+    const PEERS: Peers = Peers::Server;
+
+    fn reliability(&self) -> Reliability {
+        self.reliability
+    }
 
     fn message(&self) -> &Self::Message {
-        &self.0
+        &self.message
+    }
+}
+
+/// An event which will get transformed to a network message delivered to other
+/// players of the game.
+///
+/// This event should not be send during single player games.
+///
+/// The events are handled in [`MessagesSet::SendMessages`] set.
+#[derive(Event)]
+pub struct ToPlayersEvent {
+    message: ToPlayers,
+}
+
+impl ToPlayersEvent {
+    pub fn new(message: ToPlayers) -> Self {
+        Self { message }
+    }
+}
+
+impl ToMessage for ToPlayersEvent {
+    type Message = ToPlayers;
+    const PORT_TYPE: PortType = PortType::Game;
+    const PEERS: Peers = Peers::Players;
+
+    fn reliability(&self) -> Reliability {
+        match self.message {
+            ToPlayers::Chat(_) => Reliability::Unordered,
+            ToPlayers::Spawn { .. } => Reliability::SemiOrdered,
+            ToPlayers::Despawn { .. } => Reliability::SemiOrdered,
+            ToPlayers::SetPath { .. } => Reliability::SemiOrdered,
+            ToPlayers::Transform { .. } => Reliability::Unreliable,
+            ToPlayers::ChangeHealth { .. } => Reliability::SemiOrdered,
+        }
+    }
+
+    fn message(&self) -> &Self::Message {
+        &self.message
     }
 }
 
@@ -151,6 +199,17 @@ impl InMessageEvent for FromGameServerEvent {
 
     fn from_message(time: Instant, message: Self::M) -> Self {
         Self { time, message }
+    }
+}
+
+#[derive(Event, Deref)]
+pub(crate) struct FromPlayersEvent(FromPlayers);
+
+impl InMessageEvent for FromPlayersEvent {
+    type M = FromPlayers;
+
+    fn from_message(_time: Instant, message: Self::M) -> Self {
+        Self(message)
     }
 }
 
@@ -217,11 +276,11 @@ impl Ports {
     }
 }
 
-impl From<ServerPort> for Ports {
-    fn from(port: ServerPort) -> Self {
-        match port {
-            ServerPort::Main(port) => Self::Main(port),
-            ServerPort::Game(port) => Self::Game(port),
+impl From<ConnectionType> for Ports {
+    fn from(game_type: ConnectionType) -> Self {
+        match game_type {
+            ConnectionType::CreateGame { port, .. } => Self::Main(port),
+            ConnectionType::JoinGame(port) => Self::Game(port),
         }
     }
 }
@@ -233,7 +292,7 @@ enum PortType {
 }
 
 fn setup(mut commands: Commands, conf: Res<NetGameConfRes>) {
-    let ports: Ports = conf.server_port().into();
+    let ports: Ports = conf.connection_type().into();
     commands.insert_resource(ports);
 }
 
@@ -249,18 +308,33 @@ fn message_sender<E>(
 ) where
     E: ToMessage,
 {
+    let time = Instant::now();
+
     let Some(port) = ports.port(E::PORT_TYPE) else {
         warn!("Port not (yet) known.");
         return;
     };
     let addr = SocketAddr::new(conf.server_host(), port);
-    let mut builder = PackageBuilder::new(E::RELIABLE, Peers::Server, addr);
+
+    let mut unreliable = PackageBuilder::new(Reliability::Unreliable, E::PEERS, addr);
+    let mut unordered = PackageBuilder::new(Reliability::Unordered, E::PEERS, addr);
+    let mut semi_ordered = PackageBuilder::new(Reliability::SemiOrdered, E::PEERS, addr);
 
     for event in inputs.iter() {
-        builder.push(event.message()).unwrap();
+        let builder = match event.reliability() {
+            Reliability::Unreliable => &mut unreliable,
+            Reliability::Unordered => &mut unordered,
+            Reliability::SemiOrdered => &mut semi_ordered,
+        };
+        builder.push(event.message(), time).unwrap();
     }
-    for package in builder.build() {
-        outputs.send(package.into());
+
+    for mut builder in [unreliable, unordered, semi_ordered] {
+        // Build all packages. This system runs once per frame and thus some
+        // aggregation is done via the update frequency.
+        for package in builder.build_all() {
+            outputs.send(package.into());
+        }
     }
 }
 
@@ -269,6 +343,7 @@ fn recv_messages(
     mut packages: EventReader<PackageReceivedEvent>,
     mut main_server: EventWriter<FromMainServerEvent>,
     mut game_server: EventWriter<FromGameServerEvent>,
+    mut players: EventWriter<FromPlayersEvent>,
     mut fatals: EventWriter<FatalErrorEvent>,
 ) {
     for event in packages.iter() {
@@ -276,7 +351,14 @@ fn recv_messages(
         if ports.is_main(package.source().port()) {
             decode_and_send::<FromServer, _>(package, &mut main_server, &mut fatals);
         } else {
-            decode_and_send::<FromGame, _>(package, &mut game_server, &mut fatals);
+            match package.peers() {
+                Peers::Server => {
+                    decode_and_send::<FromGame, _>(package, &mut game_server, &mut fatals);
+                }
+                Peers::Players => {
+                    decode_and_send::<FromPlayers, _>(package, &mut players, &mut fatals);
+                }
+            }
         }
     }
 }
@@ -307,18 +389,23 @@ fn decode_and_send<P, E>(
 
 #[cfg(test)]
 mod tests {
+    use de_types::player::Player;
+
     use super::*;
 
     #[test]
     fn test_ports() {
-        let mut ports = Ports::from(ServerPort::Main(2));
+        let mut ports = Ports::from(ConnectionType::CreateGame {
+            port: 2,
+            max_players: Player::Player1,
+        });
         assert_eq!(ports.main(), Some(2));
         assert_eq!(ports.game(), None);
         ports.init_game_port(3).unwrap();
         assert_eq!(ports.main(), Some(2));
         assert_eq!(ports.game(), Some(3));
 
-        let mut ports = Ports::from(ServerPort::Game(4));
+        let mut ports = Ports::from(ConnectionType::JoinGame(4));
         assert_eq!(ports.main(), None);
         assert_eq!(ports.game(), Some(4));
         ports.init_game_port(4).unwrap();

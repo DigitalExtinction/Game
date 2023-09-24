@@ -5,20 +5,21 @@ use de_gui::{ButtonCommands, GuiCommands, LabelCommands, OuterStyle, ToastEvent}
 use de_lobby_client::{ListGamesRequest, RequestEvent, ResponseEvent};
 use de_lobby_model::GamePartial;
 
-use crate::{menu::Menu, MenuState};
+use super::{current::GameNameRes, MultiplayerState};
+use crate::menu::Menu;
 
 const REFRESH_INTERVAL: Duration = Duration::from_secs(10);
 
-pub(crate) struct GameListingPlugin;
+pub(super) struct GameListingPlugin;
 
 impl Plugin for GameListingPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(OnEnter(MenuState::GameListing), setup)
-            .add_systems(OnExit(MenuState::GameListing), cleanup)
+        app.add_systems(OnEnter(MultiplayerState::GameListing), setup)
+            .add_systems(OnExit(MultiplayerState::GameListing), cleanup)
             .add_systems(
                 Update,
                 (refresh_system, list_games_system, button_system)
-                    .run_if(in_state(MenuState::GameListing)),
+                    .run_if(in_state(MultiplayerState::GameListing)),
             );
     }
 }
@@ -29,7 +30,7 @@ struct GamesTable(Entity);
 #[derive(Component)]
 enum ButtonAction {
     Create,
-    Join,
+    Join(String),
 }
 
 fn setup(
@@ -140,7 +141,7 @@ fn row(commands: &mut GuiCommands, game: &GamePartial) -> Entity {
                 },
                 "Join",
             )
-            .insert(ButtonAction::Join)
+            .insert(ButtonAction::Join(game.config().name().to_owned()))
             .id();
         commands.entity(row_id).add_child(button_id);
     }
@@ -183,16 +184,17 @@ fn list_games_system(
 }
 
 fn button_system(
-    mut next_state: ResMut<NextState<MenuState>>,
+    mut commands: Commands,
+    mut next_state: ResMut<NextState<MultiplayerState>>,
     interactions: Query<(&Interaction, &ButtonAction), Changed<Interaction>>,
-    mut toasts: EventWriter<ToastEvent>,
 ) {
     for (&interaction, action) in interactions.iter() {
         if let Interaction::Pressed = interaction {
             match action {
-                ButtonAction::Create => next_state.set(MenuState::GameCreation),
-                ButtonAction::Join => {
-                    toasts.send(ToastEvent::new("Not yet implemented (issue #301)."))
+                ButtonAction::Create => next_state.set(MultiplayerState::GameCreation),
+                ButtonAction::Join(name) => {
+                    commands.insert_resource(GameNameRes::new(name));
+                    next_state.set(MultiplayerState::GameJoining);
                 }
             }
         }

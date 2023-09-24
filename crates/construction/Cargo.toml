@@ -19,6 +19,7 @@ de_objects.workspace = true
 de_pathing.workspace = true
 de_signs.workspace = true
 de_spawner.workspace = true
+de_types.workspace = true
 
 # Other
 ahash.workspace = true

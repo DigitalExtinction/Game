@@ -13,16 +13,17 @@ const MAX_PLAYERS: u8 = 4;
 #[serde(rename_all = "camelCase")]
 pub struct Game {
     setup: GameSetup,
-    players: Vec<String>,
+    players: Vec<GamePlayer>,
 }
 
 impl Game {
-    /// Creates a new game with the author being the only player.
+    /// Creates a new game with the author having ordinal number of 1 and being
+    /// the only player.
     pub fn from_author(setup: GameSetup, author: String) -> Self {
-        Self::new(setup, vec![author])
+        Self::new(setup, vec![GamePlayer::new(author, GamePlayerInfo::new(1))])
     }
 
-    pub fn new(setup: GameSetup, players: Vec<String>) -> Self {
+    pub fn new(setup: GameSetup, players: Vec<GamePlayer>) -> Self {
         Self { setup, players }
     }
 
@@ -30,8 +31,49 @@ impl Game {
         &self.setup
     }
 
-    pub fn players(&self) -> &[String] {
+    pub fn players(&self) -> &[GamePlayer] {
         self.players.as_slice()
+    }
+}
+
+#[derive(Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct GamePlayer {
+    username: String,
+    info: GamePlayerInfo,
+}
+
+impl GamePlayer {
+    pub fn new(username: String, info: GamePlayerInfo) -> Self {
+        Self { username, info }
+    }
+
+    pub fn username(&self) -> &str {
+        self.username.as_str()
+    }
+
+    pub fn info(&self) -> &GamePlayerInfo {
+        &self.info
+    }
+}
+
+#[derive(Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct GamePlayerInfo {
+    ordinal: u8,
+}
+
+impl GamePlayerInfo {
+    /// # Panics
+    ///
+    /// Panics if ordinal equal to 0 is used.
+    pub fn new(ordinal: u8) -> Self {
+        assert!(ordinal > 0);
+        Self { ordinal }
+    }
+
+    pub fn ordinal(&self) -> u8 {
+        self.ordinal
     }
 }
 
@@ -104,7 +146,7 @@ impl validation::Validatable for GameSetup {
     }
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct GameConfig {
     name: String,

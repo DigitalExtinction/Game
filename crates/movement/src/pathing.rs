@@ -1,11 +1,11 @@
 use bevy::prelude::*;
 use de_core::{
     gamestate::GameState,
-    projection::ToFlat,
     schedule::{Movement, PreMovement},
     state::AppState,
 };
 use de_pathing::ScheduledPath;
+use de_types::projection::ToFlat;
 
 use crate::{
     movement::{add_desired_velocity, DesiredVelocity},

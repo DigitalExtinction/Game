@@ -1,6 +1,8 @@
 use std::borrow::Cow;
 
-use de_lobby_model::{GameListing, GameSetup, Token, UserWithPassword, UsernameAndPassword};
+use de_lobby_model::{
+    Game, GameListing, GamePlayerInfo, GameSetup, Token, UserWithPassword, UsernameAndPassword,
+};
 use reqwest::{header::HeaderValue, Method, Request};
 use serde::Serialize;
 use url::Url;
@@ -95,11 +97,36 @@ impl LobbyRequestCreator for ListGamesRequest {
     }
 }
 
-pub struct JoinGameRequest(String);
+pub struct GetGameRequest(String);
+
+impl GetGameRequest {
+    pub fn new(id: impl ToString) -> Self {
+        Self(id.to_string())
+    }
+}
+
+impl LobbyRequest for GetGameRequest {
+    type Response = Game;
+}
+
+impl LobbyRequestCreator for GetGameRequest {
+    fn path(&self) -> Cow<str> {
+        encode(&["a", "games", self.0.as_str()])
+    }
+
+    fn create(&self, url: Url) -> Request {
+        Request::new(Method::GET, url)
+    }
+}
+
+pub struct JoinGameRequest {
+    game: String,
+    player: GamePlayerInfo,
+}
 
 impl JoinGameRequest {
-    pub fn new(name: String) -> Self {
-        Self(name)
+    pub fn new(game: String, player: GamePlayerInfo) -> Self {
+        Self { game, player }
     }
 }
 
@@ -109,11 +136,13 @@ impl LobbyRequest for JoinGameRequest {
 
 impl LobbyRequestCreator for JoinGameRequest {
     fn path(&self) -> Cow<str> {
-        encode(&["a", "games", self.0.as_str(), "join"])
+        encode(&["a", "games", self.game.as_str(), "join"])
     }
 
     fn create(&self, url: Url) -> Request {
-        Request::new(Method::PUT, url)
+        let mut request = Request::new(Method::PUT, url);
+        json(&mut request, &self.player);
+        request
     }
 }
 
@@ -233,8 +262,12 @@ mod tests {
 
     #[test]
     fn test_join() {
-        let request = JoinGameRequest::new("Cool Game".to_owned());
+        let request = JoinGameRequest::new("Cool Game".to_owned(), GamePlayerInfo::new(2));
         assert_eq!(request.path().as_ref(), "/a/games/Cool%20Game/join");
+
+        let request = request.create(Url::parse("http://example.com/a/games/123/join").unwrap());
+        let body = String::from_utf8(request.body().unwrap().as_bytes().unwrap().to_vec()).unwrap();
+        assert_eq!(body, r#"{"ordinal":2}"#);
     }
 
     #[test]

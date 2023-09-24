@@ -6,6 +6,7 @@ mod movement;
 mod obstacles;
 mod pathing;
 mod repulsion;
+mod syncing;
 
 use std::f32::consts::PI;
 
@@ -16,6 +17,7 @@ use movement::MovementPlugin;
 use obstacles::ObstaclesPlugin;
 use pathing::PathingPlugin;
 use repulsion::RepulsionPlugin;
+use syncing::SyncingPlugin;
 
 /// Maximum object horizontal speed in meters per second.
 const MAX_H_SPEED: f32 = 10.;
@@ -43,5 +45,6 @@ impl PluginGroup for MovementPluginGroup {
             .add(RepulsionPlugin)
             .add(KinematicsPlugin)
             .add(AltitudePlugin)
+            .add(SyncingPlugin)
     }
 }

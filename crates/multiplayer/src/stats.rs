@@ -5,7 +5,8 @@ use std::{
 
 use bevy::prelude::*;
 use de_core::schedule::PreMovement;
-use de_net::{FromGame, ToGame};
+use de_messages::{FromGame, ToGame};
+use de_net::Reliability;
 use tracing::{debug, info, trace};
 
 use crate::{
@@ -218,7 +219,7 @@ fn ping<const R: bool>(
     mut timer: ResMut<PingTimer<R>>,
     mut counter: ResMut<Counter>,
     mut tracker: ResMut<PingTracker<R>>,
-    mut messages: EventWriter<ToGameServerEvent<R>>,
+    mut messages: EventWriter<ToGameServerEvent>,
 ) {
     timer.0.tick(time.delta());
 
@@ -226,12 +227,15 @@ fn ping<const R: bool>(
     for _ in 0..timer.0.times_finished_this_tick() {
         let id = counter.next();
         tracker.register(id, time);
-        if R {
+        let reliability = if R {
             info!("Sending reliable Ping({id}).",);
+            Reliability::Unordered
         } else {
             trace!("Sending unreliable Ping({id}).",);
-        }
-        messages.send(ToGame::Ping(id).into());
+            Reliability::Unreliable
+        };
+
+        messages.send(ToGameServerEvent::new(reliability, ToGame::Ping(id)));
     }
 }
 

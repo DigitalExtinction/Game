@@ -18,7 +18,6 @@ pub mod gconfig;
 pub mod gresult;
 pub mod objects;
 pub mod player;
-pub mod projection;
 pub mod schedule;
 pub mod screengeom;
 pub mod state;

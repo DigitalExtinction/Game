@@ -4,7 +4,7 @@ use async_std::{channel::Receiver, future::timeout};
 use tracing::{error, info};
 
 use super::{cancellation::CancellationRecv, dreceiver::InSystemDatagram};
-use crate::connection::Resends;
+use crate::connection::DispatchHandler;
 
 /// Handler of protocol control datagrams.
 ///
@@ -13,7 +13,7 @@ pub(super) async fn run(
     port: u16,
     cancellation: CancellationRecv,
     datagrams: Receiver<InSystemDatagram>,
-    mut resends: Resends,
+    mut dispatch_handler: DispatchHandler,
 ) {
     info!("Starting protocol control datagram receiver on port {port}...");
 
@@ -31,7 +31,7 @@ pub(super) async fn run(
             break;
         };
 
-        resends
+        dispatch_handler
             .confirmed(Instant::now(), datagram.source, &datagram.data)
             .await;
     }

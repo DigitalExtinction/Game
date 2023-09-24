@@ -3,21 +3,23 @@ use std::{collections::VecDeque, time::Duration};
 use ahash::AHashMap;
 use bevy::prelude::*;
 use de_core::{
-    cleanup::DespawnOnGameExit,
     gamestate::GameState,
-    gconfig::GameConfig,
-    objects::{Active, ActiveObjectType, ObjectType, UnitType, PLAYER_MAX_UNITS},
-    player::Player,
-    projection::{ToAltitude, ToFlat},
+    objects::{Local, ObjectTypeComponent},
+    player::PlayerComponent,
     state::AppState,
 };
 use de_index::SpatialQuery;
 use de_objects::SolidObjects;
-use de_pathing::{PathQueryProps, PathTarget, UpdateEntityPathEvent};
+use de_pathing::{PathQueryProps, PathTarget};
 use de_signs::{
     LineLocation, UpdateLineEndEvent, UpdateLineLocationEvent, UpdatePoleLocationEvent,
 };
-use de_spawner::{ObjectCounter, SpawnBundle};
+use de_spawner::{ObjectCounter, SpawnLocalActiveEvent};
+use de_types::{
+    objects::{ActiveObjectType, ObjectType, UnitType, PLAYER_MAX_UNITS},
+    player::Player,
+    projection::{ToAltitude, ToFlat},
+};
 use parry2d::bounding_volume::Aabb;
 use parry3d::math::Isometry;
 
@@ -290,12 +292,12 @@ impl ProductionItem {
 fn configure(
     mut commands: Commands,
     solids: SolidObjects,
-    new: Query<(Entity, &Transform, &ObjectType), Added<Active>>,
+    new: Query<(Entity, &Transform, &ObjectTypeComponent), Added<Local>>,
     mut pole_events: EventWriter<UpdatePoleLocationEvent>,
     mut line_events: EventWriter<UpdateLineLocationEvent>,
 ) {
     for (entity, transform, &object_type) in new.iter() {
-        let solid = solids.get(object_type);
+        let solid = solids.get(*object_type);
         if let Some(factory) = solid.factory() {
             let start = transform.transform_point(factory.position().to_msl());
             let local_aabb = solid.ichnography().local_aabb();
@@ -351,12 +353,12 @@ fn enqueue(
 fn check_spawn_locations(
     solids: SolidObjects,
     space: SpatialQuery<Entity>,
-    mut factories: Query<(Entity, &ObjectType, &Transform, &mut AssemblyLine)>,
+    mut factories: Query<(Entity, &ObjectTypeComponent, &Transform, &mut AssemblyLine)>,
 ) {
     for (entity, &object_type, transform, mut line) in factories.iter_mut() {
         line.blocks_mut().spawn_location = match line.current() {
             Some(unit_type) => {
-                let factory = solids.get(object_type).factory().unwrap();
+                let factory = solids.get(*object_type).factory().unwrap();
                 let collider = solids
                     .get(ObjectType::Active(ActiveObjectType::Unit(unit_type)))
                     .collider();
@@ -376,19 +378,18 @@ fn check_spawn_locations(
 
 fn produce(
     time: Res<Time>,
-    conf: Res<GameConfig>,
     counter: Res<ObjectCounter>,
-    mut factories: Query<(Entity, &Player, &mut AssemblyLine)>,
+    mut factories: Query<(Entity, &PlayerComponent, &mut AssemblyLine)>,
     mut deliver_events: EventWriter<DeliverEvent>,
 ) {
-    let mut counts: AHashMap<Player, u32> = AHashMap::new();
-    for player in conf.players() {
-        let count = counter.player(player).unwrap().unit_count();
-        counts.insert(player, count);
-    }
+    let mut counts: AHashMap<Player, u32> = AHashMap::from_iter(
+        counter
+            .counters()
+            .map(|(&player, counter)| (player, counter.unit_count())),
+    );
 
     for (factory, &player, mut assembly) in factories.iter_mut() {
-        let player_count = counts.get_mut(&player).unwrap();
+        let player_count = counts.entry(*player).or_default();
 
         loop {
             assembly.blocks_mut().map_capacity = *player_count >= PLAYER_MAX_UNITS;
@@ -404,11 +405,15 @@ fn produce(
 }
 
 fn deliver(
-    mut commands: Commands,
     solids: SolidObjects,
     mut deliver_events: EventReader<DeliverEvent>,
-    mut path_events: EventWriter<UpdateEntityPathEvent>,
-    factories: Query<(&Transform, &ObjectType, &Player, &DeliveryLocation)>,
+    mut spawn_active_events: EventWriter<SpawnLocalActiveEvent>,
+    factories: Query<(
+        &Transform,
+        &ObjectTypeComponent,
+        &PlayerComponent,
+        &DeliveryLocation,
+    )>,
 ) {
     for delivery in deliver_events.iter() {
         info!(
@@ -419,26 +424,22 @@ fn deliver(
 
         let (transform, &factory_object_type, &player, delivery_location) =
             factories.get(delivery.factory()).unwrap();
-        let unit_object_type = ObjectType::Active(ActiveObjectType::Unit(delivery.unit()));
+        let object_type = ActiveObjectType::Unit(delivery.unit());
 
-        let factory = solids.get(factory_object_type).factory().unwrap();
+        let factory = solids.get(*factory_object_type).factory().unwrap();
         debug_assert!(factory.products().contains(&delivery.unit()));
         let spawn_point = transform.transform_point(factory.position().to_msl());
 
-        let unit = commands
-            .spawn((
-                SpawnBundle::new(unit_object_type, Transform::from_translation(spawn_point)),
-                player,
-                DespawnOnGameExit,
-            ))
-            .id();
-        path_events.send(UpdateEntityPathEvent::new(
-            unit,
-            PathTarget::new(
-                delivery_location.0,
-                PathQueryProps::new(0., f32::INFINITY),
-                false,
-            ),
+        let path_target = PathTarget::new(
+            delivery_location.0,
+            PathQueryProps::new(0., f32::INFINITY),
+            false,
+        );
+        spawn_active_events.send(SpawnLocalActiveEvent::new(
+            object_type,
+            Transform::from_translation(spawn_point),
+            *player,
+            Some(path_target),
         ));
     }
 }

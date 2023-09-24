@@ -1,0 +1,114 @@
+name: Test & Check
+
+on:
+  push:
+    branches:
+      - main
+  merge_group: {}
+  pull_request:
+    branches:
+      - main
+    types:
+      - opened
+      - reopened
+      - synchronize
+      - ready_for_review
+
+env:
+  CARGO_TERM_COLOR: always
+  RUSTFLAGS: --deny warnings
+  RUSTDOCFLAGS: --deny warnings
+
+jobs:
+  build:
+    name: Build
+    if: github.event.pull_request.draft == false
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      - uses: ./.github/actions/rust
+        name: Setup
+        with:
+          name: test-build
+      - name: Build
+        run: cargo build --verbose --all-targets --all-features --locked
+
+  clippy:
+    name: Clippy
+    if: github.event.pull_request.draft == false
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      - uses: ./.github/actions/rust
+        name: Setup
+        with:
+          name: clippy
+          components: clippy
+      - name: Clippy
+        run: cargo clippy --all --all-targets --all-features --workspace -- --deny warnings
+
+  test:
+    name: Test
+    if: github.event.pull_request.draft == false
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      - uses: ./.github/actions/rust
+        name: Setup
+        with:
+          name: test
+      - name: Test
+        run: cargo test --verbose --all-features --workspace
+
+  format:
+    name: Formatting
+    if: github.event.pull_request.draft == false
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: dtolnay/rust-toolchain@nightly
+        with:
+          components: rustfmt
+      - run: cargo +nightly fmt --version
+      - run: cargo +nightly fmt --all -- --check
+
+  udeps:
+    name: Unused Deps
+    if: github.event.pull_request.draft == false
+    runs-on: ubuntu-latest
+    steps:
+      - name: Install alsa and udev
+        run: sudo apt-get update; sudo apt-get install --no-install-recommends libasound2-dev libudev-dev
+      - uses: actions/checkout@v3
+      - uses: dtolnay/rust-toolchain@nightly
+        id: rust-toolchain
+
+      - uses: actions/cache@v3
+        id: rust-cache
+        with:
+          path: |
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            target/
+          key: rust-udeps-${{ steps.rust-toolchain.outputs.cachekey }}-v1
+
+      - name: cargo-udeps
+        run: |
+          export UDEPS_VER=$(curl -s "https://api.github.com/repos/est31/cargo-udeps/releases/latest" | jq -r .tag_name)
+          echo $UDEPS_VER
+          curl -L "https://github.com/est31/cargo-udeps/releases/download/$UDEPS_VER/cargo-udeps-$UDEPS_VER-x86_64-unknown-linux-gnu.tar.gz" -o udeps.tar.gz
+          tar -xzvf udeps.tar.gz
+          ./cargo-udeps-$UDEPS_VER-x86_64-unknown-linux-gnu/cargo-udeps udeps
+
+  comments:
+    name: Code Comments
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Forgotten TODOs
+        run: bash tools/todos.sh

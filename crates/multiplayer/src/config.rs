@@ -1,24 +1,18 @@
 use std::net::IpAddr;
 
-use de_core::player::Player;
+use de_types::player::Player;
 
 pub struct NetGameConf {
-    max_players: Player,
     server_host: IpAddr,
-    server_port: ServerPort,
+    connection_type: ConnectionType,
 }
 
 impl NetGameConf {
-    pub fn new(max_players: Player, server_host: IpAddr, server_port: ServerPort) -> Self {
+    pub fn new(server_host: IpAddr, connection_type: ConnectionType) -> Self {
         Self {
-            max_players,
             server_host,
-            server_port,
+            connection_type,
         }
-    }
-
-    pub(crate) fn max_players(&self) -> Player {
-        self.max_players
     }
 
     /// Address of DE Connector server.
@@ -26,20 +20,26 @@ impl NetGameConf {
         self.server_host
     }
 
-    pub(crate) fn server_port(&self) -> ServerPort {
-        self.server_port
+    pub(crate) fn connection_type(&self) -> ConnectionType {
+        self.connection_type
     }
 }
 
+/// Type of to be established connection to DE Connector.
 #[derive(Clone, Copy)]
-pub enum ServerPort {
-    /// Port of a main server.
+pub enum ConnectionType {
+    /// Create a new game via the given main server.
     ///
     /// This is not a game server thus the client must open a new game via this
     /// main server.
-    Main(u16),
-    /// Port of an existing game server.
+    CreateGame {
+        /// Port of the main server.
+        port: u16,
+        /// Maximum number of players to be configured for the new game.
+        max_players: Player,
+    },
+    /// Join a game server at the given port.
     ///
     /// This is a game server with other players potentially already connected.
-    Game(u16),
+    JoinGame(u16),
 }

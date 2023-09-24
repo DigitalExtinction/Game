@@ -20,7 +20,7 @@ impl MapHash {
     }
 
     /// Constructs the map hash from a hexadecimal string.
-    pub(crate) fn from_hex(hex: &str) -> Result<Self, HexError> {
+    pub fn from_hex(hex: &str) -> Result<Self, HexError> {
         if hex.len() != 64 {
             return Err(HexError::InvalidLenError);
         }

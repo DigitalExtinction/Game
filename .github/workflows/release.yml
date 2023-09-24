@@ -14,57 +14,26 @@ jobs:
         include:
           - os: ubuntu-latest
             target: 'x86_64-unknown-linux-gnu'
+            dependencies: linux
           - os: ubuntu-latest
             target: 'x86_64-pc-windows-gnu'
+            dependencies: windows
           - os: macos-latest
             target: 'x86_64-apple-darwin'
+            dependencies: none
           - os: macos-latest
             target: 'aarch64-apple-darwin'
+            dependencies: none
 
     steps:
       - uses: actions/checkout@v3
 
-      - name: Create LFS File List
-        run: git lfs ls-files -l | cut -d' ' -f1 | sort > .lfs-assets-id
-      - name: Restore LFS Cache
-        uses: actions/cache@v2
-        id: lfs-cache
+      - uses: ./.github/actions/rust
+        name: Setup
         with:
-          path: .git/lfs
-          key: nightly-lfs-${{ hashFiles('.lfs-assets-id') }}-v1
-      - name: Git LFS Pull
-        run: git lfs pull
-
-      - uses: dtolnay/rust-toolchain@stable
-        id: rust-toolchain
-        with:
+          name: prd-build
           targets: ${{ matrix.target }}
-
-      - name: Rust Cache
-        uses: actions/cache@v3
-        id: rust-cache
-        with:
-          path: |
-            ~/.cargo/bin/
-            ~/.cargo/registry/index/
-            ~/.cargo/registry/cache/
-            ~/.cargo/git/db/
-            target/
-          key: nightly-${{ steps.rust-toolchain.outputs.cachekey }}-${{ matrix.target }}-${{ hashFiles('**/Cargo.lock') }}
-
-      - name: Install x86_64-unknown-linux-gnu
-        if: ${{ matrix.target == 'x86_64-unknown-linux-gnu' }}
-        run: |
-          sudo apt-get update
-          sudo apt-get install --no-install-recommends -y libasound2-dev libudev-dev
-
-      - name: Install x86_64-pc-windows-gnu
-        if: ${{ matrix.target == 'x86_64-pc-windows-gnu' }}
-        run: |
-          sudo apt-get update
-          sudo apt-get install --no-install-recommends -y mingw-w64
-
-      - run: rustc --version && cargo --version
+          dependencies: ${{ matrix.dependencies }}
 
       - name: Install cargo-auditable
         run: cargo install --force cargo-auditable
@@ -74,15 +43,32 @@ jobs:
         if: matrix.os == 'ubuntu-latest'
 
       - name: Build
-        run: cargo build --release --target ${{ matrix.target }}
+        run: cargo build --release --workspace --target ${{ matrix.target }}
+
+      - name: Prepare Pack
+        run: |
+          mkdir DigitalExtinction
+          mv assets DigitalExtinction/
+          mv LICENSE DigitalExtinction/LICENSE
+          mv README.md DigitalExtinction/README.md
+
+      - name: Add Windows Binary
+        if: ${{ matrix.target == 'x86_64-pc-windows-gnu' }}
+        run: |
+          mv target/${{ matrix.target }}/release/de.exe DigitalExtinction/
+          mv target/${{ matrix.target }}/release/de-lobby.exe DigitalExtinction/
+          mv target/${{ matrix.target }}/release/de-connector.exe DigitalExtinction/
+
+      - name: Add Non-Windows Binary
+        if: ${{ matrix.target != 'x86_64-pc-windows-gnu' }}
+        run: |
+          mv target/${{ matrix.target }}/release/de DigitalExtinction/
+          mv target/${{ matrix.target }}/release/de-lobby DigitalExtinction/
+          mv target/${{ matrix.target }}/release/de-connector DigitalExtinction/
 
       - name: Pack
         shell: bash
         run: |
-          mkdir DigitalExtinction
-          mv target/${{ matrix.target }}/release/de_game DigitalExtinction/de || :
-          mv target/${{ matrix.target }}/release/de_game.exe DigitalExtinction/de.exe || :
-          mv assets DigitalExtinction/
           mkdir -p ${{ matrix.target }}
           zip -r ${{ matrix.target }}/nightly.zip DigitalExtinction
 

@@ -17,13 +17,16 @@ use de_conf::Configuration;
 use de_core::{
     gamestate::GameState,
     gconfig::GameConfig,
-    objects::{BuildingType, ObjectType, Playable, PLAYER_MAX_BUILDINGS},
-    player::Player,
-    projection::ToFlat,
+    objects::{ObjectTypeComponent, Playable},
+    player::PlayerComponent,
     schedule::InputSchedule,
     screengeom::ScreenRect,
 };
 use de_spawner::{DraftAllowed, ObjectCounter};
+use de_types::{
+    objects::{BuildingType, PLAYER_MAX_BUILDINGS},
+    projection::ToFlat,
+};
 use enum_map::enum_map;
 
 use super::{
@@ -152,13 +155,13 @@ fn right_click_handler(
     mut send_events: EventWriter<SendSelectedEvent>,
     mut location_events: EventWriter<DeliveryLocationSelectedEvent>,
     mut attack_events: EventWriter<GroupAttackEvent>,
-    targets: Query<&Player>,
+    targets: Query<&PlayerComponent>,
     pointer: Res<Pointer>,
 ) {
     match pointer.entity().filter(|&entity| {
         targets
             .get(entity)
-            .map(|&player| !config.locals().is_playable(player))
+            .map(|&player| !config.locals().is_playable(*player))
             .unwrap_or(false)
     }) {
         Some(enemy) => attack_events.send(GroupAttackEvent::new(enemy)),
@@ -175,7 +178,7 @@ fn right_click_handler(
 fn double_click_handler(
     keys: Res<Input<KeyCode>>,
     pointer: Res<Pointer>,
-    playable: Query<&ObjectType, With<Playable>>,
+    playable: Query<&ObjectTypeComponent, With<Playable>>,
     drafts: Query<(), With<DraftAllowed>>,
     mut select_in_rect_events: EventWriter<SelectInRectEvent>,
 ) {
@@ -199,7 +202,7 @@ fn double_click_handler(
     select_in_rect_events.send(SelectInRectEvent::new(
         ScreenRect::full(),
         selection_mode,
-        Some(*targeted_entity_type),
+        Some(**targeted_entity_type),
     ));
 }
 
@@ -350,8 +353,7 @@ fn place_draft(
           mut events: EventWriter<NewDraftEvent>| {
         if counter
             .player(conf.locals().playable())
-            .unwrap()
-            .building_count()
+            .map_or(0, |c| c.building_count())
             >= PLAYER_MAX_BUILDINGS
         {
             warn!("Maximum number of buildings reached.");

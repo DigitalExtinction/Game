@@ -1,0 +1,25 @@
+[package]
+name = "de_messages"
+description = "Digital Extinction multiplayer message protocol."
+
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+repository.workspace = true
+keywords.workspace = true
+homepage.workspace = true
+license.workspace = true
+categories.workspace = true
+
+[features]
+bevy = ["dep:bevy"]
+
+[dependencies]
+# DE
+de_types.workspace = true
+
+# Other
+bevy = { workspace = true, optional = true }
+bincode.workspace = true
+glam.workspace = true
+thiserror.workspace = true

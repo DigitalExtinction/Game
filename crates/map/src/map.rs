@@ -95,7 +95,7 @@ pub enum MapValidationError {
 mod test {
     use std::error::Error;
 
-    use de_core::{
+    use de_types::{
         objects::{ActiveObjectType, InactiveObjectType, UnitType},
         player::Player,
     };

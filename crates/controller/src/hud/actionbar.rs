@@ -1,13 +1,12 @@
 use bevy::prelude::*;
 use de_construction::EnqueueAssemblyEvent;
 use de_core::{
-    cleanup::DespawnOnGameExit,
-    gamestate::GameState,
-    objects::{ObjectType, UnitType},
+    cleanup::DespawnOnGameExit, gamestate::GameState, objects::ObjectTypeComponent,
     schedule::InputSchedule,
 };
 use de_gui::{ButtonCommands, GuiCommands, OuterStyle};
 use de_objects::SolidObjects;
+use de_types::objects::UnitType;
 
 use super::{interaction::InteractionBlocker, HUD_COLOR};
 use crate::selection::Selected;
@@ -93,14 +92,14 @@ fn update(
     solids: SolidObjects,
     bar_node: Res<ActionBarNode>,
     active: Res<ActiveEntity>,
-    objects: Query<&ObjectType>,
+    objects: Query<&ObjectTypeComponent>,
 ) {
     commands.entity(bar_node.0).despawn_descendants();
 
     let Some(active) = active.0 else { return };
     let object_type = *objects.get(active).unwrap();
 
-    if let Some(factory) = solids.get(object_type).factory() {
+    if let Some(factory) = solids.get(*object_type).factory() {
         for &unit in factory.products() {
             spawn_button(&mut commands, bar_node.0, unit);
         }

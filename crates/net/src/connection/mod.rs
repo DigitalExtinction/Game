@@ -1,7 +1,7 @@
-pub(crate) use confirms::Confirmations;
-pub(crate) use resend::Resends;
+pub(crate) use delivery::{DeliveryHandler, ReceivedIdError};
+pub(crate) use dispatch::DispatchHandler;
 
 mod book;
-mod confirms;
 mod databuf;
-mod resend;
+mod delivery;
+mod dispatch;

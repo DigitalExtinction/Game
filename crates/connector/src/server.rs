@@ -2,10 +2,11 @@ use std::net::SocketAddr;
 
 use anyhow::Context;
 use async_std::task;
+use de_messages::{FromServer, GameOpenError, ToServer};
 use de_net::{
-    self, FromServer, GameOpenError, MessageDecoder, OutPackage, PackageReceiver, PackageSender,
-    Peers, Socket, ToServer,
+    self, MessageDecoder, OutPackage, PackageReceiver, PackageSender, Peers, Reliability, Socket,
 };
+use de_types::player::Player;
 use tracing::{error, info, warn};
 
 use crate::{clients::Clients, game};
@@ -73,7 +74,7 @@ impl MainServer {
         Ok(())
     }
 
-    async fn open_game(&mut self, source: SocketAddr, max_players: u8) -> anyhow::Result<()> {
+    async fn open_game(&mut self, source: SocketAddr, max_players: Player) -> anyhow::Result<()> {
         if let Err(err) = self.clients.reserve(source).await {
             warn!("OpenGame request error: {err}");
             self.reply(
@@ -104,7 +105,10 @@ impl MainServer {
 
     async fn reply(&mut self, message: &FromServer, target: SocketAddr) -> anyhow::Result<()> {
         self.outputs
-            .send(OutPackage::encode_single(message, true, Peers::Server, target).unwrap())
+            .send(
+                OutPackage::encode_single(message, Reliability::Unordered, Peers::Server, target)
+                    .unwrap(),
+            )
             .await
             .context("Failed to send a reply")
     }

@@ -16,6 +16,7 @@ categories.workspace = true
 de_core.workspace = true
 de_objects.workspace = true
 de_pathing.workspace = true
+de_types.workspace = true
 
 # Other
 bevy.workspace = true

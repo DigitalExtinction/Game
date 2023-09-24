@@ -4,7 +4,7 @@ use std::{
 };
 
 use async_std::{prelude::FutureExt, task};
-use de_net::Socket;
+use de_net::{Reliability, Socket};
 use futures::join;
 use ntest::timeout;
 
@@ -34,10 +34,14 @@ impl ReceivedBuffer {
         );
     }
 
-    fn find_id(&self, filter_reliable: bool, filter_data: &[u8]) -> Option<u32> {
+    fn find_id(&self, filter_reliability: Reliability, filter_data: &[u8]) -> Option<u32> {
         self.0.iter().find_map(|incomming| match incomming {
-            Incomming::Data { reliable, id, data } => {
-                if *reliable == filter_reliable && data == filter_data {
+            Incomming::Data {
+                reliability,
+                id,
+                data,
+            } => {
+                if *reliability == filter_reliability && data == filter_data {
                     Some(*id)
                 } else {
                     None
@@ -68,7 +72,16 @@ impl ReceivedBuffer {
                 self.0.push(Incomming::Confirm(id));
             }
         } else {
-            let reliable = buf[0] & 64 > 0;
+            let reliability = (buf[0] & 96) >> 5;
+            let reliability = if reliability == 0 {
+                Reliability::Unreliable
+            } else if reliability == 1 {
+                Reliability::Unordered
+            } else if reliability == 2 {
+                Reliability::SemiOrdered
+            } else {
+                panic!("Invalid reliability bits");
+            };
 
             id_bytes[0] = 0;
             id_bytes[1] = buf[1];
@@ -77,7 +90,7 @@ impl ReceivedBuffer {
             let id = u32::from_be_bytes(id_bytes);
 
             self.0.push(Incomming::Data {
-                reliable,
+                reliability,
                 id,
                 data: buf[4..n].to_vec(),
             });
@@ -89,7 +102,7 @@ impl ReceivedBuffer {
 enum Incomming {
     Confirm(u32),
     Data {
-        reliable: bool,
+        reliability: Reliability,
         id: u32,
         data: Vec<u8>,
     },
@@ -109,28 +122,53 @@ fn test() {
         received.load(&mut client, &mut buffer).await;
         received.load(&mut client, &mut buffer).await;
 
-        // [5, 2] -> FromGame::PeerJoined(1)
-        let id = received.find_id(true, &[5, 2]).unwrap().to_be_bytes();
+        // [5, 1] -> FromGame::PeerJoined(Player2)
+        let id = received
+            .find_id(Reliability::SemiOrdered, &[5, 1])
+            .unwrap()
+            .to_be_bytes();
         // And send a confirmation
         client
             .send(server, &[128, 0, 0, 0, id[1], id[2], id[3]])
             .await
             .unwrap();
 
-        let first_id = received.find_id(true, &[5, 6, 7, 8]).unwrap();
+        let first_id = received
+            .find_id(
+                Reliability::Unordered,
+                &[
+                    1, // from player ID
+                    0, // variant = chat
+                    4, // message length
+                    73, 110, 100, 121, // text
+                ],
+            )
+            .unwrap();
 
-        let mut data = [22; 412];
-        data[0] = 64; // Reliable
+        let mut data = [50; 141];
+        data[0] = 32; // Unordered
         data[1] = 0;
         data[2] = 0;
-        data[3] = 22;
+        data[3] = 22; // ID
+        data[4] = 0; // variant = chat
+        data[5] = 135; // string length
         client.send(server, &data).await.unwrap();
 
         let mut received = ReceivedBuffer::new();
         received.load(&mut client, &mut buffer).await;
         received.load(&mut client, &mut buffer).await;
         received.assert_confirmed(22);
-        received.find_id(false, &[82, 83, 84]).unwrap();
+        received
+            .find_id(
+                Reliability::Unreliable,
+                &[
+                    1, // from player ID
+                    0, // variant = chat
+                    3, // message length
+                    82, 83, 84, // text
+                ],
+            )
+            .unwrap();
 
         // Try to send invalid data -- wrong header
         client
@@ -146,10 +184,20 @@ fn test() {
         // Two retries before we confirm.
         let mut received = ReceivedBuffer::new();
         received.load(&mut client, &mut buffer).await;
-        assert_eq!(received.find_id(true, &[5, 6, 7, 8]).unwrap(), first_id);
+        assert_eq!(
+            received
+                .find_id(Reliability::Unordered, &[1, 0, 4, 73, 110, 100, 121])
+                .unwrap(),
+            first_id
+        );
         let mut received = ReceivedBuffer::new();
         received.load(&mut client, &mut buffer).await;
-        assert_eq!(received.find_id(true, &[5, 6, 7, 8]).unwrap(), first_id);
+        assert_eq!(
+            received
+                .find_id(Reliability::Unordered, &[1, 0, 4, 73, 110, 100, 121])
+                .unwrap(),
+            first_id
+        );
 
         let id = first_id.to_be_bytes();
         // And send a confirmation
@@ -158,8 +206,32 @@ fn test() {
             .await
             .unwrap();
 
-        client.send(server, &[64, 0, 0, 92, 16]).await.unwrap();
-        client.send(server, &[64, 0, 0, 86, 23]).await.unwrap();
+        client
+            .send(
+                server,
+                &[
+                    32, // reliability = unordered
+                    0, 0, 92, // ID
+                    0,  // variant = chat
+                    1,  // length
+                    88, // TEXT
+                ],
+            )
+            .await
+            .unwrap();
+        client
+            .send(
+                server,
+                &[
+                    32, // reliability = unordered
+                    0, 0, 86, // ID
+                    0,  // variant = chat
+                    1,  // length
+                    89, // text
+                ],
+            )
+            .await
+            .unwrap();
         let mut received = ReceivedBuffer::new();
         received.load(&mut client, &mut buffer).await;
         received.assert_confirmed(92);
@@ -179,8 +251,16 @@ fn test() {
         let mut buffer = [0u8; 1024];
 
         client
-            // Reliable
-            .send(server, &[64, 0, 0, 14, 5, 6, 7, 8])
+            .send(
+                server,
+                &[
+                    32, // reliability = unordered
+                    0, 0, 14, // ID
+                    0,  // variant = chat
+                    4,  // length
+                    73, 110, 100, 121, // text
+                ],
+            )
             .await
             .unwrap();
 
@@ -188,7 +268,16 @@ fn test() {
         received.load(&mut client, &mut buffer).await;
         received.load(&mut client, &mut buffer).await;
         received.assert_confirmed(14);
-        let id = received.find_id(true, &[22; 408]).unwrap().to_be_bytes();
+
+        let mut expected = [50; 138];
+        expected[0] = 0; // from player
+        expected[1] = 0; // variant = chat
+        expected[2] = 135; // message length
+        let expected = expected;
+        let id = received
+            .find_id(Reliability::Unordered, &expected)
+            .unwrap()
+            .to_be_bytes();
         // Sending confirmation
 
         client
@@ -199,23 +288,23 @@ fn test() {
         client
             .send(
                 server,
-                // Anonymous message
-                &[0, 0, 0, 0, 82, 83, 84],
+                &[
+                    0, 0, 0, 0, // Anonymous message
+                    0, // variant = chat
+                    3, // length
+                    82, 83, 84, // text
+                ],
             )
             .await
             .unwrap();
 
         let mut received = ReceivedBuffer::new();
         received.load(&mut client, &mut buffer).await;
-        let id = received.find_id(true, &[16]).unwrap().to_be_bytes();
-        client
-            .send(server, &[128, 0, 0, 0, id[1], id[2], id[3]])
-            .await
-            .unwrap();
-
-        let mut received = ReceivedBuffer::new();
-        received.load(&mut client, &mut buffer).await;
-        let id = received.find_id(true, &[23]).unwrap().to_be_bytes();
+        // Two messages get grouped by DE Connector.
+        let id = received
+            .find_id(Reliability::Unordered, &[0, 0, 1, 88, 0, 0, 1, 89])
+            .unwrap()
+            .to_be_bytes();
         client
             .send(server, &[128, 0, 0, 0, id[1], id[2], id[3]])
             .await
@@ -245,11 +334,11 @@ async fn create_game() -> (Socket, u16) {
 
     let mut client = Socket::bind(None).await.unwrap();
 
-    // [64 + 32] -> reliable + Peers::Server
+    // [32 + 16] -> unordered + Peers::Server
     // [0, 0, 7] -> datagram ID = 7
-    // [1 3] -> ToGame::OpenGame { max_players: 3 }
+    // [1 2] -> ToGame::OpenGame { max_players: Player3 }
     client
-        .send(SERVER_ADDR, &[64 + 32, 0, 0, 7, 1, 3])
+        .send(SERVER_ADDR, &[32 + 16, 0, 0, 7, 1, 2])
         .await
         .unwrap();
 
@@ -259,11 +348,16 @@ async fn create_game() -> (Socket, u16) {
     assert_eq!(received.0.len(), 1);
 
     let port = {
-        let Incomming::Data { reliable, id, data } = &(received.0)[0] else {
+        let Incomming::Data {
+            reliability,
+            id,
+            data,
+        } = &(received.0)[0]
+        else {
             panic!("Unexpected data received: {:?}", received);
         };
 
-        assert!(reliable);
+        assert!(reliability.is_reliable());
 
         // Confirm
         let id = id.to_be_bytes();
@@ -294,8 +388,11 @@ async fn create_game() -> (Socket, u16) {
     let mut received = ReceivedBuffer::new();
     received.load(&mut client, &mut buffer).await;
 
-    // [2, 1] -> FromGame::Joined(1)
-    let id = received.find_id(true, &[2, 1]).unwrap().to_be_bytes();
+    // [2, 0] -> FromGame::Joined(Player1)
+    let id = received
+        .find_id(Reliability::SemiOrdered, &[2, 0])
+        .unwrap()
+        .to_be_bytes();
     client
         .send(server, &[128, 0, 0, 0, id[1], id[2], id[3]])
         .await
@@ -310,18 +407,21 @@ async fn join_game(game_port: u16) -> Socket {
     let server = SocketAddr::V4(SocketAddrV4::new(Ipv4Addr::LOCALHOST, game_port));
     let mut client = Socket::bind(None).await.unwrap();
 
-    // [64 + 32] -> reliable + Peers::Server
+    // [32 + 16] -> unordered + Peers::Server
     // [0, 0, 3] -> datagram ID = 3
     // [1] -> ToGame::Join
-    client.send(server, &[64 + 32, 0, 0, 3, 1]).await.unwrap();
+    client.send(server, &[32 + 16, 0, 0, 3, 1]).await.unwrap();
 
     let mut received = ReceivedBuffer::new();
     received.load(&mut client, &mut buffer).await;
     received.load(&mut client, &mut buffer).await;
     received.assert_confirmed(3);
 
-    // [2, 2] -> FromGame::Joined(2)
-    let id = received.find_id(true, &[2, 2]).unwrap().to_be_bytes();
+    // [2, 1] -> FromGame::Joined(Player2)
+    let id = received
+        .find_id(Reliability::SemiOrdered, &[2, 1])
+        .unwrap()
+        .to_be_bytes();
     client
         .send(server, &[128, 0, 0, 0, id[1], id[2], id[3]])
         .await

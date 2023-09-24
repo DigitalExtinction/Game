@@ -4,10 +4,12 @@ use bevy::{
     app::PluginGroupBuilder,
     prelude::{PluginGroup, SystemSet},
 };
+use health::HealthPlugin;
 use laser::LaserPlugin;
 use trail::TrailPlugin;
 
 mod attack;
+mod health;
 mod laser;
 mod sightline;
 mod trail;
@@ -20,6 +22,7 @@ impl PluginGroup for CombatPluginGroup {
             .add(LaserPlugin)
             .add(AttackPlugin)
             .add(TrailPlugin)
+            .add(HealthPlugin)
     }
 }
 

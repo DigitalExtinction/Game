@@ -12,6 +12,10 @@ homepage.workspace = true
 license.workspace = true
 categories.workspace = true
 
+[[bin]]
+name = "de"
+path = "src/main.rs"
+
 [profile.lto]
 inherits = "release"
 lto = true
@@ -56,6 +60,7 @@ de_terrain.workspace = true
 
 # Other
 bevy.workspace = true
+bevy_kira_audio.workspace = true
 tracing.workspace = true
 
 [workspace]
@@ -69,7 +74,7 @@ authors = ["Martin Indra <martin.indra@mgn.cz>"]
 repository = "https://github.com/DigitalExtinction/Game"
 keywords = ["DigitalExtinction", "gamedev", "game", "bevy", "3d"]
 homepage = "https://de-game.org/"
-license = "GPL-3.0"
+license = "AGPL-3.0"
 categories = ["games"]
 
 [workspace.dependencies]
@@ -92,6 +97,7 @@ de_lobby_model = { path = "crates/lobby_model", version = "0.1.0-dev" }
 de_log = { path = "crates/log", version = "0.1.0-dev" }
 de_map = { path = "crates/map", version = "0.1.0-dev" }
 de_menu = { path = "crates/menu", version = "0.1.0-dev" }
+de_messages = { path = "crates/messages", version = "0.1.0-dev" }
 de_movement = { path = "crates/movement", version = "0.1.0-dev" }
 de_multiplayer = { path = "crates/multiplayer", version = "0.1.0-dev" }
 de_net = { path = "crates/net", version = "0.1.0-dev" }
@@ -100,6 +106,8 @@ de_pathing = { path = "crates/pathing", version = "0.1.0-dev" }
 de_signs = { path = "crates/signs", version = "0.1.0-dev" }
 de_spawner = { path = "crates/spawner", version = "0.1.0-dev" }
 de_terrain = { path = "crates/terrain", version = "0.1.0-dev" }
+de_test_utils = { path = "crates/test_utils", version = "0.1.0-dev" }
+de_types = { path = "crates/types", version = "0.1.0-dev" }
 de_uom = { path = "crates/uom", version = "0.1.0-dev" }
 
 # Other
@@ -111,7 +119,7 @@ assert_cmd = "2.0.10"
 async-compat = "0.2.1"
 async-std = "1.11"
 async-tar = "0.4.2"
-bevy = { version = "0.11", features = ["mp3"] }
+bevy_kira_audio = { version = "0.16.0", features = ["mp3"] }
 bincode = "2.0.0-rc.3"
 chrono = "0.4.24"
 clap = { version = "4.0", features = ["derive"] }
@@ -154,3 +162,33 @@ tracing-subscriber = { version = "0.3.17", features = ["json"] }
 trybuild = "1.0.80"
 url = { version = "2.3.1", features = ["serde"] }
 urlencoding = "2.1.2"
+
+[workspace.dependencies.bevy]
+version = "0.11"
+default-features = false
+features = [
+    "animation",
+    "bevy_asset",
+    "bevy_gilrs",
+    "bevy_scene",
+    "bevy_winit",
+    "bevy_core_pipeline",
+    "bevy_pbr",
+    "bevy_gltf",
+    "bevy_render",
+    "bevy_sprite",
+    "bevy_text",
+    "bevy_ui",
+    "multi-threaded",
+    "png",
+    "hdr",
+    "ktx2",
+    "zstd",
+    "x11",
+    "filesystem_watcher",
+    "bevy_gizmos",
+    "android_shared_stdcxx",
+    "tonemapping_luts",
+    "default_font",
+    "webgl2",
+]

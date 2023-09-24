@@ -8,6 +8,7 @@ use bevy::{
     prelude::*,
     window::WindowMode,
 };
+use bevy_kira_audio::AudioPlugin;
 use de_audio::AudioPluginGroup;
 use de_behaviour::BehaviourPluginGroup;
 use de_camera::CameraPluginGroup;
@@ -64,6 +65,7 @@ fn main() {
                     })
                     .disable::<LogPlugin>(),
             )
+            .add_plugins(AudioPlugin)
             .add_plugins((
                 LogDiagnosticsPlugin {
                     debug: false,

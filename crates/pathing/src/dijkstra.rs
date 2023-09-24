@@ -4,13 +4,13 @@ use std::{cmp::Ordering, collections::BinaryHeap};
 
 use ahash::AHashSet;
 use bevy::utils::FloatOrd;
+use de_types::path::Path;
 use parry2d::{math::Point, na, query::PointQuery, shape::Segment};
 
 use crate::{
     funnel::Funnel,
     geometry::{orient, which_side, Side},
     graph::VisibilityGraph,
-    path::Path,
     PathQueryProps,
 };
 

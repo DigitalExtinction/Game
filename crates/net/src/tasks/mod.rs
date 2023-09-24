@@ -58,14 +58,14 @@
 use async_std::channel::bounded;
 pub use communicator::{
     ConnErrorReceiver, ConnectionError, InPackage, MessageDecoder, OutPackage, PackageBuilder,
-    PackageReceiver, PackageSender,
+    PackageIterator, PackageReceiver, PackageSender,
 };
 pub(crate) use dsender::OutDatagram;
 use futures::future::BoxFuture;
 use tracing::info;
 
 use crate::{
-    connection::{Confirmations, Resends},
+    connection::{DeliveryHandler, DispatchHandler},
     protocol::ProtocolSocket,
     tasks::cancellation::cancellation,
     Socket,
@@ -121,24 +121,24 @@ where
         protocol_socket,
     )));
 
-    let resends = Resends::new();
+    let dispatch_handler = DispatchHandler::new();
     let (sreceiver_cancellation_sender, sreceiver_cancellation_receiver) = cancellation();
     spawn(Box::pin(sreceiver::run(
         port,
         sreceiver_cancellation_receiver,
         in_system_datagrams_receiver,
-        resends.clone(),
+        dispatch_handler.clone(),
     )));
 
     let (inputs_sender, inputs_receiver) = bounded(CHANNEL_CAPACITY);
     let (confirmer_cancellation_sender, confirmer_cancellation_receiver) = cancellation();
-    let confirms = Confirmations::new();
+    let delivery_handler = DeliveryHandler::new();
     spawn(Box::pin(ureceiver::run(
         port,
         confirmer_cancellation_sender,
         in_user_datagrams_receiver,
         inputs_sender,
-        confirms.clone(),
+        delivery_handler.clone(),
     )));
 
     let (outputs_sender, outputs_receiver) = bounded(CHANNEL_CAPACITY);
@@ -150,21 +150,21 @@ where
         sreceiver_cancellation_sender,
         out_datagrams_sender.clone(),
         errors_sender,
-        resends.clone(),
+        dispatch_handler.clone(),
     )));
 
     spawn(Box::pin(confirmer::run(
         port,
         confirmer_cancellation_receiver,
         out_datagrams_sender.clone(),
-        confirms,
+        delivery_handler,
     )));
     spawn(Box::pin(usender::run(
         port,
         resender_cancellation_sender,
         out_datagrams_sender,
         outputs_receiver,
-        resends,
+        dispatch_handler,
     )));
 
     (

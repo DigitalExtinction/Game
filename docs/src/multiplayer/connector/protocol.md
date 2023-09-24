@@ -24,7 +24,8 @@ by the mask `0b1000_0000`).
 Each user package has an ID, encoded within the last three bytes of the
 datagram header. These IDs increment until they reach the maximum value that
 can be encoded within three bytes, after which the counter resets to 0. The ID
-sequence for reliable and unreliable packages are independent.
+sequence for reliable and unreliable packages are independent. Each connection
+/ client has independent reliable package numbering.
 
 Packages can be transmitted in either reliable or non-reliable mode.
 Reliability is signaled by the second highest bit of the flags byte

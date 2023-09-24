@@ -1,29 +1,24 @@
-use std::net::SocketAddr;
-
 use bevy::prelude::*;
 use de_gui::{
     ButtonCommands, ButtonOps, GuiCommands, LabelCommands, OuterStyle, TextBoxCommands,
     TextBoxQuery, ToastEvent,
 };
-use de_lobby_client::CreateGameRequest;
-use de_lobby_model::{GameConfig, GameMap, GameSetup, Validatable};
+use de_lobby_model::{GameConfig, GameMap, Validatable};
 use de_map::hash::MapHash;
 
+use super::{setup::SetupGameEvent, MultiplayerState};
 use crate::{
     mapselection::{MapSelectedEvent, SelectMapEvent},
     menu::Menu,
-    requests::{Receiver, RequestsPlugin, Sender},
-    MenuState,
 };
 
-pub(crate) struct CreateGamePlugin;
+pub(super) struct CreateGamePlugin;
 
 impl Plugin for CreateGamePlugin {
     fn build(&self, app: &mut App) {
-        app.add_plugins(RequestsPlugin::<CreateGameRequest>::new())
-            .add_event::<CreateGameEvent>()
-            .add_systems(OnEnter(MenuState::GameCreation), setup)
-            .add_systems(OnExit(MenuState::GameCreation), cleanup)
+        app.add_event::<CreateGameEvent>()
+            .add_systems(OnEnter(MultiplayerState::GameCreation), setup)
+            .add_systems(OnExit(MultiplayerState::GameCreation), cleanup)
             .add_systems(
                 Update,
                 (
@@ -33,15 +28,14 @@ impl Plugin for CreateGamePlugin {
                         .run_if(on_event::<CreateGameEvent>())
                         .after(CreateSet::Buttons)
                         .after(CreateSet::MapSelected),
-                    response_system,
                 )
-                    .run_if(in_state(MenuState::GameCreation)),
+                    .run_if(in_state(MultiplayerState::GameCreation)),
             );
     }
 }
 
 #[derive(Copy, Clone, Hash, Debug, PartialEq, Eq, SystemSet)]
-pub(crate) enum CreateSet {
+enum CreateSet {
     Buttons,
     MapSelected,
 }
@@ -243,7 +237,7 @@ fn create_game_system(
     texts: TextBoxQuery,
     selected_map: Option<Res<SelectedMap>>,
     mut toasts: EventWriter<ToastEvent>,
-    mut sender: Sender<CreateGameRequest>,
+    mut setup_events: EventWriter<SetupGameEvent>,
 ) {
     let Some(selected_map) = selected_map else {
         toasts.send(ToastEvent::new("No map selected."));
@@ -259,26 +253,10 @@ fn create_game_system(
         }
     };
 
-    let game_server: SocketAddr = "127.0.0.1:8082".parse().unwrap();
     let game_config = GameConfig::new(name, max_players, selected_map.0.clone());
-    let game_setup = GameSetup::new(game_server, game_config);
-    if let Err(error) = game_setup.validate() {
+    if let Err(error) = game_config.validate() {
         toasts.send(ToastEvent::new(format!("{error}")));
         return;
     }
-
-    sender.send(CreateGameRequest::new(game_setup));
-}
-
-fn response_system(
-    mut next_state: ResMut<NextState<MenuState>>,
-    mut receiver: Receiver<CreateGameRequest>,
-    mut toasts: EventWriter<ToastEvent>,
-) {
-    if let Some(result) = receiver.receive() {
-        match result {
-            Ok(_) => next_state.set(MenuState::MultiPlayerGame),
-            Err(error) => toasts.send(ToastEvent::new(error)),
-        }
-    }
+    setup_events.send(SetupGameEvent::new(game_config));
 }

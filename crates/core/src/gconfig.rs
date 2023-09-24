@@ -1,27 +1,23 @@
 use std::path::{Path, PathBuf};
 
-use bevy::prelude::Resource;
-
-use crate::player::{Player, PlayerRange};
+use bevy::prelude::*;
+use de_types::player::{Player, PlayerRange};
+use tinyvec::{array_vec, ArrayVec};
 
 /// This resource is automatically removed when
 /// [`crate::state::AppState::InGame`] is exited.
 #[derive(Resource)]
 pub struct GameConfig {
     map_path: PathBuf,
-    max_player: Player,
+    multiplayer: bool,
     locals: LocalPlayers,
 }
 
 impl GameConfig {
-    pub fn new<P: Into<PathBuf>>(map_path: P, max_player: Player, locals: LocalPlayers) -> Self {
-        if let Err(err) = locals.validate(max_player) {
-            panic!("Invalid LocalPlayers configuration: {err:?}");
-        }
-
+    pub fn new<P: Into<PathBuf>>(map_path: P, multiplayer: bool, locals: LocalPlayers) -> Self {
         Self {
             map_path: map_path.into(),
-            max_player,
+            multiplayer,
             locals,
         }
     }
@@ -30,8 +26,8 @@ impl GameConfig {
         self.map_path.as_path()
     }
 
-    pub fn players(&self) -> PlayerRange {
-        PlayerRange::up_to(self.max_player)
+    pub fn multiplayer(&self) -> bool {
+        self.multiplayer
     }
 
     pub fn locals(&self) -> &LocalPlayers {
@@ -48,19 +44,40 @@ impl GameConfig {
 /// exactly one computer.
 pub struct LocalPlayers {
     playable: Player,
+    locals: ArrayVec<[Player; Player::MAX_PLAYERS]>,
 }
 
 impl LocalPlayers {
+    pub fn from_max_player(playable: Player, max_player: Player) -> Self {
+        Self::from_range(playable, PlayerRange::up_to(max_player))
+    }
+
+    pub fn from_range(playable: Player, locals: PlayerRange) -> Self {
+        Self::new(playable, locals.collect())
+    }
+
+    pub fn from_single(playable: Player) -> Self {
+        Self::new(playable, array_vec!(_ => playable))
+    }
+
     /// # Arguments
     ///
     /// * `playable` - the player controlled locally by the user.
-    pub fn new(playable: Player) -> Self {
-        Self { playable }
+    ///
+    /// * `locals` - other players simulated locally on this computer. It must
+    ///   include `playable`.
+    pub fn new(playable: Player, locals: ArrayVec<[Player; Player::MAX_PLAYERS]>) -> Self {
+        assert!((*locals).contains(&playable));
+        Self { playable, locals }
     }
 
     /// The player controlled directly by the user on this computer.
     pub fn playable(&self) -> Player {
         self.playable
+    }
+
+    pub fn locals(&self) -> &[Player] {
+        self.locals.as_slice()
     }
 
     /// Returns true if the player is controlled directly by the user on this
@@ -69,15 +86,17 @@ impl LocalPlayers {
         self.playable == player
     }
 
-    fn validate(&self, max_player: Player) -> Result<(), String> {
-        if self.playable > max_player {
-            return Err(format!(
-                "Playable player {} is larger than maximum number of players {max_player}.",
-                self.playable
-            ));
-        }
+    /// Returns true if the player is simulated by this computer.
+    pub fn is_local(&self, player: Player) -> bool {
+        self.locals.contains(&player)
+    }
+}
 
-        Ok(())
+/// System condition which returns true during a multiplayer game.
+pub fn is_multiplayer(config: Option<Res<GameConfig>>) -> bool {
+    match config {
+        Some(config) => config.multiplayer(),
+        None => false,
     }
 }
 
@@ -89,8 +108,8 @@ mod tests {
     fn test_game_config() {
         let config = GameConfig::new(
             "/some/path",
-            Player::Player4,
-            LocalPlayers::new(Player::Player1),
+            false,
+            LocalPlayers::from_max_player(Player::Player1, Player::Player4),
         );
         assert_eq!(config.map_path().to_string_lossy(), "/some/path");
     }

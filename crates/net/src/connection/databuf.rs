@@ -51,6 +51,19 @@ impl DataBuf {
         self.data.extend(data);
     }
 
+    /// See [`Self::get`] and [`Self::remove`].
+    ///
+    /// # Panics
+    ///
+    /// Panics if `buf` len is smaller than length of found data.
+    pub(super) fn get_and_remove(&mut self, id: PackageId, buf: &mut [u8]) -> Option<usize> {
+        let result = self.get(id, buf);
+        if result.is_some() {
+            self.remove(id);
+        }
+        result
+    }
+
     /// Searches for data stored under ID `id`, and if found, writes the data
     /// to `buf` and returns length of the data.
     ///
@@ -67,7 +80,7 @@ impl DataBuf {
 
         let data_index = slot.data_offset.wrapping_sub(front.data_offset);
 
-        assert!(buf.len() > slot.len);
+        assert!(buf.len() >= slot.len);
 
         for (source, target) in self.data.range(data_index..data_index + slot.len).zip(buf) {
             *target = *source;

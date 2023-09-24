@@ -12,16 +12,17 @@ license.workspace = true
 categories.workspace = true
 
 [dependencies]
+# DE
+de_types.workspace = true
+
+# Other
 async-std.workspace = true
 bevy.workspace = true
 dirs.workspace = true
-enum-iterator.workspace = true
-enum-map.workspace = true
 glam.workspace = true
 iyes_progress.workspace = true
-nalgebra.workspace = true
 parry2d.workspace = true
 parry3d.workspace = true
 paste.workspace = true
-serde.workspace = true
 thiserror.workspace = true
+tinyvec.workspace = true

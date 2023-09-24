@@ -1,18 +1,11 @@
 use bevy::{
-    pbr::CascadeShadowConfigBuilder,
     prelude::*,
     tasks::{IoTaskPool, Task},
 };
 use de_camera::MoveFocusEvent;
-use de_conf::Configuration;
 use de_core::{
-    assets::asset_path,
-    cleanup::DespawnOnGameExit,
-    gamestate::GameState,
-    gconfig::GameConfig,
-    log_full_error,
-    objects::{ActiveObjectType, BuildingType, ObjectType},
-    state::AppState,
+    assets::asset_path, cleanup::DespawnOnGameExit, gamestate::GameState, gconfig::GameConfig,
+    log_full_error, state::AppState,
 };
 use de_map::{
     content::InnerObject,
@@ -20,8 +13,9 @@ use de_map::{
     map::Map,
     size::MapBounds,
 };
-use de_spawner::SpawnBundle;
+use de_spawner::{SpawnInactiveEvent, SpawnLocalActiveEvent, SpawnerSet};
 use de_terrain::TerrainBundle;
+use de_types::objects::{ActiveObjectType, BuildingType};
 use futures_lite::future;
 use iyes_progress::prelude::*;
 
@@ -35,7 +29,8 @@ impl Plugin for MapLoaderPlugin {
                 Update,
                 spawn_map
                     .track_progress()
-                    .run_if(in_state(GameState::Loading)),
+                    .run_if(in_state(GameState::Loading))
+                    .before(SpawnerSet::Spawner),
             );
     }
 }
@@ -64,7 +59,8 @@ fn spawn_map(
     mut commands: Commands,
     task: Option<ResMut<MapLoadingTask>>,
     mut move_focus_events: EventWriter<MoveFocusEvent>,
-    user_config: Res<Configuration>,
+    mut spawn_active_events: EventWriter<SpawnLocalActiveEvent>,
+    mut spawn_inactive_events: EventWriter<SpawnInactiveEvent>,
     game_config: Res<GameConfig>,
 ) -> Progress {
     let mut task = match task {
@@ -109,43 +105,41 @@ fn spawn_map(
         move_focus_events.send(MoveFocusEvent::new(focus));
     }
 
-    setup_light(&mut commands, user_config.as_ref());
+    setup_light(&mut commands);
     commands.spawn((
         TerrainBundle::flat(map.metadata().bounds()),
         DespawnOnGameExit,
     ));
 
-    let players = game_config.players();
+    let locals = game_config.locals();
     for object in map.content().objects() {
-        let (mut entity_commands, object_type) = match object.inner() {
+        let transform = object.placement().to_transform();
+
+        match object.inner() {
             InnerObject::Active(object) => {
                 let player = object.player();
-                if !players.contains(player) {
+                if !locals.is_local(player) {
                     continue;
                 }
 
-                (
-                    commands.spawn(player),
-                    ObjectType::Active(object.object_type()),
-                )
+                spawn_active_events.send(SpawnLocalActiveEvent::stationary(
+                    object.object_type(),
+                    transform,
+                    player,
+                ));
             }
-            InnerObject::Inactive(object) => (
-                commands.spawn_empty(),
-                ObjectType::Inactive(object.object_type()),
-            ),
-        };
-
-        entity_commands.insert((
-            SpawnBundle::new(object_type, object.placement().to_transform()),
-            DespawnOnGameExit,
-        ));
+            InnerObject::Inactive(object) => {
+                spawn_inactive_events
+                    .send(SpawnInactiveEvent::new(object.object_type(), transform));
+            }
+        }
     }
 
     commands.insert_resource(map.metadata().bounds());
     true.into()
 }
 
-fn setup_light(commands: &mut Commands, conf: &Configuration) {
+fn setup_light(commands: &mut Commands) {
     commands.insert_resource(AmbientLight {
         color: Color::WHITE,
         brightness: 0.6,
@@ -153,14 +147,6 @@ fn setup_light(commands: &mut Commands, conf: &Configuration) {
 
     let mut transform = Transform::IDENTITY;
     transform.look_at(Vec3::new(1., -1., 0.), Vec3::new(1., 1., 0.));
-
-    let cascade_shadow_config = CascadeShadowConfigBuilder {
-        num_cascades: 5,
-        maximum_distance: 1000.,
-        first_cascade_far_bound: conf.camera().min_distance().inner() * 2.,
-        ..default()
-    }
-    .build();
 
     commands.spawn((
         DirectionalLightBundle {
@@ -170,7 +156,6 @@ fn setup_light(commands: &mut Commands, conf: &Configuration) {
                 shadows_enabled: true,
                 ..Default::default()
             },
-            cascade_shadow_config,
             transform,
             ..Default::default()
         },

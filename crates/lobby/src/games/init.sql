@@ -7,10 +7,13 @@ CREATE TABLE IF NOT EXISTS games (
 );
 
 CREATE TABLE IF NOT EXISTS players (
-    ordinal INTEGER PRIMARY KEY AUTOINCREMENT,
+    ordinal TINYINT NOT NULL,
     author BOOLEAN NOT NULL,
-    username CHARACTER({username_len}) NOT NULL UNIQUE,
+    username CHARACTER({username_len}) NOT NULL,
     game CHARACTER({game_name_len}) NOT NULL,
+
+    CONSTRAINT username UNIQUE (username),
+    CONSTRAINT ordinal UNIQUE (game, ordinal),
 
     FOREIGN KEY(username) REFERENCES users(username)
         ON UPDATE CASCADE
@@ -19,3 +22,14 @@ CREATE TABLE IF NOT EXISTS players (
         ON UPDATE CASCADE
         ON DELETE CASCADE
 );
+
+
+CREATE TRIGGER IF NOT EXISTS check_ordinal
+BEFORE INSERT ON players
+FOR EACH ROW
+BEGIN
+    SELECT CASE
+        WHEN (SELECT max_players FROM games WHERE name = NEW.game) IS NOT NULL AND NEW.ordinal > (SELECT max_players FROM games WHERE name = NEW.game)
+        THEN RAISE(FAIL, 'TOO-LARGE-ORDINAL')
+    END;
+END;

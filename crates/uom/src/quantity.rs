@@ -18,7 +18,7 @@ pub enum QuantityValueError {
 /// The units are either base SI units and several extensions (for example m,
 /// s, px) or derived units (for example rad, m/s⁻²). Only unit powers up to
 /// +/-7 are supported: id est m² or m⁻² are supported but m⁸ is not.
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy)]
 pub struct Quantity<const U: Unit>(pub(crate) f32);
 
 impl<const U: Unit> Quantity<U> {
@@ -54,16 +54,6 @@ impl<const U: Unit> Quantity<U> {
         self.0
     }
 }
-
-impl<const U: Unit> Clone for Quantity<U> {
-    fn clone(&self) -> Self {
-        #[cfg(debug_assertions)]
-        panic_on_invalid(self.0);
-        Self(self.0)
-    }
-}
-
-impl<const U: Unit> Copy for Quantity<U> {}
 
 impl<const U: Unit> PartialEq for Quantity<U> {
     fn eq(&self, other: &Self) -> bool {

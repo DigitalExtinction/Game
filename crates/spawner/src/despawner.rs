@@ -2,10 +2,16 @@ use std::marker::PhantomData;
 
 use bevy::ecs::query::{ReadOnlyWorldQuery, WorldQuery};
 use bevy::prelude::*;
-use de_core::{objects::ObjectType, player::Player, state::AppState};
-use de_objects::Health;
+use de_audio::spatial::{PlaySpatialAudioEvent, Sound};
+use de_core::gconfig::GameConfig;
+use de_core::{objects::ObjectTypeComponent, player::PlayerComponent, state::AppState};
+use de_messages::ToPlayers;
+use de_multiplayer::{
+    NetEntities, NetEntityCommands, NetRecvDespawnActiveEvent, PeerLeftEvent, ToPlayersEvent,
+};
+use de_types::objects::{ActiveObjectType, ObjectType};
 
-use crate::ObjectCounter;
+use crate::{ObjectCounter, SpawnerSet};
 
 pub(crate) struct DespawnerPlugin;
 
@@ -14,45 +20,117 @@ impl Plugin for DespawnerPlugin {
         app.add_systems(
             Update,
             (
-                find_dead // finding units with no health is only relevant while in-game
-                    .run_if(in_state(AppState::InGame))
-                    .in_set(DespawnerSet::Destruction)
-                    .before(DespawnerSet::Despawn),
-                despawn // This should always be ready to despawn marked entities
-                    .in_set(DespawnerSet::Despawn)
-                    .after(DespawnerSet::Destruction),
-            ),
+                despawn_active_local.before(despawn_active),
+                despawn_active_remote
+                    .run_if(on_event::<NetRecvDespawnActiveEvent>())
+                    .before(despawn_active),
+                despawn_active_peer_left
+                    .run_if(on_event::<PeerLeftEvent>())
+                    .after(despawn_active_remote)
+                    .before(despawn_active),
+                despawn_active.before(despawn),
+                despawn,
+            )
+                .run_if(in_state(AppState::InGame))
+                .in_set(DespawnerSet::Despawn)
+                .after(SpawnerSet::Spawner),
         )
+        .add_event::<DespawnActiveLocalEvent>()
+        .add_event::<DespawnActiveEvent>()
         .add_event::<DespawnEvent>();
     }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash, SystemSet)]
 pub enum DespawnerSet {
-    /// This set is run before the despawning systems run (If you expect units to die, you should
-    /// run your system in this set and the [`Update`] base set)
-    Destruction,
-    /// All despawn logic is anchored on this (You might want to run your system after this to get
-    /// [`DespawnedComponentsEvent`]s)
+    /// Despawn systems are part of this set.
     Despawn,
+    /// Despawn related events are send from systems of this set.
+    Events,
 }
 
 #[derive(Event)]
-pub struct DespawnEvent(Entity);
+pub struct DespawnActiveLocalEvent(Entity);
 
-/// Find all entities with low health and mark them for despawning
-fn find_dead(
-    mut counter: ResMut<ObjectCounter>,
-    entities: Query<(Entity, &Player, &ObjectType, &Health), Changed<Health>>,
-    mut event_writer: EventWriter<DespawnEvent>,
+impl DespawnActiveLocalEvent {
+    pub fn new(entity: Entity) -> Self {
+        Self(entity)
+    }
+}
+
+#[derive(Event)]
+struct DespawnActiveEvent(Entity);
+
+#[derive(Event)]
+struct DespawnEvent(Entity);
+
+fn despawn_active_local(
+    config: Res<GameConfig>,
+    net_entities: NetEntities,
+    mut event_reader: EventReader<DespawnActiveLocalEvent>,
+    mut event_writer: EventWriter<DespawnActiveEvent>,
+    mut net_events: EventWriter<ToPlayersEvent>,
 ) {
-    for (entity, &player, &object_type, health) in entities.iter() {
-        if health.destroyed() {
-            if let ObjectType::Active(active_type) = object_type {
-                counter.player_mut(player).unwrap().update(active_type, -1);
-            }
-            event_writer.send(DespawnEvent(entity));
+    for event in event_reader.iter() {
+        event_writer.send(DespawnActiveEvent(event.0));
+
+        if config.multiplayer() {
+            net_events.send(ToPlayersEvent::new(ToPlayers::Despawn {
+                entity: net_entities.local_net_id(event.0),
+            }));
         }
+    }
+}
+
+fn despawn_active_remote(
+    mut event_reader: EventReader<NetRecvDespawnActiveEvent>,
+    mut event_writer: EventWriter<DespawnActiveEvent>,
+) {
+    for event in event_reader.iter() {
+        event_writer.send(DespawnActiveEvent(event.entity()));
+    }
+}
+
+fn despawn_active_peer_left(
+    mut net_commands: NetEntityCommands,
+    mut peer_left_events: EventReader<PeerLeftEvent>,
+    mut event_writer: EventWriter<DespawnActiveEvent>,
+) {
+    for event in peer_left_events.iter() {
+        if let Some(entity_map) = net_commands.remove_player(event.id()) {
+            for entity in entity_map.locals() {
+                event_writer.send(DespawnActiveEvent(entity));
+            }
+        }
+    }
+}
+
+fn despawn_active(
+    mut counter: ResMut<ObjectCounter>,
+    entities: Query<(&PlayerComponent, &ObjectTypeComponent, &Transform)>,
+    mut event_reader: EventReader<DespawnActiveEvent>,
+    mut event_writer: EventWriter<DespawnEvent>,
+    mut play_audio: EventWriter<PlaySpatialAudioEvent>,
+) {
+    for event in event_reader.iter() {
+        let Ok((&player, &object_type, transform)) = entities.get(event.0) else {
+            panic!("Despawn of non-existing active object requested.");
+        };
+
+        let ObjectType::Active(active_type) = *object_type else {
+            panic!("Non-active object cannot be despawned with DespawnActiveEvent.");
+        };
+
+        counter.player_mut(*player).update(active_type, -1);
+        play_audio.send(PlaySpatialAudioEvent::new(
+            match active_type {
+                ActiveObjectType::Building(_) => Sound::DestroyBuilding,
+                ActiveObjectType::Unit(_) => Sound::DestroyUnit,
+            },
+            transform.translation,
+        ));
+
+        event_writer.send(DespawnEvent(event.0));
     }
 }
 
@@ -63,7 +141,9 @@ fn despawn(mut commands: Commands, mut despawning: EventReader<DespawnEvent>) {
     }
 }
 
-/// This plugin sends events with data of type `T`when entities with `Q` and matching `F` are despawned.
+/// This plugin sends events with data of type `T` when entities with `Q` and
+/// matching `F` are despawned. The events are send from systems in set
+/// [`DespawnerSet::Events`].
 ///
 /// # Type Parameters
 ///
@@ -74,9 +154,8 @@ fn despawn(mut commands: Commands, mut despawning: EventReader<DespawnEvent>) {
 /// # Usage
 ///
 /// ```
-/// use bevy::ecs::system::SystemState;
 /// use bevy::prelude::*;
-/// use de_spawner::{DespawnedComponentsEvent, DespawnEvent, DespawnEventsPlugin, SpawnerPluginGroup};
+/// use de_spawner::DespawnEventsPlugin;
 ///
 /// #[derive(Clone, Component)] // we must Clone implement here
 /// struct Bar(f32);
@@ -120,9 +199,9 @@ impl<
         app.add_event::<DespawnedComponentsEvent<T, F>>()
             .add_systems(
                 Update,
-                (send_data::<Q, T, F>
-                    .after(DespawnerSet::Destruction)
-                    .in_set(DespawnerSet::Despawn),),
+                send_data::<Q, T, F>
+                    .after(DespawnerSet::Despawn)
+                    .in_set(DespawnerSet::Events),
             );
     }
 }
@@ -214,14 +293,9 @@ mod tests {
             >::default())
             .add_systems(
                 Update,
-                (despawn_all_test_system.in_set(DespawnerSet::Destruction),),
+                (despawn_all_test_system.before(DespawnerSet::Despawn),),
             )
-            .add_systems(
-                Update,
-                despawn
-                    .in_set(DespawnerSet::Despawn)
-                    .after(DespawnerSet::Destruction),
-            )
+            .add_systems(Update, despawn.in_set(DespawnerSet::Despawn))
             .add_event::<DespawnEvent>();
 
         let mut simple_events =

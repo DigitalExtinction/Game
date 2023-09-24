@@ -13,6 +13,7 @@ mod graph;
 mod path;
 mod pplugin;
 mod query;
+mod syncing;
 mod triangulation;
 mod utils;
 
@@ -24,6 +25,7 @@ pub use path::ScheduledPath;
 use pplugin::PathingPlugin;
 pub use pplugin::UpdateEntityPathEvent;
 pub use query::{PathQueryProps, PathTarget};
+use syncing::SyncingPlugin;
 
 pub struct PathingPluginGroup;
 
@@ -32,5 +34,6 @@ impl PluginGroup for PathingPluginGroup {
         PluginGroupBuilder::start::<Self>()
             .add(FinderPlugin)
             .add(PathingPlugin)
+            .add(SyncingPlugin)
     }
 }

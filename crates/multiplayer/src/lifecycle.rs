@@ -12,11 +12,9 @@ impl Plugin for LifecyclePlugin {
     fn build(&self, app: &mut App) {
         app.add_event::<StartMultiplayerEvent>()
             .add_event::<ShutdownMultiplayerEvent>()
+            .add_event::<MultiplayerShuttingDownEvent>()
             .add_event::<FatalErrorEvent>()
-            .add_systems(
-                OnEnter(NetState::None),
-                (cleanup, finish_game.run_if(in_state(AppState::InGame))),
-            )
+            .add_systems(OnEnter(NetState::None), cleanup)
             .add_systems(
                 OnExit(AppState::InGame),
                 game_left.run_if(not(in_state(NetState::None))),
@@ -36,6 +34,12 @@ impl Plugin for LifecyclePlugin {
                         .run_if(not(in_state(NetState::None)))
                         .run_if(on_event::<FatalErrorEvent>()),
                 ),
+            )
+            .add_systems(
+                PostUpdate,
+                finish_game
+                    .run_if(in_state(AppState::InGame))
+                    .run_if(on_event::<MultiplayerShuttingDownEvent>()),
             );
     }
 }
@@ -58,6 +62,10 @@ impl StartMultiplayerEvent {
 /// Send this event to shutdown multiplayer functionality.
 #[derive(Event)]
 pub struct ShutdownMultiplayerEvent;
+
+/// This event is sent just before multiplayer shutdown is initiated.
+#[derive(Event)]
+pub struct MultiplayerShuttingDownEvent;
 
 /// Send this event when a fatal multiplayer event occurs. These are events
 /// which prevents further continuation of multiplayer game.
@@ -106,9 +114,13 @@ fn start(
     next_state.set(NetState::Connecting);
 }
 
-fn shutdown(mut next_state: ResMut<NextState<NetState>>) {
+fn shutdown(
+    mut next_state: ResMut<NextState<NetState>>,
+    mut events: EventWriter<MultiplayerShuttingDownEvent>,
+) {
     info!("Multiplayer shutdown event received, initiating the shutdown.");
     next_state.set(NetState::ShuttingDown);
+    events.send(MultiplayerShuttingDownEvent);
 }
 
 fn errors(

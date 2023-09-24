@@ -3,6 +3,7 @@
 use ahash::AHashMap;
 use bevy::prelude::{debug, info};
 use de_map::size::MapBounds;
+use de_types::path::Path;
 use parry2d::{
     math::Point,
     na,
@@ -16,7 +17,6 @@ use crate::{
     dijkstra::{find_path, PointContext},
     exclusion::ExclusionArea,
     graph::VisibilityGraph,
-    path::Path,
     utils::HashableSegment,
     PathTarget,
 };

@@ -4,35 +4,20 @@ use async_std::{
     channel::{Receiver, Sender},
     task,
 };
-use de_net::{FromGame, JoinError, OutPackage, Peers, Targets, ToGame};
+use de_messages::{FromGame, JoinError, Readiness, ToGame};
+use de_net::{OutPackage, Peers, Reliability};
 use tracing::{error, info, warn};
 
-use super::state::{GameState, JoinError as JoinErrorInner};
+use super::{
+    message::{InMessage, MessageMeta},
+    state::{GameState, JoinError as JoinErrorInner},
+};
 use crate::clients::Clients;
-
-pub(super) struct ToGameMessage {
-    meta: MessageMeta,
-    message: ToGame,
-}
-
-impl ToGameMessage {
-    pub(super) fn new(source: SocketAddr, reliable: bool, message: ToGame) -> Self {
-        Self {
-            meta: MessageMeta { source, reliable },
-            message,
-        }
-    }
-}
-
-struct MessageMeta {
-    source: SocketAddr,
-    reliable: bool,
-}
 
 pub(super) struct GameProcessor {
     port: u16,
     owner: SocketAddr,
-    messages: Receiver<ToGameMessage>,
+    messages: Receiver<InMessage<ToGame>>,
     outputs: Sender<OutPackage>,
     state: GameState,
     clients: Clients,
@@ -42,7 +27,7 @@ impl GameProcessor {
     pub(super) fn new(
         port: u16,
         owner: SocketAddr,
-        messages: Receiver<ToGameMessage>,
+        messages: Receiver<InMessage<ToGame>>,
         outputs: Sender<OutPackage>,
         state: GameState,
         clients: Clients,
@@ -89,15 +74,18 @@ impl GameProcessor {
                 continue;
             }
 
-            match message.message {
+            match message.message() {
                 ToGame::Ping(id) => {
-                    self.process_ping(message.meta, id).await;
+                    self.process_ping(message.meta(), *id).await;
                 }
                 ToGame::Join => {
-                    self.process_join(message.meta).await;
+                    self.process_join(message.meta()).await;
                 }
                 ToGame::Leave => {
-                    self.process_leave(message.meta).await;
+                    self.process_leave(message.meta()).await;
+                }
+                ToGame::Readiness(readiness) => {
+                    self.process_readiness(message.meta(), *readiness).await;
                 }
             }
 
@@ -115,8 +103,8 @@ impl GameProcessor {
 
     /// Returns true if the massage should be ignored and further handles such
     /// messages.
-    async fn handle_ignore(&self, message: &ToGameMessage) -> bool {
-        if matches!(message.message, ToGame::Join | ToGame::Leave) {
+    async fn handle_ignore(&self, message: &InMessage<ToGame>) -> bool {
+        if matches!(message.message(), ToGame::Join | ToGame::Leave) {
             // Join must be excluded from the condition because of the
             // chicken and egg problem.
             //
@@ -125,22 +113,22 @@ impl GameProcessor {
             return false;
         }
 
-        if self.state.contains(message.meta.source).await {
+        if self.state.contains(message.meta().source).await {
             return false;
         }
 
         warn!(
             "Received a game message from a non-participating client: {:?}.",
-            message.meta.source
+            message.meta().source
         );
         let _ = self
             .outputs
             .send(
                 OutPackage::encode_single(
                     &FromGame::NotJoined,
-                    message.meta.reliable,
+                    message.meta().reliability,
                     Peers::Server,
-                    message.meta.source,
+                    message.meta().source,
                 )
                 .unwrap(),
             )
@@ -155,7 +143,7 @@ impl GameProcessor {
             .send(
                 OutPackage::encode_single(
                     &FromGame::Pong(id),
-                    meta.reliable,
+                    meta.reliability,
                     Peers::Server,
                     meta.source,
                 )
@@ -168,8 +156,12 @@ impl GameProcessor {
     async fn process_join(&mut self, meta: MessageMeta) {
         if let Err(err) = self.clients.reserve(meta.source).await {
             warn!("Join request error: {err}");
-            self.send(&FromGame::JoinError(JoinError::DifferentGame), meta.source)
-                .await;
+            self.send(
+                &FromGame::JoinError(JoinError::DifferentGame),
+                Reliability::Unordered,
+                meta.source,
+            )
+            .await;
             return;
         }
 
@@ -187,8 +179,12 @@ impl GameProcessor {
                             meta.source, self.port
                         );
 
-                        self.send(&FromGame::JoinError(JoinError::AlreadyJoined), meta.source)
-                            .await;
+                        self.send(
+                            &FromGame::JoinError(JoinError::AlreadyJoined),
+                            Reliability::Unordered,
+                            meta.source,
+                        )
+                        .await;
                     }
                     JoinErrorInner::GameFull => {
                         warn!(
@@ -196,8 +192,26 @@ impl GameProcessor {
                             meta.source, self.port
                         );
 
-                        self.send(&FromGame::JoinError(JoinError::GameFull), meta.source)
-                            .await;
+                        self.send(
+                            &FromGame::JoinError(JoinError::GameFull),
+                            Reliability::Unordered,
+                            meta.source,
+                        )
+                        .await;
+                    }
+                    JoinErrorInner::GameNotOpened => {
+                        warn!(
+                            "Player {:?} could not join game on port {} because the game is no \
+                             longer opened.",
+                            meta.source, self.port
+                        );
+
+                        self.send(
+                            &FromGame::JoinError(JoinError::GameNotOpened),
+                            Reliability::Unordered,
+                            meta.source,
+                        )
+                        .await;
                     }
                 }
             }
@@ -210,14 +224,20 @@ impl GameProcessor {
             "Player {id} on {addr:?} just joined game on port {}.",
             self.port
         );
-        self.send(&FromGame::Joined(id), addr).await;
-        self.send_all(&FromGame::PeerJoined(id), Some(addr)).await;
+        self.send(&FromGame::Joined(id), Reliability::SemiOrdered, addr)
+            .await;
+        self.send_all(
+            &FromGame::PeerJoined(id),
+            Reliability::SemiOrdered,
+            Some(addr),
+        )
+        .await;
         Ok(())
     }
 
     /// Process disconnect message.
     async fn process_leave(&mut self, meta: MessageMeta) {
-        let Some(id) = self.state.remove(meta.source).await else {
+        let Some(mut player_state) = self.state.remove(meta.source).await else {
             warn!("Tried to remove non-existent player {:?}.", meta.source);
             return;
         };
@@ -225,12 +245,43 @@ impl GameProcessor {
         self.clients.free(meta.source).await;
 
         info!(
-            "Player {id} on {:?} just left game on port {}.",
-            meta.source, self.port
+            "Player {} on {:?} just left game on port {}.",
+            player_state.id(),
+            meta.source,
+            self.port
         );
 
-        self.send(&FromGame::Left, meta.source).await;
-        self.send_all(&FromGame::PeerLeft(id), None).await;
+        for output in player_state.buffer_mut().build_all() {
+            let _ = self.outputs.send(output).await;
+        }
+
+        self.send(&FromGame::Left, Reliability::SemiOrdered, meta.source)
+            .await;
+        self.send_all(
+            &FromGame::PeerLeft(player_state.id()),
+            Reliability::SemiOrdered,
+            None,
+        )
+        .await;
+    }
+
+    async fn process_readiness(&mut self, meta: MessageMeta, readiness: Readiness) {
+        match self.state.update_readiness(meta.source, readiness).await {
+            Ok(progressed) => {
+                if progressed {
+                    self.send_all(
+                        &FromGame::GameReadiness(readiness),
+                        Reliability::SemiOrdered,
+                        None,
+                    )
+                    .await;
+                }
+            }
+            Err(err) => warn!(
+                "Invalid readiness update from {source:?}: {err:?}",
+                source = meta.source
+            ),
+        }
     }
 
     /// Send a reliable message to all players of the game.
@@ -239,24 +290,25 @@ impl GameProcessor {
     ///
     /// * `message` - message to be sent.
     ///
+    /// * `reliability` - reliability mode for the message.
+    ///
     /// * `exclude` - if not None, the message will be delivered to all but
     ///   this player.
-    async fn send_all<E>(&self, message: &E, exclude: Option<SocketAddr>)
+    async fn send_all<E>(&self, message: &E, reliability: Reliability, exclude: Option<SocketAddr>)
     where
         E: bincode::Encode,
     {
-        if let Some(targets) = self.state.targets(exclude).await {
-            self.send(message, targets).await;
+        for target in self.state.targets(exclude).await {
+            self.send(message, reliability, target).await;
         }
     }
 
-    /// Send message to some targets.
-    async fn send<E, T>(&self, message: &E, targets: T)
+    async fn send<E>(&self, message: &E, reliability: Reliability, target: SocketAddr)
     where
         E: bincode::Encode,
-        T: Into<Targets<'static>>,
     {
-        let message = OutPackage::encode_single(message, true, Peers::Server, targets).unwrap();
+        let message =
+            OutPackage::encode_single(message, reliability, Peers::Server, target).unwrap();
         let _ = self.outputs.send(message).await;
     }
 }

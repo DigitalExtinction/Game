@@ -1,11 +1,15 @@
 # Digital Extinction
 
-[![GPLv3](https://img.shields.io/badge/license-GPLv3-088F8F.svg)](https://github.com/DigitalExtinction/Game#license)
-[![CI](https://github.com/DigitalExtinction/Game/actions/workflows/rust.yml/badge.svg)](https://github.com/DigitalExtinction/Game/actions)
-[![Discord](https://img.shields.io/badge/Discord-blue.svg?logo=discord&logoColor=white)](https://discord.gg/vHMFuCWGSX)
+[![AGPLv3](https://img.shields.io/badge/license-AGPLv3-088F8F.svg)](https://github.com/DigitalExtinction/Game#license)
+[![CI](https://github.com/DigitalExtinction/Game/actions/workflows/test.yml/badge.svg)](https://github.com/DigitalExtinction/Game/actions/workflows/test.yml)
+[![Sponsors](https://img.shields.io/github/sponsors/Indy2222)](https://github.com/sponsors/Indy2222)
 
-Digital Extinction is a 3D real-time strategy (RTS) game. It is set in the near
-future when humans and AI fight over their existence.
+Digital Extinction ([de-game.org](https://de-game.org/),
+[Documentation](https://docs.de-game.org/),
+[GitHub](https://github.com/DigitalExtinction/Game),
+[Discord](https://discord.gg/vHMFuCWGSX)) is a 3D real-time strategy (RTS)
+game. It is set in the near future when humans and AI fight over their
+existence.
 
 It is [open source & free software](#license). Forever! It runs on Linux,
 Windows and potentially other platforms.
@@ -24,9 +28,20 @@ Feedback, bug reports, and other [contributions](#contributing) are welcome.
 
 # How to Play?
 
-Game controls & gameplay tutorial is at [TUTORIAL.md](/TUTORIAL.md).
+Game controls & gameplay tutorial is at
+[docs.de-game.org/tutorial/](https://docs.de-game.org/tutorial/).
 
 ## Downloading Nightly Builds
+
+Build from `main` branch is automatically published every night as a ZIP
+archive. The archive contains:
+
+* all necessary game assets,
+* main game binary (`de` or `de.exe`),
+* DE Lobby binary (`de-lobby` or `de-lobby.exe`),
+* and DE Connector binary (`de-connector` or `de-connector.exe`).
+
+Follow these steps to start the game on your computer:
 
 1. Download nightly ZIP file for your OS and CPU:
 
@@ -81,8 +96,7 @@ buildings).
 
 # Where to Get Help?
 
-* Consult [TUTORIAL.md](/TUTORIAL.md), [CONTRIBUTING.md](/CONTRIBUTING.md),
-  [DESIGN.md](/DESIGN.md) or [the online documentation at
+* Consult [CONTRIBUTING.md](/CONTRIBUTING.md) or [the online documentation at
   docs.de-game.org](https://docs.de-game.org/).
 * Open a question in [the Q&A category of this repository's
   discussions](https://github.com/DigitalExtinction/Game/discussions/categories/q-a).
@@ -138,7 +152,7 @@ hand in hand with the spirit of the following goals.
 
 # Game Design
 
-See [Game Design document](/DESIGN.md).
+See [game design documentation](https://docs.de-game.org/design/).
 
 # Contributing
 
@@ -152,14 +166,12 @@ of Rust.
 
 Bellow is a high-level roadmap. Also, see [Issue
 #246](https://github.com/DigitalExtinction/Game/issues/246) with a detailed
-path toward version 0.1.
+path toward version 1.0.
 
 1. [Proof of Concept
    (PoC)](https://github.com/DigitalExtinction/Game/milestone/1)
 1. Release (first) [version
-   0.1](https://github.com/DigitalExtinction/Game/milestone/2)
-1. Publicly announce the game:
-   [#60](https://github.com/DigitalExtinction/Game/issues/60)
+   1.0](https://github.com/DigitalExtinction/Game/milestone/2)
 1. [Indefinitely improve the game](/CONTRIBUTING.md#development-process)
 
 ## Proof of Concept
@@ -172,10 +184,10 @@ some very important features (like seeing what units are selected, ability to
 see health / energy of units, and so on).
 
 The goal of this milestone is to lay down the foundations, setup basic
-insfrastrucutre (GitHub Actions, issues labels, …) and achieve an important
+infrastructure (GitHub Actions, issues labels, …) and achieve an important
 psychological milestone.
 
-## 0.1
+## 1.0
 
 This is the first published version of the game. In theory, this should be the
 earliest possible version, minimizing development time and effort, which is
@@ -189,8 +201,8 @@ The game mechanics are somewhat expanded so it is no longer thoroughly “dummy�
 ## Source Code
 
 Digital Extinction is free and open source. All code in this repository is
-licensed under GNU GPLv3 ([LICENSE](LICENSE) or
-[https://www.gnu.org/licenses/gpl-3.0.en.html](https://www.gnu.org/licenses/gpl-3.0.en.html)).
+licensed under GNU AGPLv3 ([LICENSE](LICENSE) or
+[https://www.gnu.org/licenses/agpl-3.0.en.html](https://www.gnu.org/licenses/agpl-3.0.en.html)).
 
 Unless you explicitly state otherwise, any source code contribution
 intentionally submitted for inclusion in the work by you, shall be licensed as

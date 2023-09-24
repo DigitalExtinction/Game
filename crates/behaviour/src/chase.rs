@@ -1,6 +1,7 @@
 use bevy::prelude::*;
-use de_core::{gamestate::GameState, projection::ToFlat};
+use de_core::gamestate::GameState;
 use de_pathing::{PathQueryProps, PathTarget, UpdateEntityPathEvent};
+use de_types::projection::ToFlat;
 
 pub(crate) struct ChasePlugin;
 
