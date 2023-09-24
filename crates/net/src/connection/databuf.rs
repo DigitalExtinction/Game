@@ -80,7 +80,7 @@ impl DataBuf {
 
         let data_index = slot.data_offset.wrapping_sub(front.data_offset);
 
-        assert!(buf.len() > slot.len);
+        assert!(buf.len() >= slot.len);
 
         for (source, target) in self.data.range(data_index..data_index + slot.len).zip(buf) {
             *target = *source;
