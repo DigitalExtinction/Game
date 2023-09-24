@@ -9,7 +9,6 @@ use de_core::{
     player::PlayerComponent,
     state::AppState,
 };
-use de_energy::Battery;
 use de_messages::ToPlayers;
 use de_multiplayer::{NetEntities, NetRecvSpawnActiveEvent, ToPlayersEvent};
 use de_objects::{AssetCollection, InitialHealths, SceneType, Scenes, SolidObjects};

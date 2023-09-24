@@ -2,10 +2,10 @@ use std::sync::Mutex;
 
 use bevy::prelude::*;
 use de_core::gamestate::GameState;
-use de_core::projection::ToFlat;
+use de_types::projection::ToFlat;
 use de_core::state::AppState;
 use de_index::SpatialQuery;
-use de_spawner::DespawnedComponentsEvent;
+use de_spawner::{DespawnedComponentsEvent, DespawnEventsPlugin};
 use parry3d::bounding_volume::Aabb;
 use parry3d::math::Point;
 use tinyvec::TinyVec;
@@ -21,12 +21,13 @@ pub(crate) struct GraphPlugin;
 
 impl Plugin for GraphPlugin {
     fn build(&self, app: &mut App) {
-        app.add_systems(
+        app.add_plugins(DespawnEventsPlugin::<&NearbyUnits, NearbyUnits>::default())
+            .add_systems(
             PostUpdate,
             spawn_graph_components.run_if(in_state(AppState::InGame)),
         )
         .add_systems(
-            Update,
+            PostUpdate,
             remove_old_nodes.run_if(in_state(GameState::Playing)),
         )
         .add_systems(
@@ -64,10 +65,6 @@ impl From<Entity> for NearbyEntity {
     }
 }
 
-/// The energy grid member component is used to store the energy grid member entities.
-#[derive(Component, Debug, Clone)]
-pub struct EnergyGridMember;
-
 /// The nearby units component is used to store the nearby entities of an entity.
 #[derive(Component, Default, Debug, Clone)]
 pub struct NearbyUnits {
@@ -76,10 +73,11 @@ pub struct NearbyUnits {
 }
 
 impl NearbyUnits {
-    fn remove_matching(&mut self, entity: NearbyEntity) {
-        let index = match self.units.iter().position(|e| *e == entity) {
-            Some(index) => index,
-            None => return,
+    fn remove_matching(&mut self, entity: impl Into<NearbyEntity>) {
+        let entity = entity.into();
+
+        let Some(index) = self.units.iter().position(|e| *e == entity) else {
+            return;
         };
 
         self.units.swap_remove(index);
@@ -102,7 +100,7 @@ fn spawn_graph_components(
     for entity in newly_spawned_units.iter() {
         commands
             .entity(entity)
-            .insert((EnergyGridMember, NearbyUnits::default()));
+            .insert(NearbyUnits::default());
     }
 }
 
@@ -124,11 +122,6 @@ pub fn update_nearby(
             }
             nearby.last_pos = Some(current_pos);
 
-            let aabb = &Aabb::new(
-                Point::from(transform.translation - Vec3::splat(MAX_DISTANCE)),
-                Point::from(transform.translation + Vec3::splat(MAX_DISTANCE)),
-            );
-
             let original_units = nearby
                 .units
                 .drain(..)
@@ -139,32 +132,17 @@ pub fn update_nearby(
                 .collect::<TinyVec<[NearbyEntity; 16]>>();
 
             // get difference between original and new nearby units
-            let mut to_add = Vec::new();
-            let mut to_remove = Vec::new();
 
             for nearby_entity in &new_nearby_units {
                 if !original_units.contains(nearby_entity) {
-                    to_add.push(nearby_entity);
+                    add_to.lock().unwrap().push((nearby_entity.0, entity));
                 }
             }
 
             for original_entity in &original_units {
                 if !new_nearby_units.contains(original_entity) {
-                    to_remove.push(original_entity);
+                    remove_from.lock().unwrap().push((original_entity.0, entity));
                 }
-            }
-
-            // by deferring the locking to here we dont waste too much time locking or keep it
-            // locked for too long
-
-            let mut add_to = add_to.lock().unwrap();
-            for nearby_entity in to_add {
-                add_to.push((nearby_entity.0, entity));
-            }
-
-            let mut remove_from = remove_from.lock().unwrap();
-            for original_entity in to_remove {
-                remove_from.push((original_entity.0, entity));
             }
 
             nearby.units = new_nearby_units;
@@ -181,7 +159,7 @@ pub fn update_nearby(
 
     for (entity, nearby_entity) in remove_from {
         if let Ok((_, mut nearby, _)) = units.get_mut(entity) {
-            nearby.remove_matching(nearby_entity.into());
+            nearby.remove_matching(nearby_entity);
         }
     }
 }
@@ -191,17 +169,9 @@ fn remove_old_nodes(
     mut death_events: EventReader<DespawnedComponentsEvent<NearbyUnits>>,
 ) {
     for event in death_events.iter() {
-        let mut units_to_process = Vec::new();
-
-        if let Ok(mut nearby_units) = nearby_units_query.get_mut(event.entity) {
-            for unit in nearby_units.units.drain(..) {
-                units_to_process.push(unit);
-            }
-        }
-
-        for unit in units_to_process {
+        for unit in &event.data.units {
             if let Ok(mut nearby_units) = nearby_units_query.get_mut(unit.0) {
-                nearby_units.remove_matching(NearbyEntity(event.entity));
+                nearby_units.remove_matching(event.entity);
             }
         }
     }

@@ -3,7 +3,7 @@ mod graph;
 
 pub use battery::Battery;
 use bevy::{app::PluginGroupBuilder, prelude::PluginGroup};
-pub use graph::{update_nearby, EnergyGridMember, NearbyUnits};
+pub use graph::{update_nearby, NearbyUnits};
 
 use crate::battery::BatteryPlugin;
 use crate::graph::GraphPlugin;

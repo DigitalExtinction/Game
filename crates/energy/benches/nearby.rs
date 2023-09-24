@@ -3,10 +3,10 @@ use bevy::prelude::{
     App, Changed, Component, Entity, IntoSystemConfigs, Query, Res, ResMut, Resource, Schedule,
     Transform, Update, World,
 };
+use de_types::projection::{ToAltitude, ToFlat};
 use bevy::time::TimePlugin;
 use criterion::{criterion_group, criterion_main, Criterion};
-use de_core::projection::ToAltitude;
-use de_energy::{update_nearby, EnergyGridMember, NearbyUnits};
+use de_energy::{update_nearby, NearbyUnits};
 use de_index::{EntityIndex, LocalCollider};
 use de_objects::ObjectCollider;
 use de_test_utils::{load_points, NumPoints};
@@ -75,7 +75,6 @@ fn init_world_with_entities_moving(world: &mut World, num_entities: &NumPoints) 
                     x: point_msl.x,
                     y: point_msl.y,
                 },
-                EnergyGridMember,
                 NearbyUnits::default(),
                 UnitNumber(i as u32),
             ))
