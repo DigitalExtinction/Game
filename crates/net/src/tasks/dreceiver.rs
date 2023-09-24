@@ -6,7 +6,7 @@ use tracing::{error, info, warn};
 use crate::{
     header::{DatagramHeader, PackageHeader},
     protocol::{MsgRecvError, ProtocolSocket},
-    MAX_DATAGRAM_SIZE,
+    MAX_DATAGRAM_SIZE, MAX_PACKAGE_SIZE,
 };
 
 pub(super) struct InSystemDatagram {
@@ -53,6 +53,8 @@ pub(super) async fn run(
                 break;
             }
         };
+
+        assert!(data.len() <= MAX_PACKAGE_SIZE);
 
         // Closed channel(s) are handled at the top part of the loop,
         // therefore errors from .send() are not treated below.

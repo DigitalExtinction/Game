@@ -13,7 +13,7 @@ use self::{
     received::{IdContinuity, Received},
 };
 use super::book::{Connection, ConnectionBook};
-use crate::{record::DeliveryRecord, tasks::OutDatagram, Reliability};
+use crate::{record::DeliveryRecord, tasks::OutDatagram, Reliability, MAX_PACKAGE_SIZE};
 
 mod confirms;
 mod deliveries;
@@ -129,14 +129,18 @@ impl ConnDeliveryHandler {
     ///
     /// # Panics
     ///
-    /// Panics if `buf` len is smaller than length of any of the drained
-    /// buffered pending package.
+    /// * If `buf` len is smaller than length of any of the drained buffered
+    ///   pending package.
+    ///
+    /// * If `data` is longer than [`MAX_PACKAGE_SIZE`].
     fn push<'b>(
         &mut self,
         record: DeliveryRecord,
         data: Vec<u8>,
         buf: &'b mut [u8],
     ) -> Result<Deliveries<'_, 'b>, ReceivedIdError> {
+        assert!(data.len() <= MAX_PACKAGE_SIZE);
+
         let result = self.received.process(record.header().id());
         if let Ok(_) | Err(ReceivedIdError::Duplicate) = result {
             // Push to the buffer even duplicate packages, because the reason

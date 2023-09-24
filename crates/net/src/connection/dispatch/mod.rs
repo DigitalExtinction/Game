@@ -13,6 +13,7 @@ use super::book::{Connection, ConnectionBook};
 use crate::{
     header::{DatagramHeader, PackageHeader, PackageId, PackageIdRange},
     tasks::OutDatagram,
+    MAX_PACKAGE_SIZE,
 };
 
 mod resends;
@@ -39,6 +40,11 @@ impl DispatchHandler {
         handler.next_package_id()
     }
 
+    /// # Panics
+    ///
+    /// * If the package is already registered as sent.
+    ///
+    /// * If the data are longer than [`MAX_PACKAGE_SIZE`].
     pub(crate) async fn sent(
         &mut self,
         time: Instant,
@@ -46,6 +52,7 @@ impl DispatchHandler {
         header: PackageHeader,
         data: &[u8],
     ) {
+        assert!(data.len() <= MAX_PACKAGE_SIZE);
         let mut book = self.book.lock().await;
         let handler = book.update(time, addr, ConnDispatchHandler::new);
         handler.resends.push(header, data, time);

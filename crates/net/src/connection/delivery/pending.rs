@@ -1,6 +1,8 @@
 use std::collections::BTreeMap;
 
-use crate::{connection::databuf::DataBuf, header::PackageId, record::DeliveryRecord};
+use crate::{
+    connection::databuf::DataBuf, header::PackageId, record::DeliveryRecord, MAX_PACKAGE_SIZE,
+};
 
 /// Buffer for packages received out-of-order and thus awaiting the right
 /// moment to be delivered.
@@ -24,8 +26,11 @@ impl Pending {
     /// * When there already is a pending package with the given `id`.
     ///
     /// * It is not a (semi-)ordered package.
+    ///
+    /// * If the data is longer than [`MAX_PACKAGE_SIZE`].
     pub(super) fn store(&mut self, record: DeliveryRecord, data: &[u8]) {
         assert!(record.header().reliability().is_ordered());
+        assert!(data.len() <= MAX_PACKAGE_SIZE);
         let id = record.header().id();
         let result = self.ids.insert(id, record);
         assert!(result.is_none());

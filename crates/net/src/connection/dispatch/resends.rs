@@ -9,6 +9,7 @@ use priority_queue::PriorityQueue;
 use crate::{
     connection::{book::MAX_CONN_AGE, databuf::DataBuf},
     header::{PackageHeader, PackageId},
+    MAX_PACKAGE_SIZE,
 };
 
 pub(super) const START_BACKOFF_MS: u64 = 220;
@@ -43,8 +44,16 @@ impl Resends {
     }
 
     /// Registers new package for re-sending until it is resolved.
+    ///
+    /// # Panics
+    ///
+    /// * If the package (ID) is already stored.
+    ///
+    /// * If data is longer than [`MAX_PACKAGE_SIZE`].
     pub(super) fn push(&mut self, header: PackageHeader, data: &[u8], now: Instant) {
-        self.queue.push(header.id(), Timing::new(now));
+        assert!(data.len() <= MAX_PACKAGE_SIZE);
+        let result = self.queue.push(header.id(), Timing::new(now));
+        assert!(result.is_none());
         self.headers.insert(header.id(), header);
         self.data.push(header.id(), data);
     }
