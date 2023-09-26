@@ -170,6 +170,9 @@ path toward version 1.0.
 
 1. [Proof of Concept
    (PoC)](https://github.com/DigitalExtinction/Game/milestone/1)
+1. Prioritize in development cycles, each organized in a GitHub milestone named
+   Run N. For example [Run
+   2](https://github.com/DigitalExtinction/Game/milestone/4).
 1. Release (first) [version
    1.0](https://github.com/DigitalExtinction/Game/milestone/2)
 1. [Indefinitely improve the game](/CONTRIBUTING.md#development-process)
