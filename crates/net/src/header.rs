@@ -41,12 +41,11 @@ impl DatagramHeader {
     }
 
     /// Reads the header from the beginning of a bytes buffer.
-    ///
-    /// # Panics
-    ///
-    /// Panics if the buffer is smaller than header.
     pub(crate) fn read(data: &[u8]) -> Result<Self, HeaderError> {
-        assert!(data.len() >= 4);
+        if data.len() < 4 {
+            return Err(HeaderError::Incomplete);
+        }
+
         debug_assert!(u32::BITS == (HEADER_SIZE as u32) * 8);
 
         let mask = data[0];
@@ -202,6 +201,8 @@ impl fmt::Display for Peers {
 pub(crate) enum HeaderError {
     #[error("The header is invalid")]
     Invalid,
+    #[error("The data is too short and does not contain full header.")]
+    Incomplete,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
