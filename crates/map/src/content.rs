@@ -58,9 +58,7 @@ impl MapContent {
 
         for (i, object) in self.objects.iter().enumerate() {
             if let InnerObject::Active(object) = object.inner() {
-                let counter = counts
-                    .entry(object.player())
-                    .or_insert_with(Counter::default);
+                let counter = counts.entry(object.player()).or_default();
 
                 match object.object_type() {
                     ActiveObjectType::Building(_) => counter.buildings += 1,

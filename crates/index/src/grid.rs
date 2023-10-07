@@ -112,11 +112,7 @@ impl TileGrid {
     }
 
     fn insert_to_tile(&mut self, entity: Entity, tile_coords: IVec2) {
-        let inserted = self
-            .tiles
-            .entry(tile_coords)
-            .or_insert_with(AHashSet::new)
-            .insert(entity);
+        let inserted = self.tiles.entry(tile_coords).or_default().insert(entity);
         debug_assert!(inserted);
     }
 
