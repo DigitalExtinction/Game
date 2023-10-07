@@ -89,11 +89,7 @@ impl<const U: Unit> Eq for Quantity<U> {}
 
 impl<const U: Unit> PartialOrd for Quantity<U> {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
-        #[cfg(debug_assertions)]
-        panic_on_invalid(self.0);
-        #[cfg(debug_assertions)]
-        panic_on_invalid(other.0);
-        self.0.partial_cmp(&other.0)
+        Some(self.cmp(other))
     }
 }
 
