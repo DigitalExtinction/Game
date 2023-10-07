@@ -1,7 +1,7 @@
 use anyhow::Context;
 use async_std::task;
 use de_net::Socket;
-use tracing::{error, info};
+use tracing::info;
 
 use crate::server::MainServer;
 
@@ -11,14 +11,11 @@ mod server;
 
 const PORT: u16 = 8082;
 
-pub fn start() {
+pub fn start() -> Result<(), String> {
     info!("Starting...");
-
     task::block_on(task::spawn(async {
-        if let Err(error) = start_inner().await {
-            error!("{:?}", error);
-        }
-    }));
+        start_inner().await.map_err(|error| format!("{:?}", error))
+    }))
 }
 
 async fn start_inner() -> anyhow::Result<()> {
