@@ -90,7 +90,6 @@ jobs:
         id: rust-cache
         with:
           path: |
-            ~/.cargo/bin/
             ~/.cargo/registry/index/
             ~/.cargo/registry/cache/
             ~/.cargo/git/db/
@@ -103,7 +102,8 @@ jobs:
           echo $UDEPS_VER
           curl -L "https://github.com/est31/cargo-udeps/releases/download/$UDEPS_VER/cargo-udeps-$UDEPS_VER-x86_64-unknown-linux-gnu.tar.gz" -o udeps.tar.gz
           tar -xzvf udeps.tar.gz
-          ./cargo-udeps-$UDEPS_VER-x86_64-unknown-linux-gnu/cargo-udeps udeps
+          cp ./cargo-udeps-$UDEPS_VER-x86_64-unknown-linux-gnu/cargo-udeps ~/.cargo/bin/
+          cargo +nightly udeps
 
   comments:
     name: Code Comments
