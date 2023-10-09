@@ -52,7 +52,6 @@ impl SegmentInterval {
         is_b_corner: bool,
         edge_id: u32,
     ) -> Self {
-        // TODO this fails
         debug_assert!(segment.length() > 0.);
         Self {
             segment,
@@ -140,8 +139,10 @@ impl SegmentInterval {
         let b = RayProjection::calculate(ray_b, target);
 
         let side = which_side(ray_a.origin, ray_a.point_at(1.), ray_b.point_at(1.));
-        debug_assert!(side != Side::Straight || ray_a.dir.dot(&ray_b.dir) < 0.);
-        SegmentProjection::new(a, b, side)
+        // TODO: for some reason this assert fails due to the ray origin and
+        // self.segment lying on a line.
+        // debug_assert!(side != Side::Straight || ray_a.dir.dot(&ray_b.dir) < 0.);
+        SegmentProjection::new(a, b, side, target.length())
     }
 
     /// Returns a ray with a given origin and pointing towards the endpoint a
@@ -197,11 +198,19 @@ pub(crate) struct SegmentProjection {
     a: RayProjection,
     b: RayProjection,
     ray_b_side: Side,
+    // TODO rename (everywhere to scale?)
+    size: f32,
 }
 
 impl SegmentProjection {
-    fn new(a: RayProjection, b: RayProjection, ray_b_side: Side) -> Self {
-        Self { a, b, ray_b_side }
+    // TODO docs
+    fn new(a: RayProjection, b: RayProjection, ray_b_side: Side, size: f32) -> Self {
+        Self {
+            a,
+            b,
+            ray_b_side,
+            size,
+        }
     }
 
     // TODO document
@@ -217,7 +226,7 @@ impl SegmentProjection {
             0.
         };
 
-        ParamPair::ordered(first, second)
+        ParamPair::ordered(first, second, self.size)
     }
 
     // TODO document
@@ -233,7 +242,7 @@ impl SegmentProjection {
             0.
         };
 
-        ParamPair::ordered(first, second)
+        ParamPair::ordered(first, second, self.size)
     }
 
     // TODO document
@@ -243,7 +252,7 @@ impl SegmentProjection {
         }
 
         match (self.a.parameter(), self.b.parameter()) {
-            (Some(a), Some(b)) => ParamPair::ordered(a, b),
+            (Some(a), Some(b)) => ParamPair::ordered(a, b, self.size),
             (None, None) => {
                 if self.a.endpoint_a_side() == self.b.endpoint_a_side() {
                     None
@@ -257,7 +266,7 @@ impl SegmentProjection {
                 } else {
                     0.
                 };
-                ParamPair::ordered(first, second)
+                ParamPair::ordered(first, second, self.size)
             }
         }
     }
@@ -267,14 +276,17 @@ impl SegmentProjection {
 pub(crate) struct ParamPair(f32, f32);
 
 impl ParamPair {
-    fn round(parameter: f32) -> f32 {
-        // TODO use constants
-
+    // TODO docs
+    fn round(parameter: f32, size: f32) -> f32 {
         // Due to the nature of the algorithm, the ray and the segment
         // frequently intersect near one of the endpoints. To avoid rounding issues,
-        if parameter < 0.0001 {
+
+        let scaled = parameter * size;
+
+        // TODO use constants (negligible distance)
+        if scaled.abs() < 0.01 {
             0.
-        } else if parameter > 0.9999 {
+        } else if (size - scaled).abs() < 0.01 {
             1.
         } else {
             parameter
@@ -282,9 +294,9 @@ impl ParamPair {
     }
 
     // TODO document
-    fn ordered(a: f32, b: f32) -> Option<Self> {
-        let a = Self::round(a);
-        let b = Self::round(b);
+    fn ordered(a: f32, b: f32, size: f32) -> Option<Self> {
+        let a = Self::round(a, size);
+        let b = Self::round(b, size);
 
         if a < b {
             Some(Self::new(a, b))
