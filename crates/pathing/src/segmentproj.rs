@@ -1,4 +1,3 @@
-// TODO pub(crate) -> pub(super)
 use parry2d::{math::Point, query::Ray, shape::Segment};
 
 use crate::geometry::{which_side, RayProjection, Side};
@@ -7,14 +6,14 @@ use crate::geometry::{which_side, RayProjection, Side};
 /// of an eye (a point). The projection can be looked at as a shadow cast by
 /// the one segment onto the other segment with the source of light placed at
 /// the eye.
-pub(crate) struct SegmentOnSegmentProjection {
+pub(super) struct SegmentOnSegmentProjection {
     side_a: Option<ParamPair>,
     middle: Option<ParamPair>,
     side_b: Option<ParamPair>,
 }
 
 impl SegmentOnSegmentProjection {
-    pub(crate) fn construct(eye: Point<f32>, source: Segment, target: Segment) -> Self {
+    pub(super) fn construct(eye: Point<f32>, source: Segment, target: Segment) -> Self {
         let target_length = target.length();
 
         if eye == source.a || eye == source.b {
@@ -106,27 +105,27 @@ impl SegmentOnSegmentProjection {
 
     /// Non-visible part of the target line segment adjacent to endpoint a.
     /// This is None when all of target is visible.
-    pub(crate) fn side_a(&self) -> Option<ParamPair> {
+    pub(super) fn side_a(&self) -> Option<ParamPair> {
         self.side_a
     }
 
     /// Visible part of the target line segment. This is None in None if no
     /// point of the target line segment is visible (from eye via the source
     /// line segment).
-    pub(crate) fn middle(&self) -> Option<ParamPair> {
+    pub(super) fn middle(&self) -> Option<ParamPair> {
         self.middle
     }
 
     /// Non-visible part of the target line segment adjacent to endpoint b.
     /// This is None when all of target is visible.
-    pub(crate) fn side_b(&self) -> Option<ParamPair> {
+    pub(super) fn side_b(&self) -> Option<ParamPair> {
         self.side_b
     }
 }
 
 /// Parameters of a (sub-)segment of a line segment.
 #[derive(Clone, Copy, Debug, PartialEq)]
-pub(crate) struct ParamPair(f32, f32);
+pub(super) struct ParamPair(f32, f32);
 
 impl ParamPair {
     /// Round parameters very close to 0 or 1 to exact 0 or 1.

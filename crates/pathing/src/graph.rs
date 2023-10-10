@@ -30,12 +30,12 @@ pub struct VisibilityGraph {
 
 impl VisibilityGraph {
     /// Returns a new empty visibility graph.
-    pub(crate) fn new() -> Self {
+    pub(super) fn new() -> Self {
         Self { nodes: Vec::new() }
     }
 
     /// Returns number of nodes in the visibility graph.
-    pub(crate) fn len(&self) -> usize {
+    pub(super) fn len(&self) -> usize {
         self.nodes.len()
     }
 
@@ -48,7 +48,7 @@ impl VisibilityGraph {
     /// # Arguments
     ///
     /// * `segment` - line segment of the triangle edge.
-    pub(crate) fn new_node(&mut self, segment: Segment) -> u32 {
+    pub(super) fn new_node(&mut self, segment: Segment) -> u32 {
         let id = self.nodes.len().try_into().unwrap();
         self.nodes.push(GraphNode::new(segment));
         id
@@ -71,7 +71,7 @@ impl VisibilityGraph {
     /// # Panics
     ///
     /// Panics if `edge_id` already stores more than two neighbours.
-    pub(crate) fn add_neighbours(
+    pub(super) fn add_neighbours(
         &mut self,
         edge_id: u32,
         triangle_id: u32,
@@ -85,13 +85,13 @@ impl VisibilityGraph {
     }
 
     /// Returns a geometry of a graph node (triangle edge).
-    pub(crate) fn segment(&self, edge_id: u32) -> Segment {
+    pub(super) fn segment(&self, edge_id: u32) -> Segment {
         let index: usize = edge_id.try_into().unwrap();
         self.nodes[index].segment()
     }
 
     /// Returns all neighbors of a graph node (triangle edge).
-    pub(crate) fn neighbours(&self, edge_id: u32) -> &[Step] {
+    pub(super) fn neighbours(&self, edge_id: u32) -> &[Step] {
         let index: usize = edge_id.try_into().unwrap();
         self.nodes[index].neighbours()
     }
@@ -138,13 +138,13 @@ impl GraphNode {
 /// a set of points in the triangle (one point or a line segment) to (part of)
 /// an edge of the triangle.
 #[derive(Clone, Copy, Default, Debug, PartialEq, Eq)]
-pub(crate) struct Step {
+pub(super) struct Step {
     edge_id: u32,
     triangle_id: u32,
 }
 
 impl Step {
-    pub(crate) fn new(edge_id: u32, triangle_id: u32) -> Self {
+    pub(super) fn new(edge_id: u32, triangle_id: u32) -> Self {
         Self {
             edge_id,
             triangle_id,
@@ -152,12 +152,12 @@ impl Step {
     }
 
     /// A target edge ID (reached from neighboring edge).
-    pub(crate) fn edge_id(&self) -> u32 {
+    pub(super) fn edge_id(&self) -> u32 {
         self.edge_id
     }
 
     /// ID of the traversed triangle (to reach [`Self::edge_id()`].
-    pub(crate) fn triangle_id(&self) -> u32 {
+    pub(super) fn triangle_id(&self) -> u32 {
         self.triangle_id
     }
 }

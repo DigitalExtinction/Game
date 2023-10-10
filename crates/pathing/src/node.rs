@@ -97,7 +97,7 @@ impl SearchNode {
         }
     }
 
-    pub(crate) fn triangle_id(&self) -> u32 {
+    pub(super) fn triangle_id(&self) -> u32 {
         self.triangle_id
     }
 

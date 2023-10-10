@@ -7,7 +7,7 @@ use parry2d::{
 use crate::segmentproj::{ParamPair, SegmentOnSegmentProjection};
 
 #[derive(Clone)]
-pub(crate) struct SegmentInterval {
+pub(super) struct SegmentInterval {
     segment: Segment,
     is_a_corner: bool,
     is_b_corner: bool,
@@ -32,7 +32,7 @@ impl SegmentInterval {
     /// May panic if projection parameters are not between 0 and 1 (inclusive)
     /// or if first projection parameter is larger or equal to the second
     /// projection parameter.
-    pub(crate) fn from_projection(segment: Segment, projection: ParamPair, edge_id: u32) -> Self {
+    pub(super) fn from_projection(segment: Segment, projection: ParamPair, edge_id: u32) -> Self {
         Self::new(
             projection.apply(segment),
             projection.includes_corner_a(),
@@ -46,7 +46,7 @@ impl SegmentInterval {
     /// # Panics
     ///
     /// May panic if `segment` has zero length.
-    pub(crate) fn new(
+    pub(super) fn new(
         segment: Segment,
         is_a_corner: bool,
         is_b_corner: bool,
@@ -63,7 +63,7 @@ impl SegmentInterval {
 
     /// Returns the corner point of the original edge (see [`Self::edge_id()`])
     /// if it corresponds to the endpoint of `self`.
-    pub(crate) fn a_corner(&self) -> Option<Point<f32>> {
+    pub(super) fn a_corner(&self) -> Option<Point<f32>> {
         if self.is_a_corner {
             Some(self.segment.a)
         } else {
@@ -73,7 +73,7 @@ impl SegmentInterval {
 
     /// Returns the corner point of the original edge (see [`Self::edge_id()`])
     /// if it corresponds to the endpoint of `self`.
-    pub(crate) fn b_corner(&self) -> Option<Point<f32>> {
+    pub(super) fn b_corner(&self) -> Option<Point<f32>> {
         if self.is_b_corner {
             Some(self.segment.b)
         } else {
@@ -82,21 +82,21 @@ impl SegmentInterval {
     }
 
     /// Returns edge ID of the original edge.
-    pub(crate) fn edge_id(&self) -> u32 {
+    pub(super) fn edge_id(&self) -> u32 {
         self.edge_id
     }
 
-    pub(crate) fn distance_to_point(&self, point: Point<f32>) -> f32 {
+    pub(super) fn distance_to_point(&self, point: Point<f32>) -> f32 {
         self.segment.distance_to_local_point(&point, false)
     }
 
-    pub(crate) fn project_point(&self, point: Point<f32>) -> Point<f32> {
+    pub(super) fn project_point(&self, point: Point<f32>) -> Point<f32> {
         self.segment.project_local_point(&point, false).point
     }
 
     /// Calculates the cross point of an optimal path from a point `a` to a
     /// point `b` via the interval.
-    pub(crate) fn cross(&self, a: Point<f32>, b: Point<f32>) -> SegmentCross {
+    pub(super) fn cross(&self, a: Point<f32>, b: Point<f32>) -> SegmentCross {
         let ray = Ray::new(a, b - a);
         let direct_cross = self
             .segment
@@ -126,7 +126,7 @@ impl SegmentInterval {
     /// * `eye` - projection perspective.
     ///
     /// * `target` - self is projected onto this target.
-    pub(crate) fn project_onto_segment(
+    pub(super) fn project_onto_segment(
         &self,
         eye: Point<f32>,
         target: Segment,
@@ -136,7 +136,7 @@ impl SegmentInterval {
 }
 
 #[derive(Clone, Copy)]
-pub(crate) enum SegmentCross {
+pub(super) enum SegmentCross {
     /// The crossed line segment intersects with the line segment between the
     /// points `a` and `b`.
     Direct(Point<f32>),
@@ -148,7 +148,7 @@ pub(crate) enum SegmentCross {
 
 impl SegmentCross {
     /// Returns the crossing point.
-    pub(crate) fn point(&self) -> Point<f32> {
+    pub(super) fn point(&self) -> Point<f32> {
         match self {
             Self::Direct(point) => *point,
             Self::Corner(point) => *point,

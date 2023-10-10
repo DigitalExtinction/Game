@@ -108,7 +108,7 @@ pub(crate) fn find_path(
     }
 }
 
-pub(crate) struct PointContext {
+pub(super) struct PointContext {
     point: Point<f32>,
     neighbours: Vec<Step>,
 }
@@ -123,7 +123,7 @@ impl PointContext {
     /// * `neighbours` - steps to all neighboring edges. If the point lies
     ///   on an edge or its end points, the edge should not be included in the
     ///   vector.
-    pub(crate) fn new(point: Point<f32>, neighbours: Vec<Step>) -> Self {
+    pub(super) fn new(point: Point<f32>, neighbours: Vec<Step>) -> Self {
         Self { point, neighbours }
     }
 

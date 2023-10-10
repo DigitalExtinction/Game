@@ -46,7 +46,6 @@ impl RayProjection {
         let ray_perp_dir = ray.dir.perp(&segment_dir);
         let dir_perp_origin = segment_dir.perp(&origin_diff);
 
-        // TODO constant
         // This is true when the ray is parallel with the segment.
         let is_parallel = ray_perp_dir.abs() < 0.0001;
         // This is true when the ray points away from the line given by the
