@@ -9,7 +9,7 @@ use parry2d::math::Point;
 
 use crate::{
     graph::{Step, VisibilityGraph},
-    node::Node,
+    node::SearchNode,
     PathQueryProps,
 };
 
@@ -30,7 +30,7 @@ pub(crate) fn find_path(
     let mut visited = Visited::new();
 
     for &step in source.neighbours() {
-        open_set.push(Node::initial(
+        open_set.push(SearchNode::initial(
             source.point(),
             target.point(),
             graph.segment(step.edge_id()),

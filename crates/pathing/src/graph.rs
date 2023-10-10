@@ -25,7 +25,7 @@ use tinyvec::ArrayVec;
 ///   fully visible one from another and not share a graph edge. However, such
 ///   triangles are always connected by a graph path.
 pub struct VisibilityGraph {
-    nodes: Vec<Node>,
+    nodes: Vec<GraphNode>,
 }
 
 impl VisibilityGraph {
@@ -50,7 +50,7 @@ impl VisibilityGraph {
     /// * `segment` - line segment of the triangle edge.
     pub(crate) fn new_node(&mut self, segment: Segment) -> u32 {
         let id = self.nodes.len().try_into().unwrap();
-        self.nodes.push(Node::new(segment));
+        self.nodes.push(GraphNode::new(segment));
         id
     }
 
@@ -98,13 +98,13 @@ impl VisibilityGraph {
 }
 
 /// A node in the visibility graph.
-struct Node {
+struct GraphNode {
     segment: Segment,
     /// Graph steps to reach direct neighbors.
     neighbours: ArrayVec<[Step; 4]>,
 }
 
-impl Node {
+impl GraphNode {
     fn new(segment: Segment) -> Self {
         Self {
             segment,

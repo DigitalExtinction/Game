@@ -14,9 +14,9 @@ use crate::{
 /// The node consists of a path prefix (whose last point is root point of the
 /// node), an interval (a segment or the target point) and search heuristic.
 #[derive(Clone)]
-pub(super) struct Node {
+pub(super) struct SearchNode {
     prefix: Rc<PointChain>,
-    interval: Interval,
+    point_set: PointSet,
     triangle_id: u32,
     min_distance: f32,
     /// Lower bound of the path length from the root via the interval the
@@ -24,7 +24,7 @@ pub(super) struct Node {
     heuristic: f32,
 }
 
-impl Node {
+impl SearchNode {
     /// Creates an initial node, i.e. a node whose prefix consists of a single
     /// point: `source`.
     ///
@@ -78,7 +78,7 @@ impl Node {
 
         Self {
             prefix,
-            interval: Interval::Segment(interval),
+            point_set: PointSet::Segment(interval),
             triangle_id,
             min_distance,
             heuristic,
@@ -90,9 +90,9 @@ impl Node {
     }
 
     pub(super) fn edge_id(&self) -> Option<u32> {
-        match self.interval {
-            Interval::Target => None,
-            Interval::Segment(ref interval) => Some(interval.edge_id()),
+        match self.point_set {
+            PointSet::Target => None,
+            PointSet::Segment(ref interval) => Some(interval.edge_id()),
         }
     }
 
@@ -128,7 +128,7 @@ impl Node {
     ) -> [Option<Self>; 3] {
         assert!(step.triangle_id() != self.triangle_id);
 
-        let Interval::Segment(ref interval) = self.interval else {
+        let PointSet::Segment(ref interval) = self.point_set else {
             panic!("Cannot expand point interval.")
         };
 
@@ -144,7 +144,7 @@ impl Node {
 
         let node_mid = if let Some(projection) = projection.middle() {
             let interval = SegmentInterval::from_projection(segment, projection, step.edge_id());
-            Some(Node::from_segment_interval(
+            Some(Self::from_segment_interval(
                 Rc::clone(&self.prefix),
                 interval,
                 step.triangle_id(),
@@ -198,11 +198,11 @@ impl Node {
             Rc::new(PointChain::extended(&self.prefix, corner))
         };
 
-        Node::from_segment_interval(prefix, interval, step.triangle_id(), target)
+        Self::from_segment_interval(prefix, interval, step.triangle_id(), target)
     }
 
     pub(super) fn expand_to_target(&self, target: Point<f32>, triangle_id: u32) -> Option<Self> {
-        let Interval::Segment(ref interval) = self.interval else {
+        let PointSet::Segment(ref interval) = self.point_set else {
             panic!("Cannot expand point interval.")
         };
 
@@ -213,7 +213,7 @@ impl Node {
         let heuristic = (target - prefix.point()).magnitude();
         Some(Self {
             prefix,
-            interval: Interval::Target,
+            point_set: PointSet::Target,
             triangle_id,
             min_distance: 0.,
             heuristic,
@@ -227,9 +227,9 @@ impl Node {
     /// the path from source to the closest point to target in the point set of
     /// self (on the nodes line segment).
     pub(super) fn close(self, target: Point<f32>) -> Path {
-        let chain = match self.interval {
-            Interval::Target => PointChain::extended(&self.prefix, target),
-            Interval::Segment(ref interval) => {
+        let chain = match self.point_set {
+            PointSet::Target => PointChain::extended(&self.prefix, target),
+            PointSet::Segment(ref interval) => {
                 PointChain::extended(&self.prefix, interval.project_point(target))
             }
         };
@@ -245,28 +245,32 @@ impl Node {
     }
 }
 
-impl PartialEq for Node {
-    fn eq(&self, other: &Node) -> bool {
+impl PartialEq for SearchNode {
+    fn eq(&self, other: &Self) -> bool {
         self.score() == other.score() && self.prefix.point() == other.prefix.point()
     }
 }
 
-impl Eq for Node {}
+impl Eq for SearchNode {}
 
-impl PartialOrd for Node {
+impl PartialOrd for SearchNode {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
         Some(self.cmp(other))
     }
 }
 
-impl Ord for Node {
+impl Ord for SearchNode {
     fn cmp(&self, other: &Self) -> Ordering {
         other.score().partial_cmp(&self.score()).unwrap()
     }
 }
 
 #[derive(Clone)]
-enum Interval {
+enum PointSet {
+    /// Point set (of cardinality 1) corresponding to the path searching target
+    /// point.
     Target,
+    /// Point set corresponding to an interval (which is either a part or a
+    /// full triangle edge).
     Segment(SegmentInterval),
 }
