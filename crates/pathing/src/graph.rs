@@ -39,8 +39,8 @@ impl VisibilityGraph {
         self.nodes.len()
     }
 
-    /// Creates a graph node without any neighbours, stores to the graph and
-    /// returns its ID.
+    /// Prepares a graph node without any neighbours, pushes it to the graph
+    /// and returns corresponding edge (node) ID.
     ///
     /// Only single node must be created when multiple triangles share an edge
     /// (have coincidental edge line segment).
@@ -60,8 +60,8 @@ impl VisibilityGraph {
     ///
     /// * `edge_id` - ID of the edge whose neighbors are added.
     ///
-    /// * `polygon_id` - ID of the traversed polygon (i.e. the polygon which
-    ///   contains the source and target edges).
+    /// * `triangle_id` - ID of the traversed triangle (i.e. the triangle
+    ///   containing the source and target edges).
     ///
     /// * `neighbour_a_id` - edge ID of the a neighbor.
     ///
@@ -73,14 +73,14 @@ impl VisibilityGraph {
     pub(crate) fn add_neighbours(
         &mut self,
         edge_id: u32,
-        polygon_id: u32,
+        triangle_id: u32,
         neighbour_a_id: u32,
         neighbour_b_id: u32,
     ) {
         let index: usize = edge_id.try_into().unwrap();
         let node = self.nodes.get_mut(index).unwrap();
-        node.add_neighbour(Step::new(neighbour_a_id, polygon_id));
-        node.add_neighbour(Step::new(neighbour_b_id, polygon_id));
+        node.add_neighbour(Step::new(neighbour_a_id, triangle_id));
+        node.add_neighbour(Step::new(neighbour_b_id, triangle_id));
     }
 
     /// Returns a geometry of a graph node (triangle edge).
@@ -95,9 +95,10 @@ impl VisibilityGraph {
         self.nodes[index].neighbours()
     }
 
-    pub(crate) fn polygons(&self, edge_id: u32) -> &[u32] {
+    /// Returns IDs of neighboring triangles.
+    pub(crate) fn triangles(&self, edge_id: u32) -> &[u32] {
         let index: usize = edge_id.try_into().unwrap();
-        self.nodes[index].polygons()
+        self.nodes[index].triangles()
     }
 }
 
@@ -106,8 +107,8 @@ struct Node {
     segment: Segment,
     /// Graph steps to reach direct neighbors.
     neighbours: ArrayVec<[Step; 4]>,
-    /// IDs of polygons which contain the edge (node).
-    polygons: ArrayVec<[u32; 2]>,
+    /// IDs of triangles containing the edge (node).
+    triangles: ArrayVec<[u32; 2]>,
 }
 
 impl Node {
@@ -115,7 +116,7 @@ impl Node {
         Self {
             segment,
             neighbours: ArrayVec::new(),
-            polygons: ArrayVec::new(),
+            triangles: ArrayVec::new(),
         }
     }
 
@@ -127,8 +128,8 @@ impl Node {
         self.neighbours.as_slice()
     }
 
-    fn polygons(&self) -> &[u32] {
-        self.polygons.as_slice()
+    fn triangles(&self) -> &[u32] {
+        self.triangles.as_slice()
     }
 
     /// Adds a neighbor to the node.
@@ -139,27 +140,27 @@ impl Node {
     ///
     /// * If the number of already stored neighbors is 4.
     ///
-    /// * If the number of already stored polygons is 2.
+    /// * If the number of already stored triangles is 2.
     fn add_neighbour(&mut self, step: Step) {
         self.neighbours.push(step);
-        if !self.polygons.contains(&step.polygon_id()) {
-            self.polygons.push(step.polygon_id());
+        if !self.triangles.contains(&step.triangle_id()) {
+            self.triangles.push(step.triangle_id());
         }
     }
 }
 
-/// A step in the polygon edge neighbor graph.
+/// A step in the triangle edge neighbor graph.
 #[derive(Clone, Copy, Default, Debug, PartialEq, Eq)]
 pub(crate) struct Step {
     edge_id: u32,
-    polygon_id: u32,
+    triangle_id: u32,
 }
 
 impl Step {
-    pub(crate) fn new(edge_id: u32, polygon_id: u32) -> Self {
+    pub(crate) fn new(edge_id: u32, triangle_id: u32) -> Self {
         Self {
             edge_id,
-            polygon_id,
+            triangle_id,
         }
     }
 
@@ -168,9 +169,9 @@ impl Step {
         self.edge_id
     }
 
-    /// ID of the traversed polygon (to reach [`Self::edge_id()`].
-    pub(crate) fn polygon_id(&self) -> u32 {
-        self.polygon_id
+    /// ID of the traversed triangle (to reach [`Self::edge_id()`].
+    pub(crate) fn triangle_id(&self) -> u32 {
+        self.triangle_id
     }
 }
 

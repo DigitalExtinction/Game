@@ -162,7 +162,7 @@ impl PathFinder {
         if source_edges.iter().any(|s| {
             target_edges
                 .iter()
-                .any(|t| s.polygon_id() == t.polygon_id())
+                .any(|t| s.triangle_id() == t.triangle_id())
         }) {
             debug!(
                 "Trivial path from {:?} to {:?} found, trimming...",
@@ -370,7 +370,6 @@ mod tests {
                 PathTarget::new(Vec2::new(450., 950.), PathQueryProps::exact(), false),
             )
             .unwrap();
-
         assert_eq!(
             first_path.waypoints(),
             &[

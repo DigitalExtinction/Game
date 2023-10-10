@@ -17,7 +17,7 @@ use crate::{
 pub(super) struct Node {
     prefix: Rc<PointChain>,
     interval: Interval,
-    polygon_id: u32,
+    triangle_id: u32,
     min_distance: f32,
     /// Lower bound of the path length from the root via the interval the
     /// target.
@@ -36,7 +36,7 @@ impl Node {
     ///
     /// * `segment` - first segment to be traversed.
     ///
-    /// * `step` - first point-to-edge step in the polygon edge neighboring
+    /// * `step` - first point-to-edge step in the triangle edge neighboring
     ///   graph.
     pub(super) fn initial(
         source: Point<f32>,
@@ -47,7 +47,7 @@ impl Node {
         Self::from_segment_interval(
             Rc::new(PointChain::first(source)),
             SegmentInterval::new(segment, true, true, step.edge_id()),
-            step.polygon_id(),
+            step.triangle_id(),
             target,
         )
     }
@@ -57,7 +57,7 @@ impl Node {
     fn from_segment_interval(
         prefix: Rc<PointChain>,
         interval: SegmentInterval,
-        polygon_id: u32,
+        triangle_id: u32,
         target: Point<f32>,
     ) -> Self {
         let cross = interval.cross(prefix.point(), target).point();
@@ -67,7 +67,7 @@ impl Node {
         Self {
             prefix,
             interval: Interval::Segment(interval),
-            polygon_id,
+            triangle_id,
             min_distance,
             heuristic,
         }
@@ -84,8 +84,8 @@ impl Node {
         }
     }
 
-    pub(crate) fn polygon_id(&self) -> u32 {
-        self.polygon_id
+    pub(crate) fn triangle_id(&self) -> u32 {
+        self.triangle_id
     }
 
     /// Returns distance of the node's interval and the target point.
@@ -118,7 +118,7 @@ impl Node {
             Some(Node::from_segment_interval(
                 Rc::clone(&self.prefix),
                 interval,
-                step.polygon_id(),
+                step.triangle_id(),
                 target,
             ))
         } else {
@@ -151,10 +151,10 @@ impl Node {
             Rc::new(PointChain::extended(&self.prefix, corner))
         };
 
-        Node::from_segment_interval(prefix, interval, step.polygon_id(), target)
+        Node::from_segment_interval(prefix, interval, step.triangle_id(), target)
     }
 
-    pub(super) fn expand_to_target(&self, target: Point<f32>, polygon_id: u32) -> Option<Self> {
+    pub(super) fn expand_to_target(&self, target: Point<f32>, triangle_id: u32) -> Option<Self> {
         let Interval::Segment(ref interval) = self.interval else {
             panic!("Cannot expand point interval.")
         };
@@ -167,7 +167,7 @@ impl Node {
         Some(Self {
             prefix,
             interval: Interval::Target,
-            polygon_id,
+            triangle_id,
             min_distance: 0.,
             heuristic,
         })

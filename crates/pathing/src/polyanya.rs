@@ -70,7 +70,8 @@ pub(crate) fn find_path(
             .iter()
             .find(|step| step.edge_id() == edge_id)
         {
-            if let Some(expansion) = node.expand_to_target(target.point(), target_step.polygon_id())
+            if let Some(expansion) =
+                node.expand_to_target(target.point(), target_step.triangle_id())
             {
                 open_set.push(expansion);
             }
@@ -78,10 +79,10 @@ pub(crate) fn find_path(
         }
 
         for &step in graph.neighbours(edge_id) {
-            let next_polygons = graph.polygons(step.edge_id());
-            if next_polygons.contains(&node.polygon_id()) {
+            let next_triangles = graph.triangles(step.edge_id());
+            if next_triangles.contains(&node.triangle_id()) {
                 // Allow only path forward (not backward through the just
-                // traversed polygon).
+                // traversed triangle).
                 continue;
             }
 
