@@ -54,6 +54,18 @@ impl Node {
 
     /// Creates a new Polyanya node from a path prefix and an interval. Node
     /// heuristic is computed.
+    ///
+    /// # Arguments
+    ///
+    /// * `prefix` - node path prefix (up to the root of the node).
+    ///
+    /// * `interval` - part of a triangle edge corresponding the expansion of
+    ///   this node. I.e. set (line segment) of "furthest" explored points
+    ///   along this particular path expansion.
+    ///
+    /// * `triangle_id` - last traversed triangle (to reach `interval`).
+    ///
+    /// * `target` - searched path target.
     fn from_segment_interval(
         prefix: Rc<PointChain>,
         interval: SegmentInterval,
