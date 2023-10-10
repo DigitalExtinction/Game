@@ -14,6 +14,7 @@ mod path;
 mod polyanya;
 mod pplugin;
 mod query;
+mod segmentproj;
 mod syncing;
 mod triangulation;
 mod utils;

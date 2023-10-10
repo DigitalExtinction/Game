@@ -6,7 +6,8 @@ use parry2d::{math::Point, shape::Segment};
 use crate::{
     chain::PointChain,
     graph::Step,
-    interval::{ParamPair, SegmentCross, SegmentInterval},
+    interval::{SegmentCross, SegmentInterval},
+    segmentproj::ParamPair,
 };
 
 /// Polyanya search node.
