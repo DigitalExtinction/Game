@@ -54,7 +54,8 @@ impl VisibilityGraph {
         id
     }
 
-    /// Add 2 neighbours to a graph node (triangle edge).
+    /// Adds 2 neighbours accessible via one of the adjacent triangles to a
+    /// graph node (triangle edge).
     ///
     /// # Arguments
     ///
@@ -133,7 +134,9 @@ impl Node {
     }
 }
 
-/// A step in the triangle edge neighbor graph.
+/// A step in the triangle edge neighbor graph. Id est triangle traversal from
+/// a set of points in the triangle (one point or a line segment) to (part of)
+/// an edge of the triangle.
 #[derive(Clone, Copy, Default, Debug, PartialEq, Eq)]
 pub(crate) struct Step {
     edge_id: u32,

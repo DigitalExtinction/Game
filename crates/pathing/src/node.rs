@@ -105,12 +105,29 @@ impl Node {
         self.min_distance
     }
 
+    /// Constructs and returns expansion of self onto a next (adjacent) edge.
+    ///
+    /// # Arguments
+    ///
+    /// * `segment` - full line segment of the next edge.
+    ///
+    /// * `step` - single triangle traversal step.
+    ///
+    /// * `target` - path searching target point.
+    ///
+    /// # Panics
+    ///
+    /// Panics if the last crossed triangle on the path to this node
+    /// corresponds to the triangle of the next step (i.e. if the expansion
+    /// goes backwards).
     pub(super) fn expand_to_edge(
         &self,
         segment: Segment,
         step: Step,
         target: Point<f32>,
     ) -> [Option<Self>; 3] {
+        assert!(step.triangle_id() != self.triangle_id);
+
         let Interval::Segment(ref interval) = self.interval else {
             panic!("Cannot expand point interval.")
         };
@@ -148,6 +165,24 @@ impl Node {
         [node_a, node_mid, node_b]
     }
 
+    /// Creates a new node whose prefix is equal to the prefix of self with
+    /// potential addition of `corner` (as the new node root) in the case it
+    /// differs from root of self.
+    ///
+    /// # Arguments
+    ///
+    /// * `step` - the one additional step from self to reach the to be created
+    ///   node.
+    ///
+    /// * `segment` - line segment corresponding to the full edge directly
+    ///   reached (i.e. via a single triangle) from self.
+    ///
+    /// * `corner` - last path bend / corner to reach `projection` onto
+    ///   `segment`. Id est root of the to be created node.
+    ///
+    /// * `projection` - part of the target edge.
+    ///
+    /// * `target` - searched path target.
     fn corner(
         &self,
         step: Step,
@@ -155,7 +190,7 @@ impl Node {
         corner: Point<f32>,
         projection: ParamPair,
         target: Point<f32>,
-    ) -> Node {
+    ) -> Self {
         let interval = SegmentInterval::from_projection(segment, projection, step.edge_id());
         let prefix = if self.root() == corner {
             Rc::clone(&self.prefix)
@@ -185,6 +220,12 @@ impl Node {
         })
     }
 
+    /// Constructs path from the search node.
+    ///
+    /// The resulting path is a full path from source to target if the node
+    /// (self) corresponds to the target point. Otherwise, it corresponds to
+    /// the path from source to the closest point to target in the point set of
+    /// self (on the nodes line segment).
     pub(super) fn close(self, target: Point<f32>) -> Path {
         let chain = match self.interval {
             Interval::Target => PointChain::extended(&self.prefix, target),
