@@ -94,12 +94,6 @@ impl VisibilityGraph {
         let index: usize = edge_id.try_into().unwrap();
         self.nodes[index].neighbours()
     }
-
-    /// Returns IDs of neighboring triangles.
-    pub(crate) fn triangles(&self, edge_id: u32) -> &[u32] {
-        let index: usize = edge_id.try_into().unwrap();
-        self.nodes[index].triangles()
-    }
 }
 
 /// A node in the visibility graph.
@@ -107,8 +101,6 @@ struct Node {
     segment: Segment,
     /// Graph steps to reach direct neighbors.
     neighbours: ArrayVec<[Step; 4]>,
-    /// IDs of triangles containing the edge (node).
-    triangles: ArrayVec<[u32; 2]>,
 }
 
 impl Node {
@@ -116,7 +108,6 @@ impl Node {
         Self {
             segment,
             neighbours: ArrayVec::new(),
-            triangles: ArrayVec::new(),
         }
     }
 
@@ -126,10 +117,6 @@ impl Node {
 
     fn neighbours(&self) -> &[Step] {
         self.neighbours.as_slice()
-    }
-
-    fn triangles(&self) -> &[u32] {
-        self.triangles.as_slice()
     }
 
     /// Adds a neighbor to the node.
@@ -143,9 +130,6 @@ impl Node {
     /// * If the number of already stored triangles is 2.
     fn add_neighbour(&mut self, step: Step) {
         self.neighbours.push(step);
-        if !self.triangles.contains(&step.triangle_id()) {
-            self.triangles.push(step.triangle_id());
-        }
     }
 }
 

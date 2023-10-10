@@ -110,7 +110,7 @@ impl Node {
         segment: Segment,
         step: Step,
         target: Point<f32>,
-    ) -> [Option<Node>; 3] {
+    ) -> [Option<Self>; 3] {
         let Interval::Segment(ref interval) = self.interval else {
             panic!("Cannot expand point interval.")
         };

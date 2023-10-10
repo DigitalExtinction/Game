@@ -57,8 +57,8 @@ pub(crate) fn find_path(
             break;
         };
 
-        let improved = visited.test_push(node.root(), node.root_score());
-        if !improved {
+        let worse = visited.test_push(node.root(), node.root_score());
+        if worse {
             continue;
         }
 
@@ -80,8 +80,7 @@ pub(crate) fn find_path(
         }
 
         for &step in graph.neighbours(edge_id) {
-            let next_triangles = graph.triangles(step.edge_id());
-            if next_triangles.contains(&node.triangle_id()) {
+            if step.triangle_id() == node.triangle_id() {
                 // Allow only path forward (not backward through the just
                 // traversed triangle).
                 continue;
@@ -145,16 +144,17 @@ impl Visited {
     }
 
     /// Marks a point as visited and stores/updates its associated score.
-    /// Returns true when the point was not yet visited or the previous score
-    /// was grater or equal to the new score.
+    ///
+    /// Returns true when the point was already visited and the previous score
+    /// was smaller than the new score.
     fn test_push(&mut self, point: Point<f32>, score: f32) -> bool {
         let key = (FloatOrd(point.x), FloatOrd(point.y));
         let current_score = self.0.get(&key).cloned().unwrap_or(f32::INFINITY);
         if current_score > score {
             self.0.insert(key, score);
-            true
+            false
         } else {
-            current_score == score
+            current_score != score
         }
     }
 }
@@ -167,12 +167,12 @@ mod tests {
     fn test_visited() {
         let mut visited = Visited::new();
 
-        assert!(visited.test_push(Point::new(1., 2.), 8.));
-        assert!(visited.test_push(Point::new(1., 2.), 7.));
-        assert!(!visited.test_push(Point::new(1., 2.), 7.5));
+        assert!(!visited.test_push(Point::new(1., 2.), 8.));
+        assert!(!visited.test_push(Point::new(1., 2.), 7.));
+        assert!(visited.test_push(Point::new(1., 2.), 7.5));
 
-        assert!(visited.test_push(Point::new(3., 2.), 11.));
-        assert!(!visited.test_push(Point::new(3., 2.), 12.));
-        assert!(visited.test_push(Point::new(3., 2.), 7.));
+        assert!(!visited.test_push(Point::new(3., 2.), 11.));
+        assert!(visited.test_push(Point::new(3., 2.), 12.));
+        assert!(!visited.test_push(Point::new(3., 2.), 7.));
     }
 }
