@@ -13,6 +13,9 @@ use crate::{
     PathQueryProps,
 };
 
+const MAX_SEARCH_STEPS: u32 = 10_000_000;
+const MAX_OPEN_SET_SIZE: usize = 1_000_000;
+
 /// Finds and returns a reasonable path between two points.
 ///
 /// Source and target points must not lie inside or on the edge of the same
@@ -42,13 +45,11 @@ pub(crate) fn find_path(
     let mut counter = 0;
     while let Some(node) = open_set.pop() {
         counter += 1;
-        if counter > 10_000_000 {
-            // TODO use a constant a better message
-            panic!("Path finding took too long.");
+        if counter > MAX_SEARCH_STEPS {
+            panic!("Path finding error: reached over {MAX_SEARCH_STEPS} search steps.");
         }
-        if open_set.len() > 1_000_000 {
-            // TODO constant and a better message
-            panic!("Too many opened nodes.");
+        if open_set.len() > MAX_OPEN_SET_SIZE {
+            panic!("Path finding error: exploration open set is larger than {MAX_OPEN_SET_SIZE} nodes.");
         }
 
         let Some(edge_id) = node.edge_id() else {
