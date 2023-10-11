@@ -23,16 +23,6 @@ const TARGET_TOLERANCE: f32 = 2.;
 
 /// This plugin handles path finding requests and keeps scheduled paths
 /// up-to-date.
-///
-/// # Path Search
-///
-/// * Neighboring nodes (triangle edges) to the starting and target points are
-///   found. See [`crate::finder`].
-///
-/// * Visibility graph is traversed with a modified Dijkstra's algorithm. See
-///   [`crate::dijkstra`]. Funnel algorithm is embedded into the algorithm so
-///   path funneling can be gradually applied during the graph traversal. See
-///   [`crate::funnel`].
 pub struct PathingPlugin;
 
 impl Plugin for PathingPlugin {

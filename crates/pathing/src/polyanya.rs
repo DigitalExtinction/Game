@@ -20,6 +20,11 @@ const MAX_OPEN_SET_SIZE: usize = 1_000_000;
 ///
 /// Source and target points must not lie inside or on the edge of the same
 /// triangle of the triangulation from which `graph` was created.
+///
+/// The path finding algorithm is based on (a modified) Polyanya:
+///
+/// Cui, M., Harabor, D. D., Grastien, A., & Data61, C. (2017, August).
+/// Compromise-free Pathfinding on a Navigation Mesh. In IJCAI (pp. 496-502).
 pub(crate) fn find_path(
     graph: &VisibilityGraph,
     source: PointContext,
