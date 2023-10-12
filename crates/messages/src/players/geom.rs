@@ -1,9 +1,7 @@
 #[cfg(feature = "bevy")]
 use bevy::transform::components::Transform;
 use bincode::{Decode, Encode};
-#[cfg(feature = "bevy")]
-use glam::Quat;
-use glam::{Vec2, Vec3, Vec4};
+use glam::{Quat, Vec2, Vec3, Vec4};
 
 /// Network representation of translation and rotation. Note that scale is
 /// assumed to be always 1.0 along all axes.
