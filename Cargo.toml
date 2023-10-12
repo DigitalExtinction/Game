@@ -191,4 +191,5 @@ features = [
     "tonemapping_luts",
     "default_font",
     "webgl2",
+    "serialize"
 ]

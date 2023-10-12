@@ -1,0 +1,18 @@
+[package]
+name = "de_input"
+description = "Manage input from keyboard and mouse."
+
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+repository.workspace = true
+keywords.workspace = true
+homepage.workspace = true
+license.workspace = true
+categories.workspace = true
+
+[dependencies]
+
+# Other
+bevy.workspace = true
+serde.workspace = true
