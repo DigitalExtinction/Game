@@ -11,6 +11,7 @@ use bevy::{
         },
     },
 };
+use de_audio::spatial::{PlaySpatialAudioEvent, Sound};
 use de_core::{
     cleanup::DespawnOnGameExit, gamestate::GameState, gconfig::GameConfig, state::AppState,
 };
@@ -35,14 +36,20 @@ impl Plugin for TrailPlugin {
                 (
                     local_laser_trail
                         .before(MessagesSet::SendMessages)
-                        .before(laser_trail),
-                    remote_laser_trail.before(laser_trail),
-                    laser_trail,
+                        .before(TrailSet::Trail),
+                    remote_laser_trail.before(TrailSet::Trail),
+                    laser_trail.in_set(TrailSet::Trail),
+                    laser_sound.in_set(TrailSet::Trail),
                     update,
                 )
                     .run_if(in_state(GameState::Playing)),
             );
     }
+}
+
+#[derive(Copy, Clone, Hash, Debug, PartialEq, Eq, SystemSet)]
+enum TrailSet {
+    Trail,
 }
 
 #[derive(Event)]
@@ -174,6 +181,18 @@ fn laser_trail(
             DespawnOnGameExit,
             NotShadowCaster,
             NotShadowReceiver,
+        ));
+    }
+}
+
+fn laser_sound(
+    mut events: EventReader<LaserTrailEvent>,
+    mut sound_events: EventWriter<PlaySpatialAudioEvent>,
+) {
+    for event in events.iter() {
+        sound_events.send(PlaySpatialAudioEvent::new(
+            Sound::LaserFire,
+            event.0.origin.into(),
         ));
     }
 }
