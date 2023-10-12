@@ -6,7 +6,7 @@ use parry3d::query::Ray;
 use crate::{
     health::{HealthSet, LocalUpdateHealthEvent},
     sightline::LineOfSight,
-    trail::TrailEvent,
+    trail::LocalLaserTrailEvent,
     AttackingSet,
 };
 
@@ -80,13 +80,13 @@ fn fire(
     mut fires: EventReader<LaserFireEvent>,
     sightline: LineOfSight,
     mut health: EventWriter<LocalUpdateHealthEvent>,
-    mut trail: EventWriter<TrailEvent>,
+    mut trail: EventWriter<LocalLaserTrailEvent>,
     mut start_sound: EventWriter<PlaySpatialAudioEvent>,
 ) {
     for fire in fires.iter() {
         let observation = sightline.sight(fire.ray(), fire.max_toi(), fire.attacker());
 
-        trail.send(TrailEvent::new(Ray::new(
+        trail.send(LocalLaserTrailEvent::new(Ray::new(
             fire.ray().origin,
             observation.toi() * fire.ray().dir,
         )));

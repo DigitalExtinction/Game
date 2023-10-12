@@ -11,7 +11,11 @@ use bevy::{
         },
     },
 };
-use de_core::{cleanup::DespawnOnGameExit, gamestate::GameState, state::AppState};
+use de_core::{
+    cleanup::DespawnOnGameExit, gamestate::GameState, gconfig::GameConfig, state::AppState,
+};
+use de_messages::{NetProjectile, ToPlayers};
+use de_multiplayer::{MessagesSet, NetRecvProjectileEvent, ToPlayersEvent};
 use parry3d::query::Ray;
 
 const TRAIL_LIFESPAN: Duration = Duration::from_millis(500);
@@ -22,20 +26,29 @@ pub(crate) struct TrailPlugin;
 impl Plugin for TrailPlugin {
     fn build(&self, app: &mut App) {
         app.add_plugins(MaterialPlugin::<TrailMaterial>::default())
-            .add_event::<TrailEvent>()
+            .add_event::<LocalLaserTrailEvent>()
+            .add_event::<LaserTrailEvent>()
             .add_systems(OnEnter(AppState::InGame), setup)
             .add_systems(OnExit(AppState::InGame), cleanup)
             .add_systems(
                 PostUpdate,
-                (spawn, update).run_if(in_state(GameState::Playing)),
+                (
+                    local_laser_trail
+                        .before(MessagesSet::SendMessages)
+                        .before(laser_trail),
+                    remote_laser_trail.before(laser_trail),
+                    laser_trail,
+                    update,
+                )
+                    .run_if(in_state(GameState::Playing)),
             );
     }
 }
 
 #[derive(Event)]
-pub(crate) struct TrailEvent(Ray);
+pub(crate) struct LocalLaserTrailEvent(Ray);
 
-impl TrailEvent {
+impl LocalLaserTrailEvent {
     /// Send this event to spawn a new trail. The trail will automatically fade
     /// out and disappear.
     ///
@@ -46,11 +59,10 @@ impl TrailEvent {
     pub(crate) fn new(ray: Ray) -> Self {
         Self(ray)
     }
-
-    fn ray(&self) -> &Ray {
-        &self.0
-    }
 }
+
+#[derive(Event)]
+struct LaserTrailEvent(Ray);
 
 #[derive(Resource)]
 struct MeshHandle(Handle<Mesh>);
@@ -104,12 +116,45 @@ impl Material for TrailMaterial {
     }
 }
 
-fn spawn(
+fn local_laser_trail(
+    config: Res<GameConfig>,
+    mut in_events: EventReader<LocalLaserTrailEvent>,
+    mut out_events: EventWriter<LaserTrailEvent>,
+    mut net_events: EventWriter<ToPlayersEvent>,
+) {
+    for event in in_events.iter() {
+        out_events.send(LaserTrailEvent(event.0));
+
+        if config.multiplayer() {
+            net_events.send(ToPlayersEvent::new(ToPlayers::Projectile(
+                NetProjectile::Laser {
+                    origin: event.0.origin.into(),
+                    direction: event.0.dir.into(),
+                },
+            )));
+        }
+    }
+}
+
+fn remote_laser_trail(
+    mut in_events: EventReader<NetRecvProjectileEvent>,
+    mut out_events: EventWriter<LaserTrailEvent>,
+) {
+    for event in in_events.iter() {
+        match **event {
+            NetProjectile::Laser { origin, direction } => {
+                out_events.send(LaserTrailEvent(Ray::new(origin.into(), direction.into())));
+            }
+        }
+    }
+}
+
+fn laser_trail(
     mut commands: Commands,
     mut materials: ResMut<Assets<TrailMaterial>>,
     time: Res<Time>,
     mesh: Res<MeshHandle>,
-    mut events: EventReader<TrailEvent>,
+    mut events: EventReader<LaserTrailEvent>,
 ) {
     for event in events.iter() {
         let material = materials.add(TrailMaterial::new(time.elapsed_seconds_wrapped()));
@@ -119,9 +164,9 @@ fn spawn(
                 mesh: mesh.0.clone(),
                 material,
                 transform: Transform {
-                    translation: event.ray().origin.into(),
-                    rotation: Quat::from_rotation_arc(Vec3::X, event.ray().dir.normalize().into()),
-                    scale: Vec3::new(event.ray().dir.norm(), 1., 1.),
+                    translation: event.0.origin.into(),
+                    rotation: Quat::from_rotation_arc(Vec3::X, event.0.dir.normalize().into()),
+                    scale: Vec3::new(event.0.dir.norm(), 1., 1.),
                 },
                 ..Default::default()
             },

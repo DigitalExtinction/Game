@@ -4,11 +4,13 @@ use de_types::{objects::ActiveObjectType, player::Player};
 pub use entity::{EntityNet, NetEntityIndex};
 pub use geom::{TransformNet, Vec2Net, Vec3Net, Vec4Net};
 pub use path::{PathError, PathNet};
+pub use projectile::NetProjectile;
 
 mod chat;
 mod entity;
 mod geom;
 mod path;
+mod projectile;
 
 /// Messages to be sent by a player/client or occasionally the game server to
 /// other players.
@@ -85,6 +87,8 @@ pub enum ToPlayers {
         entity: EntityNet,
         delta: HealthDelta,
     },
+    /// Some kind of projectile was spawned (e.g. rocket, laser trail).
+    Projectile(NetProjectile),
 }
 
 #[derive(Debug, Encode, Decode)]
