@@ -22,4 +22,5 @@ de_types.workspace = true
 bevy = { workspace = true, optional = true }
 bincode.workspace = true
 glam.workspace = true
+nalgebra.workspace = true
 thiserror.workspace = true
