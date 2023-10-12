@@ -4,7 +4,7 @@ use bevy::{
     prelude::*,
 };
 use de_core::{gconfig::GameConfig, schedule::PreMovement, state::AppState};
-use de_messages::{EntityNet, NetEntityIndex, ToPlayers};
+use de_messages::{EntityNet, NetEntityIndex, NetProjectile, ToPlayers};
 use de_types::{objects::ActiveObjectType, path::Path, player::Player};
 
 use crate::messages::{FromPlayersEvent, MessagesSet};
@@ -19,6 +19,7 @@ impl Plugin for PlayerMsgPlugin {
             .add_event::<NetRecvHealthEvent>()
             .add_event::<NetRecvTransformEvent>()
             .add_event::<NetRecvSetPathEvent>()
+            .add_event::<NetRecvProjectileEvent>()
             .add_systems(OnEnter(AppState::InGame), setup)
             .add_systems(OnExit(AppState::InGame), cleanup)
             .add_systems(
@@ -165,6 +166,9 @@ impl NetRecvSetPathEvent {
         self.path.as_ref()
     }
 }
+
+#[derive(Event, Deref)]
+pub struct NetRecvProjectileEvent(NetProjectile);
 
 #[derive(SystemParam)]
 pub struct NetEntities<'w> {
@@ -356,6 +360,7 @@ fn recv_messages(
     mut path_events: EventWriter<NetRecvSetPathEvent>,
     mut transform_events: EventWriter<NetRecvTransformEvent>,
     mut health_events: EventWriter<NetRecvHealthEvent>,
+    mut projectile_events: EventWriter<NetRecvProjectileEvent>,
 ) {
     for input in inputs.iter() {
         match input.message() {
@@ -403,6 +408,9 @@ fn recv_messages(
                 };
 
                 health_events.send(NetRecvHealthEvent::new(local, delta.into()));
+            }
+            ToPlayers::Projectile(projectile) => {
+                projectile_events.send(NetRecvProjectileEvent(*projectile));
             }
             _ => (),
         }
