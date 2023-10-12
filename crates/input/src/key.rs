@@ -27,6 +27,7 @@ impl<A: ActionTrait> Action<A> {
 
 pub struct KeyPlugin<A: ActionTrait + Send + Sync + 'static> {
     keys: Vec<A::InputType>,
+    #[allow(dead_code)] // TODO: Remove this and use this field
     config_name: String,
     _marker: PhantomData<A>,
 }
