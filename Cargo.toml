@@ -136,6 +136,7 @@ glam = "0.24"
 gltf = "1.0"
 itertools = "0.11.0"
 iyes_progress = "0.9.0"
+kiddo = "2.1.2"
 log = "0.4.17"
 nalgebra = { version = "0.32.3", features = ["convert-glam024"] }
 nix = "0.26.2"

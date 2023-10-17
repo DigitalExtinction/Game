@@ -2,9 +2,12 @@
 //! This crate implements spatial indexing and various spatial queries of game
 //! entities.
 
+mod point;
 mod precise;
 
 use bevy::{app::PluginGroupBuilder, prelude::PluginGroup};
+pub use point::PlayerPointIndex;
+use point::PointIndexPlugin;
 use precise::PreciseIndexPlugin;
 pub use precise::{
     ColliderWithCache, EntityIndex, LocalCollider, PreciseIndexSet, QueryCollider,
@@ -18,6 +21,8 @@ pub struct IndexPluginGroup;
 
 impl PluginGroup for IndexPluginGroup {
     fn build(self) -> PluginGroupBuilder {
-        PluginGroupBuilder::start::<Self>().add(PreciseIndexPlugin)
+        PluginGroupBuilder::start::<Self>()
+            .add(PreciseIndexPlugin)
+            .add(PointIndexPlugin)
     }
 }

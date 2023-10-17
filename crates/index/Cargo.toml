@@ -18,12 +18,13 @@ de_objects.workspace = true
 de_types.workspace = true
 
 # Other
+ahash.workspace = true
 bevy.workspace = true
 glam.workspace = true
-parry3d.workspace = true
-parry2d.workspace = true
-ahash.workspace = true
+kiddo.workspace = true
 nalgebra.workspace = true
+parry2d.workspace = true
+parry3d.workspace = true
 
 [dev-dependencies]
 # DE
