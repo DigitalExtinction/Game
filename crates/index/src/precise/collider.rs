@@ -43,12 +43,12 @@ impl LocalCollider {
     }
 
     /// Updates position of cached world-space AABB of the collider.
-    pub(crate) fn update_position(&mut self, position: Isometry<f32>) {
+    pub(super) fn update_position(&mut self, position: Isometry<f32>) {
         self.world_aabb = self.local_aabb.transform_by(&position);
         self.position = position;
     }
 
-    pub(crate) fn cast_ray(&self, ray: &Ray, max_toi: f32) -> Option<f32> {
+    pub(super) fn cast_ray(&self, ray: &Ray, max_toi: f32) -> Option<f32> {
         if self.world_aabb.intersects_local_ray(ray, max_toi) {
             self.object_collider.cast_ray(&self.position, ray, max_toi)
         } else {
@@ -56,7 +56,7 @@ impl LocalCollider {
         }
     }
 
-    pub(crate) fn intersects(&self, rhs: &impl ColliderWithCache) -> bool {
+    pub(super) fn intersects(&self, rhs: &impl ColliderWithCache) -> bool {
         if self.query_aabb(rhs.world_aabb()) {
             self.object_collider
                 .intersects(&self.position, rhs.inner(), rhs.position())
@@ -67,7 +67,7 @@ impl LocalCollider {
 
     /// Returns true if world-space axis-aligned bounding boxes of the two
     /// colliders intersect.
-    pub(crate) fn query_aabb(&self, aabb: &Aabb) -> bool {
+    pub(super) fn query_aabb(&self, aabb: &Aabb) -> bool {
         self.world_aabb.intersects(aabb)
     }
 }

@@ -8,7 +8,7 @@ use crate::TILE_SIZE;
 ///
 /// The tiles are iterated row-by-row, for example: (1, 1) -> (2, 1) -> (1, 2)
 /// -> (2, 2).
-pub(crate) struct TileRange {
+pub(super) struct TileRange {
     a: IVec2,
     b: IVec2,
     x: i32,
@@ -21,7 +21,7 @@ impl TileRange {
     ///
     /// Tiles are assumed to be topologically closed. In other words, both
     /// touching and intersecting tiles are included in the range.
-    pub(crate) fn from_aabb(aabb: &Aabb) -> Self {
+    pub(super) fn from_aabb(aabb: &Aabb) -> Self {
         let aabb = aabb.to_flat();
         let min_flat: Vec2 = aabb.mins.into();
         let max_flat: Vec2 = aabb.maxs.into();
@@ -35,7 +35,7 @@ impl TileRange {
     /// * `a` - inclusive range start.
     ///
     /// * `b` - inclusive range end.
-    pub(crate) fn new(a: IVec2, b: IVec2) -> Self {
+    pub(super) fn new(a: IVec2, b: IVec2) -> Self {
         Self {
             a,
             b,
@@ -46,12 +46,12 @@ impl TileRange {
     }
 
     /// Returns true if the given point is not contained in the tile range.
-    pub(crate) fn excludes(&self, point: IVec2) -> bool {
+    pub(super) fn excludes(&self, point: IVec2) -> bool {
         self.a.cmpgt(point).any() || self.b.cmplt(point).any()
     }
 
     /// Returns intersecting tile range. The result might be empty.
-    pub(crate) fn intersection(&self, other: &TileRange) -> TileRange {
+    pub(super) fn intersection(&self, other: &TileRange) -> TileRange {
         Self::new(self.a.max(other.a), self.b.min(other.b))
     }
 }

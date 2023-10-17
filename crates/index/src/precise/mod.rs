@@ -1,6 +1,9 @@
-//! Module with systems and a Bevy plugin for automatic entity indexing of
-//! solid entities.
-
+//! This module implements collider based spatial indexing of game entities and
+//! various geometry based lookup (for example ray casting).
+//!
+//! The core structure is a square tile grid which points to Bevy ECS entities.
+//! Newly spawned entities are automatically added, despawned entities removed
+//! and moved entities updated by systems added by [`PreciseIndexPlugin`].
 use bevy::prelude::*;
 use de_core::{
     gamestate::GameState,
@@ -11,8 +14,17 @@ use de_core::{
 use de_objects::SolidObjects;
 use parry3d::math::Isometry;
 
-use super::index::EntityIndex;
-use crate::collider::LocalCollider;
+pub use self::{
+    collider::{ColliderWithCache, LocalCollider, QueryCollider},
+    index::{EntityIndex, RayEntityIntersection, SpatialQuery},
+};
+
+mod aabb;
+mod collider;
+mod grid;
+mod index;
+mod range;
+mod segment;
 
 type SolidEntityQuery<'w, 's> = Query<
     'w,
@@ -38,9 +50,9 @@ type MovedQuery<'w, 's> =
 /// insert newly spawned solid entities to the index, update their position
 /// when [`bevy::prelude::Transform`] is changed and remove the entities from
 /// the index when they are de-spawned.
-pub(crate) struct IndexPlugin;
+pub(super) struct PreciseIndexPlugin;
 
-impl Plugin for IndexPlugin {
+impl Plugin for PreciseIndexPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(OnEnter(AppState::InGame), setup)
             .add_systems(OnExit(AppState::InGame), cleanup)
@@ -48,19 +60,19 @@ impl Plugin for IndexPlugin {
                 PostUpdate,
                 (insert, remove)
                     .run_if(in_state(GameState::Playing))
-                    .in_set(IndexSet::Index),
+                    .in_set(PreciseIndexSet::Index),
             )
             .add_systems(
                 PostMovement,
                 update
                     .run_if(in_state(GameState::Playing))
-                    .in_set(IndexSet::Index),
+                    .in_set(PreciseIndexSet::Index),
             );
     }
 }
 
 #[derive(Clone, Copy, PartialEq, Eq, Hash, Debug, SystemSet)]
-pub enum IndexSet {
+pub enum PreciseIndexSet {
     Index,
 }
 
