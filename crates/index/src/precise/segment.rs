@@ -6,7 +6,8 @@ use de_types::projection::ToFlat;
 use glam::{IVec2, Vec2};
 use parry3d::shape::Segment;
 
-use super::{grid::TileGrid, TILE_SIZE};
+use super::grid::TileGrid;
+use crate::TILE_SIZE;
 
 /// An iterator over sets of entities from tiles intersecting a given line
 /// segment.
@@ -18,14 +19,14 @@ use super::{grid::TileGrid, TILE_SIZE};
 /// The tiles (and thus the yielded sets) are iterated by increasing distance
 /// between point `a` of the given line segment and the intersection of the
 /// tile with the line segment.
-pub(crate) struct SegmentCandidates<'a> {
+pub(super) struct SegmentCandidates<'a> {
     grid: &'a TileGrid,
     tiles: TileIterator,
     encountered: Option<&'a AHashSet<Entity>>,
 }
 
 impl<'a> SegmentCandidates<'a> {
-    pub(crate) fn new(grid: &'a TileGrid, segment: Segment) -> Self {
+    pub(super) fn new(grid: &'a TileGrid, segment: Segment) -> Self {
         Self {
             grid,
             tiles: TileIterator::new(segment),
@@ -172,7 +173,6 @@ mod tests {
     use parry3d::{bounding_volume::Aabb, math::Point, shape::Segment};
 
     use super::*;
-    use crate::grid::TileGrid;
 
     #[test]
     fn test_segment_candidates() {

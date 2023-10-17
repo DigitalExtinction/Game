@@ -18,8 +18,10 @@ use parry3d::{
     shape::Segment,
 };
 
-use super::{collider::LocalCollider, grid::TileGrid, segment::SegmentCandidates};
-use crate::{aabb::AabbCandidates, collider::ColliderWithCache};
+use super::{
+    aabb::AabbCandidates, collider::ColliderWithCache, collider::LocalCollider, grid::TileGrid,
+    segment::SegmentCandidates,
+};
 
 /// 2D rectangular grid based spatial index of entities.
 #[derive(Resource)]
@@ -47,7 +49,7 @@ impl EntityIndex {
         self.colliders.insert(entity, collider);
     }
 
-    pub(crate) fn remove(&mut self, entity: Entity) {
+    pub(super) fn remove(&mut self, entity: Entity) {
         let collider = self
             .colliders
             .remove(&entity)
@@ -55,7 +57,7 @@ impl EntityIndex {
         self.grid.remove(entity, collider.world_aabb());
     }
 
-    pub(crate) fn update(&mut self, entity: Entity, position: Isometry<f32>) {
+    pub(super) fn update(&mut self, entity: Entity, position: Isometry<f32>) {
         let collider = self
             .colliders
             .get_mut(&entity)
@@ -107,7 +109,7 @@ impl Default for EntityIndex {
 /// System parameter implementing various spatial queries.
 ///
 /// Only entities automatically indexed by systems from
-/// [`super::systems::IndexPlugin`] could be retrieved.
+/// [`super::PreciseIndexPlugin`] could be retrieved.
 #[derive(SystemParam)]
 pub struct SpatialQuery<'w, 's, Q, F = ()>
 where
@@ -124,7 +126,7 @@ where
     F: ReadOnlyWorldQuery + Sync + Send + 'static,
 {
     /// Returns closest entity whose shape, as indexed by systems registered by
-    /// [`super::systems::IndexPlugin`], intersects a given ray.
+    /// [`super::PreciseIndexPlugin`], intersects a given ray.
     ///
     /// # Arguments
     ///
@@ -173,7 +175,7 @@ where
     }
 
     /// Returns true if queried solid object on the map, as indexed by
-    /// [`super::systems::IndexPlugin`], intersects with the given collider.
+    /// [`super::PreciseIndexPlugin`], intersects with the given collider.
     pub fn collides(&self, collider: &impl ColliderWithCache) -> bool {
         let candidate_sets = self.index.query_aabb(collider.world_aabb());
         candidate_sets.flatten().any(|candidate| {

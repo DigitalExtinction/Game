@@ -6,20 +6,20 @@ use bevy::prelude::Entity;
 use glam::IVec2;
 use parry3d::bounding_volume::Aabb;
 
-use crate::range::TileRange;
+use super::range::TileRange;
 
 /// Rectangular (2D) grid of sets of Bevy ECS entities.
 ///
 /// Only non-empty sets are kept (a hash map mapping 2D tile coordinates to
 /// Entity sets is used under the hood). Each set contains entities whose
 /// absolute AABB intersects with the tile.
-pub(crate) struct TileGrid {
+pub(super) struct TileGrid {
     tiles: AHashMap<IVec2, AHashSet<Entity>>,
 }
 
 impl TileGrid {
     /// Creates a new empty grid.
-    pub(crate) fn new() -> Self {
+    pub(super) fn new() -> Self {
         Self {
             tiles: AHashMap::new(),
         }
@@ -36,7 +36,7 @@ impl TileGrid {
     /// # Panics
     ///
     /// Might panic if the entity is already present in the grid.
-    pub(crate) fn insert(&mut self, entity: Entity, aabb: &Aabb) {
+    pub(super) fn insert(&mut self, entity: Entity, aabb: &Aabb) {
         for tile in TileRange::from_aabb(aabb) {
             self.insert_to_tile(entity, tile);
         }
@@ -56,7 +56,7 @@ impl TileGrid {
     ///
     /// Might panic if the entity is not stored in the grid or if the last used
     /// update / insertion AABB differs from the one passed as an argument.
-    pub(crate) fn remove(&mut self, entity: Entity, aabb: &Aabb) {
+    pub(super) fn remove(&mut self, entity: Entity, aabb: &Aabb) {
         for tile in TileRange::from_aabb(aabb) {
             self.remove_from_tile(entity, tile);
         }
@@ -77,7 +77,7 @@ impl TileGrid {
     ///
     /// Might panic if the entity is not present in the grid or if `old_aabb`
     /// differs from the last used update / insert AABB.
-    pub(crate) fn update(&mut self, entity: Entity, old_aabb: &Aabb, new_aabb: &Aabb) {
+    pub(super) fn update(&mut self, entity: Entity, old_aabb: &Aabb, new_aabb: &Aabb) {
         let old_tiles = TileRange::from_aabb(old_aabb);
         let new_tiles = TileRange::from_aabb(new_aabb);
 
@@ -107,7 +107,7 @@ impl TileGrid {
     /// # Arguments
     ///
     /// `tile_coords` - coordinates of the tile.
-    pub(crate) fn get_tile_entities(&self, tile_coords: IVec2) -> Option<&AHashSet<Entity>> {
+    pub(super) fn get_tile_entities(&self, tile_coords: IVec2) -> Option<&AHashSet<Entity>> {
         self.tiles.get(&tile_coords)
     }
 
