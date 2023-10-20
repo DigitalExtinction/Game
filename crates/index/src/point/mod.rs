@@ -11,6 +11,7 @@ use de_types::{player::Player, projection::ToFlat};
 use self::tree::Tree;
 
 mod grid;
+mod subdivision;
 mod tree;
 
 pub(super) struct PointIndexPlugin;
