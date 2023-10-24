@@ -29,11 +29,15 @@ de_signs.workspace = true
 de_spawner.workspace = true
 de_terrain.workspace = true
 de_types.workspace = true
+de_input.workspace = true
 
 # Other
 ahash.workspace = true
 bevy.workspace = true
 enum-map.workspace = true
 glam.workspace = true
+leafwing-input-manager.workspace = true
 parry2d.workspace = true
 parry3d.workspace = true
+petitset.workspace = true
+serde.workspace = true

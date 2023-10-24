@@ -1,3 +1,4 @@
+use crate::actions::Action;
 use ahash::AHashMap;
 use bevy::{
     input::{mouse::MouseButtonInput, ButtonState},
@@ -7,6 +8,7 @@ use bevy::{
 use de_core::{
     gamestate::GameState, schedule::InputSchedule, screengeom::ScreenRect, state::AppState,
 };
+use leafwing_input_manager::prelude::ActionState;
 
 use crate::hud::HudNodes;
 
@@ -52,17 +54,17 @@ pub(crate) enum MouseSet {
 
 #[derive(Event)]
 pub(crate) struct MouseClickedEvent {
-    button: MouseButton,
+    action: Action,
     position: Vec2,
 }
 
 impl MouseClickedEvent {
-    fn new(button: MouseButton, position: Vec2) -> Self {
-        Self { button, position }
+    fn new(action: Action, position: Vec2) -> Self {
+        Self { action, position }
     }
 
-    pub(crate) fn button(&self) -> MouseButton {
-        self.button
+    pub(crate) fn button(&self) -> Action {
+        self.action
     }
 
     pub(crate) fn position(&self) -> Vec2 {
@@ -72,37 +74,37 @@ impl MouseClickedEvent {
 
 #[derive(Event)]
 pub(crate) struct MouseDoubleClickedEvent {
-    button: MouseButton,
+    action: Action,
 }
 
 impl MouseDoubleClickedEvent {
-    fn new(button: MouseButton) -> Self {
-        Self { button }
+    fn new(action: Action) -> Self {
+        Self { action }
     }
 
-    pub(crate) fn button(&self) -> MouseButton {
-        self.button
+    pub(crate) fn button(&self) -> Action {
+        self.action
     }
 }
 
 #[derive(Event)]
 pub(crate) struct MouseDraggedEvent {
-    button: MouseButton,
+    action: Action,
     rect: Option<ScreenRect>,
     update_type: DragUpdateType,
 }
 
 impl MouseDraggedEvent {
-    fn new(button: MouseButton, rect: Option<ScreenRect>, update_type: DragUpdateType) -> Self {
+    fn new(action: Action, rect: Option<ScreenRect>, update_type: DragUpdateType) -> Self {
         Self {
-            button,
+            action,
             rect,
             update_type,
         }
     }
 
-    pub(crate) fn button(&self) -> MouseButton {
-        self.button
+    pub(crate) fn button(&self) -> Action {
+        self.action
     }
 
     /// Screen rectangle corresponding to the drag (i.e. its starting and
@@ -144,15 +146,15 @@ impl MousePosition {
 }
 
 #[derive(Default, Resource)]
-struct MouseDragStates(AHashMap<MouseButton, DragState>);
+struct MouseDragStates(AHashMap<Action, DragState>);
 
 impl MouseDragStates {
-    fn set(&mut self, button: MouseButton, position: Option<Vec2>) {
-        self.0.insert(button, DragState::new(position));
+    fn set(&mut self, action: Action, position: Option<Vec2>) {
+        self.0.insert(action, DragState::new(position));
     }
 
-    fn resolve(&mut self, button: MouseButton) -> Option<DragResolution> {
-        self.0.remove(&button).and_then(DragState::resolve)
+    fn resolve(&mut self, action: Action) -> Option<DragResolution> {
+        self.0.remove(&action).and_then(DragState::resolve)
     }
 
     /// Updates the end position of all opened drags. A map of mouse buttons to
@@ -160,7 +162,7 @@ impl MouseDragStates {
     ///
     /// None means that the drag is (temporarily) canceled, Some means that the
     /// drag has been updated to this new rectangle.
-    fn update(&mut self, position: Option<Vec2>) -> AHashMap<MouseButton, Option<ScreenRect>> {
+    fn update(&mut self, position: Option<Vec2>) -> AHashMap<Action, Option<ScreenRect>> {
         let mut updates = AHashMap::new();
         for (&button, drag) in self.0.iter_mut() {
             if let Some(update) = drag.update(position) {
@@ -269,30 +271,28 @@ fn update_drags(
 fn update_buttons(
     mouse_position: Res<MousePosition>,
     mut mouse_state: ResMut<MouseDragStates>,
-    mut input_events: EventReader<MouseButtonInput>,
+    action_state: Res<ActionState<Action>>,
     mut clicks: EventWriter<MouseClickedEvent>,
     mut drags: EventWriter<MouseDraggedEvent>,
 ) {
-    for event in input_events.iter() {
-        match event.state {
-            ButtonState::Released => {
-                if let Some(drag_resolution) = mouse_state.resolve(event.button) {
-                    match drag_resolution {
-                        DragResolution::Point(position) => {
-                            clicks.send(MouseClickedEvent::new(event.button, position));
-                        }
-                        DragResolution::Rect(rect) => {
-                            drags.send(MouseDraggedEvent::new(
-                                event.button,
-                                rect,
-                                DragUpdateType::Released,
-                            ));
-                        }
+    for action in Action::get_mouse_actions() {
+        if action_state.just_pressed(action) {
+            mouse_state.set(action, mouse_position.ndc());
+        } else if action_state.just_released(action) {
+            println!("released drag");
+            if let Some(drag_resolution) = mouse_state.resolve(action) {
+                match drag_resolution {
+                    DragResolution::Point(position) => {
+                        clicks.send(MouseClickedEvent::new(action, position));
+                    }
+                    DragResolution::Rect(rect) => {
+                        drags.send(MouseDraggedEvent::new(
+                            action,
+                            rect,
+                            DragUpdateType::Released,
+                        ));
                     }
                 }
-            }
-            ButtonState::Pressed => {
-                mouse_state.set(event.button, mouse_position.ndc());
             }
         }
     }

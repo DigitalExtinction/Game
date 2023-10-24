@@ -2313,6 +2313,7 @@ dependencies = [
  "de_energy",
  "de_gui",
  "de_index",
+ "de_input",
  "de_map",
  "de_objects",
  "de_pathing",
@@ -2322,8 +2323,11 @@ dependencies = [
  "de_types",
  "enum-map",
  "glam",
+ "leafwing-input-manager",
  "parry2d",
  "parry3d",
+ "petitset",
+ "serde",
 ]
 
 [[package]]
@@ -2411,7 +2415,11 @@ name = "de_input"
 version = "0.1.0-dev"
 dependencies = [
  "bevy",
+ "de_core",
+ "leafwing-input-manager",
+ "ron",
  "serde",
+ "serde_yaml",
 ]
 
 [[package]]
@@ -3956,6 +3964,34 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "830d08ce1d1d941e6b30645f1a0eb5643013d835ce3779a5fc208261dbe10f55"
 
 [[package]]
+name = "leafwing-input-manager"
+version = "0.10.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b56a6f71e8f5beefc8d3841ffa6ea9bbb1123956fa7c75fd673e69b65a8ca62f"
+dependencies = [
+ "bevy",
+ "derive_more",
+ "fixedbitset",
+ "itertools 0.11.0",
+ "leafwing_input_manager_macros",
+ "once_cell",
+ "petitset",
+ "serde",
+]
+
+[[package]]
+name = "leafwing_input_manager_macros"
+version = "0.9.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "11aefabfcc9ef0a78bc97eea053d2f1bb050d5278a4134bdc1b769064a90064a"
+dependencies = [
+ "proc-macro-crate",
+ "proc-macro2",
+ "quote",
+ "syn 1.0.109",
+]
+
+[[package]]
 name = "libc"
 version = "0.2.147"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4831,6 +4867,15 @@ checksum = "4dd7d28ee937e54fe3080c91faa1c3a46c06de6252988a7f4592ba2310ef22a4"
 dependencies = [
  "fixedbitset",
  "indexmap 1.9.3",
+]
+
+[[package]]
+name = "petitset"
+version = "0.2.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6b1a50d821a2526af6d5756c23c68e453532a986e361a3e12c9cc7fe61d862ac"
+dependencies = [
+ "serde",
 ]
 
 [[package]]

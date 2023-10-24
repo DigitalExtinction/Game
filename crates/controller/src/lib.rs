@@ -6,6 +6,7 @@ use draft::DraftPlugin;
 use hud::HudPlugin;
 use mouse::MousePlugin;
 use selection::SelectionPlugin;
+use actions::ActionPlugin;
 
 mod commands;
 mod draft;
@@ -14,6 +15,7 @@ mod hud;
 mod mouse;
 mod ray;
 mod selection;
+mod actions;
 
 const SELECTION_BAR_ID: u32 = 0;
 const POINTER_BAR_ID: u32 = 1;
@@ -28,5 +30,7 @@ impl PluginGroup for ControllerPluginGroup {
             .add(SelectionPlugin)
             .add(DraftPlugin)
             .add(HudPlugin)
+            .add(ActionPlugin)
+
     }
 }

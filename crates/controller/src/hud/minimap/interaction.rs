@@ -8,6 +8,7 @@ use bevy::{
     prelude::*,
     window::PrimaryWindow,
 };
+use leafwing_input_manager::prelude::ActionState;
 use de_camera::MoveFocusEvent;
 use de_core::{gamestate::GameState, schedule::InputSchedule};
 use de_map::size::MapBounds;
@@ -16,6 +17,7 @@ use super::nodes::MinimapNode;
 use crate::{
     commands::{CommandsSet, DeliveryLocationSelectedEvent, SendSelectedEvent},
     hud::HudNodes,
+    actions::Action,
 };
 
 pub(super) struct InteractionPlugin;
@@ -58,17 +60,17 @@ enum InteractionSet {
 
 #[derive(Event)]
 struct MinimapPressEvent {
-    button: MouseButton,
+    action: Action,
     position: Vec2,
 }
 
 impl MinimapPressEvent {
-    fn new(button: MouseButton, position: Vec2) -> Self {
-        Self { button, position }
+    fn new(action: Action, position: Vec2) -> Self {
+        Self { action, position }
     }
 
-    fn button(&self) -> MouseButton {
-        self.button
+    fn button(&self) -> Action {
+        self.action
     }
 
     /// Position on the map in 2D flat coordinates (these are not minimap
@@ -80,23 +82,23 @@ impl MinimapPressEvent {
 
 impl fmt::Debug for MinimapPressEvent {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{:?} -> {:?}", self.button, self.position)
+        write!(f, "{:?} -> {:?}", self.action, self.position)
     }
 }
 
 #[derive(Event)]
 struct MinimapDragEvent {
-    button: MouseButton,
+    action: Action,
     position: Vec2,
 }
 
 impl MinimapDragEvent {
-    fn new(button: MouseButton, position: Vec2) -> Self {
-        Self { button, position }
+    fn new(action: Action, position: Vec2) -> Self {
+        Self { action, position }
     }
 
-    fn button(&self) -> MouseButton {
-        self.button
+    fn button(&self) -> Action {
+        self.action
     }
 
     /// Position on the map in 2D flat coordinates (these are not minimap
@@ -107,11 +109,11 @@ impl MinimapDragEvent {
 }
 
 #[derive(Resource, Deref, DerefMut)]
-struct DraggingButtons(Vec<MouseButton>);
+struct DraggingButtons(Vec<Action>);
 
 fn press_handler(
     window_query: Query<&Window, With<PrimaryWindow>>,
-    mut input_events: EventReader<MouseButtonInput>,
+    action_state: Res<ActionState<Action>>,
     hud: HudNodes<With<MinimapNode>>,
     bounds: Res<MapBounds>,
     mut dragging: ResMut<DraggingButtons>,
@@ -119,13 +121,10 @@ fn press_handler(
 ) {
     let cursor = window_query.single().cursor_position();
 
-    for event in input_events.iter() {
-        match event.state {
-            ButtonState::Released => {
-                dragging.retain(|b| *b != event.button);
-                continue;
-            }
-            ButtonState::Pressed => (),
+    for mouse_action in Action::get_mouse_actions() {
+        if action_state.just_released(mouse_action) { 
+            dragging.retain(|b| *b != mouse_action);
+            continue;
         }
 
         let Some(cursor) = cursor else {
@@ -133,9 +132,9 @@ fn press_handler(
         };
 
         if let Some(mut relative) = hud.relative_position(cursor) {
-            dragging.push(event.button);
+            dragging.push(mouse_action);
             relative.y = 1. - relative.y;
-            let event = MinimapPressEvent::new(event.button, bounds.rel_to_abs(relative));
+            let event = MinimapPressEvent::new(mouse_action, bounds.rel_to_abs(relative));
             info!("Sending minimap press event {event:?}.");
             press_events.send(event);
         }
@@ -174,7 +173,7 @@ fn move_camera_system(
     mut camera_events: EventWriter<MoveFocusEvent>,
 ) {
     for press in press_events.iter() {
-        if press.button() != MouseButton::Left {
+        if press.button() != Action::PrimaryClick {
             continue;
         }
 
@@ -183,7 +182,7 @@ fn move_camera_system(
     }
 
     for drag in drag_events.iter() {
-        if drag.button() != MouseButton::Left {
+        if drag.button() != Action::PrimaryClick {
             continue;
         }
 
@@ -197,7 +196,7 @@ fn send_units_system(
     mut send_events: EventWriter<SendSelectedEvent>,
 ) {
     for press in press_events.iter() {
-        if press.button() != MouseButton::Right {
+        if press.button() != Action::SecondaryClick {
             continue;
         }
         send_events.send(SendSelectedEvent::new(press.position()));
@@ -209,7 +208,7 @@ fn delivery_location_system(
     mut location_events: EventWriter<DeliveryLocationSelectedEvent>,
 ) {
     for press in press_events.iter() {
-        if press.button() != MouseButton::Right {
+        if press.button() != Action::SecondaryClick {
             continue;
         }
         location_events.send(DeliveryLocationSelectedEvent::new(press.position()));

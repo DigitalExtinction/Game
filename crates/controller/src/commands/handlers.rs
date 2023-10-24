@@ -2,11 +2,7 @@
 //! keyboard shortcuts, mouse actions events, and so on.
 
 use bevy::{
-    input::{
-        keyboard::KeyboardInput,
-        mouse::{MouseMotion, MouseScrollUnit, MouseWheel},
-        ButtonState,
-    },
+    input::mouse::{MouseMotion, MouseScrollUnit, MouseWheel},
     prelude::*,
     window::PrimaryWindow,
 };
@@ -27,18 +23,17 @@ use de_types::{
     objects::{BuildingType, PLAYER_MAX_BUILDINGS},
     projection::ToFlat,
 };
-use enum_map::enum_map;
+use leafwing_input_manager::prelude::ActionState;
 
 use super::{
-    executor::DeliveryLocationSelectedEvent, keyboard::KeyCondition, CommandsSet, GroupAttackEvent,
-    SendSelectedEvent,
+    executor::DeliveryLocationSelectedEvent, CommandsSet, GroupAttackEvent, SendSelectedEvent,
 };
+use crate::actions::{action_pressed, Action};
 use crate::{
     draft::{DiscardDraftsEvent, DraftSet, NewDraftEvent, SpawnDraftsEvent},
     hud::{GameMenuSet, ToggleGameMenuEvent, UpdateSelectionBoxEvent},
     mouse::{
-        DragUpdateType, MouseClickedEvent, MouseDoubleClickedEvent, MouseDraggedEvent, MouseSet,
-        Pointer, PointerSet,
+        DragUpdateType, MouseDoubleClickedEvent, MouseDraggedEvent, MouseSet, Pointer, PointerSet,
     },
     selection::{
         AreaSelectSet, SelectEvent, SelectInRectEvent, Selected, SelectionMode, SelectionSet,
@@ -53,17 +48,12 @@ pub(super) struct HandlersPlugin;
 
 impl HandlersPlugin {
     fn add_place_draft_systems(app: &mut App) {
-        let key_map = enum_map! {
-            BuildingType::Base => KeyCode::B,
-            BuildingType::PowerHub => KeyCode::P,
-        };
-
-        for (building_type, &key) in key_map.iter() {
+        for (action, building) in Action::get_factory_actions() {
             app.add_systems(
                 InputSchedule,
-                place_draft(building_type)
+                place_draft(building)
                     .run_if(in_state(GameState::Playing))
-                    .run_if(KeyCondition::single(key).build())
+                    .run_if(action_pressed(action))
                     .before(DraftSet::New)
                     .after(PointerSet::Update),
             );
@@ -76,22 +66,22 @@ impl Plugin for HandlersPlugin {
         app.add_systems(
             InputSchedule,
             (
-                right_click_handler
-                    .run_if(on_click(MouseButton::Right))
+                secondary_click_handler
+                    .run_if(action_pressed(Action::SecondaryClick))
                     .after(PointerSet::Update)
                     .after(MouseSet::Buttons)
                     .before(CommandsSet::SendSelected)
                     .before(CommandsSet::DeliveryLocation)
                     .before(CommandsSet::Attack),
-                left_click_handler
-                    .run_if(on_click(MouseButton::Left))
+                primary_click_handler
+                    .run_if(action_pressed(Action::PrimaryClick))
                     .in_set(HandlersSet::LeftClick)
                     .before(SelectionSet::Update)
                     .before(DraftSet::Spawn)
                     .after(PointerSet::Update)
                     .after(MouseSet::Buttons),
                 double_click_handler
-                    .run_if(on_double_click(MouseButton::Left))
+                    .run_if(on_double_click(Action::PrimaryClick))
                     .before(SelectionSet::Update)
                     .before(DraftSet::Spawn)
                     .after(PointerSet::Update)
@@ -104,19 +94,14 @@ impl Plugin for HandlersPlugin {
                     .before(CameraSet::RotateEvent)
                     .before(CameraSet::TiltEvent),
                 handle_escape
-                    .run_if(KeyCondition::single(KeyCode::Escape).build())
+                    .run_if(action_pressed(Action::Exit))
                     .before(GameMenuSet::Toggle)
                     .before(DraftSet::Discard),
                 select_all
-                    .run_if(KeyCondition::single(KeyCode::A).with_ctrl().build())
+                    .run_if(action_pressed(Action::SelectAll))
                     .before(SelectionSet::Update),
                 select_all_visible
-                    .run_if(
-                        KeyCondition::single(KeyCode::A)
-                            .with_ctrl()
-                            .with_shift()
-                            .build(),
-                    )
+                    .run_if(action_pressed(Action::SelectAllVisible))
                     .before(AreaSelectSet::SelectInArea),
                 update_drags
                     .before(AreaSelectSet::SelectInArea)
@@ -134,15 +119,7 @@ pub(crate) enum HandlersSet {
     LeftClick,
 }
 
-fn on_click(button: MouseButton) -> impl Fn(EventReader<MouseClickedEvent>) -> bool {
-    move |mut events: EventReader<MouseClickedEvent>| {
-        // It is desirable to exhaust the iterator, thus .filter().count() is
-        // used instead of .any()
-        events.iter().filter(|e| e.button() == button).count() > 0
-    }
-}
-
-fn on_double_click(button: MouseButton) -> impl Fn(EventReader<MouseDoubleClickedEvent>) -> bool {
+fn on_double_click(button: Action) -> impl Fn(EventReader<MouseDoubleClickedEvent>) -> bool {
     move |mut events: EventReader<MouseDoubleClickedEvent>| {
         // It is desirable to exhaust the iterator, thus .filter().count() is
         // used instead of .any()
@@ -150,7 +127,7 @@ fn on_double_click(button: MouseButton) -> impl Fn(EventReader<MouseDoubleClicke
     }
 }
 
-fn right_click_handler(
+fn secondary_click_handler(
     config: Res<GameConfig>,
     mut send_events: EventWriter<SendSelectedEvent>,
     mut location_events: EventWriter<DeliveryLocationSelectedEvent>,
@@ -207,34 +184,47 @@ fn double_click_handler(
 }
 
 fn move_camera_arrows_system(
-    mut key_events: EventReader<KeyboardInput>,
+    action_state: Res<ActionState<Action>>,
     mut move_events: EventWriter<MoveCameraHorizontallyEvent>,
+    mut current_direction: Local<Vec2>,
 ) {
-    for key_event in key_events.iter() {
-        let Some(key_code) = key_event.key_code else {
-            continue;
-        };
+    let old_direction = *current_direction;
 
-        let mut direction = Vec2::ZERO;
-        if key_code == KeyCode::Left {
-            direction = Vec2::new(-1., 0.);
-        } else if key_code == KeyCode::Right {
-            direction = Vec2::new(1., 0.);
-        } else if key_code == KeyCode::Down {
-            direction = Vec2::new(0., -1.);
-        } else if key_code == KeyCode::Up {
-            direction = Vec2::new(0., 1.);
-        }
+    let mut stopping: bool = false;
 
-        if direction == Vec2::ZERO {
-            continue;
-        }
-        if key_event.state == ButtonState::Released {
-            direction = Vec2::ZERO;
-        }
-
-        move_events.send(MoveCameraHorizontallyEvent::new(direction));
+    if action_state.just_pressed(Action::Left) {
+        current_direction.x = -1.;
+    } else if action_state.just_released(Action::Left) {
+        current_direction.x = 0.;
+        stopping = true;
     }
+
+    if action_state.just_pressed(Action::Right) {
+        current_direction.x = 1.;
+    } else if action_state.just_released(Action::Right) {
+        current_direction.x = 0.;
+        stopping = true;
+    }
+
+    if action_state.just_pressed(Action::Up) {
+        current_direction.y = 1.;
+    } else if action_state.just_released(Action::Up) {
+        current_direction.y = 0.;
+        stopping = true;
+    }
+
+    if action_state.just_pressed(Action::Down) {
+        current_direction.y = -1.;
+    } else if action_state.just_released(Action::Down) {
+        current_direction.y = 0.;
+        stopping = true;
+    }
+
+    if *current_direction == Vec2::ZERO && !stopping || *current_direction == old_direction {
+        return;
+    }
+
+    move_events.send(MoveCameraHorizontallyEvent::new(*current_direction));
 }
 
 fn move_camera_mouse_system(
@@ -287,13 +277,12 @@ fn zoom_camera(
 
 fn pivot_camera(
     conf: Res<Configuration>,
-    buttons: Res<Input<MouseButton>>,
-    keys: Res<Input<KeyCode>>,
+    action_state: Res<ActionState<Action>>,
     mut mouse_event: EventReader<MouseMotion>,
     mut rotate_event: EventWriter<RotateCameraEvent>,
     mut tilt_event: EventWriter<TiltCameraEvent>,
 ) {
-    if !buttons.pressed(MouseButton::Middle) && !keys.pressed(KeyCode::ShiftLeft) {
+    if !action_state.pressed(Action::Pivot) {
         return;
     }
 
@@ -307,19 +296,21 @@ fn pivot_camera(
     }
 }
 
-fn left_click_handler(
+fn primary_click_handler(
     mut select_events: EventWriter<SelectEvent>,
     mut draft_events: EventWriter<SpawnDraftsEvent>,
-    keys: Res<Input<KeyCode>>,
+    action_state: Res<ActionState<Action>>,
     pointer: Res<Pointer>,
     playable: Query<(), With<Playable>>,
     drafts: Query<(), With<DraftAllowed>>,
 ) {
     if drafts.is_empty() {
-        let selection_mode = if keys.pressed(KeyCode::ControlLeft) {
+        let selection_mode = if action_state.pressed(Action::AddToSelection) {
             SelectionMode::AddToggle
-        } else {
+        } else if action_state.pressed(Action::ReplaceSelection) {
             SelectionMode::Replace
+        } else {
+            return;
         };
 
         let event = match pointer.entity().filter(|&e| playable.contains(e)) {
@@ -385,13 +376,13 @@ fn select_all_visible(mut events: EventWriter<SelectInRectEvent>) {
 }
 
 fn update_drags(
-    keys: Res<Input<KeyCode>>,
+    action_state: Res<ActionState<Action>>,
     mut drag_events: EventReader<MouseDraggedEvent>,
     mut ui_events: EventWriter<UpdateSelectionBoxEvent>,
     mut select_events: EventWriter<SelectInRectEvent>,
 ) {
     for drag_event in drag_events.iter() {
-        if drag_event.button() != MouseButton::Left {
+        if drag_event.button() != Action::PrimaryClick {
             continue;
         }
 
@@ -402,13 +393,14 @@ fn update_drags(
             },
             DragUpdateType::Released => {
                 if let Some(rect) = drag_event.rect() {
-                    let mode = if keys.pressed(KeyCode::ControlLeft)
-                        || keys.pressed(KeyCode::ControlRight)
-                    {
+                    let mode = if action_state.pressed(Action::AddToSelection) {
                         SelectionMode::Add
-                    } else {
+                    } else if action_state.pressed(Action::ReplaceSelection) {
                         SelectionMode::Replace
+                    } else {
+                        continue;
                     };
+
                     select_events.send(SelectInRectEvent::new(rect, mode, None));
                 }
 
