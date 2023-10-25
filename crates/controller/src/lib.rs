@@ -31,6 +31,5 @@ impl PluginGroup for ControllerPluginGroup {
             .add(DraftPlugin)
             .add(HudPlugin)
             .add(ActionPlugin)
-
     }
 }

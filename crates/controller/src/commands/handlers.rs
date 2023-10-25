@@ -28,7 +28,7 @@ use leafwing_input_manager::prelude::ActionState;
 use super::{
     executor::DeliveryLocationSelectedEvent, CommandsSet, GroupAttackEvent, SendSelectedEvent,
 };
-use crate::actions::{action_pressed, Action};
+use crate::actions::{action_pressed, Action, MouseAction};
 use crate::{
     draft::{DiscardDraftsEvent, DraftSet, NewDraftEvent, SpawnDraftsEvent},
     hud::{GameMenuSet, ToggleGameMenuEvent, UpdateSelectionBoxEvent},
@@ -67,21 +67,21 @@ impl Plugin for HandlersPlugin {
             InputSchedule,
             (
                 secondary_click_handler
-                    .run_if(action_pressed(Action::SecondaryClick))
+                    .run_if(action_pressed(MouseAction::SecondaryClick))
                     .after(PointerSet::Update)
                     .after(MouseSet::Buttons)
                     .before(CommandsSet::SendSelected)
                     .before(CommandsSet::DeliveryLocation)
                     .before(CommandsSet::Attack),
                 primary_click_handler
-                    .run_if(action_pressed(Action::PrimaryClick))
+                    .run_if(action_pressed(MouseAction::PrimaryClick))
                     .in_set(HandlersSet::LeftClick)
                     .before(SelectionSet::Update)
                     .before(DraftSet::Spawn)
                     .after(PointerSet::Update)
                     .after(MouseSet::Buttons),
                 double_click_handler
-                    .run_if(on_double_click(Action::PrimaryClick))
+                    .run_if(on_double_click(MouseAction::PrimaryClick))
                     .before(SelectionSet::Update)
                     .before(DraftSet::Spawn)
                     .after(PointerSet::Update)
@@ -119,7 +119,7 @@ pub(crate) enum HandlersSet {
     LeftClick,
 }
 
-fn on_double_click(button: Action) -> impl Fn(EventReader<MouseDoubleClickedEvent>) -> bool {
+fn on_double_click(button: MouseAction) -> impl Fn(EventReader<MouseDoubleClickedEvent>) -> bool {
     move |mut events: EventReader<MouseDoubleClickedEvent>| {
         // It is desirable to exhaust the iterator, thus .filter().count() is
         // used instead of .any()
@@ -382,7 +382,7 @@ fn update_drags(
     mut select_events: EventWriter<SelectInRectEvent>,
 ) {
     for drag_event in drag_events.iter() {
-        if drag_event.button() != Action::PrimaryClick {
+        if drag_event.button() != MouseAction::PrimaryClick {
             continue;
         }
 
@@ -393,9 +393,9 @@ fn update_drags(
             },
             DragUpdateType::Released => {
                 if let Some(rect) = drag_event.rect() {
-                    let mode = if action_state.pressed(Action::AddToSelection) {
+                    let mode = if action_state.just_released(Action::AddToSelection) {
                         SelectionMode::Add
-                    } else if action_state.pressed(Action::ReplaceSelection) {
+                    } else if action_state.just_released(Action::ReplaceSelection) {
                         SelectionMode::Replace
                     } else {
                         continue;
