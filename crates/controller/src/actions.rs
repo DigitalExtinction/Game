@@ -1,12 +1,10 @@
 use bevy::input::keyboard::KeyCode;
-use bevy::prelude::{Reflect, Update};
-use bevy::prelude::{Commands, MouseButton, Res, Startup};
+use bevy::prelude::Reflect;
+use bevy::prelude::{MouseButton, Res};
 use de_input::{AppKeybinding, DefaultKeybindings};
-use leafwing_input_manager::prelude::DualAxis;
 use leafwing_input_manager::prelude::{ActionState, InputMap, UserInput};
 use leafwing_input_manager::Actionlike;
 use serde::{Deserialize, Serialize};
-use std::marker::PhantomData;
 
 pub struct ActionPlugin;
 
@@ -74,9 +72,10 @@ macro_rules! make_actions {
     }
 }
 
+use std::collections::HashMap;
+
 use bevy::app::App;
 use petitset::PetitSet;
-use std::collections::HashMap;
 
 make_actions! {
     // --- general actions ---
@@ -112,5 +111,5 @@ pub(crate) fn mouse_input_pressed(mouse_actions: Res<ActionState<MouseAction>>) 
     if mouse_actions.get_pressed().is_empty() {
         return false;
     }
-    return true;
+    true
 }

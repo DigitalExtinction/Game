@@ -1,8 +1,7 @@
 use bevy::prelude::*;
 use input::InputPlugin;
 pub(crate) use input::{
-    DragUpdateType, MouseClickedEvent, MouseDoubleClickedEvent, MouseDraggedEvent, MousePosition,
-    MouseSet,
+    DragUpdateType, MouseDoubleClickedEvent, MouseDraggedEvent, MousePosition, MouseSet,
 };
 use pointer::PointerPlugin;
 pub(crate) use pointer::{Pointer, PointerSet};

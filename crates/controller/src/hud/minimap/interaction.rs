@@ -1,26 +1,18 @@
 use std::fmt;
 
-use bevy::{
-    input::{
-        mouse::{MouseButtonInput, MouseMotion},
-        ButtonState,
-    },
-    prelude::*,
-    window::PrimaryWindow,
-};
-use leafwing_input_manager::Actionlike;
-use leafwing_input_manager::prelude::ActionState;
+use bevy::{prelude::*, window::PrimaryWindow};
 use de_camera::MoveFocusEvent;
 use de_core::{gamestate::GameState, schedule::InputSchedule};
 use de_map::size::MapBounds;
+use leafwing_input_manager::prelude::ActionState;
+use leafwing_input_manager::Actionlike;
 
 use super::nodes::MinimapNode;
+use crate::actions::{mouse_input_pressed, MouseAction};
 use crate::{
     commands::{CommandsSet, DeliveryLocationSelectedEvent, SendSelectedEvent},
     hud::HudNodes,
-    actions::Action,
 };
-use crate::actions::{mouse_input_pressed, MouseAction};
 
 pub(super) struct InteractionPlugin;
 
@@ -141,7 +133,6 @@ fn press_handler(
                 info!("Sending minimap press event {event:?}.");
                 press_events.send(event);
             }
-
         }
     }
 }

@@ -1,18 +1,15 @@
 //! Contains main plugin exported by this crate.
 
-use core::hash::Hash;
 use core::marker::PhantomData;
-use std::fmt::Debug;
 
 use bevy::app::{App, Plugin};
 use bevy::ecs::prelude::*;
 use bevy::input::InputSystem;
-use bevy::prelude::{PostUpdate, PreUpdate};
-use leafwing_input_manager::Actionlike;
+use bevy::prelude::PostUpdate;
+use de_core::schedule::PreInputSchedule;
 use leafwing_input_manager::plugin::InputManagerSystem;
-
-use de_core::schedule::{InputSchedule, PreInputSchedule};
 use leafwing_input_manager::prelude::{ActionState, ClashStrategy, ToggleActions};
+use leafwing_input_manager::Actionlike;
 
 /// A [`Plugin`] that collects [`Input`](bevy::input::Input)
 /// from disparate sources, producing an [`ActionState`] that

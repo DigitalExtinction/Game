@@ -1,13 +1,14 @@
 //! This crate implements handling of user input.
 
+use actions::ActionPlugin;
 use bevy::{app::PluginGroupBuilder, prelude::*};
 use commands::CommandsPlugin;
 use draft::DraftPlugin;
 use hud::HudPlugin;
 use mouse::MousePlugin;
 use selection::SelectionPlugin;
-use actions::ActionPlugin;
 
+mod actions;
 mod commands;
 mod draft;
 mod frustum;
@@ -15,7 +16,6 @@ mod hud;
 mod mouse;
 mod ray;
 mod selection;
-mod actions;
 
 const SELECTION_BAR_ID: u32 = 0;
 const POINTER_BAR_ID: u32 = 1;

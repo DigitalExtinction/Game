@@ -1,16 +1,12 @@
-use crate::actions::{MouseAction};
 use ahash::AHashMap;
-use bevy::{
-    input::{mouse::MouseButtonInput, ButtonState},
-    prelude::*,
-    window::PrimaryWindow,
-};
-use leafwing_input_manager::Actionlike;
+use bevy::{prelude::*, window::PrimaryWindow};
 use de_core::{
     gamestate::GameState, schedule::InputSchedule, screengeom::ScreenRect, state::AppState,
 };
 use leafwing_input_manager::prelude::ActionState;
+use leafwing_input_manager::Actionlike;
 
+use crate::actions::MouseAction;
 use crate::hud::HudNodes;
 
 const DRAGGING_THRESHOLD: f32 = 0.02;
@@ -282,7 +278,6 @@ fn update_buttons(
         if mouse_action_state.just_pressed(action) {
             mouse_state.set(action, mouse_position.ndc());
         } else if mouse_action_state.just_released(action) {
-
             if let Some(drag_resolution) = mouse_state.resolve(action) {
                 match drag_resolution {
                     DragResolution::Point(position) => {
