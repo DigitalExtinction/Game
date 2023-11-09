@@ -119,7 +119,7 @@ assert_cmd = "2.0.10"
 async-compat = "0.2.1"
 async-std = "1.11"
 async-tar = "0.4.2"
-bevy_kira_audio = { version = "0.16.0", features = ["mp3"] }
+bevy_kira_audio = { version = "0.18", features = ["mp3"] }
 bincode = "2.0.0-rc.3"
 chrono = "0.4.24"
 clap = { version = "4.0", features = ["derive"] }
@@ -135,7 +135,7 @@ futures-lite = "1.13.0"
 glam = "0.24"
 gltf = "1.0"
 itertools = "0.11.0"
-iyes_progress = "0.9.0"
+iyes_progress = "0.10.0"
 log = "0.4.17"
 nalgebra = { version = "0.32.3", features = ["convert-glam024"] }
 nix = "0.26.2"
@@ -164,7 +164,7 @@ url = { version = "2.3.1", features = ["serde"] }
 urlencoding = "2.1.2"
 
 [workspace.dependencies.bevy]
-version = "0.11"
+version = "0.12"
 default-features = false
 features = [
     "animation",
@@ -185,7 +185,6 @@ features = [
     "ktx2",
     "zstd",
     "x11",
-    "filesystem_watcher",
     "bevy_gizmos",
     "android_shared_stdcxx",
     "tonemapping_luts",
