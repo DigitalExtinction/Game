@@ -6,7 +6,7 @@ pub(crate) use input::{
 use pointer::PointerPlugin;
 pub(crate) use pointer::{Pointer, PointerSet};
 
-mod input;
+pub(crate) mod input;
 mod pointer;
 
 pub(crate) struct MousePlugin;

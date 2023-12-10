@@ -8,7 +8,6 @@ use serde::Serialize;
 
 use crate::plugin::InputManagerPlugin;
 
-mod io;
 mod plugin;
 
 pub trait BindableActionlike:
@@ -29,19 +28,12 @@ pub trait DefaultKeybindings: BindableActionlike {
 
 pub trait AppKeybinding {
     /// Add a keybinding with config to the app.
-    fn add_action_set<A: BindableActionlike + DefaultKeybindings>(
-        &mut self,
-        config_name: impl Into<String>,
-    ) -> &mut Self;
+    fn add_action_set<A: BindableActionlike + DefaultKeybindings>(&mut self) -> &mut Self;
 }
 
 impl AppKeybinding for App {
-    fn add_action_set<A: BindableActionlike + DefaultKeybindings>(
-        &mut self,
-        config_name: impl Into<String>,
-    ) -> &mut Self {
-        let keybindings: InputMap<A> =
-            io::get_keybindings(config_name.into(), A::default_keybindings());
+    fn add_action_set<A: BindableActionlike + DefaultKeybindings>(&mut self) -> &mut Self {
+        let keybindings: InputMap<A> = A::default_keybindings();
         self.world.insert_resource(keybindings);
         self.world.insert_resource(ActionState::<A>::default());
 
@@ -131,7 +123,7 @@ mod tests {
             }
         }
 
-        app.add_action_set::<PlayerAction>("player".to_string());
+        app.add_action_set::<PlayerAction>();
 
         app.update();
     }

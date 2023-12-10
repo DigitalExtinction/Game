@@ -1,14 +1,13 @@
 use std::fmt;
 
+use bevy::input::mouse::{MouseButtonInput, MouseMotion};
+use bevy::input::ButtonState;
 use bevy::{prelude::*, window::PrimaryWindow};
 use de_camera::MoveFocusEvent;
 use de_core::{gamestate::GameState, schedule::InputSchedule};
 use de_map::size::MapBounds;
-use leafwing_input_manager::prelude::ActionState;
-use leafwing_input_manager::Actionlike;
 
 use super::nodes::MinimapNode;
-use crate::actions::{mouse_input_pressed, MouseAction};
 use crate::{
     commands::{CommandsSet, DeliveryLocationSelectedEvent, SendSelectedEvent},
     hud::HudNodes,
@@ -26,11 +25,11 @@ impl Plugin for InteractionPlugin {
                 (
                     press_handler
                         .in_set(InteractionSet::PressHandler)
-                        .run_if(mouse_input_pressed)
+                        .run_if(on_event::<MouseButtonInput>())
                         .in_set(InteractionSet::PressHandler),
                     drag_handler
                         .in_set(InteractionSet::DragHandler)
-                        .run_if(mouse_input_pressed)
+                        .run_if(on_event::<MouseMotion>())
                         .after(InteractionSet::PressHandler),
                     move_camera_system
                         .after(InteractionSet::PressHandler)
@@ -55,16 +54,16 @@ enum InteractionSet {
 
 #[derive(Event)]
 struct MinimapPressEvent {
-    action: MouseAction,
+    action: MouseButton,
     position: Vec2,
 }
 
 impl MinimapPressEvent {
-    fn new(action: MouseAction, position: Vec2) -> Self {
+    fn new(action: MouseButton, position: Vec2) -> Self {
         Self { action, position }
     }
 
-    fn button(&self) -> MouseAction {
+    fn button(&self) -> MouseButton {
         self.action
     }
 
@@ -83,16 +82,16 @@ impl fmt::Debug for MinimapPressEvent {
 
 #[derive(Event)]
 struct MinimapDragEvent {
-    action: MouseAction,
+    action: MouseButton,
     position: Vec2,
 }
 
 impl MinimapDragEvent {
-    fn new(action: MouseAction, position: Vec2) -> Self {
+    fn new(action: MouseButton, position: Vec2) -> Self {
         Self { action, position }
     }
 
-    fn button(&self) -> MouseAction {
+    fn button(&self) -> MouseButton {
         self.action
     }
 
@@ -104,11 +103,11 @@ impl MinimapDragEvent {
 }
 
 #[derive(Resource, Deref, DerefMut)]
-struct DraggingButtons(Vec<MouseAction>);
+struct DraggingButtons(Vec<MouseButton>);
 
 fn press_handler(
     window_query: Query<&Window, With<PrimaryWindow>>,
-    mouse_action_state: Res<ActionState<MouseAction>>,
+    mut input_events: EventReader<MouseButtonInput>,
     hud: HudNodes<With<MinimapNode>>,
     bounds: Res<MapBounds>,
     mut dragging: ResMut<DraggingButtons>,
@@ -116,23 +115,25 @@ fn press_handler(
 ) {
     let cursor = window_query.single().cursor_position();
 
-    for mouse_action in MouseAction::variants() {
-        if mouse_action_state.just_released(mouse_action) {
-            println!("released drag point {:?}", mouse_action);
-            dragging.retain(|b| *b != mouse_action);
-            continue;
-        } else if mouse_action_state.just_pressed(mouse_action) {
-            let Some(cursor) = cursor else {
+    for event in input_events.iter() {
+        match event.state {
+            ButtonState::Released => {
+                dragging.retain(|b| *b != event.button);
                 continue;
-            };
-
-            if let Some(mut relative) = hud.relative_position(cursor) {
-                dragging.push(mouse_action);
-                relative.y = 1. - relative.y;
-                let event = MinimapPressEvent::new(mouse_action, bounds.rel_to_abs(relative));
-                info!("Sending minimap press event {event:?}.");
-                press_events.send(event);
             }
+            ButtonState::Pressed => (),
+        }
+
+        let Some(cursor) = cursor else {
+            continue;
+        };
+
+        if let Some(mut relative) = hud.relative_position(cursor) {
+            dragging.push(event.button);
+            relative.y = 1. - relative.y;
+            let event = MinimapPressEvent::new(event.button, bounds.rel_to_abs(relative));
+            info!("Sending minimap press event {event:?}.");
+            press_events.send(event);
         }
     }
 }
@@ -169,7 +170,7 @@ fn move_camera_system(
     mut camera_events: EventWriter<MoveFocusEvent>,
 ) {
     for press in press_events.iter() {
-        if press.button() != MouseAction::PrimaryClick {
+        if press.button() != MouseButton::Left {
             continue;
         }
 
@@ -178,7 +179,7 @@ fn move_camera_system(
     }
 
     for drag in drag_events.iter() {
-        if drag.button() != MouseAction::PrimaryClick {
+        if drag.button() != MouseButton::Left {
             continue;
         }
 
@@ -192,7 +193,7 @@ fn send_units_system(
     mut send_events: EventWriter<SendSelectedEvent>,
 ) {
     for press in press_events.iter() {
-        if press.button() != MouseAction::SecondaryClick {
+        if press.button() != MouseButton::Right {
             continue;
         }
         send_events.send(SendSelectedEvent::new(press.position()));
@@ -204,7 +205,7 @@ fn delivery_location_system(
     mut location_events: EventWriter<DeliveryLocationSelectedEvent>,
 ) {
     for press in press_events.iter() {
-        if press.button() != MouseAction::SecondaryClick {
+        if press.button() != MouseButton::Right {
             continue;
         }
         location_events.send(DeliveryLocationSelectedEvent::new(press.position()));

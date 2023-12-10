@@ -28,7 +28,8 @@ use leafwing_input_manager::prelude::ActionState;
 use super::{
     executor::DeliveryLocationSelectedEvent, CommandsSet, GroupAttackEvent, SendSelectedEvent,
 };
-use crate::actions::{action_pressed, Action, MouseAction};
+use crate::actions::{action_just_pressed, action_pressed, Action};
+use crate::mouse::input::pressed_mouse_button;
 use crate::{
     draft::{DiscardDraftsEvent, DraftSet, NewDraftEvent, SpawnDraftsEvent},
     hud::{GameMenuSet, ToggleGameMenuEvent, UpdateSelectionBoxEvent},
@@ -53,7 +54,7 @@ impl HandlersPlugin {
                 InputSchedule,
                 place_draft(building)
                     .run_if(in_state(GameState::Playing))
-                    .run_if(action_pressed(action))
+                    .run_if(action_just_pressed(action))
                     .before(DraftSet::New)
                     .after(PointerSet::Update),
             );
@@ -67,21 +68,21 @@ impl Plugin for HandlersPlugin {
             InputSchedule,
             (
                 secondary_click_handler
-                    .run_if(action_pressed(MouseAction::SecondaryClick))
+                    .run_if(pressed_mouse_button(MouseButton::Right))
                     .after(PointerSet::Update)
                     .after(MouseSet::Buttons)
                     .before(CommandsSet::SendSelected)
                     .before(CommandsSet::DeliveryLocation)
                     .before(CommandsSet::Attack),
                 primary_click_handler
-                    .run_if(action_pressed(MouseAction::PrimaryClick))
+                    .run_if(pressed_mouse_button(MouseButton::Left))
                     .in_set(HandlersSet::LeftClick)
                     .before(SelectionSet::Update)
                     .before(DraftSet::Spawn)
                     .after(PointerSet::Update)
                     .after(MouseSet::Buttons),
                 double_click_handler
-                    .run_if(on_double_click(MouseAction::PrimaryClick))
+                    .run_if(on_double_click(MouseButton::Left))
                     .before(SelectionSet::Update)
                     .before(DraftSet::Spawn)
                     .after(PointerSet::Update)
@@ -91,17 +92,18 @@ impl Plugin for HandlersPlugin {
                 move_camera_mouse_system.before(CameraSet::MoveHorizontallEvent),
                 zoom_camera.before(CameraSet::ZoomEvent),
                 pivot_camera
+                    .run_if(action_pressed(Action::Pivot))
                     .before(CameraSet::RotateEvent)
                     .before(CameraSet::TiltEvent),
                 handle_escape
-                    .run_if(action_pressed(Action::Exit))
+                    .run_if(action_just_pressed(Action::Exit))
                     .before(GameMenuSet::Toggle)
                     .before(DraftSet::Discard),
                 select_all
-                    .run_if(action_pressed(Action::SelectAll))
+                    .run_if(action_just_pressed(Action::SelectAll))
                     .before(SelectionSet::Update),
                 select_all_visible
-                    .run_if(action_pressed(Action::SelectAllVisible))
+                    .run_if(action_just_pressed(Action::SelectAllVisible))
                     .before(AreaSelectSet::SelectInArea),
                 update_drags
                     .before(AreaSelectSet::SelectInArea)
@@ -119,7 +121,7 @@ pub(crate) enum HandlersSet {
     LeftClick,
 }
 
-fn on_double_click(button: MouseAction) -> impl Fn(EventReader<MouseDoubleClickedEvent>) -> bool {
+fn on_double_click(button: MouseButton) -> impl Fn(EventReader<MouseDoubleClickedEvent>) -> bool {
     move |mut events: EventReader<MouseDoubleClickedEvent>| {
         // It is desirable to exhaust the iterator, thus .filter().count() is
         // used instead of .any()
@@ -277,15 +279,10 @@ fn zoom_camera(
 
 fn pivot_camera(
     conf: Res<Configuration>,
-    action_state: Res<ActionState<Action>>,
     mut mouse_event: EventReader<MouseMotion>,
     mut rotate_event: EventWriter<RotateCameraEvent>,
     mut tilt_event: EventWriter<TiltCameraEvent>,
 ) {
-    if !action_state.pressed(Action::Pivot) {
-        return;
-    }
-
     let delta = mouse_event.iter().fold(Vec2::ZERO, |sum, e| sum + e.delta);
     let sensitivity = conf.camera().rotation_sensitivity();
     if delta.x != 0. {
@@ -382,7 +379,7 @@ fn update_drags(
     mut select_events: EventWriter<SelectInRectEvent>,
 ) {
     for drag_event in drag_events.iter() {
-        if drag_event.button() != MouseAction::PrimaryClick {
+        if drag_event.button() != MouseButton::Left {
             continue;
         }
 
@@ -393,9 +390,13 @@ fn update_drags(
             },
             DragUpdateType::Released => {
                 if let Some(rect) = drag_event.rect() {
-                    let mode = if action_state.just_released(Action::AddToSelection) {
+                    let mode = if action_state.just_released(Action::AddToSelection)
+                        || action_state.pressed(Action::AddToSelection)
+                    {
                         SelectionMode::Add
-                    } else if action_state.just_released(Action::ReplaceSelection) {
+                    } else if action_state.just_released(Action::ReplaceSelection)
+                        || action_state.pressed(Action::ReplaceSelection)
+                    {
                         SelectionMode::Replace
                     } else {
                         continue;
