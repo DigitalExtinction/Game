@@ -51,12 +51,14 @@ fn main() {
         let _enter = span.enter();
 
         app.insert_resource(Msaa::Sample4)
+            .add_plugins(ConfigPluginGroup)
             .add_plugins(
                 DefaultPlugins
                     .set(WindowPlugin {
                         primary_window: Some(Window {
                             title: "Digital Extinction".to_string(),
-                            mode: WindowMode::BorderlessFullscreen,
+                            mode: WindowMode::Windowed, // This is temporary, we should use config
+                            // later
                             ..Default::default()
                         }),
                         ..default()
@@ -73,7 +75,6 @@ fn main() {
                 FrameTimeDiagnosticsPlugin,
                 GamePlugin,
             ))
-            .add_plugins(ConfigPluginGroup)
             .add_plugins(GuiPluginGroup)
             .add_plugins(LobbyClientPluginGroup)
             .add_plugins(MenuPluginGroup)

@@ -6,6 +6,7 @@ use std::net::{IpAddr, Ipv4Addr, SocketAddr};
 
 use anyhow::{ensure, Context, Error, Result};
 use async_std::path::Path;
+use bevy::window::WindowMode;
 use conf_macros::Config;
 use de_uom::{LogicalPixel, Metre};
 use serde::{Deserialize, Serialize};
@@ -22,6 +23,11 @@ pub struct MultiplayerConf {
     #[ensure(lobby.scheme() == "http", "Only `http` scheme is allowed for `lobby`.")]
     lobby: Url,
     connector: SocketAddr,
+}
+
+#[derive(Deserialize, Serialize, Config, Clone, Debug)]
+pub struct Window {
+    mode: WindowMode,
 }
 
 #[derive(Deserialize, Serialize, Config, Debug, Clone)]
@@ -103,6 +109,13 @@ impl Default for AudioConf {
     }
 }
 
+impl Default for Window {
+    fn default() -> Self {
+        Self {
+            mode: WindowMode::BorderlessFullscreen,
+        }
+    }
+}
 // --------------------
 
 // for this more complicated data structure, we need to
@@ -220,9 +233,17 @@ impl AudioConf {
     }
 }
 
+impl Window {
+    /// Window mode.
+    pub fn mode(&self) -> WindowMode {
+        self.mode
+    }
+}
+
 // Bundle configuration neatly into a single struct
 bundle_config!(
     camera: CameraConf: Camera, // Conf file -> Camera -> CameraConf
     multiplayer: MultiplayerConf: MultiplayerConf,  // Conf file -> MultiplayerConf
-    audio: AudioConf: AudioConf
+    audio: AudioConf: AudioConf,
+    window: Window: Window
 );
