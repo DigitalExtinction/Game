@@ -41,7 +41,7 @@ impl fmt::Display for ConfigLoadError {
 ///   the TryInto trait
 #[macro_export]
 macro_rules! bundle_config {
-    ($($name:ident : $type_into:ty : $type_from:ty),*) => {
+    ($($name:ident : $type_into:ty : $type_from:ty,)*) => {
         use $crate::io::load_conf_text;
         use $crate::macros::ConfigLoadError;
         use tracing::{trace, debug};

@@ -12,8 +12,8 @@ impl Plugin for WindowManagementPlugin {
         app.add_systems(
             OnExit(AppState::AppLoading),
             update_window_mode_based_on_config,
-        );
-        app.add_systems(Update, toggle_fullscreen);
+        )
+        .add_systems(Update, toggle_fullscreen);
     }
 }
 
@@ -21,6 +21,18 @@ fn update_window_mode_based_on_config(mut windows: Query<&mut Window>, config: R
     let window = &mut windows.single_mut();
 
     window.mode = config.window().mode();
+    match window.mode {
+        WindowMode::BorderlessFullscreen => {
+            if cfg!(target_os = "macos") {
+                window.cursor.grab_mode = CursorGrabMode::None;
+            } else {
+                window.cursor.grab_mode = CursorGrabMode::Confined;
+            }
+        }
+        _ => {
+            window.cursor.grab_mode = CursorGrabMode::None;
+        }
+    };
 }
 
 fn toggle_fullscreen(mut windows: Query<&mut Window>, keyboard_input: Res<Input<KeyCode>>) {
@@ -31,13 +43,14 @@ fn toggle_fullscreen(mut windows: Query<&mut Window>, keyboard_input: Res<Input<
                 window.mode = WindowMode::Windowed;
                 window.cursor.grab_mode = CursorGrabMode::None;
             }
-            WindowMode::Windowed => {
-                window.mode = WindowMode::BorderlessFullscreen;
-                window.cursor.grab_mode = CursorGrabMode::Confined;
-            }
             _ => {
                 window.mode = WindowMode::BorderlessFullscreen;
-                window.cursor.grab_mode = CursorGrabMode::Confined;
+
+                if cfg!(target_os = "macos") {
+                    window.cursor.grab_mode = CursorGrabMode::None;
+                } else {
+                    window.cursor.grab_mode = CursorGrabMode::Confined;
+                }
             }
         };
     }

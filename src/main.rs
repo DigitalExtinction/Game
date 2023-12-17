@@ -1,8 +1,6 @@
 use std::time::Duration;
 
 use bevy::log::LogPlugin;
-#[cfg(not(target_os = "macos"))]
-use bevy::window::{CursorGrabMode, PrimaryWindow};
 use bevy::{
     diagnostic::{FrameTimeDiagnosticsPlugin, LogDiagnosticsPlugin},
     prelude::*,
@@ -105,16 +103,5 @@ struct GamePlugin;
 impl Plugin for GamePlugin {
     fn build(&self, app: &mut App) {
         app.add_state_with_set::<AppState>();
-
-        #[cfg(not(target_os = "macos"))]
-        {
-            app.add_systems(OnEnter(AppState::AppLoading), cursor_grab_system);
-        }
     }
-}
-
-#[cfg(not(target_os = "macos"))]
-fn cursor_grab_system(mut window_query: Query<&mut Window, With<PrimaryWindow>>) {
-    let mut window = window_query.single_mut();
-    window.cursor.grab_mode = CursorGrabMode::Confined;
 }

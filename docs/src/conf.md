@@ -53,7 +53,21 @@ est as if all properties are missing.
     number between `0.0` and `1.0`. If set to 0 sound effects will not play.
   * `music_volume` (f32; default: `1.0`) – sets the music volume. It must be a finite
     number between `0.0` and `1.0`. If set to 0 music will not play.
-
+* window (object) – window configuration.
+  * `mode` (string; default: `BorderlessFullscreen`) – window mode. Possible values:
+      * `Windowed` - The window should take a portion of the screen, using the window resolution size
+      * `BorderlessFullscreen` - The window should appear fullscreen by being borderless and using the full size of the screen
+      * `SizedFullscreen` - The window should be in “true”/“legacy” Fullscreen
+      mode. When setting this, the operating system will be requested to use
+      the closest resolution available for the current monitor to match as
+      closely as possible the window’s physical size. After that, the window’s
+      physical size will be modified to match that monitor resolution, and the
+      logical size will follow based on the scale factor
+      * `Fullscreen`, - The window should be in “true”/“legacy” Fullscreen mode.
+      When setting this, the operating system will be requested to use the biggest
+      resolution available for the current monitor. After that, the window’s physical
+      size will be modified to match that monitor resolution, and the logical size
+      will follow based on the scale factor,
 ## Example Configuration
 
 ```yaml
@@ -72,4 +86,6 @@ audio:
   master_volume: 1.0
   sound_volume: 1.0
   music_volume: 1.0
+window:
+  mode: BorderlessFullscreen
 ```

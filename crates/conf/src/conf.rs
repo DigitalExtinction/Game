@@ -234,7 +234,6 @@ impl AudioConf {
 }
 
 impl Window {
-    /// Window mode.
     pub fn mode(&self) -> WindowMode {
         self.mode
     }
@@ -245,5 +244,5 @@ bundle_config!(
     camera: CameraConf: Camera, // Conf file -> Camera -> CameraConf
     multiplayer: MultiplayerConf: MultiplayerConf,  // Conf file -> MultiplayerConf
     audio: AudioConf: AudioConf,
-    window: Window: Window
+    window: Window: Window,
 );
