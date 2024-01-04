@@ -55,8 +55,9 @@ fn main() {
                     .set(WindowPlugin {
                         primary_window: Some(Window {
                             title: "Digital Extinction".to_string(),
-                            mode: WindowMode::Windowed, // This is temporary, we should use config
-                            // later
+                            // This mode is used only temporarily. Mode loaded
+                            // from the config is set after the game fully loads.
+                            mode: WindowMode::Windowed,
                             ..Default::default()
                         }),
                         ..default()
