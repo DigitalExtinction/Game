@@ -4,7 +4,8 @@
 pub use game::{FromGame, JoinError, Readiness, ToGame};
 pub use players::{
     BorrowedFromPlayers, ChatMessage, ChatMessageError, EntityNet, FromPlayers, HealthDelta,
-    NetEntityIndex, NetProjectile, ToPlayers, MAX_CHAT_LEN,
+    NetEntityIndex, NetProjectile, PathError, PathNet, ToPlayers, TransformNet, Vec2Net, Vec3Net,
+    Vec4Net, MAX_CHAT_LEN,
 };
 pub use server::{FromServer, GameOpenError, ToServer};
 
