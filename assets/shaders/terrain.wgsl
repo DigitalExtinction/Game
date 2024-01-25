@@ -1,10 +1,19 @@
-#import bevy_pbr::mesh_vertex_output       MeshVertexOutput
-#import bevy_pbr::mesh_bindings            mesh
-#import bevy_pbr::mesh_view_bindings       view
-#import bevy_core_pipeline::tonemapping    tone_mapping
-#import bevy_pbr::pbr_functions            PbrInput, pbr_input_new, prepare_world_normal, apply_normal_mapping, calculate_view, pbr
-#import bevy_pbr::pbr_types as pbr_types
+#import bevy_pbr::{
+    pbr_fragment::pbr_input_from_standard_material,
+    pbr_functions::alpha_discard,
+}
 
+#ifdef PREPASS_PIPELINE
+#import bevy_pbr::{
+    prepass_io::{VertexOutput, FragmentOutput},
+    pbr_deferred_functions::deferred_output,
+}
+#else
+#import bevy_pbr::{
+    forward_io::{VertexOutput, FragmentOutput},
+    pbr_functions::{apply_pbr_lighting, main_pass_post_lighting_processing},
+}
+#endif
 
 // How large (in meters) is a texture.
 const TEXTURE_SIZE = 16.;
@@ -163,10 +172,11 @@ fn draw_rectangles(base: vec4<f32>, uv: vec2<f32>) -> vec4<f32> {
 
 @fragment
 fn fragment(
-    in: MeshVertexOutput,
+    in: VertexOutput,
     @builtin(front_facing) is_front: bool,
-) -> @location(0) vec4<f32> {
-    var pbr_input: PbrInput = pbr_input_new();
+) -> FragmentOutput {
+    var pbr_input = pbr_input_from_standard_material(in, is_front);
+
     pbr_input.material.perceptual_roughness = 0.8;
     pbr_input.material.metallic = 0.23;
     pbr_input.material.reflectance = 0.06;
@@ -176,44 +186,20 @@ fn fragment(
         terrain_sampler,
         in.uv / TEXTURE_SIZE
     );
+    pbr_input.material.base_color = alpha_discard(pbr_input.material, pbr_input.material.base_color);
 
-#ifdef VERTEX_COLORS
-    pbr_input.material.base_color = pbr_input.material.base_color * in.color;
+#ifdef PREPASS_PIPELINE
+    // TODO remove this if deffered mode is not used
+    let out = deferred_output(in, pbr_input);
+#else
+    var out: FragmentOutput;
+    out.color = apply_pbr_lighting(pbr_input);
+
+    out.color = draw_circles(out.color, in.uv);
+    out.color = draw_rectangles(out.color, in.uv);
+
+    out.color = main_pass_post_lighting_processing(pbr_input, out.color);
 #endif
 
-    pbr_input.frag_coord = in.position;
-    pbr_input.world_position = in.world_position;
-    pbr_input.world_normal = prepare_world_normal(
-        in.world_normal,
-        (pbr_input.material.flags & pbr_types::STANDARD_MATERIAL_FLAGS_DOUBLE_SIDED_BIT) != 0u,
-        is_front,
-    );
-
-    pbr_input.is_orthographic = view.projection[3].w == 1.0;
-
-    pbr_input.N = apply_normal_mapping(
-        pbr_input.material.flags,
-        pbr_input.world_normal,
-#ifdef VERTEX_TANGENTS
-#ifdef STANDARDMATERIAL_NORMAL_MAP
-        in.world_tangent,
-#endif
-#endif
-#ifdef VERTEX_UVS
-        in.uv,
-#endif
-        view.mip_bias,
-    );
-    pbr_input.V = calculate_view(in.world_position, pbr_input.is_orthographic);
-    pbr_input.flags = mesh.flags;
-
-    var output_color = pbr(pbr_input);
-
-#ifdef TONEMAP_IN_SHADER
-    output_color = tone_mapping(output_color, view.color_grading);
-#endif
-
-    output_color = draw_circles(output_color, in.uv);
-    output_color = draw_rectangles(output_color, in.uv);
-    return output_color;
+    return out;
 }
