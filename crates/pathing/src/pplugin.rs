@@ -271,7 +271,7 @@ fn remove_path_targets(
     targets: Query<&PathTarget>,
     mut removed: RemovedComponents<ScheduledPath>,
 ) {
-    for entity in removed.iter() {
+    for entity in removed.read() {
         if let Ok(target) = targets.get(entity) {
             if !target.permanent() {
                 commands.entity(entity).remove::<PathTarget>();

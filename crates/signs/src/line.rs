@@ -221,7 +221,7 @@ fn owner_despawn(
     mut lines: ResMut<LineEntities>,
     mut removed: RemovedComponents<Active>,
 ) {
-    for owner in removed.iter() {
+    for owner in removed.read() {
         if let Some(line) = lines.0.remove(&owner) {
             commands.entity(line).despawn_recursive();
         }

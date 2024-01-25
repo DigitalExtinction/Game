@@ -155,7 +155,7 @@ fn despawned(
     mut owner_to_pole: ResMut<OwnersToPoles>,
     mut despawned: RemovedComponents<ObjectTypeComponent>,
 ) {
-    for entity in despawned.iter() {
+    for entity in despawned.read() {
         owner_to_pole.0.remove(&entity);
     }
 }
