@@ -113,14 +113,15 @@ impl Marker for RectangleMarker {
     }
 }
 
+// TODO test this
 fn update_markers<M>(
     mut materials: ResMut<Assets<TerrainMaterial>>,
     solids: SolidObjects,
     camera: Query<(&Transform, &Frustum), With<Camera3d>>,
-    terrains: Query<(&ComputedVisibility, &Handle<TerrainMaterial>)>,
+    terrains: Query<(&ViewVisibility, &Handle<TerrainMaterial>)>,
     markers: Query<(
         &ObjectTypeComponent,
-        &ComputedVisibility,
+        &ViewVisibility,
         &GlobalTransform,
         &M,
         &MarkerVisibility,
@@ -140,7 +141,7 @@ fn update_markers<M>(
 
     let mut candidates = Vec::new();
     for (&object_type, circle_visibility, transform, marker, marker_visibility) in markers.iter() {
-        if !circle_visibility.is_visible_in_hierarchy() {
+        if !circle_visibility.get() {
             continue;
         }
 
@@ -171,7 +172,7 @@ fn update_markers<M>(
         .collect();
 
     for (terrain_visibility, material) in terrains.iter() {
-        if !terrain_visibility.is_visible_in_hierarchy() {
+        if !terrain_visibility.get() {
             continue;
         }
 

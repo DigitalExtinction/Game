@@ -274,8 +274,7 @@ fn spawn(mut commands: Commands, scenes: Res<Scenes>, mut events: EventReader<Sp
         entity_commands.insert((
             event.transform,
             GlobalTransform::from(event.transform),
-            Visibility::Inherited,
-            ComputedVisibility::default(),
+            VisibilityBundle::default(),
             ObjectTypeComponent::from(event.object_type),
             scenes.get(SceneType::Solid(event.object_type)).clone(),
             DespawnOnGameExit,
