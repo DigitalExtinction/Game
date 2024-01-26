@@ -76,7 +76,7 @@ fn update_nearby<M: Send + Sync + 'static, T: Component>(
 ) {
     objects
         .par_iter_mut()
-        .for_each_mut(|(entity, transform, mut cache)| {
+        .for_each(|(entity, transform, mut cache)| {
             cache.clear();
             let half_extent = Vec3::splat(NEARBY_HALF_EXTENT);
             let mins = transform.translation - half_extent;

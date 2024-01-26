@@ -67,8 +67,9 @@ fn update(
         &Transform,
     )>,
 ) {
-    objects.par_iter_mut().for_each_mut(
-        |(object_type, mut horizontal, mut climbing, transform)| {
+    objects
+        .par_iter_mut()
+        .for_each(|(object_type, mut horizontal, mut climbing, transform)| {
             let Some(flight) = solids.get(**object_type).flight() else {
                 return;
             };
@@ -97,6 +98,5 @@ fn update(
             if climbing.speed() != desired {
                 climbing.set_speed(desired);
             }
-        },
-    );
+        });
 }

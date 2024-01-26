@@ -68,7 +68,7 @@ fn follow_path(
 ) {
     objects
         .par_iter_mut()
-        .for_each_mut(|(transform, mut path, mut movement)| {
+        .for_each(|(transform, mut path, mut movement)| {
             let location = transform.translation.to_flat();
             let remaining = path.destination().distance(location);
             let advancement = path.advance(location, MAX_H_SPEED * 0.5);

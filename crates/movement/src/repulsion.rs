@@ -159,7 +159,7 @@ fn repel_static(
 ) {
     objects
         .par_iter_mut()
-        .for_each_mut(|(movement, disc, static_obstacles, mut repulsion)| {
+        .for_each(|(movement, disc, static_obstacles, mut repulsion)| {
             if movement.stationary() {
                 return;
             }
@@ -204,7 +204,7 @@ fn repel_movable(
 ) {
     objects
         .par_iter_mut()
-        .for_each_mut(|(movement, disc, movable_obstacles, mut repulsion)| {
+        .for_each(|(movement, disc, movable_obstacles, mut repulsion)| {
             if movement.stationary() {
                 return;
             }
@@ -232,7 +232,7 @@ fn repel_bounds(
 ) {
     objects
         .par_iter_mut()
-        .for_each_mut(|(movement, disc, mut repulsion)| {
+        .for_each(|(movement, disc, mut repulsion)| {
             if movement.stationary() {
                 return;
             }
@@ -259,11 +259,11 @@ fn apply(
         &mut DesiredVelocity<RepulsionVelocity>,
     )>,
 ) {
-    objects.par_iter_mut().for_each_mut(
-        |(mut repulsion, path_velocity, mut repulsion_velocity)| {
+    objects
+        .par_iter_mut()
+        .for_each(|(mut repulsion, path_velocity, mut repulsion_velocity)| {
             let velocity = repulsion.apply(path_velocity.velocity());
             repulsion_velocity.update(velocity.clamp_length_max(MAX_H_SPEED));
             repulsion.clear();
-        },
-    );
+        });
 }
