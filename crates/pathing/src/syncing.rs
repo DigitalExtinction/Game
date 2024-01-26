@@ -34,7 +34,7 @@ impl Plugin for SyncingPlugin {
 }
 
 fn receive_paths(mut commands: Commands, mut events: EventReader<NetRecvSetPathEvent>) {
-    for event in events.iter() {
+    for event in events.read() {
         let mut entity_commands = commands.entity(event.entity());
 
         match event.path() {
@@ -53,7 +53,7 @@ fn send_new_paths(
     mut path_events: EventReader<PathFoundEvent>,
     mut net_events: EventWriter<ToPlayersEvent>,
 ) {
-    for event in path_events.iter() {
+    for event in path_events.read() {
         net_events.send(ToPlayersEvent::new(ToPlayers::SetPath {
             entity: net_entities.local_net_id(event.entity()),
             waypoints: event.path().map(|p| p.try_into().unwrap()),

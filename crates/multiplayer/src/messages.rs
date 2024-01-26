@@ -321,7 +321,7 @@ fn message_sender<E>(
     let mut unordered = PackageBuilder::new(Reliability::Unordered, E::PEERS, addr);
     let mut semi_ordered = PackageBuilder::new(Reliability::SemiOrdered, E::PEERS, addr);
 
-    for event in inputs.iter() {
+    for event in inputs.read() {
         let builder = match event.reliability() {
             Reliability::Unreliable => &mut unreliable,
             Reliability::Unordered => &mut unordered,
@@ -347,7 +347,7 @@ fn recv_messages(
     mut players: EventWriter<FromPlayersEvent>,
     mut fatals: EventWriter<FatalErrorEvent>,
 ) {
-    for event in packages.iter() {
+    for event in packages.read() {
         let package = event.package();
         if ports.is_main(package.source().port()) {
             decode_and_send::<FromServer, _>(package, &mut main_server, &mut fatals);

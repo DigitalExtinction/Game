@@ -81,7 +81,7 @@ fn fire(
     mut health: EventWriter<LocalUpdateHealthEvent>,
     mut trail: EventWriter<LocalLaserTrailEvent>,
 ) {
-    for fire in fires.iter() {
+    for fire in fires.read() {
         let observation = sightline.sight(fire.ray(), fire.max_toi(), fire.attacker());
 
         trail.send(LocalLaserTrailEvent::new(Ray::new(

@@ -241,7 +241,7 @@ fn update_value(
     mut bars: Query<(&Handle<BarMaterial>, &mut BarUpdateTimer)>,
     mut events: EventReader<UpdateBarValueEvent>,
 ) {
-    for event in events.iter() {
+    for event in events.read() {
         if let Ok(child) = parents.get(event.entity()) {
             let (handle, mut timer) = bars.get_mut(child.0).unwrap();
             let material = materials.get_mut(handle).unwrap();
@@ -257,7 +257,7 @@ fn update_visibility_events(
     mut bars: Query<&mut VisibilityFlags>,
     mut events: EventReader<UpdateBarVisibilityEvent>,
 ) {
-    for event in events.iter() {
+    for event in events.read() {
         if let Ok(child) = parents.get(event.entity()) {
             bars.get_mut(child.0)
                 .unwrap()

@@ -147,7 +147,7 @@ fn spawn_local_active(
     mut path_events: EventWriter<UpdateEntityPathEvent>,
     mut net_events: EventWriter<ToPlayersEvent>,
 ) {
-    for event in event_reader.iter() {
+    for event in event_reader.read() {
         let mut entity_commands = commands.spawn(Local);
 
         if config.locals().is_playable(event.player) || cfg!(feature = "godmode") {
@@ -181,7 +181,7 @@ fn spawn_remote_active(
     mut event_reader: EventReader<NetRecvSpawnActiveEvent>,
     mut event_writer: EventWriter<SpawnActiveEvent>,
 ) {
-    for event in event_reader.iter() {
+    for event in event_reader.read() {
         event_writer.send(SpawnActiveEvent::new(
             event.entity(),
             event.object_type(),
@@ -200,7 +200,7 @@ fn spawn_active(
     mut event_writer: EventWriter<SpawnEvent>,
     mut audio_events: EventWriter<PlaySpatialAudioEvent>,
 ) {
-    for event in event_reader.iter() {
+    for event in event_reader.read() {
         counter
             .player_mut(event.player)
             .update(event.object_type, 1);
@@ -256,7 +256,7 @@ fn spawn_inactive(
     mut event_reader: EventReader<SpawnInactiveEvent>,
     mut event_writer: EventWriter<SpawnEvent>,
 ) {
-    for event in event_reader.iter() {
+    for event in event_reader.read() {
         let entity = commands.spawn(StaticSolid).id();
         event_writer.send(SpawnEvent::new(
             entity,
@@ -267,7 +267,7 @@ fn spawn_inactive(
 }
 
 fn spawn(mut commands: Commands, scenes: Res<Scenes>, mut events: EventReader<SpawnEvent>) {
-    for event in events.iter() {
+    for event in events.read() {
         info!("Spawning object {}", event.object_type);
         let mut entity_commands = commands.entity(event.entity);
 

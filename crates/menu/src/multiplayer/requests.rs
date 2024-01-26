@@ -70,7 +70,7 @@ where
     /// ignored.
     pub(super) fn receive(&mut self) -> Option<&Result<T::Response>> {
         self.responses
-            .iter()
+            .read()
             .filter_map(|e| {
                 if self.counter.compare(e.id()) {
                     Some(e.result())

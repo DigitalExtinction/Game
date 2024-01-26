@@ -129,7 +129,7 @@ fn errors(
     mut toasts: EventWriter<ToastEvent>,
     mut shutdowns: EventWriter<ShutdownMultiplayerEvent>,
 ) {
-    let Some(event) = events.iter().next() else {
+    let Some(event) = events.read().next() else {
         return;
     };
 

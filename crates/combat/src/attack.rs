@@ -105,7 +105,7 @@ fn attack(
     cannons: Query<&LaserCannon>,
     mut chase_events: EventWriter<ChaseTargetEvent>,
 ) {
-    for event in attack_events.iter() {
+    for event in attack_events.read() {
         if let Ok(cannon) = cannons.get(event.attacker()) {
             commands
                 .entity(event.attacker())

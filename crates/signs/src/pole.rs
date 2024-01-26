@@ -128,7 +128,7 @@ fn location_events(
     mut owner_to_pole: ResMut<OwnersToPoles>,
     mut events: EventReader<UpdatePoleLocationEvent>,
 ) {
-    for event in events.iter() {
+    for event in events.read() {
         owner_to_pole
             .0
             .entry(event.owner)
@@ -144,7 +144,7 @@ fn visibility_events(
     mut owner_to_pole: ResMut<OwnersToPoles>,
     mut events: EventReader<UpdatePoleVisibilityEvent>,
 ) {
-    for event in events.iter() {
+    for event in events.read() {
         if let Some(pole) = owner_to_pole.0.get_mut(&event.owner) {
             pole.visible = event.visible;
         }
@@ -200,7 +200,7 @@ fn spawn_poles(
     mut events: EventReader<SpawnPoleEvent>,
 ) {
     let scene = scenes.get(SceneType::Pole);
-    for event in events.iter() {
+    for event in events.read() {
         let location = event.0.into();
 
         let transform = Transform::from_translation(event.0.to_msl());
@@ -224,7 +224,7 @@ fn despawn_poles(
     mut poles: ResMut<Poles>,
     mut events: EventReader<DespawnPoleEvent>,
 ) {
-    for event in events.iter() {
+    for event in events.read() {
         let entity = poles.0.remove(&event.0.into()).unwrap();
         commands.entity(entity).despawn_recursive();
     }
@@ -235,7 +235,7 @@ fn move_poles(
     mut query: Query<&mut Transform>,
     mut events: EventReader<MovePoleEvent>,
 ) {
-    for event in events.iter() {
+    for event in events.read() {
         let old = Vec2Ord::from(event.0);
         let new = Vec2Ord::from(event.1);
         let entity = poles.0.remove(&old).unwrap();

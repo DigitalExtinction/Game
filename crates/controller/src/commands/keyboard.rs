@@ -36,7 +36,7 @@ impl KeyCondition {
     pub(super) fn build(self) -> impl Fn(Res<Input<KeyCode>>, EventReader<KeyboardInput>) -> bool {
         move |keys: Res<Input<KeyCode>>, mut events: EventReader<KeyboardInput>| {
             let proper_key = events
-                .iter()
+                .read()
                 .filter(|k| {
                     k.state == ButtonState::Pressed && k.key_code.map_or(false, |c| c == self.key)
                 })

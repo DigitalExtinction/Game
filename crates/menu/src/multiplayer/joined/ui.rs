@@ -97,7 +97,7 @@ fn refresh(
     mut events: EventReader<RefreshPlayersEvent>,
     box_id: Res<PlayersBoxRes>,
 ) {
-    let Some(event) = events.iter().last() else {
+    let Some(event) = events.read().last() else {
         return;
     };
 

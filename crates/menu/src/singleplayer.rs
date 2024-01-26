@@ -123,7 +123,7 @@ fn button_system(
 }
 
 fn map_selected_system(mut events: EventReader<MapSelectedEvent>, mut map: ResMut<SelectedMap>) {
-    let Some(event) = events.iter().last() else {
+    let Some(event) = events.read().last() else {
         return;
     };
     map.0 = Some(event.path().into());

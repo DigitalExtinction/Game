@@ -212,7 +212,7 @@ fn map_selected_system(
     mut buttons: ButtonOps,
     mut toasts: EventWriter<ToastEvent>,
 ) {
-    let Some(event) = map_selected_events.iter().last() else {
+    let Some(event) = map_selected_events.read().last() else {
         return;
     };
     let hash = match MapHash::try_from(event.path()) {

@@ -69,7 +69,7 @@ type NotSetUp = (With<MovableSolid>, With<Local>, Without<SyncTimer>);
 
 fn setup_entities(mut commands: Commands, time: Res<Time>, entities: Query<Entity, NotSetUp>) {
     let time = time.elapsed();
-    for entity in entities.iter() {
+    for entity in entities.read() {
         commands.entity(entity).insert(SyncTimer::new(time));
     }
 }
@@ -78,7 +78,7 @@ fn receive_transforms(
     mut entities: Query<&mut Transform>,
     mut events: EventReader<NetRecvTransformEvent>,
 ) {
-    for event in events.iter() {
+    for event in events.read() {
         if let Ok(mut transform) = entities.get_mut(event.entity()) {
             *transform = event.transform();
         }

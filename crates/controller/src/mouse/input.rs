@@ -273,7 +273,7 @@ fn update_buttons(
     mut clicks: EventWriter<MouseClickedEvent>,
     mut drags: EventWriter<MouseDraggedEvent>,
 ) {
-    for event in input_events.iter() {
+    for event in input_events.read() {
         match event.state {
             ButtonState::Released => {
                 if let Some(drag_resolution) = mouse_state.resolve(event.button) {
@@ -305,7 +305,7 @@ fn check_double_click(
     mut last_click_time: Local<f64>,
     time: Res<Time>,
 ) {
-    for mouse_clicked in clicks.iter() {
+    for mouse_clicked in clicks.read() {
         let current_time = time.elapsed_seconds_f64();
 
         if last_click_position.map_or(true, |p| {

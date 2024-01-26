@@ -138,7 +138,7 @@ fn on_click(button: MouseButton) -> impl Fn(EventReader<MouseClickedEvent>) -> b
     move |mut events: EventReader<MouseClickedEvent>| {
         // It is desirable to exhaust the iterator, thus .filter().count() is
         // used instead of .any()
-        events.iter().filter(|e| e.button() == button).count() > 0
+        events.read().filter(|e| e.button() == button).count() > 0
     }
 }
 
@@ -146,7 +146,7 @@ fn on_double_click(button: MouseButton) -> impl Fn(EventReader<MouseDoubleClicke
     move |mut events: EventReader<MouseDoubleClickedEvent>| {
         // It is desirable to exhaust the iterator, thus .filter().count() is
         // used instead of .any()
-        events.iter().filter(|e| e.button() == button).count() > 0
+        events.read().filter(|e| e.button() == button).count() > 0
     }
 }
 
@@ -210,7 +210,7 @@ fn move_camera_arrows_system(
     mut key_events: EventReader<KeyboardInput>,
     mut move_events: EventWriter<MoveCameraHorizontallyEvent>,
 ) {
-    for key_event in key_events.iter() {
+    for key_event in key_events.read() {
         let Some(key_code) = key_event.key_code else {
             continue;
         };
@@ -277,7 +277,7 @@ fn zoom_camera(
 ) {
     let conf = conf.camera();
     let factor = wheel_events
-        .iter()
+        .read()
         .fold(1.0, |factor, event| match event.unit {
             MouseScrollUnit::Line => factor * conf.wheel_zoom_sensitivity().powf(event.y),
             MouseScrollUnit::Pixel => factor * conf.touchpad_zoom_sensitivity().powf(event.y),
@@ -297,7 +297,7 @@ fn pivot_camera(
         return;
     }
 
-    let delta = mouse_event.iter().fold(Vec2::ZERO, |sum, e| sum + e.delta);
+    let delta = mouse_event.read().fold(Vec2::ZERO, |sum, e| sum + e.delta);
     let sensitivity = conf.camera().rotation_sensitivity();
     if delta.x != 0. {
         rotate_event.send(RotateCameraEvent::new(sensitivity * delta.x));
@@ -390,7 +390,7 @@ fn update_drags(
     mut ui_events: EventWriter<UpdateSelectionBoxEvent>,
     mut select_events: EventWriter<SelectInRectEvent>,
 ) {
-    for drag_event in drag_events.iter() {
+    for drag_event in drag_events.read() {
         if drag_event.button() != MouseButton::Left {
             continue;
         }

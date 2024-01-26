@@ -129,7 +129,7 @@ fn process_from_server(
     mut opened: EventWriter<GameOpenedEvent>,
     mut fatals: EventWriter<FatalErrorEvent>,
 ) {
-    for event in events.iter() {
+    for event in events.read() {
         match event.message() {
             FromServer::Pong(id) => {
                 info!("Pong {} received from server.", *id);
@@ -170,7 +170,7 @@ fn process_from_game(
     mut readiness_events: EventWriter<GameReadinessEvent>,
     mut next_state: ResMut<NextState<NetState>>,
 ) {
-    for event in inputs.iter() {
+    for event in inputs.read() {
         match event.message() {
             FromGame::Pong(id) => {
                 trace!("Received Pong({id}).");
@@ -230,7 +230,7 @@ fn set_readiness(
     mut readiness_events: EventReader<SetReadinessEvent>,
     mut message_events: EventWriter<ToGameServerEvent>,
 ) {
-    let Some(readiness) = readiness_events.iter().last() else {
+    let Some(readiness) = readiness_events.read().last() else {
         return;
     };
 

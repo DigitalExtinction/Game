@@ -70,7 +70,7 @@ fn handle_setup_event(
     mut next_state: ResMut<NextState<MultiplayerState>>,
     mut events: EventReader<SetupGameEvent>,
 ) {
-    let Some(event) = events.iter().last() else {
+    let Some(event) = events.read().last() else {
         return;
     };
 
@@ -128,7 +128,7 @@ fn create_game_in_lobby(
     mut opened_events: EventReader<GameOpenedEvent>,
     mut sender: Sender<CreateGameRequest>,
 ) {
-    let Some(opened_event) = opened_events.iter().last() else {
+    let Some(opened_event) = opened_events.read().last() else {
         return;
     };
 
@@ -139,7 +139,7 @@ fn create_game_in_lobby(
 }
 
 fn handle_joined_event(mut commands: Commands, mut events: EventReader<GameJoinedEvent>) {
-    let Some(event) = events.iter().last() else {
+    let Some(event) = events.read().last() else {
         return;
     };
     commands.insert_resource(LocalPlayerRes::new(event.player()));

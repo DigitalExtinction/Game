@@ -87,7 +87,7 @@ fn handle_readiness(
     mut sender: Sender<GetGameRequest>,
     mut ready: ResMut<ReadyRes>,
 ) {
-    if events.iter().all(|e| **e != Readiness::Ready) {
+    if events.read().all(|e| **e != Readiness::Ready) {
         return;
     }
 
@@ -128,7 +128,7 @@ fn start(
     mut multi_state: ResMut<NextState<MultiplayerState>>,
     mut toasts: EventWriter<ToastEvent>,
 ) {
-    let Some(event) = events.iter().last() else {
+    let Some(event) = events.read().last() else {
         return;
     };
 

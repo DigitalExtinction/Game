@@ -116,7 +116,7 @@ fn toggle_system(
     mut events: EventReader<ToggleGameMenuEvent>,
     mut query: Query<&mut Visibility, With<PopUpMenu>>,
 ) {
-    if events.iter().count() % 2 == 0 {
+    if events.read().count() % 2 == 0 {
         return;
     }
 

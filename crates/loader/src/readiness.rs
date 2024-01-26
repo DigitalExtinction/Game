@@ -40,7 +40,7 @@ fn progress(
     move |conf: Res<GameConfig>,
           mut events: EventReader<GameReadinessEvent>,
           mut state: ResMut<NextState<GameState>>| {
-        if !conf.multiplayer() || events.iter().any(|e| **e == readiness) {
+        if !conf.multiplayer() || events.read().any(|e| **e == readiness) {
             state.set(target_state);
         }
     }

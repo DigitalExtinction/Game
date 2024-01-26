@@ -142,7 +142,7 @@ fn setup_entities(
     mut commands: Commands,
     objects: Query<Entity, (With<MovableSolid>, Without<Repulsion>)>,
 ) {
-    for entity in objects.iter() {
+    for entity in objects.read() {
         commands.entity(entity).insert(Repulsion::default());
     }
 }

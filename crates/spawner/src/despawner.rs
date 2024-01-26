@@ -71,7 +71,7 @@ fn despawn_active_local(
     mut event_writer: EventWriter<DespawnActiveEvent>,
     mut net_events: EventWriter<ToPlayersEvent>,
 ) {
-    for event in event_reader.iter() {
+    for event in event_reader.read() {
         event_writer.send(DespawnActiveEvent(event.0));
 
         if config.multiplayer() {
@@ -86,7 +86,7 @@ fn despawn_active_remote(
     mut event_reader: EventReader<NetRecvDespawnActiveEvent>,
     mut event_writer: EventWriter<DespawnActiveEvent>,
 ) {
-    for event in event_reader.iter() {
+    for event in event_reader.read() {
         event_writer.send(DespawnActiveEvent(event.entity()));
     }
 }
@@ -96,7 +96,7 @@ fn despawn_active_peer_left(
     mut peer_left_events: EventReader<PeerLeftEvent>,
     mut event_writer: EventWriter<DespawnActiveEvent>,
 ) {
-    for event in peer_left_events.iter() {
+    for event in peer_left_events.read() {
         if let Some(entity_map) = net_commands.remove_player(event.id()) {
             for entity in entity_map.locals() {
                 event_writer.send(DespawnActiveEvent(entity));
@@ -112,7 +112,7 @@ fn despawn_active(
     mut event_writer: EventWriter<DespawnEvent>,
     mut play_audio: EventWriter<PlaySpatialAudioEvent>,
 ) {
-    for event in event_reader.iter() {
+    for event in event_reader.read() {
         let Ok((&player, &object_type, transform)) = entities.get(event.0) else {
             panic!("Despawn of non-existing active object requested.");
         };
@@ -136,7 +136,7 @@ fn despawn_active(
 
 /// Despawn all entities marked for despawning
 fn despawn(mut commands: Commands, mut despawning: EventReader<DespawnEvent>) {
-    for entity in despawning.iter() {
+    for entity in despawning.read() {
         commands.entity(entity.0).despawn_recursive();
     }
 }
@@ -229,7 +229,7 @@ fn send_data<'w, Q, T, F>(
     Q: WorldQuery + Send + Sync + 'w,
     F: ReadOnlyWorldQuery + Send + Sync + 'w,
 {
-    for DespawnEvent(entity) in despawning.iter() {
+    for DespawnEvent(entity) in despawning.read() {
         if let Ok(data) = data.get_component::<T>(*entity) {
             events.send(DespawnedComponentsEvent {
                 entity: *entity,

@@ -81,7 +81,7 @@ fn update_local_health(
     mut out_events: EventWriter<UpdateHealthEvent>,
     mut net_events: EventWriter<ToPlayersEvent>,
 ) {
-    for event in in_events.iter() {
+    for event in in_events.read() {
         out_events.send(UpdateHealthEvent::new(event.entity, event.delta));
 
         if config.multiplayer() {
@@ -97,7 +97,7 @@ fn update_remote_health(
     mut in_events: EventReader<NetRecvHealthEvent>,
     mut out_events: EventWriter<UpdateHealthEvent>,
 ) {
-    for event in in_events.iter() {
+    for event in in_events.read() {
         out_events.send(UpdateHealthEvent::new(event.entity(), event.delta()));
     }
 }
@@ -107,7 +107,7 @@ fn update_health(
     mut health_events: EventReader<UpdateHealthEvent>,
     mut bar_events: EventWriter<UpdateBarValueEvent>,
 ) {
-    for event in health_events.iter() {
+    for event in health_events.read() {
         let Ok(mut health) = healths.get_mut(event.entity) else {
             continue;
         };

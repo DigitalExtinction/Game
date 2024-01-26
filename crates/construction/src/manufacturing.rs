@@ -321,7 +321,7 @@ fn change_locations(
     mut pole_events: EventWriter<UpdatePoleLocationEvent>,
     mut line_events: EventWriter<UpdateLineEndEvent>,
 ) {
-    for event in events.iter() {
+    for event in events.read() {
         if let Ok(mut location) = locations.get_mut(event.factory()) {
             let owner = event.factory();
             location.0 = event.position();
@@ -337,7 +337,7 @@ fn enqueue(
     mut events: EventReader<EnqueueAssemblyEvent>,
     mut lines: Query<&mut AssemblyLine>,
 ) {
-    for event in events.iter() {
+    for event in events.read() {
         let Ok(mut line) = lines.get_mut(event.factory()) else {
             continue;
         };
@@ -415,7 +415,7 @@ fn deliver(
         &DeliveryLocation,
     )>,
 ) {
-    for delivery in deliver_events.iter() {
+    for delivery in deliver_events.read() {
         info!(
             "Manufacturing of {} in {:?} just finished.",
             delivery.unit(),

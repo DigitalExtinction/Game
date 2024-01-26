@@ -112,7 +112,7 @@ fn focus_system(
         }
     }
 
-    if let Some(event) = events.iter().last() {
+    if let Some(event) = events.read().last() {
         current = event.0;
     }
 
