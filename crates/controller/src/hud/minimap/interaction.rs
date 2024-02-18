@@ -1,13 +1,8 @@
 use std::fmt;
 
-use bevy::{
-    input::{
-        mouse::{MouseButtonInput, MouseMotion},
-        ButtonState,
-    },
-    prelude::*,
-    window::PrimaryWindow,
-};
+use bevy::input::mouse::{MouseButtonInput, MouseMotion};
+use bevy::input::ButtonState;
+use bevy::{prelude::*, window::PrimaryWindow};
 use de_camera::MoveFocusEvent;
 use de_core::{gamestate::GameState, schedule::InputSchedule};
 use de_map::size::MapBounds;
@@ -30,11 +25,12 @@ impl Plugin for InteractionPlugin {
                 (
                     press_handler
                         .in_set(InteractionSet::PressHandler)
-                        .run_if(on_event::<MouseButtonInput>()),
+                        .run_if(on_event::<MouseButtonInput>())
+                        .in_set(InteractionSet::PressHandler),
                     drag_handler
                         .in_set(InteractionSet::DragHandler)
-                        .after(InteractionSet::PressHandler)
-                        .run_if(on_event::<MouseMotion>()),
+                        .run_if(on_event::<MouseMotion>())
+                        .after(InteractionSet::PressHandler),
                     move_camera_system
                         .after(InteractionSet::PressHandler)
                         .after(InteractionSet::DragHandler),
@@ -58,17 +54,17 @@ enum InteractionSet {
 
 #[derive(Event)]
 struct MinimapPressEvent {
-    button: MouseButton,
+    action: MouseButton,
     position: Vec2,
 }
 
 impl MinimapPressEvent {
-    fn new(button: MouseButton, position: Vec2) -> Self {
-        Self { button, position }
+    fn new(action: MouseButton, position: Vec2) -> Self {
+        Self { action, position }
     }
 
     fn button(&self) -> MouseButton {
-        self.button
+        self.action
     }
 
     /// Position on the map in 2D flat coordinates (these are not minimap
@@ -80,23 +76,23 @@ impl MinimapPressEvent {
 
 impl fmt::Debug for MinimapPressEvent {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{:?} -> {:?}", self.button, self.position)
+        write!(f, "{:?} -> {:?}", self.action, self.position)
     }
 }
 
 #[derive(Event)]
 struct MinimapDragEvent {
-    button: MouseButton,
+    action: MouseButton,
     position: Vec2,
 }
 
 impl MinimapDragEvent {
-    fn new(button: MouseButton, position: Vec2) -> Self {
-        Self { button, position }
+    fn new(action: MouseButton, position: Vec2) -> Self {
+        Self { action, position }
     }
 
     fn button(&self) -> MouseButton {
-        self.button
+        self.action
     }
 
     /// Position on the map in 2D flat coordinates (these are not minimap

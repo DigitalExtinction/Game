@@ -1,0 +1,23 @@
+[package]
+name = "de_input"
+description = "Manage input from keyboard and mouse."
+
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+repository.workspace = true
+keywords.workspace = true
+homepage.workspace = true
+license.workspace = true
+categories.workspace = true
+
+[dependencies]
+# DE
+de_core.workspace = true
+
+# Other
+bevy.workspace = true
+serde.workspace = true
+serde_yaml.workspace = true
+leafwing-input-manager.workspace = true
+ron = "0.8.1"

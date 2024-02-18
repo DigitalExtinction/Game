@@ -10,7 +10,6 @@ use self::{executor::ExecutorPlugin, handlers::HandlersPlugin};
 
 mod executor;
 mod handlers;
-mod keyboard;
 
 pub(crate) struct CommandsPlugin;
 

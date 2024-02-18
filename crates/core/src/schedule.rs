@@ -11,11 +11,16 @@ impl Plugin for GameSchedulesPlugin {
 }
 
 fn setup(mut main: ResMut<MainScheduleOrder>) {
-    main.insert_after(First, InputSchedule);
+    main.insert_after(First, PreInputSchedule);
+    main.insert_after(PreInputSchedule, InputSchedule);
     main.insert_after(InputSchedule, PreMovement);
     main.insert_after(PreMovement, Movement);
     main.insert_after(Movement, PostMovement);
 }
+
+/// The user input is turned into actions during this schedule.
+#[derive(ScheduleLabel, Clone, Debug, PartialEq, Eq, Hash)]
+pub struct PreInputSchedule;
 
 /// All user input is handled during this schedule.
 #[derive(ScheduleLabel, Clone, Debug, PartialEq, Eq, Hash)]

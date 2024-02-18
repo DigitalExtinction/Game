@@ -1,9 +1,7 @@
 use ahash::AHashMap;
-use bevy::{
-    input::{mouse::MouseButtonInput, ButtonState},
-    prelude::*,
-    window::PrimaryWindow,
-};
+use bevy::input::mouse::MouseButtonInput;
+use bevy::input::ButtonState;
+use bevy::{prelude::*, window::PrimaryWindow};
 use de_core::{
     gamestate::GameState, schedule::InputSchedule, screengeom::ScreenRect, state::AppState,
 };
@@ -52,17 +50,17 @@ pub(crate) enum MouseSet {
 
 #[derive(Event)]
 pub(crate) struct MouseClickedEvent {
-    button: MouseButton,
+    action: MouseButton,
     position: Vec2,
 }
 
 impl MouseClickedEvent {
-    fn new(button: MouseButton, position: Vec2) -> Self {
-        Self { button, position }
+    fn new(action: MouseButton, position: Vec2) -> Self {
+        Self { action, position }
     }
 
     pub(crate) fn button(&self) -> MouseButton {
-        self.button
+        self.action
     }
 
     pub(crate) fn position(&self) -> Vec2 {
@@ -72,37 +70,37 @@ impl MouseClickedEvent {
 
 #[derive(Event)]
 pub(crate) struct MouseDoubleClickedEvent {
-    button: MouseButton,
+    action: MouseButton,
 }
 
 impl MouseDoubleClickedEvent {
-    fn new(button: MouseButton) -> Self {
-        Self { button }
+    fn new(action: MouseButton) -> Self {
+        Self { action }
     }
 
     pub(crate) fn button(&self) -> MouseButton {
-        self.button
+        self.action
     }
 }
 
 #[derive(Event)]
 pub(crate) struct MouseDraggedEvent {
-    button: MouseButton,
+    action: MouseButton,
     rect: Option<ScreenRect>,
     update_type: DragUpdateType,
 }
 
 impl MouseDraggedEvent {
-    fn new(button: MouseButton, rect: Option<ScreenRect>, update_type: DragUpdateType) -> Self {
+    fn new(action: MouseButton, rect: Option<ScreenRect>, update_type: DragUpdateType) -> Self {
         Self {
-            button,
+            action,
             rect,
             update_type,
         }
     }
 
     pub(crate) fn button(&self) -> MouseButton {
-        self.button
+        self.action
     }
 
     /// Screen rectangle corresponding to the drag (i.e. its starting and
@@ -143,16 +141,16 @@ impl MousePosition {
     }
 }
 
-#[derive(Default, Resource)]
+#[derive(Default, Resource, Debug)]
 struct MouseDragStates(AHashMap<MouseButton, DragState>);
 
 impl MouseDragStates {
-    fn set(&mut self, button: MouseButton, position: Option<Vec2>) {
-        self.0.insert(button, DragState::new(position));
+    fn set(&mut self, action: MouseButton, position: Option<Vec2>) {
+        self.0.insert(action, DragState::new(position));
     }
 
-    fn resolve(&mut self, button: MouseButton) -> Option<DragResolution> {
-        self.0.remove(&button).and_then(DragState::resolve)
+    fn resolve(&mut self, action: MouseButton) -> Option<DragResolution> {
+        self.0.remove(&action).and_then(DragState::resolve)
     }
 
     /// Updates the end position of all opened drags. A map of mouse buttons to
@@ -171,6 +169,7 @@ impl MouseDragStates {
     }
 }
 
+#[derive(Debug)]
 struct DragState {
     start: Option<Vec2>,
     stop: Option<Vec2>,
@@ -319,5 +318,13 @@ fn check_double_click(
 
         *last_click_time = time.elapsed_seconds_f64();
         *last_click_position = Some(mouse_clicked.position());
+    }
+}
+
+pub(crate) fn pressed_mouse_button(
+    mouse_button: MouseButton,
+) -> impl Fn(EventReader<MouseClickedEvent>) -> bool {
+    move |mut click: EventReader<MouseClickedEvent>| {
+        click.iter().any(|button| button.action == mouse_button)
     }
 }

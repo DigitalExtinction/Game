@@ -1,5 +1,6 @@
 //! This crate implements handling of user input.
 
+use actions::ActionPlugin;
 use bevy::{app::PluginGroupBuilder, prelude::*};
 use commands::CommandsPlugin;
 use draft::DraftPlugin;
@@ -7,6 +8,7 @@ use hud::HudPlugin;
 use mouse::MousePlugin;
 use selection::SelectionPlugin;
 
+mod actions;
 mod commands;
 mod draft;
 mod frustum;
@@ -28,5 +30,6 @@ impl PluginGroup for ControllerPluginGroup {
             .add(SelectionPlugin)
             .add(DraftPlugin)
             .add(HudPlugin)
+            .add(ActionPlugin)
     }
 }
