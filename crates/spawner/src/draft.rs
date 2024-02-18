@@ -12,7 +12,7 @@ use de_core::{
     objects::{MovableSolid, ObjectTypeComponent, StaticSolid},
     state::AppState,
 };
-use de_index::{ColliderWithCache, IndexSet, QueryCollider, SpatialQuery};
+use de_index::{ColliderWithCache, PreciseIndexSet, QueryCollider, SpatialQuery};
 use de_map::size::MapBounds;
 use de_objects::{AssetCollection, SceneType, Scenes, SolidObjects, EXCLUSION_OFFSET};
 use de_types::{
@@ -42,7 +42,7 @@ impl Plugin for DraftPlugin {
                 PostUpdate,
                 (update_draft, check_draft_loaded, update_draft_colour)
                     .run_if(in_state(GameState::Playing))
-                    .after(IndexSet::Index),
+                    .after(PreciseIndexSet::Index),
             );
     }
 }

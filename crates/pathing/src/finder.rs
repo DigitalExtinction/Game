@@ -14,9 +14,9 @@ use rstar::{PointDistance, RTree, RTreeObject, AABB};
 use tinyvec::{ArrayVec, TinyVec};
 
 use crate::{
-    dijkstra::{find_path, PointContext},
     exclusion::ExclusionArea,
-    graph::VisibilityGraph,
+    graph::{Step, VisibilityGraph},
+    polyanya::{find_path, PointContext},
     utils::HashableSegment,
     PathTarget,
 };
@@ -67,7 +67,7 @@ impl PathFinder {
     ///   covered by `triangles`. There is no intersection between the
     ///   `exclusions` and `triangles`.
     pub(crate) fn from_triangles(
-        triangles: Vec<Triangle>,
+        mut triangles: Vec<Triangle>,
         mut exclusions: Vec<ExclusionArea>,
     ) -> Self {
         let mut graph = VisibilityGraph::new();
@@ -77,7 +77,9 @@ impl PathFinder {
             AHashMap::with_capacity(triangles.len() * 3);
         let mut tri_edge_ids = [0, 0, 0];
 
-        for triangle in triangles {
+        for (triangle_id, triangle) in triangles.drain(..).enumerate() {
+            let triangle_id: u32 = triangle_id.try_into().unwrap();
+
             let segments = triangle.edges();
             for i in 0..3 {
                 let segment = segments[i];
@@ -91,13 +93,13 @@ impl PathFinder {
                     }
                 };
             }
-            indexed_triangles.push(GraphTriangle::new(triangle, tri_edge_ids));
+            indexed_triangles.push(GraphTriangle::new(triangle, triangle_id, tri_edge_ids));
             for [edge_id, neighbour_a, neighbour_b] in [
                 [tri_edge_ids[0], tri_edge_ids[1], tri_edge_ids[2]],
                 [tri_edge_ids[1], tri_edge_ids[2], tri_edge_ids[0]],
                 [tri_edge_ids[2], tri_edge_ids[0], tri_edge_ids[1]],
             ] {
-                graph.add_neighbours(edge_id, neighbour_a, neighbour_b);
+                graph.add_neighbours(edge_id, triangle_id, neighbour_a, neighbour_b);
             }
         }
 
@@ -157,13 +159,11 @@ impl PathFinder {
             return None;
         }
 
-        if source_edges
-            .iter()
-            .filter(|s| target_edges.contains(s))
-            .take(2)
-            .count()
-            >= 2
-        {
+        if source_edges.iter().any(|s| {
+            target_edges
+                .iter()
+                .any(|t| s.triangle_id() == t.triangle_id())
+        }) {
             debug!(
                 "Trivial path from {:?} to {:?} found, trimming...",
                 from, to
@@ -192,18 +192,24 @@ impl PathFinder {
         }
     }
 
-    fn locate_triangle_edges(&self, point: Point<f32>) -> Vec<u32> {
-        self.triangles
-            .locate_all_at_point(&[point.x, point.y])
-            .flat_map(|t| t.neighbours(point))
-            .collect()
+    fn locate_triangle_edges(&self, point: Point<f32>) -> Vec<Step> {
+        let mut result = Vec::new();
+        for triangle in self.triangles.locate_all_at_point(&[point.x, point.y]) {
+            for edge_id in triangle.neighbours(point) {
+                result.push(Step::new(edge_id, triangle.triangle_id()))
+            }
+        }
+        result
     }
 
-    fn locate_exclusion_edges(&self, point: Point<f32>) -> Vec<u32> {
+    fn locate_exclusion_edges(&self, point: Point<f32>) -> Vec<Step> {
         self.exclusions
             .locate_all_at_point(&[point.x, point.y])
-            .flat_map(|t| t.neighbours())
-            .cloned()
+            .flat_map(|t| {
+                t.neighbours()
+                    .iter()
+                    .map(|&edge_id| Step::new(edge_id, u32::MAX))
+            })
             .collect()
     }
 }
@@ -211,14 +217,23 @@ impl PathFinder {
 /// A triangle used for spatial indexing inside the edge visibility graph.
 struct GraphTriangle {
     triangle: Triangle,
+    triangle_id: u32,
     /// IDs of edges of the triangle. These correspond to edges AB, BC and CA
     /// respectively.
     edges: [u32; 3],
 }
 
 impl GraphTriangle {
-    fn new(triangle: Triangle, edges: [u32; 3]) -> Self {
-        Self { triangle, edges }
+    fn new(triangle: Triangle, triangle_id: u32, edges: [u32; 3]) -> Self {
+        Self {
+            triangle,
+            triangle_id,
+            edges,
+        }
+    }
+
+    fn triangle_id(&self) -> u32 {
+        self.triangle_id
     }
 
     /// Returns (up to 3) IDs of the triangle edges excluding edges which
@@ -410,9 +425,10 @@ mod tests {
                 ),
             )
             .unwrap();
+
         assert_eq!(
             forth_path.waypoints(),
-            &[Vec2::new(18.003086, -48.81555), Vec2::new(0.2, -950.),]
+            &[Vec2::new(18.003227, -48.80841), Vec2::new(0.2, -950.),]
         );
 
         let fifth_path = finder
@@ -440,30 +456,17 @@ mod tests {
     #[timeout(100)]
     fn test_unreachable() {
         let triangles = vec![
-            Triangle::new(
-                Point::new(0., 0.),
-                Point::new(-1., 1.),
-                Point::new(-1., -1.),
-            ),
-            Triangle::new(Point::new(0., 0.), Point::new(1., 1.), Point::new(-1., 1.)),
-            Triangle::new(Point::new(0., 0.), Point::new(1., -1.), Point::new(1., 1.)),
-            Triangle::new(
-                Point::new(0., 0.),
-                Point::new(-1., -1.),
-                Point::new(1., -1.),
-            ),
-            Triangle::new(
-                Point::new(0., 30.),
-                Point::new(0., 20.),
-                Point::new(10., 20.),
-            ),
+            Triangle::new(Point::new(0., 0.), Point::new(1., 1.), Point::new(1., 0.)),
+            Triangle::new(Point::new(0., 0.), Point::new(0., 1.), Point::new(1., 1.)),
+            Triangle::new(Point::new(0., 2.), Point::new(1., 3.), Point::new(1., 2.)),
+            Triangle::new(Point::new(0., 2.), Point::new(0., 3.), Point::new(1., 3.)),
         ];
 
         let finder = PathFinder::from_triangles(triangles, vec![]);
         assert!(finder
             .find_path(
-                Point::new(-0.5, 0.),
-                PathTarget::new(Vec2::new(2., 22.), PathQueryProps::exact(), false)
+                Point::new(0.5, 2.5),
+                PathTarget::new(Vec2::new(0.5, 0.5), PathQueryProps::exact(), false)
             )
             .is_none())
     }

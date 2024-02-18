@@ -42,13 +42,13 @@ impl fmt::Display for Player {
 
 impl PartialOrd for Player {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
-        self.to_num().partial_cmp(&other.to_num())
+        Some(self.cmp(other))
     }
 }
 
 impl Ord for Player {
     fn cmp(&self, other: &Self) -> Ordering {
-        self.partial_cmp(other).unwrap()
+        self.to_num().partial_cmp(&other.to_num()).unwrap()
     }
 }
 

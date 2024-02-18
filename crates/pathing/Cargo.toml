@@ -33,6 +33,10 @@ spade.workspace = true
 futures-lite.workspace = true
 
 [dev-dependencies]
+# DE
+de_test_utils.workspace = true
+
+# Other
 ntest.workspace = true
 criterion.workspace = true
 

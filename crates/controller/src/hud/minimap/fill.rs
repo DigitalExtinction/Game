@@ -139,8 +139,8 @@ fn draw_camera_system(mut drawing: DrawingParam, camera: CameraPoint) {
 /// contained by rectangle (0, 0) -> (1, 1), b) is fully contained by the
 /// original line segment.
 fn endpoints_to_line(start: Option<Vec2>, end: Option<Vec2>) -> Option<(Vec2, Vec2)> {
-    let Some(start) = start else { return None };
-    let Some(end) = end else { return None };
+    let start = start?;
+    let end = end?;
 
     let mut start: Point<f32> = start.into();
     let mut end: Point<f32> = end.into();

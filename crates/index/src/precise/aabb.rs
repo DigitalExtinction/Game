@@ -2,10 +2,10 @@ use ahash::AHashSet;
 use bevy::prelude::Entity;
 use parry3d::bounding_volume::Aabb;
 
-use crate::{grid::TileGrid, range::TileRange};
+use super::{grid::TileGrid, range::TileRange};
 
 /// An iterator over unique entity IDs withing a box.
-pub(crate) struct AabbCandidates<'a> {
+pub(super) struct AabbCandidates<'a> {
     grid: &'a TileGrid,
     tiles: TileRange,
     row: Option<i32>,
@@ -16,7 +16,7 @@ pub(crate) struct AabbCandidates<'a> {
 impl<'a> AabbCandidates<'a> {
     /// Creates a new iterator of entities potentially colliding with a given
     /// AABB.
-    pub(crate) fn new(grid: &'a TileGrid, aabb: &Aabb) -> Self {
+    pub(super) fn new(grid: &'a TileGrid, aabb: &Aabb) -> Self {
         Self {
             grid,
             tiles: TileRange::from_aabb(aabb),

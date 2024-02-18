@@ -1,12 +1,11 @@
 use bevy::prelude::*;
-use de_audio::spatial::{PlaySpatialAudioEvent, Sound};
 use de_core::gamestate::GameState;
 use parry3d::query::Ray;
 
 use crate::{
     health::{HealthSet, LocalUpdateHealthEvent},
     sightline::LineOfSight,
-    trail::TrailEvent,
+    trail::LocalLaserTrailEvent,
     AttackingSet,
 };
 
@@ -80,13 +79,12 @@ fn fire(
     mut fires: EventReader<LaserFireEvent>,
     sightline: LineOfSight,
     mut health: EventWriter<LocalUpdateHealthEvent>,
-    mut trail: EventWriter<TrailEvent>,
-    mut start_sound: EventWriter<PlaySpatialAudioEvent>,
+    mut trail: EventWriter<LocalLaserTrailEvent>,
 ) {
     for fire in fires.iter() {
         let observation = sightline.sight(fire.ray(), fire.max_toi(), fire.attacker());
 
-        trail.send(TrailEvent::new(Ray::new(
+        trail.send(LocalLaserTrailEvent::new(Ray::new(
             fire.ray().origin,
             observation.toi() * fire.ray().dir,
         )));
@@ -94,10 +92,5 @@ fn fire(
         if let Some(entity) = observation.entity() {
             health.send(LocalUpdateHealthEvent::new(entity, -fire.damage()));
         }
-
-        start_sound.send(PlaySpatialAudioEvent::new(
-            Sound::LaserFire,
-            fire.ray().origin.into(),
-        ));
     }
 }

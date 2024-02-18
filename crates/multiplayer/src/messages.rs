@@ -144,6 +144,7 @@ impl ToMessage for ToPlayersEvent {
             ToPlayers::SetPath { .. } => Reliability::SemiOrdered,
             ToPlayers::Transform { .. } => Reliability::Unreliable,
             ToPlayers::ChangeHealth { .. } => Reliability::SemiOrdered,
+            ToPlayers::Projectile(_) => Reliability::Unreliable,
         }
     }
 

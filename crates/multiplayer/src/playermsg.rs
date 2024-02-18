@@ -4,7 +4,7 @@ use bevy::{
     prelude::*,
 };
 use de_core::{gconfig::GameConfig, schedule::PreMovement, state::AppState};
-use de_messages::{EntityNet, NetEntityIndex, ToPlayers};
+use de_messages::{EntityNet, NetEntityIndex, NetProjectile, ToPlayers};
 use de_types::{objects::ActiveObjectType, path::Path, player::Player};
 
 use crate::messages::{FromPlayersEvent, MessagesSet};
@@ -19,6 +19,7 @@ impl Plugin for PlayerMsgPlugin {
             .add_event::<NetRecvHealthEvent>()
             .add_event::<NetRecvTransformEvent>()
             .add_event::<NetRecvSetPathEvent>()
+            .add_event::<NetRecvProjectileEvent>()
             .add_systems(OnEnter(AppState::InGame), setup)
             .add_systems(OnExit(AppState::InGame), cleanup)
             .add_systems(
@@ -166,6 +167,9 @@ impl NetRecvSetPathEvent {
     }
 }
 
+#[derive(Event, Deref)]
+pub struct NetRecvProjectileEvent(NetProjectile);
+
 #[derive(SystemParam)]
 pub struct NetEntities<'w> {
     config: Res<'w, GameConfig>,
@@ -209,7 +213,7 @@ impl<'w> NetEntityCommands<'w> {
         self.map.register(remote, local)
     }
 
-    fn deregister(&mut self, remote: EntityNet) -> Entity {
+    fn deregister(&mut self, remote: EntityNet) -> Option<Entity> {
         self.map.deregister(remote)
     }
 
@@ -261,16 +265,18 @@ impl EntityIdMapRes {
 
     /// De-registers an existing remote entity.
     ///
+    /// Returns None if the player does no longer exist.
+    ///
     /// See [`Self::register`].
     ///
     /// # Panics
     ///
     /// Panics if the entity is not registered.
-    fn deregister(&mut self, remote: EntityNet) -> Entity {
-        let player_entities = self.remote_to_local.get_mut(&remote.player()).unwrap();
+    fn deregister(&mut self, remote: EntityNet) -> Option<Entity> {
+        let player_entities = self.remote_to_local.get_mut(&remote.player())?;
         let local = player_entities.remove(remote.index()).unwrap();
         self.local_to_remote.remove(&local).unwrap();
-        local
+        Some(local)
     }
 
     /// Translates local entity ID to a remote entity ID in case the entity is
@@ -354,6 +360,7 @@ fn recv_messages(
     mut path_events: EventWriter<NetRecvSetPathEvent>,
     mut transform_events: EventWriter<NetRecvTransformEvent>,
     mut health_events: EventWriter<NetRecvHealthEvent>,
+    mut projectile_events: EventWriter<NetRecvProjectileEvent>,
 ) {
     for input in inputs.iter() {
         match input.message() {
@@ -374,8 +381,9 @@ fn recv_messages(
                 ));
             }
             ToPlayers::Despawn { entity } => {
-                let local = net_commands.deregister(*entity);
-                despawn_events.send(NetRecvDespawnActiveEvent::new(local));
+                if let Some(local) = net_commands.deregister(*entity) {
+                    despawn_events.send(NetRecvDespawnActiveEvent::new(local));
+                }
             }
             ToPlayers::SetPath { entity, waypoints } => {
                 let Some(local) = net_commands.remote_local_id(*entity) else {
@@ -400,6 +408,9 @@ fn recv_messages(
                 };
 
                 health_events.send(NetRecvHealthEvent::new(local, delta.into()));
+            }
+            ToPlayers::Projectile(projectile) => {
+                projectile_events.send(NetRecvProjectileEvent(*projectile));
             }
             _ => (),
         }
