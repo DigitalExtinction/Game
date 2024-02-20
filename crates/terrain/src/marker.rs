@@ -1,4 +1,5 @@
 use bevy::{
+    pbr::ExtendedMaterial,
     prelude::*,
     render::{
         primitives::{Aabb as BevyAabb, Frustum},
@@ -113,12 +114,14 @@ impl Marker for RectangleMarker {
     }
 }
 
-// TODO test this
 fn update_markers<M>(
-    mut materials: ResMut<Assets<TerrainMaterial>>,
+    mut materials: ResMut<Assets<ExtendedMaterial<StandardMaterial, TerrainMaterial>>>,
     solids: SolidObjects,
     camera: Query<(&Transform, &Frustum), With<Camera3d>>,
-    terrains: Query<(&ViewVisibility, &Handle<TerrainMaterial>)>,
+    terrains: Query<(
+        &ViewVisibility,
+        &Handle<ExtendedMaterial<StandardMaterial, TerrainMaterial>>,
+    )>,
     markers: Query<(
         &ObjectTypeComponent,
         &ViewVisibility,
@@ -177,6 +180,6 @@ fn update_markers<M>(
         }
 
         let material = materials.get_mut(material).unwrap();
-        M::apply_to_material(material, shapes.clone());
+        M::apply_to_material(&mut material.extension, shapes.clone());
     }
 }
