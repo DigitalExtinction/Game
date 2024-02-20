@@ -146,7 +146,7 @@ fn play(
     let camera = camera.single();
     let sound_volume = config.audio().sound_volume() as f64;
 
-    for PlaySpatialAudioEvent { sound, position } in &mut play_events {
+    for PlaySpatialAudioEvent { sound, position } in play_events.read() {
         let (volume, pan) = calculate_volume_and_pan(camera, &focus, *position);
         let handle = audio
             .play(sounds.0[*sound].clone())

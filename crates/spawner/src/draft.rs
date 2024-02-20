@@ -64,7 +64,9 @@ impl DraftBundle {
             object_type: ObjectType::Active(ActiveObjectType::Building(building_type)).into(),
             transform,
             global_transform: transform.into(),
-            ..default()
+            visibility: VisibilityBundle::default(),
+            draft: DraftAllowed::default(),
+            ready: DraftReady::default(),
         }
     }
 }

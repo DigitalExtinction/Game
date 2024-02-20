@@ -69,7 +69,7 @@ type NotSetUp = (With<MovableSolid>, With<Local>, Without<SyncTimer>);
 
 fn setup_entities(mut commands: Commands, time: Res<Time>, entities: Query<Entity, NotSetUp>) {
     let time = time.elapsed();
-    for entity in entities.read() {
+    for entity in entities.iter() {
         commands.entity(entity).insert(SyncTimer::new(time));
     }
 }

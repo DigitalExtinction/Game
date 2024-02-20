@@ -87,7 +87,7 @@ impl Trail {
     }
 }
 
-#[derive(AsBindGroup, TypeUuid, TypePath, Debug, Clone)]
+#[derive(Asset, AsBindGroup, TypeUuid, TypePath, Debug, Clone)]
 #[uuid = "560ab431-1a54-48b3-87ea-8de8d94ceafb"]
 struct TrailMaterial {
     #[uniform(0)]
