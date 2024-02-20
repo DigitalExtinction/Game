@@ -1,5 +1,5 @@
 use bevy::{
-    asset::LoadState,
+    asset::{AssetPath, LoadState},
     prelude::*,
     render::{
         render_resource::{AddressMode, SamplerDescriptor},
@@ -55,24 +55,28 @@ fn setup_textures(
     };
 
     match server.get_load_state(&textures.0) {
-        LoadState::NotLoaded => false.into(),
-        LoadState::Loading => false.into(),
-        LoadState::Failed => panic!("Texture loading has failed."),
-        LoadState::Unloaded => unreachable!(),
-        LoadState::Loaded => {
-            // Ideally, this setup would happen in some kind of asset post
-            // processing. This is however not yet supported by Bevy.
-            //
-            // https://github.com/bevyengine/bevy/discussions/3972
-            let image = images.get_mut(&textures.0).unwrap();
-            image.sampler_descriptor = ImageSampler::Descriptor(SamplerDescriptor {
-                address_mode_u: AddressMode::Repeat,
-                address_mode_v: AddressMode::Repeat,
-                ..Default::default()
-            });
+        Some(load_state) => match load_state {
+            LoadState::NotLoaded => false.into(),
+            LoadState::Loading => false.into(),
+            LoadState::Failed => panic!("Texture loading has failed."),
+            LoadState::Loaded => {
+                // Ideally, this setup would happen in some kind of asset post
+                // processing. This is however not yet supported by Bevy.
+                //
+                // https://github.com/bevyengine/bevy/discussions/3972
+                let image = images.get_mut(&textures.0).unwrap();
+                // TODO
+                // image.sampler_descriptor = ImageSampler::Descriptor(SamplerDescriptor {
+                //     address_mode_u: AddressMode::Repeat,
+                //     address_mode_v: AddressMode::Repeat,
+                //     ..Default::default()
+                // });
 
-            true.into()
-        }
+                true.into()
+            }
+        },
+        // TODO: Is this correct?
+        None => false.into(),
     }
 }
 

@@ -78,8 +78,8 @@ fn load(server: Res<AssetServer>, sounds: Res<Sounds>) -> Progress {
             .0
             .values()
             .map(|handle| match server.get_load_state(handle) {
-                LoadState::Loaded => 1,
-                LoadState::NotLoaded | LoadState::Loading => 0,
+                Some(LoadState::Loaded) => 1,
+                Some(LoadState::NotLoaded) | Some(LoadState::Loading) => 0,
                 _ => panic!("Unexpected loading state."),
             })
             .sum(),

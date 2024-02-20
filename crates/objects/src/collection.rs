@@ -2,7 +2,7 @@ use std::{hash::Hash, path::PathBuf};
 
 use ahash::AHashMap;
 use bevy::{
-    asset::{Asset, AssetPath, LoadState},
+    asset::{Asset, AssetPath, LoadState, RecursiveDependencyLoadState},
     prelude::*,
 };
 use enum_iterator::Sequence;
@@ -39,7 +39,11 @@ where
                 let mut model_path = PathBuf::new();
                 model_path.push(Self::DIRECTORY);
                 model_path.push(format!("{}.{}", key.stem(), Self::SUFFIX));
-                let handle = server.load(AssetPath::new(model_path, Self::label()));
+                let mut asset_path = AssetPath::from(model_path);
+                if let Some(label) = Self::label() {
+                    asset_path = asset_path.with_label(label);
+                }
+                let handle = server.load(asset_path);
                 (key, handle)
             },
         )))
@@ -52,13 +56,18 @@ where
     /// Panics if loading any of the assets is either failed or unloaded.
     fn progress(&self, server: &AssetServer) -> Progress {
         enum_iterator::all::<Self::Key>()
-            .map(|key| match server.get_load_state(self.get(key)) {
-                LoadState::Failed => panic!("Model loading failed"),
-                LoadState::Unloaded => panic!("Model is unexpectedly unloaded"),
-                LoadState::NotLoaded => false.into(),
-                LoadState::Loading => false.into(),
-                LoadState::Loaded => true.into(),
-            })
+            .map(
+                |key| match server.get_recursive_dependency_load_state(self.get(key)) {
+                    Some(load_state) => match load_state {
+                        RecursiveDependencyLoadState::Failed => panic!("Model loading failed"),
+                        RecursiveDependencyLoadState::NotLoaded => false.into(),
+                        RecursiveDependencyLoadState::Loading => false.into(),
+                        RecursiveDependencyLoadState::Loaded => true.into(),
+                    },
+                    // TODO is this correct?
+                    None => false.into(),
+                },
+            )
             .reduce(|a, b| a + b)
             .unwrap_or(Progress { done: 0, total: 0 })
     }

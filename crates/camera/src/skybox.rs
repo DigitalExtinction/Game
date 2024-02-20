@@ -48,8 +48,8 @@ fn configure_cubemap(
     }
 
     match server.get_load_state(&source.handle) {
-        LoadState::Loaded => (),
-        LoadState::NotLoaded | LoadState::Loading => return false.into(),
+        Some(LoadState::Loaded) => (),
+        Some(LoadState::NotLoaded) | Some(LoadState::Loading) => return false.into(),
         _ => panic!("Unexpected loading state."),
     }
 

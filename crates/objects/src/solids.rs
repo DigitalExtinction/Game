@@ -1,7 +1,7 @@
 use ahash::AHashMap;
 use anyhow::Context;
 use bevy::{
-    asset::{AssetLoader, LoadContext, LoadedAsset},
+    asset::{io::Reader, AssetLoader, AsyncReadExt, LoadContext, LoadedAsset},
     ecs::system::SystemParam,
     prelude::*,
     reflect::{TypePath, TypeUuid},
@@ -28,8 +28,8 @@ pub(crate) struct SolidsPlugin;
 
 impl Plugin for SolidsPlugin {
     fn build(&self, app: &mut App) {
-        app.add_asset::<SolidObject>()
-            .add_asset_loader(SolidObjectLoader)
+        app.init_asset::<SolidObject>()
+            .register_asset_loader(SolidObjectLoader)
             .add_systems(OnEnter(AppState::AppLoading), setup)
             .add_systems(
                 Update,
@@ -66,8 +66,7 @@ impl AssetCollectionLoader for Solids {
     }
 }
 
-#[derive(TypeUuid, TypePath)]
-#[uuid = "7b0690cc-951e-487b-8e69-db3119f5fb32"]
+#[derive(Asset, TypePath)]
 pub struct SolidObject {
     ichnography: Ichnography,
     collider: ObjectCollider,
@@ -128,17 +127,22 @@ struct SolidObjectSerde {
 struct SolidObjectLoader;
 
 impl AssetLoader for SolidObjectLoader {
+    type Asset = SolidObject;
+    type Settings = ();
+    type Error = anyhow::Error;
+
     fn load<'a>(
         &'a self,
-        bytes: &'a [u8],
+        reader: &'a mut Reader,
+        _settings: &'a Self::Settings,
         load_context: &'a mut LoadContext,
-    ) -> BoxedFuture<'a, anyhow::Result<()>> {
+    ) -> BoxedFuture<'a, anyhow::Result<Self::Asset>> {
         Box::pin(async move {
+            let mut bytes = Vec::new();
+            reader.read_to_end(&mut bytes).await?;
             let solid_serde: SolidObjectSerde =
-                serde_json::from_slice(bytes).context("Failed to parse object JSON")?;
-            let solid = SolidObject::try_from(solid_serde)?;
-            load_context.set_default_asset(LoadedAsset::new(solid));
-            Ok(())
+                serde_json::from_slice(&bytes).context("Failed to parse object JSON")?;
+            SolidObject::try_from(solid_serde)
         })
     }
 

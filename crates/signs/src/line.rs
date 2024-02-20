@@ -53,7 +53,7 @@ enum LinesSet {
 }
 
 // Passed to the `rally_point.wgsl` shader
-#[derive(AsBindGroup, TypeUuid, TypePath, Debug, Clone)]
+#[derive(Asset, AsBindGroup, TypeUuid, TypePath, Debug, Clone)]
 #[uuid = "d0fae52d-f398-4416-9b72-9039093a6c34"]
 pub struct LineMaterial {}
 

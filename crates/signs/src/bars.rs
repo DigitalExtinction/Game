@@ -135,7 +135,7 @@ impl BarMesh {
     }
 }
 
-#[derive(AsBindGroup, TypeUuid, TypePath, Debug, Clone)]
+#[derive(Asset, AsBindGroup, TypeUuid, TypePath, Debug, Clone)]
 #[uuid = "66547498-fb0d-4fb6-a8e6-c792367e53d6"]
 struct BarMaterial {
     #[uniform(0)]
