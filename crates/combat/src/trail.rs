@@ -3,7 +3,7 @@ use std::time::Duration;
 use bevy::{
     pbr::{MaterialPipeline, MaterialPipelineKey, NotShadowCaster, NotShadowReceiver},
     prelude::*,
-    reflect::{TypePath, TypeUuid},
+    reflect::TypePath,
     render::{
         mesh::{Indices, MeshVertexBufferLayout, PrimitiveTopology},
         render_resource::{
@@ -87,8 +87,7 @@ impl Trail {
     }
 }
 
-#[derive(Asset, AsBindGroup, TypeUuid, TypePath, Debug, Clone)]
-#[uuid = "560ab431-1a54-48b3-87ea-8de8d94ceafb"]
+#[derive(Asset, AsBindGroup, TypePath, Debug, Clone)]
 struct TrailMaterial {
     #[uniform(0)]
     start_time: f32,

@@ -3,7 +3,7 @@ use std::{cmp::Ordering, ops::Range};
 use bevy::{
     asset::Asset,
     pbr::MaterialExtension,
-    reflect::{TypePath, TypeUuid},
+    reflect::TypePath,
     render::render_resource::{AsBindGroup, ShaderRef, ShaderType},
 };
 use glam::{Mat3, Vec2};
@@ -16,8 +16,7 @@ pub(crate) const CIRCLE_CAPACITY: usize = 127;
 // * Keep this smaller or equal to de_types::objects::PLAYER_MAX_BUILDINGS.
 pub(crate) const RECTANGLE_CAPACITY: usize = 31;
 
-#[derive(Asset, AsBindGroup, TypeUuid, TypePath, Debug, Clone)]
-#[uuid = "9e124e04-fdf1-4836-b82d-fa2f01fddb62"]
+#[derive(Asset, AsBindGroup, TypePath, Debug, Clone)]
 pub struct TerrainMaterial {
     #[uniform(100)]
     uv_scale: f32,

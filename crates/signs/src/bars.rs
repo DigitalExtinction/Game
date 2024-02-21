@@ -3,7 +3,7 @@ use std::time::Duration;
 use bevy::{
     pbr::{MaterialPipeline, MaterialPipelineKey, NotShadowCaster, NotShadowReceiver},
     prelude::*,
-    reflect::{TypePath, TypeUuid},
+    reflect::TypePath,
     render::{
         mesh::{Indices, MeshVertexAttribute, MeshVertexBufferLayout},
         render_resource::{
@@ -135,8 +135,7 @@ impl BarMesh {
     }
 }
 
-#[derive(Asset, AsBindGroup, TypeUuid, TypePath, Debug, Clone)]
-#[uuid = "66547498-fb0d-4fb6-a8e6-c792367e53d6"]
+#[derive(Asset, AsBindGroup, TypePath, Debug, Clone)]
 struct BarMaterial {
     #[uniform(0)]
     value: f32,

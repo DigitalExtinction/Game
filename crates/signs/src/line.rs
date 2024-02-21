@@ -1,6 +1,6 @@
 use ahash::AHashMap;
 use bevy::prelude::*;
-use bevy::reflect::{TypePath, TypeUuid};
+use bevy::reflect::TypePath;
 use bevy::render::render_resource::{AsBindGroup, ShaderRef};
 use de_core::cleanup::DespawnOnGameExit;
 use de_core::objects::Active;
@@ -53,8 +53,7 @@ enum LinesSet {
 }
 
 // Passed to the `rally_point.wgsl` shader
-#[derive(Asset, AsBindGroup, TypeUuid, TypePath, Debug, Clone)]
-#[uuid = "d0fae52d-f398-4416-9b72-9039093a6c34"]
+#[derive(Asset, AsBindGroup, TypePath, Debug, Clone)]
 pub struct LineMaterial {}
 
 impl Material for LineMaterial {
