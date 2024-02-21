@@ -3,7 +3,6 @@ use de_core::{gamestate::GameState, schedule::InputSchedule, state::AppState};
 use de_index::SpatialQuery;
 use de_signs::UpdateBarVisibilityEvent;
 use de_terrain::TerrainCollider;
-use glam::Vec3;
 
 use crate::{
     mouse::{MousePosition, MouseSet},

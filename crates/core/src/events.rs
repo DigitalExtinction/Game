@@ -1,12 +1,6 @@
 use std::marker::PhantomData;
 
-use bevy::{
-    ecs::{
-        event::{Event, Events},
-        system::Resource,
-    },
-    prelude::*,
-};
+use bevy::{ecs::system::Resource, prelude::*};
 
 use crate::gamestate::GameState;
 

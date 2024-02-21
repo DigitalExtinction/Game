@@ -1,5 +1,4 @@
 use bevy::{ecs::system::SystemParam, prelude::*};
-use glam::UVec2;
 
 use super::nodes::MinimapNode;
 
