@@ -80,7 +80,7 @@ pub(crate) fn discharge_battery(time: Res<Time>, mut battery: Query<&mut Battery
 
 #[cfg(test)]
 mod tests {
-    use std::time::Duration;
+    use std::time::{Duration, Instant};
 
     use bevy::prelude::*;
 
@@ -102,12 +102,15 @@ mod tests {
         app.init_resource::<Time>();
         app.add_plugins(BatteryPlugin);
 
-        // run the app for 1 second
-        app.update();
+        let now = Instant::now();
         app.world
             .get_resource_mut::<Time>()
             .unwrap()
-            .advance_by(Duration::from_secs(1));
+            .update_with_instant(now);
+        app.world
+            .get_resource_mut::<Time>()
+            .unwrap()
+            .update_with_instant(now + Duration::from_secs(1));
         app.update();
 
         // check that the battery has discharged by at least 1*rate and 1.5*rate at most
