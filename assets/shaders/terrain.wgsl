@@ -1,10 +1,11 @@
 #import bevy_pbr::{
-    pbr_fragment::pbr_input_from_standard_material,
-    pbr_functions::alpha_discard,
-}
-#import bevy_pbr::{
     forward_io::{VertexOutput, FragmentOutput},
-    pbr_functions::{apply_pbr_lighting, main_pass_post_lighting_processing},
+    pbr_fragment::pbr_input_from_standard_material,
+    pbr_functions::{
+        alpha_discard,
+        apply_pbr_lighting,
+        main_pass_post_lighting_processing,
+    },
 }
 
 const SHAPE_COLOR = vec4<f32>(1., 1., 1., 0.75);
