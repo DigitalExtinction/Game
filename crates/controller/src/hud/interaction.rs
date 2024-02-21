@@ -2,7 +2,6 @@ use bevy::{
     ecs::{query::ReadOnlyWorldQuery, system::SystemParam},
     prelude::*,
 };
-use glam::Vec3Swizzles;
 
 /// Top-level non-transparent or otherwise interaction blocking Node. All such
 /// nodes are marked with this component and no descendants have it attached.

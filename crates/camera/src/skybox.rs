@@ -1,7 +1,6 @@
 use bevy::{
     asset::LoadState,
     core_pipeline::Skybox,
-    ecs::query::Has,
     prelude::*,
     render::render_resource::{TextureViewDescriptor, TextureViewDimension},
 };

@@ -1,7 +1,6 @@
 use std::f32::consts::FRAC_PI_2;
 
 use bevy::{
-    ecs::query::Has,
     pbr::{CascadeShadowConfig, CascadeShadowConfigBuilder, DirectionalLightShadowMap},
     prelude::*,
 };
