@@ -28,3 +28,4 @@ async-std.workspace = true
 bevy.workspace = true
 futures-lite.workspace = true
 thiserror.workspace = true
+tracing.workspace = true

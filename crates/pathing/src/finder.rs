@@ -1,7 +1,6 @@
 //! This module contains global map shortest path finder.
 
 use ahash::AHashMap;
-use bevy::prelude::{debug, info};
 use de_map::size::MapBounds;
 use de_types::path::Path;
 use parry2d::{
@@ -12,6 +11,7 @@ use parry2d::{
 };
 use rstar::{PointDistance, RTree, RTreeObject, AABB};
 use tinyvec::{ArrayVec, TinyVec};
+use tracing::{debug, info};
 
 use crate::{
     exclusion::ExclusionArea,

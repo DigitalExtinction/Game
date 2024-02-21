@@ -4,7 +4,7 @@ macro_rules! log_full_error {
         use std::error::Error;
         use std::fmt::Write;
 
-        use bevy::prelude::error;
+        use tracing::error;
 
         let mut error_message = format!("{}", $err);
         let mut error: &dyn Error = &$err;

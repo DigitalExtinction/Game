@@ -1,10 +1,10 @@
 use ahash::AHashMap;
 use anyhow::Context;
 use bevy::{
-    asset::{io::Reader, AssetLoader, AsyncReadExt, LoadContext, LoadedAsset},
+    asset::{io::Reader, AssetLoader, AsyncReadExt, LoadContext},
     ecs::system::SystemParam,
     prelude::*,
-    reflect::{TypePath, TypeUuid},
+    reflect::TypePath,
     utils::BoxedFuture,
 };
 use de_core::state::AppState;
@@ -135,7 +135,7 @@ impl AssetLoader for SolidObjectLoader {
         &'a self,
         reader: &'a mut Reader,
         _settings: &'a Self::Settings,
-        load_context: &'a mut LoadContext,
+        _load_context: &'a mut LoadContext,
     ) -> BoxedFuture<'a, anyhow::Result<Self::Asset>> {
         Box::pin(async move {
             let mut bytes = Vec::new();

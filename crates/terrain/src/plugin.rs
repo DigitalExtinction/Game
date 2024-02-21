@@ -1,11 +1,8 @@
 use bevy::{
-    asset::{AssetPath, LoadState},
+    asset::LoadState,
     pbr::ExtendedMaterial,
     prelude::*,
-    render::{
-        render_resource::{AddressMode, SamplerDescriptor},
-        texture::{ImageAddressMode, ImageSampler, ImageSamplerDescriptor},
-    },
+    render::texture::{ImageAddressMode, ImageSampler, ImageSamplerDescriptor},
 };
 use de_core::{gamestate::GameState, state::AppState};
 use iyes_progress::prelude::*;

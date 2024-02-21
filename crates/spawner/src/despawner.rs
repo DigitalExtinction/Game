@@ -311,7 +311,7 @@ mod tests {
         trace!("-----------------------------------");
 
         assert_eq!(
-            simple_events.get(&app.world).iter().next().unwrap().data,
+            simple_events.get(&app.world).read().next().unwrap().data,
             TestComponent { value: 1 }
         );
 
@@ -335,7 +335,7 @@ mod tests {
         trace!("-----------------------------------");
 
         assert_eq!(
-            complex_events.get(&app.world).iter().next().unwrap().data,
+            complex_events.get(&app.world).read().next().unwrap().data,
             ComplexComponent {
                 value: 2,
                 value2: ComplexStruct {

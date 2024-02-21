@@ -2524,6 +2524,7 @@ dependencies = [
  "de_types",
  "futures-lite 1.13.0",
  "iyes_progress",
+ "tracing",
 ]
 
 [[package]]
@@ -2624,6 +2625,7 @@ dependencies = [
  "de_types",
  "futures-lite 1.13.0",
  "thiserror",
+ "tracing",
 ]
 
 [[package]]
@@ -2731,6 +2733,7 @@ dependencies = [
  "rstar",
  "spade",
  "tinyvec",
+ "tracing",
 ]
 
 [[package]]

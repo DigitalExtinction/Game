@@ -2,7 +2,7 @@ use std::{hash::Hash, path::PathBuf};
 
 use ahash::AHashMap;
 use bevy::{
-    asset::{Asset, AssetPath, LoadState, RecursiveDependencyLoadState},
+    asset::{Asset, AssetPath, RecursiveDependencyLoadState},
     prelude::*,
 };
 use enum_iterator::Sequence;

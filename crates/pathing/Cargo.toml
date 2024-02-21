@@ -21,16 +21,17 @@ de_objects.workspace = true
 de_types.workspace = true
 
 # Other
-bevy.workspace = true
-glam.workspace = true
-parry2d.workspace = true
-nalgebra.workspace = true
 ahash.workspace = true
 approx.workspace = true
-rstar.workspace = true
-tinyvec.workspace = true
-spade.workspace = true
+bevy.workspace = true
 futures-lite.workspace = true
+glam.workspace = true
+nalgebra.workspace = true
+parry2d.workspace = true
+rstar.workspace = true
+spade.workspace = true
+tinyvec.workspace = true
+tracing.workspace = true
 
 [dev-dependencies]
 # DE

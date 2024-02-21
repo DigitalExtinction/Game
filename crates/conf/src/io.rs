@@ -1,6 +1,6 @@
 use anyhow::{Context, Result};
 use async_std::{fs, path::Path};
-use bevy::prelude::info;
+use tracing::info;
 
 /// Loads configuration file to a string. Returns Ok(None) if the configuration
 /// file does not exist.
