@@ -208,7 +208,6 @@ fn spawn_poles(
             .spawn((
                 transform,
                 GlobalTransform::from(transform),
-                // TODO test this
                 VisibilityBundle::default(),
                 DespawnOnGameExit,
                 scene.clone(),
