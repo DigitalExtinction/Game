@@ -114,6 +114,6 @@ mod tests {
         let battery = app.world.get::<Battery>(entity).unwrap();
         println!("battery: {:?}", battery);
 
-        assert!(battery.energy() == DEFAULT_CAPACITY - DISCHARGE_RATE);
+        assert_eq!(battery.energy(), DEFAULT_CAPACITY - DISCHARGE_RATE);
     }
 }
