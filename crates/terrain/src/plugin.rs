@@ -64,7 +64,8 @@ fn setup_textures(
             LoadState::Failed => panic!("Texture loading has failed."),
             LoadState::Loaded => {
                 // Ideally, this setup would happen in some kind of asset post
-                // processing. This is however not yet supported by Bevy.
+                // processing. This was not supported by Bevy at the time of
+                // implementation.
                 //
                 // https://github.com/bevyengine/bevy/discussions/3972
                 let image = images.get_mut(&textures.0).unwrap();
@@ -77,8 +78,7 @@ fn setup_textures(
                 true.into()
             }
         },
-        // TODO: Is this correct?
-        None => false.into(),
+        None => panic!("Terrain texture asset unknown."),
     }
 }
 
