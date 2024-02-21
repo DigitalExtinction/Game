@@ -3,10 +3,7 @@ use std::f32::consts::PI;
 use bevy::{
     ecs::system::SystemParam,
     prelude::*,
-    render::{
-        camera::Projection,
-        primitives::{Frustum, HalfSpace},
-    },
+    render::primitives::{Frustum, HalfSpace},
 };
 use de_core::screengeom::ScreenRect;
 
