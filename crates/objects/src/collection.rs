@@ -51,9 +51,11 @@ where
 
     /// Returns progress of the loading.
     ///
+    /// It shall not be called before [`Self::init`].
+    ///
     /// # Panics
     ///
-    /// Panics if loading any of the assets is either failed or unloaded.
+    /// Panics if loading any of the assets is either failed or unknown.
     fn progress(&self, server: &AssetServer) -> Progress {
         enum_iterator::all::<Self::Key>()
             .map(
@@ -64,8 +66,12 @@ where
                         RecursiveDependencyLoadState::Loading => false.into(),
                         RecursiveDependencyLoadState::Loaded => true.into(),
                     },
-                    // TODO is this correct?
-                    None => false.into(),
+                    None => panic!(
+                        "Unknown asset: {}/{}.{}",
+                        Self::DIRECTORY,
+                        key.stem(),
+                        Self::SUFFIX
+                    ),
                 },
             )
             .reduce(|a, b| a + b)
