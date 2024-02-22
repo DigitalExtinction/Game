@@ -27,16 +27,24 @@ can be encoded within three bytes, after which the counter resets to 0. The ID
 sequence for reliable and unreliable packages are independent. Each connection
 / client has independent reliable package numbering.
 
-Packages can be transmitted in either reliable or non-reliable mode.
-Reliability is signaled by the second highest bit of the flags byte
-(represented by the mask `0b0100_0000`). Packages sent in reliable mode always
-receive confirmation from the receiving party and are retransmitted multiple
-times, with the time delay exponentially increasing until a confirmation is
-obtained. Reliably sent packages are automatically deduplicated.
+Packages can be transmitted in several reliability modes, as listed below. The
+second and third bits (represented by the mask `0b0110_0000`) of the flags byte
+control the reliability.
 
-Packages can be targeted to the server. This is signaled by the third highest
-bit of the flags byte (represented by the mask `0b0010_0000`). All other
-packages are targeted to all other players who joined the same game.
+* Unreliable (bits `00`) – these packages may be lost, delivered multiple
+  times, or delivered out of order with respect to other packages.
+* Unordered (bits `01`) – non-duplicate delivery of these packages is
+  guaranteed. However, there are no guarantees regarding the ordering of these
+  packages with respect to other packages.
+* Semi-ordered (bits `10`) – non-duplicate delivery of these packages is
+  guaranteed. Additionally, the packages are guaranteed to be delivered after
+  all previously reliably sent packages, that is, all unordered and
+  semi-ordered packages sent by the same client before a semi-ordered package
+  are always delivered before the semi-ordered package.
+
+Packages can be targeted to the server, as opposed to all other game
+participants. This is indicated by the fourth highest bit of the flags byte
+(represented by the mask `0b0001_0000`).
 
 Package payload comprises the user data intended for delivery.
 
