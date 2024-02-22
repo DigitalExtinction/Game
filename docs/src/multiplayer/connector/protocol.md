@@ -48,6 +48,16 @@ participants. This is indicated by the fourth highest bit of the flags byte
 
 Package payload comprises the user data intended for delivery.
 
+### Examples
+
+The datagram carrying a semi-reliable package with ID 107907,
+targeted to the server and containing the payload bytes `0x12 0x34 0x56`, would
+look like this: `0x50 0x01 0xA5 0x83 0x12 0x34 0x56`.
+
+1. `0x50` (`0b0101_0000`) – flags: semi-reliable, server targeted
+1. `0x01 0xA5 0x83` – package ID: 107,907
+1. `0x12 0x34 0x56` – package payload
+
 ## Protocol Control
 
 Currently, the only type of control datagram is the delivery confirmation
@@ -55,3 +65,15 @@ datagram. All bits in the header of these datagrams, except for the first one,
 are set to 0. The payload consists of IDs for all user data datagrams that have
 been sent reliably and delivered successfully. Each ID is encoded using 3
 bytes.
+
+### Examples
+
+A datagram confirming three packages with IDs 1238, 17, and 2443, respectively,
+would look like this: `0x80 0x00 0x00 0x00 0x00 0x04 0xD6 0x00 0x00 0x11 0x00
+0x09 0x8B`.
+
+1. `0x80` (`0b1000_0000`) – protocol control flag
+1. `0x00 0x00 0x00` – always zeros
+1. `0x00 0x04 0xD6` – first confirmed package ID equal to 1238
+1. `0x00 0x00 0x11` – second confirmed package ID equal to 17
+1. `0x00 0x09 0x8B` – third confirmed package ID equal to 2443
