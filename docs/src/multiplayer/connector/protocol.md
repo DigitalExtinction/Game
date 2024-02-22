@@ -27,24 +27,24 @@ can be encoded within three bytes, after which the counter resets to 0. The ID
 sequence for reliable and unreliable packages are independent. Each connection
 / client has independent reliable package numbering.
 
-Packages can be transmitted in several reliability modes as listed below. The
-second and the third bit (represented by the mask `0b0110_0000`) of the flags
-byte control the reliability.
+Packages can be transmitted in several reliability modes, as listed below. The
+second and third bits (represented by the mask `0b0110_0000`) of the flags byte
+control the reliability.
 
-* Unreliable (bits `00`) – these packages may be lost, delivered multiple times
-  or delivered out of order with respect to other packages.
+* Unreliable (bits `00`) – these packages may be lost, delivered multiple
+  times, or delivered out of order with respect to other packages.
 * Unordered (bits `01`) – non-duplicate delivery of these packages is
-  guaranteed. There are not guarantees on ordering of these packages with
-  respect to other packages.
+  guaranteed. However, there are no guarantees regarding the ordering of these
+  packages with respect to other packages.
 * Semi-ordered (bits `10`) – non-duplicate delivery of these packages is
-  guaranteed. The packages are also guaranteed to be delivered after all
-  previously reliably sent packages (id est all unordered and semi-ordered
-  packages sent by the same client before a semi-ordered package are always
-  delivered before the semi-ordered package).
+  guaranteed. Additionally, the packages are guaranteed to be delivered after
+  all previously reliably sent packages, that is, all unordered and
+  semi-ordered packages sent by the same client before a semi-ordered package
+  are always delivered before the semi-ordered package.
 
-Packages can be targeted to the server. This is signaled by the fourth highest
-bit of the flags byte (represented by the mask `0b0001_0000`). All other
-packages are targeted to all other players who joined the same game.
+Packages can be targeted to the server, as opposed to all other game
+participants. This is indicated by the fourth highest bit of the flags byte
+(represented by the mask `0b0001_0000`).
 
 Package payload comprises the user data intended for delivery.
 
