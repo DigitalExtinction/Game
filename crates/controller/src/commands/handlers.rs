@@ -164,7 +164,9 @@ fn right_click_handler(
             .map(|&player| !config.locals().is_playable(*player))
             .unwrap_or(false)
     }) {
-        Some(enemy) => attack_events.send(GroupAttackEvent::new(enemy)),
+        Some(enemy) => {
+            attack_events.send(GroupAttackEvent::new(enemy));
+        }
         None => {
             let Some(target) = pointer.terrain_point().map(|p| p.to_flat()) else {
                 return;
@@ -416,6 +418,6 @@ fn update_drags(
             }
         };
 
-        ui_events.send(ui_event)
+        ui_events.send(ui_event);
     }
 }

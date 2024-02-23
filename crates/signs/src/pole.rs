@@ -183,8 +183,12 @@ fn update_poles(
     for location in &desired {
         if !poles.0.contains_key(location) {
             match to_despawn.pop() {
-                Some(old) => move_events.send(MovePoleEvent(old, location.0)),
-                None => spawn_events.send(SpawnPoleEvent(location.0)),
+                Some(old) => {
+                    move_events.send(MovePoleEvent(old, location.0));
+                }
+                None => {
+                    spawn_events.send(SpawnPoleEvent(location.0));
+                }
             }
         }
     }

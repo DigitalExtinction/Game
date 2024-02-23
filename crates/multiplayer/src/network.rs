@@ -176,7 +176,9 @@ fn recv_packages(
 ) {
     for _ in 0..MAX_RECV_PER_UPDATE {
         match receiver.try_recv() {
-            Ok(package) => events.send(PackageReceivedEvent(package)),
+            Ok(package) => {
+                events.send(PackageReceivedEvent(package));
+            }
             Err(TryRecvError::Empty) => return,
             Err(TryRecvError::Closed) => {
                 fatals.send(FatalErrorEvent::new(

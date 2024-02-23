@@ -198,8 +198,12 @@ fn button_system(
     for (&interaction, &action) in interactions.iter() {
         if let Interaction::Pressed = interaction {
             match action {
-                ButtonAction::SelectMap => map_events.send(SelectMapEvent),
-                ButtonAction::Create => create_events.send(CreateGameEvent),
+                ButtonAction::SelectMap => {
+                    map_events.send(SelectMapEvent);
+                }
+                ButtonAction::Create => {
+                    create_events.send(CreateGameEvent);
+                }
             }
         }
     }

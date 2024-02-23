@@ -116,7 +116,9 @@ fn button_system(
                         toasts.send(ToastEvent::new("No map selected."));
                     }
                 },
-                ButtonAction::SelectMap => map_events.send(SelectMapEvent),
+                ButtonAction::SelectMap => {
+                    map_events.send(SelectMapEvent);
+                }
             };
         }
     }
