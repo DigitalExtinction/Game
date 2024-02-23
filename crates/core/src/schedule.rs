@@ -7,6 +7,14 @@ pub struct GameSchedulesPlugin;
 impl Plugin for GameSchedulesPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(Startup, setup);
+
+        // TODO shouldn't this be done on each child schedule?
+        // app.edit_schedule(Main, |schedule| {
+        //     schedule.set_build_settings(ScheduleBuildSettings {
+        //         auto_insert_apply_deferred: false,
+        //         ..default()
+        //     });
+        // });
     }
 }
 
