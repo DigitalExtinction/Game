@@ -89,7 +89,7 @@ pub(super) struct UiFocus {
 fn focus_system(
     mut focus: ResMut<UiFocus>,
     mut removals: RemovedComponents<Interaction>,
-    mouse: Res<Input<MouseButton>>,
+    mouse: Res<ButtonInput<MouseButton>>,
     touch: Res<Touches>,
     interactions: Query<(Entity, &Interaction), Changed<Interaction>>,
     mut events: EventReader<SetFocusEvent>,

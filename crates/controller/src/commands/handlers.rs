@@ -176,7 +176,7 @@ fn right_click_handler(
 }
 
 fn double_click_handler(
-    keys: Res<Input<KeyCode>>,
+    keys: Res<ButtonInput<KeyCode>>,
     pointer: Res<Pointer>,
     playable: Query<&ObjectTypeComponent, With<Playable>>,
     drafts: Query<(), With<DraftAllowed>>,
@@ -287,8 +287,8 @@ fn zoom_camera(
 
 fn pivot_camera(
     conf: Res<Configuration>,
-    buttons: Res<Input<MouseButton>>,
-    keys: Res<Input<KeyCode>>,
+    buttons: Res<ButtonInput<MouseButton>>,
+    keys: Res<ButtonInput<KeyCode>>,
     mut mouse_event: EventReader<MouseMotion>,
     mut rotate_event: EventWriter<RotateCameraEvent>,
     mut tilt_event: EventWriter<TiltCameraEvent>,
@@ -310,7 +310,7 @@ fn pivot_camera(
 fn left_click_handler(
     mut select_events: EventWriter<SelectEvent>,
     mut draft_events: EventWriter<SpawnDraftsEvent>,
-    keys: Res<Input<KeyCode>>,
+    keys: Res<ButtonInput<KeyCode>>,
     pointer: Res<Pointer>,
     playable: Query<(), With<Playable>>,
     drafts: Query<(), With<DraftAllowed>>,
@@ -385,7 +385,7 @@ fn select_all_visible(mut events: EventWriter<SelectInRectEvent>) {
 }
 
 fn update_drags(
-    keys: Res<Input<KeyCode>>,
+    keys: Res<ButtonInput<KeyCode>>,
     mut drag_events: EventReader<MouseDraggedEvent>,
     mut ui_events: EventWriter<UpdateSelectionBoxEvent>,
     mut select_events: EventWriter<SelectInRectEvent>,

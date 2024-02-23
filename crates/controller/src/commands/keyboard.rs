@@ -33,8 +33,10 @@ impl KeyCondition {
         self
     }
 
-    pub(super) fn build(self) -> impl Fn(Res<Input<KeyCode>>, EventReader<KeyboardInput>) -> bool {
-        move |keys: Res<Input<KeyCode>>, mut events: EventReader<KeyboardInput>| {
+    pub(super) fn build(
+        self,
+    ) -> impl Fn(Res<ButtonInput<KeyCode>>, EventReader<KeyboardInput>) -> bool {
+        move |keys: Res<ButtonInput<KeyCode>>, mut events: EventReader<KeyboardInput>| {
             let proper_key = events
                 .read()
                 .filter(|k| {
