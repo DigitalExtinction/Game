@@ -16,8 +16,8 @@ impl Plugin for MenuPlugin {
                 Update,
                 (
                     hide_show_corner
-                        .run_if(resource_exists::<Menu>())
-                        .run_if(resource_changed::<State<MenuState>>()),
+                        .run_if(resource_exists::<Menu>)
+                        .run_if(resource_changed::<State<MenuState>>),
                     button_system.run_if(in_state(AppState::InMenu)),
                 ),
             );
@@ -35,7 +35,7 @@ impl<S: States> Plugin for ScreenStatePlugin<S> {
     fn build(&self, app: &mut App) {
         app.add_systems(
             PreUpdate,
-            clean_up_root::<S>.run_if(resource_exists::<Menu>()),
+            clean_up_root::<S>.run_if(resource_exists::<Menu>),
         );
     }
 }

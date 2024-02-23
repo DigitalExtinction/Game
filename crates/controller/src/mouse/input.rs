@@ -27,7 +27,7 @@ impl Plugin for InputPlugin {
                 (
                     update_position.in_set(MouseSet::Position),
                     update_drags
-                        .run_if(resource_exists_and_changed::<MousePosition>())
+                        .run_if(resource_exists_and_changed::<MousePosition>)
                         .in_set(MouseSet::Drags)
                         .after(MouseSet::Position),
                     update_buttons

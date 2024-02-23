@@ -28,24 +28,24 @@ impl Plugin for NetworkPlugin {
                 Update,
                 wait_for_network
                     .track_progress()
-                    .run_if(resource_exists::<NetworkStartup>()),
+                    .run_if(resource_exists::<NetworkStartup>),
             )
             .add_systems(
                 PostUpdate,
                 (
                     send_packages
-                        .run_if(resource_exists::<Sender>())
+                        .run_if(resource_exists::<Sender>)
                         .run_if(on_event::<SendPackageEvent>())
                         .in_set(NetworkSet::SendPackages),
                     recv_errors
-                        .run_if(resource_exists::<Errors>())
+                        .run_if(resource_exists::<Errors>)
                         .in_set(NetworkSet::RecvErrors),
                 ),
             )
             .add_systems(
                 PreMovement,
                 recv_packages
-                    .run_if(resource_exists::<Receiver>())
+                    .run_if(resource_exists::<Receiver>)
                     .in_set(NetworkSet::RecvPackages),
             );
     }

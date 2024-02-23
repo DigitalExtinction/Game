@@ -87,11 +87,11 @@ impl Plugin for CameraPlugin {
                     zoom.in_set(InternalCameraSet::Zoom),
                     update_shadows
                         .after(InternalCameraSet::Zoom)
-                        .run_if(resource_exists_and_changed::<CameraFocus>()),
+                        .run_if(resource_exists_and_changed::<CameraFocus>),
                     pivot
                         .run_if(
-                            resource_exists_and_changed::<DesiredOffNadir>()
-                                .or_else(resource_exists_and_changed::<DesiredAzimuth>()),
+                            resource_exists_and_changed::<DesiredOffNadir>
+                                .or_else(resource_exists_and_changed::<DesiredAzimuth>),
                         )
                         .in_set(InternalCameraSet::Pivot),
                     move_horizontaly

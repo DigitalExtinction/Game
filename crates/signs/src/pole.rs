@@ -26,7 +26,7 @@ impl Plugin for PolePlugin {
                         .in_set(PolesSet::Despawned)
                         .after(PolesSet::LocationEvents),
                     update_poles
-                        .run_if(resource_exists_and_changed::<OwnersToPoles>())
+                        .run_if(resource_exists_and_changed::<OwnersToPoles>)
                         .after(PolesSet::LocationEvents)
                         .after(PolesSet::VisibilityEvents)
                         .after(PolesSet::Despawned)
