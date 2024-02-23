@@ -213,18 +213,14 @@ fn move_camera_arrows_system(
     mut move_events: EventWriter<MoveCameraHorizontallyEvent>,
 ) {
     for key_event in key_events.read() {
-        let Some(key_code) = key_event.key_code else {
-            continue;
-        };
-
         let mut direction = Vec2::ZERO;
-        if key_code == KeyCode::ArrowLeft {
+        if key_event.key_code == KeyCode::ArrowLeft {
             direction = Vec2::new(-1., 0.);
-        } else if key_code == KeyCode::ArrowRight {
+        } else if key_event.key_code == KeyCode::ArrowRight {
             direction = Vec2::new(1., 0.);
-        } else if key_code == KeyCode::ArrowDown {
+        } else if key_event.key_code == KeyCode::ArrowDown {
             direction = Vec2::new(0., -1.);
-        } else if key_code == KeyCode::ArrowUp {
+        } else if key_event.key_code == KeyCode::ArrowUp {
             direction = Vec2::new(0., 1.);
         }
 
