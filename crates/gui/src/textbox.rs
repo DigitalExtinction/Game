@@ -55,8 +55,7 @@ impl<'w, 's> TextBoxCommands<'w, 's> for GuiCommands<'w, 's> {
             .insert(TextBox::new(secret))
             .with_children(|builder| {
                 builder.spawn(
-                    TextBundle::from_section("", text_style)
-                        .with_text_alignment(TextAlignment::Left),
+                    TextBundle::from_section("", text_style).with_text_justify(JustifyText::Left),
                 );
             });
 
