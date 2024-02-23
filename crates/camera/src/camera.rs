@@ -370,9 +370,10 @@ fn update_focus(
     camera_query: Query<&Transform, With<Camera3d>>,
 ) {
     let camera_transform = camera_query.single();
+    let forward = camera_transform.forward();
     let ray = Ray::new(
         camera_transform.translation.into(),
-        camera_transform.forward().into(),
+        Vector::new(forward.x, forward.y, forward.z),
     );
 
     let intersection = terrain
