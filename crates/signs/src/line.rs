@@ -143,7 +143,7 @@ fn setup(
 ) {
     commands.init_resource::<LineEntities>();
     commands.init_resource::<LineLocations>();
-    let line_mesh = meshes.add(shape::Plane::from_size(1.0));
+    let line_mesh = meshes.add(Plane3d::default());
     let line_material = materials.add(LineMaterial {});
     commands.insert_resource(LineMesh(line_mesh, line_material));
 }
