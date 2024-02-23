@@ -141,7 +141,7 @@ fn spawn_map(
 fn setup_light(commands: &mut Commands) {
     commands.insert_resource(AmbientLight {
         color: Color::WHITE,
-        brightness: 0.6,
+        brightness: 180.,
     });
 
     let mut transform = Transform::IDENTITY;
@@ -151,7 +151,7 @@ fn setup_light(commands: &mut Commands) {
         DirectionalLightBundle {
             directional_light: DirectionalLight {
                 color: Color::WHITE,
-                illuminance: 30000.,
+                illuminance: 10_000.,
                 shadows_enabled: true,
                 ..Default::default()
             },
