@@ -53,7 +53,7 @@ impl<'w, 's> ScreenFrustum<'w, 's> {
             half_spaces[i] = HalfSpace::new(norm.extend(-transform.translation.dot(norm)));
         }
 
-        let forward = transform.forward();
+        let forward = Vec3::from(transform.forward());
         let near_dist = -forward.dot(transform.translation + projection.near * forward);
         let far_dist = -forward.dot(transform.translation + projection.far * forward);
         half_spaces[4] = HalfSpace::new(forward.extend(near_dist));

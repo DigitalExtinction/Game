@@ -409,7 +409,8 @@ fn update_translation_handler(
     mut camera_query: Query<&mut Transform, With<Camera3d>>,
 ) {
     let mut transform = camera_query.single_mut();
-    transform.translation = focus.point() + f32::from(focus.distance()) * transform.back();
+    let back = Vec3::from(transform.back());
+    transform.translation = focus.point() + f32::from(focus.distance()) * back;
 }
 
 fn move_horizontaly(
@@ -476,7 +477,7 @@ fn zoom(
     }
 
     let mut transform = camera_query.single_mut();
-    let delta_vec = f32::from(delta_scalar) * transform.forward();
+    let delta_vec = f32::from(delta_scalar) * Vec3::from(transform.forward());
     transform.translation += delta_vec;
     focus.update_distance(delta_scalar);
 }
@@ -509,7 +510,8 @@ fn pivot(
         (desired_off_nadir.off_nadir() - Radian::FRAC_PI_2).into(),
         0.,
     );
-    transform.translation = focus.point() - f32::from(focus.distance()) * transform.forward();
+    let forward = Vec3::from(transform.forward());
+    transform.translation = focus.point() - f32::from(focus.distance()) * forward;
 }
 
 fn handle_horizontal_events(
