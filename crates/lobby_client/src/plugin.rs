@@ -3,8 +3,7 @@ use std::marker::PhantomData;
 use ahash::AHashMap;
 pub use anyhow::Result;
 use bevy::prelude::*;
-use bevy::tasks::Task;
-use futures_lite::future;
+use bevy::tasks::{futures_lite::future, Task};
 
 use crate::{
     client::AuthenticatedClient,

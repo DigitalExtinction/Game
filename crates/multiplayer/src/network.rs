@@ -3,13 +3,12 @@ use std::ops::Deref;
 use async_std::channel::{TryRecvError, TrySendError};
 use bevy::{
     prelude::*,
-    tasks::{IoTaskPool, Task},
+    tasks::{futures_lite::future, IoTaskPool, Task},
 };
 use de_core::schedule::PreMovement;
 use de_net::{
     startup, ConnErrorReceiver, InPackage, OutPackage, PackageReceiver, PackageSender, Socket,
 };
-use futures_lite::future;
 use iyes_progress::prelude::*;
 
 use crate::{lifecycle::FatalErrorEvent, netstate::NetState};

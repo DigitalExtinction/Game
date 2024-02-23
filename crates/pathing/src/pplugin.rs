@@ -1,7 +1,7 @@
 use ahash::AHashMap;
 use bevy::{
     prelude::*,
-    tasks::{AsyncComputeTaskPool, Task},
+    tasks::{futures_lite::future, AsyncComputeTaskPool, Task},
 };
 use de_core::{
     gamestate::GameState,
@@ -10,7 +10,6 @@ use de_core::{
     state::AppState,
 };
 use de_types::{path::Path, projection::ToFlat};
-use futures_lite::future;
 
 use crate::{
     fplugin::{FinderRes, FinderSet, PathFinderUpdatedEvent},

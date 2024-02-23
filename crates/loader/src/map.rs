@@ -1,6 +1,6 @@
 use bevy::{
     prelude::*,
-    tasks::{IoTaskPool, Task},
+    tasks::{futures_lite::future, IoTaskPool, Task},
 };
 use de_camera::MoveFocusEvent;
 use de_core::{
@@ -16,7 +16,6 @@ use de_map::{
 use de_spawner::{SpawnInactiveEvent, SpawnLocalActiveEvent, SpawnerSet};
 use de_terrain::TerrainBundle;
 use de_types::objects::{ActiveObjectType, BuildingType};
-use futures_lite::future;
 use iyes_progress::prelude::*;
 
 pub(crate) struct MapLoaderPlugin;

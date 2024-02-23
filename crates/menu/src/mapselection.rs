@@ -3,7 +3,7 @@ use std::path::{Path, PathBuf};
 use async_std::{fs, io, stream::StreamExt};
 use bevy::{
     prelude::*,
-    tasks::{IoTaskPool, Task},
+    tasks::{futures_lite::future, IoTaskPool, Task},
 };
 use de_core::{assets::asset_path, log_full_error, state::AppState};
 use de_gui::{ButtonCommands, GuiCommands, OuterStyle};
@@ -11,7 +11,6 @@ use de_map::{
     io::{load_metadata, MapLoadingError, MAP_FILE_SUFFIX},
     meta::MapMetadata,
 };
-use futures_lite::future;
 use thiserror::Error;
 
 pub(crate) struct MapSelectionPlugin;

@@ -22,7 +22,6 @@ ahash.workspace = true
 anyhow.workspace = true
 async-compat.workspace = true
 bevy.workspace = true
-futures-lite.workspace = true
 iyes_progress.workspace = true
 reqwest.workspace = true
 serde.workspace = true

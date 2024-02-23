@@ -2440,7 +2440,6 @@ dependencies = [
  "de_gui",
  "de_uom",
  "dirs",
- "futures-lite 2.2.0",
  "iyes_progress",
  "paste",
  "serde",
@@ -2610,7 +2609,6 @@ dependencies = [
  "de_spawner",
  "de_terrain",
  "de_types",
- "futures-lite 2.2.0",
  "iyes_progress",
  "tracing",
 ]
@@ -2648,7 +2646,6 @@ dependencies = [
  "de_conf",
  "de_core",
  "de_lobby_model",
- "futures-lite 2.2.0",
  "iyes_progress",
  "reqwest",
  "serde",
@@ -2711,7 +2708,6 @@ dependencies = [
  "de_messages",
  "de_multiplayer",
  "de_types",
- "futures-lite 2.2.0",
  "thiserror",
  "tracing",
 ]
@@ -2760,7 +2756,6 @@ dependencies = [
  "de_messages",
  "de_net",
  "de_types",
- "futures-lite 2.2.0",
  "iyes_progress",
  "tracing",
 ]
@@ -2813,7 +2808,6 @@ dependencies = [
  "de_objects",
  "de_test_utils",
  "de_types",
- "futures-lite 2.2.0",
  "glam",
  "nalgebra",
  "ntest",

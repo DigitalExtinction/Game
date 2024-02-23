@@ -2,7 +2,7 @@ use std::{ops::Deref, sync::Arc};
 
 use bevy::{
     prelude::*,
-    tasks::{AsyncComputeTaskPool, Task},
+    tasks::{futures_lite::future, AsyncComputeTaskPool, Task},
 };
 use de_core::{
     gamestate::GameState,
@@ -12,7 +12,6 @@ use de_core::{
 };
 use de_map::size::MapBounds;
 use de_objects::SolidObjects;
-use futures_lite::future;
 
 use crate::{exclusion::ExclusionArea, finder::PathFinder, triangulation::triangulate};
 
