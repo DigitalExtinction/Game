@@ -117,7 +117,7 @@ fn kinematics(
 
     objects
         .par_iter_mut()
-        .for_each_mut(|(movement, climbing, mut kinematics, mut velocity)| {
+        .for_each(|(movement, climbing, mut kinematics, mut velocity)| {
             let desired_h_velocity = movement.velocity();
             let desired_heading = if desired_h_velocity == Vec2::ZERO {
                 kinematics.heading()

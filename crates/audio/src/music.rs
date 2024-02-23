@@ -29,8 +29,8 @@ fn setup(mut commands: Commands, server: Res<AssetServer>) {
 
 fn load(server: Res<AssetServer>, tracks: Res<Tracks>) -> Progress {
     match server.get_load_state(&tracks.0) {
-        LoadState::Loaded => true.into(),
-        LoadState::NotLoaded | LoadState::Loading => false.into(),
+        Some(LoadState::Loaded) => true.into(),
+        Some(LoadState::NotLoaded) | Some(LoadState::Loading) => false.into(),
         _ => panic!("Unexpected loading state."),
     }
 }

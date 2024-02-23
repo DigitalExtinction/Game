@@ -158,13 +158,13 @@ fn input_system(
 
     // FIXME: Fix ordering of multiple event streams once
     // https://github.com/bevyengine/bevy/issues/5984 is fixed.
-    for event in characters.iter() {
+    for event in characters.read() {
         if !event.char.is_control() {
             text_box.push(event.char);
         }
     }
 
-    for event in keyboard.iter() {
+    for event in keyboard.read() {
         if event.state != ButtonState::Pressed {
             continue;
         }

@@ -114,7 +114,7 @@ fn fire<T: LobbyRequestCreator>(
     mut requests: EventReader<RequestEvent<T>>,
     mut responses: EventWriter<ResponseEvent<T>>,
 ) {
-    for event in requests.iter() {
+    for event in requests.read() {
         let result = client.fire(event.request());
 
         match result {

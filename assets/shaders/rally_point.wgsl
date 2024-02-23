@@ -1,6 +1,8 @@
-#import bevy_pbr::mesh_view_bindings  globals
-#import bevy_pbr::mesh_bindings       mesh
-#import bevy_pbr::mesh_vertex_output  MeshVertexOutput
+#import bevy_pbr::{
+    forward_io::VertexOutput,
+    mesh_bindings::mesh,
+    mesh_view_bindings::globals,
+}
 
 struct CustomMaterial {
     color: vec4<f32>,
@@ -23,9 +25,10 @@ const FADE: f32 = 3.;
 
 @fragment
 fn fragment(
-    in: MeshVertexOutput,
+    in: VertexOutput,
 ) -> @location(0) vec4<f32> {
-    let world_space_length: f32 = length(mesh.model[0].xyz);
+    let model = mesh[in.instance_index].model;
+    let world_space_length: f32 = length(vec3(model[0][0], model[1][0], model[2][0]));
     let scaled_x: f32 = in.uv.x * world_space_length;
     let offset_y: f32 = abs(in.uv.y - 0.5) * POINTINESS;
     let scaled_time: f32 = globals.time * SPEED;

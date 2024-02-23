@@ -78,7 +78,7 @@ fn receive_transforms(
     mut entities: Query<&mut Transform>,
     mut events: EventReader<NetRecvTransformEvent>,
 ) {
-    for event in events.iter() {
+    for event in events.read() {
         if let Ok(mut transform) = entities.get_mut(event.entity()) {
             *transform = event.transform();
         }

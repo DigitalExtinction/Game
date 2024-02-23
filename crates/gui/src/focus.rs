@@ -97,7 +97,7 @@ fn focus_system(
     let mut current = focus.current;
 
     if let Some(current_entity) = current {
-        if removals.iter().any(|e| e == current_entity) {
+        if removals.read().any(|e| e == current_entity) {
             current = None;
         }
     }
@@ -112,7 +112,7 @@ fn focus_system(
         }
     }
 
-    if let Some(event) = events.iter().last() {
+    if let Some(event) = events.read().last() {
         current = event.0;
     }
 
@@ -123,7 +123,7 @@ fn focus_system(
     }
 
     if let Some(previous_entity) = focus.previous {
-        if removals.iter().any(|e| e == previous_entity) {
+        if removals.read().any(|e| e == previous_entity) {
             focus.previous = None;
         }
     }

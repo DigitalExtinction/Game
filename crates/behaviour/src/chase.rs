@@ -114,7 +114,7 @@ impl ChaseTarget {
 }
 
 fn handle_chase_events(mut commands: Commands, mut events: EventReader<ChaseTargetEvent>) {
-    for event in events.iter() {
+    for event in events.read() {
         let mut entity_commands = commands.entity(event.entity());
         match event.target() {
             Some(target) => entity_commands.insert(ChaseTargetComponent::new(target.clone())),

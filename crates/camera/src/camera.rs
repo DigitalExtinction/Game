@@ -1,7 +1,6 @@
 use std::f32::consts::FRAC_PI_2;
 
 use bevy::{
-    ecs::query::Has,
     pbr::{CascadeShadowConfig, CascadeShadowConfigBuilder, DirectionalLightShadowMap},
     prelude::*,
 };
@@ -391,7 +390,7 @@ fn process_move_focus_events(
     terrain: TerrainCollider,
     mut out_events: EventWriter<UpdateTranslationEvent>,
 ) {
-    let event = match in_events.iter().last() {
+    let event = match in_events.read().last() {
         Some(event) => event,
         None => return,
     };
@@ -516,7 +515,7 @@ fn handle_horizontal_events(
     mut movement: ResMut<HorizontalMovement>,
     mut events: EventReader<MoveCameraHorizontallyEvent>,
 ) {
-    if let Some(event) = events.iter().last() {
+    if let Some(event) = events.read().last() {
         movement.set(event.direction());
     }
 }
@@ -526,7 +525,7 @@ fn handle_zoom_events(
     mut events: EventReader<ZoomCameraEvent>,
     mut desired: ResMut<DesiredDistance>,
 ) {
-    for event in events.iter() {
+    for event in events.read() {
         desired.zoom_clamped(conf.camera(), event.factor());
     }
 }
@@ -535,7 +534,7 @@ fn handle_tilt_events(
     mut events: EventReader<TiltCameraEvent>,
     mut desired: ResMut<DesiredOffNadir>,
 ) {
-    for event in events.iter() {
+    for event in events.read() {
         desired.tilt_clamped(Radian::ONE * event.delta());
     }
 }
@@ -544,7 +543,7 @@ fn handle_rotate_events(
     mut events: EventReader<RotateCameraEvent>,
     mut desired: ResMut<DesiredAzimuth>,
 ) {
-    for event in events.iter() {
+    for event in events.read() {
         desired.rotate(Radian::ONE * event.delta());
     }
 }

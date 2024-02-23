@@ -14,6 +14,8 @@ use parry3d::{
     shape::HeightField,
 };
 
+use crate::shader::UV_SCALE;
+
 #[derive(Bundle)]
 pub struct TerrainBundle {
     transform: Transform,
@@ -76,7 +78,10 @@ impl Terrain {
                         let world = Vec2::new(point.x, point.z).to_msl();
                         positions.push([world.x, point.y, world.z]);
                         normals.push([0., 1., 0.]);
-                        uvs.push([point.x + translation.x, point.z + translation.y]);
+                        uvs.push([
+                            (point.x + translation.x) / UV_SCALE,
+                            (point.z + translation.y) / UV_SCALE,
+                        ]);
                     }
                 }
             }

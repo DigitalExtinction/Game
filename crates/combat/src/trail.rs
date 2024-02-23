@@ -3,7 +3,7 @@ use std::time::Duration;
 use bevy::{
     pbr::{MaterialPipeline, MaterialPipelineKey, NotShadowCaster, NotShadowReceiver},
     prelude::*,
-    reflect::{TypePath, TypeUuid},
+    reflect::TypePath,
     render::{
         mesh::{Indices, MeshVertexBufferLayout, PrimitiveTopology},
         render_resource::{
@@ -87,8 +87,7 @@ impl Trail {
     }
 }
 
-#[derive(AsBindGroup, TypeUuid, TypePath, Debug, Clone)]
-#[uuid = "560ab431-1a54-48b3-87ea-8de8d94ceafb"]
+#[derive(Asset, AsBindGroup, TypePath, Debug, Clone)]
 struct TrailMaterial {
     #[uniform(0)]
     start_time: f32,
@@ -129,7 +128,7 @@ fn local_laser_trail(
     mut out_events: EventWriter<LaserTrailEvent>,
     mut net_events: EventWriter<ToPlayersEvent>,
 ) {
-    for event in in_events.iter() {
+    for event in in_events.read() {
         out_events.send(LaserTrailEvent(event.0));
 
         if config.multiplayer() {
@@ -147,7 +146,7 @@ fn remote_laser_trail(
     mut in_events: EventReader<NetRecvProjectileEvent>,
     mut out_events: EventWriter<LaserTrailEvent>,
 ) {
-    for event in in_events.iter() {
+    for event in in_events.read() {
         match **event {
             NetProjectile::Laser { origin, direction } => {
                 out_events.send(LaserTrailEvent(Ray::new(origin.into(), direction.into())));
@@ -163,7 +162,7 @@ fn laser_trail(
     mesh: Res<MeshHandle>,
     mut events: EventReader<LaserTrailEvent>,
 ) {
-    for event in events.iter() {
+    for event in events.read() {
         let material = materials.add(TrailMaterial::new(time.elapsed_seconds_wrapped()));
 
         commands.spawn((
@@ -189,7 +188,7 @@ fn laser_sound(
     mut events: EventReader<LaserTrailEvent>,
     mut sound_events: EventWriter<PlaySpatialAudioEvent>,
 ) {
-    for event in events.iter() {
+    for event in events.read() {
         sound_events.send(PlaySpatialAudioEvent::new(
             Sound::LaserFire,
             event.0.origin.into(),

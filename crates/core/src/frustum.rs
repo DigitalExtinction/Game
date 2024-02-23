@@ -23,12 +23,11 @@ pub fn intersects_parry(frustum: &Frustum, transform: Transform, aabb: &AabbP) -
 ///
 /// * `aabb` - object space AABB.
 pub fn intersects_bevy(frustum: &Frustum, transform: &GlobalTransform, aabb: &Aabb) -> bool {
-    let model = transform.compute_matrix();
     let model_sphere = Sphere {
-        center: model.transform_point3a(aabb.center),
+        center: transform.transform_point(aabb.center.into()).into(),
         radius: transform.radius_vec3a(aabb.half_extents),
     };
 
     frustum.intersects_sphere(&model_sphere, false)
-        && frustum.intersects_obb(aabb, &model, false, true)
+        && frustum.intersects_obb(aabb, &transform.affine(), false, true)
 }

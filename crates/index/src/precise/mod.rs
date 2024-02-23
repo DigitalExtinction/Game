@@ -111,7 +111,7 @@ fn insert(
 }
 
 fn remove(mut index: ResMut<EntityIndex>, mut removed: RemovedComponents<Indexed>) {
-    for entity in removed.iter() {
+    for entity in removed.read() {
         index.remove(entity);
     }
 }

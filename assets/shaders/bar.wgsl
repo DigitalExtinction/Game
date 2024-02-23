@@ -1,5 +1,7 @@
-#import bevy_pbr::mesh_bindings  mesh
-#import bevy_pbr::mesh_functions mesh_position_local_to_clip
+#import bevy_pbr::{
+    mesh_bindings::mesh,
+    mesh_functions::{get_model_matrix, mesh_position_local_to_clip},
+}
 
 const BACKGROUND_COLOR = vec4<f32>(0., 0., 0., 0.75);
 const FOREGROUND_COLOR = vec4<f32>(0.6, 1., 0.6, 0.75);
@@ -8,6 +10,7 @@ const FOREGROUND_COLOR = vec4<f32>(0.6, 1., 0.6, 0.75);
 var<uniform> value: f32;
 
 struct Vertex {
+    @builtin(instance_index) instance_index: u32,
     @location(0) position: vec2<f32>,
     @location(1) uv: vec2<f32>,
 };
@@ -25,7 +28,10 @@ struct FragmentInput {
 fn vertex(vertex: Vertex) -> VertexOutput {
     var out: VertexOutput;
 
-    out.clip_position = mesh_position_local_to_clip(mesh.model, vec4<f32>(0., 0., 0., 1.0));
+    out.clip_position = mesh_position_local_to_clip(
+        get_model_matrix(vertex.instance_index),
+        vec4<f32>(0., 0., 0., 1.0),
+    );
 
     let scale = max(1., out.clip_position.w / 40.);
     out.clip_position += vec4<f32>(scale * vertex.position, 0., 0.);

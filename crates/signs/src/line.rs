@@ -1,6 +1,6 @@
 use ahash::AHashMap;
 use bevy::prelude::*;
-use bevy::reflect::{TypePath, TypeUuid};
+use bevy::reflect::TypePath;
 use bevy::render::render_resource::{AsBindGroup, ShaderRef};
 use de_core::cleanup::DespawnOnGameExit;
 use de_core::objects::Active;
@@ -53,8 +53,7 @@ enum LinesSet {
 }
 
 // Passed to the `rally_point.wgsl` shader
-#[derive(AsBindGroup, TypeUuid, TypePath, Debug, Clone)]
-#[uuid = "d0fae52d-f398-4416-9b72-9039093a6c34"]
+#[derive(Asset, AsBindGroup, TypePath, Debug, Clone)]
 pub struct LineMaterial {}
 
 impl Material for LineMaterial {
@@ -160,7 +159,7 @@ fn update_line_end(
     lines: Res<LineLocations>,
     mut line_location: EventWriter<UpdateLineLocationEvent>,
 ) {
-    for event in &mut events {
+    for event in events.read() {
         if let Some(old_location) = lines.0.get(&event.owner) {
             let location = LineLocation::new(old_location.start, event.end);
             line_location.send(UpdateLineLocationEvent::new(event.owner, location));
@@ -174,7 +173,7 @@ fn update_line_location(
     mut transforms: Query<&mut Transform>,
     mut line_locations: ResMut<LineLocations>,
 ) {
-    for event in &mut events {
+    for event in events.read() {
         line_locations.0.insert(event.owner, event.location);
         if let Some(line_entity) = lines.0.get(&event.owner) {
             let mut current_transform = transforms.get_mut(*line_entity).unwrap();
@@ -190,7 +189,7 @@ fn update_line_visibility(
     mut commands: Commands,
     line_mesh: Res<LineMesh>,
 ) {
-    for event in &mut events {
+    for event in events.read() {
         if event.visible && !lines.0.contains_key(&event.owner) {
             let transform = line_locations
                 .0
@@ -221,7 +220,7 @@ fn owner_despawn(
     mut lines: ResMut<LineEntities>,
     mut removed: RemovedComponents<Active>,
 ) {
-    for owner in removed.iter() {
+    for owner in removed.read() {
         if let Some(line) = lines.0.remove(&owner) {
             commands.entity(line).despawn_recursive();
         }

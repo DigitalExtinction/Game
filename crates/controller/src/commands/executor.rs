@@ -85,7 +85,7 @@ fn send_selected_system(
     mut path_events: EventWriter<UpdateEntityPathEvent>,
     mut chase_events: EventWriter<ChaseTargetEvent>,
 ) {
-    if let Some(send) = send_events.iter().last() {
+    if let Some(send) = send_events.read().last() {
         for entity in selected.iter() {
             chase_events.send(ChaseTargetEvent::new(entity, None));
             path_events.send(UpdateEntityPathEvent::new(
@@ -103,7 +103,7 @@ fn delivery_location_system(
     selected: Query<Entity, SelectedFactory>,
     mut out_events: EventWriter<ChangeDeliveryLocationEvent>,
 ) {
-    if let Some(event) = in_events.iter().last() {
+    if let Some(event) = in_events.read().last() {
         for entity in selected.iter() {
             out_events.send(ChangeDeliveryLocationEvent::new(entity, event.target()));
         }
@@ -115,7 +115,7 @@ fn attack_system(
     selected: Query<Entity, SelectedMovable>,
     mut individual_events: EventWriter<AttackEvent>,
 ) {
-    if let Some(group_event) = group_events.iter().last() {
+    if let Some(group_event) = group_events.read().last() {
         for attacker in selected.iter() {
             individual_events.send(AttackEvent::new(attacker, group_event.target()));
         }

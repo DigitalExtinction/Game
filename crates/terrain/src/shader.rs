@@ -1,12 +1,14 @@
 use std::{cmp::Ordering, ops::Range};
 
 use bevy::{
-    prelude::{Handle, Image, Material},
-    reflect::{TypePath, TypeUuid},
+    asset::Asset,
+    pbr::MaterialExtension,
+    reflect::TypePath,
     render::render_resource::{AsBindGroup, ShaderRef, ShaderType},
 };
 use glam::{Mat3, Vec2};
 
+pub(crate) const UV_SCALE: f32 = 16.;
 // * Keep this in sync with terrain.wgsl.
 // * Keep this smaller or equal to de_types::objects::PLAYER_MAX_UNITS.
 pub(crate) const CIRCLE_CAPACITY: usize = 127;
@@ -14,24 +16,22 @@ pub(crate) const CIRCLE_CAPACITY: usize = 127;
 // * Keep this smaller or equal to de_types::objects::PLAYER_MAX_BUILDINGS.
 pub(crate) const RECTANGLE_CAPACITY: usize = 31;
 
-#[derive(AsBindGroup, TypeUuid, TypePath, Debug, Clone)]
-#[uuid = "9e124e04-fdf1-4836-b82d-fa2f01fddb62"]
+#[derive(Asset, AsBindGroup, TypePath, Debug, Clone)]
 pub struct TerrainMaterial {
-    #[uniform(0)]
+    #[uniform(100)]
+    uv_scale: f32,
+    #[uniform(101)]
     circles: KdTree,
-    #[uniform(1)]
+    #[uniform(102)]
     rectangles: Rectangles,
-    #[texture(2)]
-    #[sampler(3)]
-    texture: Handle<Image>,
 }
 
 impl TerrainMaterial {
-    pub(crate) fn new(texture: Handle<Image>) -> Self {
+    pub(crate) fn new(uv_scale: f32) -> Self {
         Self {
+            uv_scale,
             circles: KdTree::empty(),
             rectangles: Rectangles::default(),
-            texture,
         }
     }
 
@@ -44,7 +44,7 @@ impl TerrainMaterial {
     }
 }
 
-impl Material for TerrainMaterial {
+impl MaterialExtension for TerrainMaterial {
     fn fragment_shader() -> ShaderRef {
         "shaders/terrain.wgsl".into()
     }

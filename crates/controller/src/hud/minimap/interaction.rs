@@ -119,7 +119,7 @@ fn press_handler(
 ) {
     let cursor = window_query.single().cursor_position();
 
-    for event in input_events.iter() {
+    for event in input_events.read() {
         match event.state {
             ButtonState::Released => {
                 dragging.retain(|b| *b != event.button);
@@ -173,7 +173,7 @@ fn move_camera_system(
     mut drag_events: EventReader<MinimapDragEvent>,
     mut camera_events: EventWriter<MoveFocusEvent>,
 ) {
-    for press in press_events.iter() {
+    for press in press_events.read() {
         if press.button() != MouseButton::Left {
             continue;
         }
@@ -182,7 +182,7 @@ fn move_camera_system(
         camera_events.send(event);
     }
 
-    for drag in drag_events.iter() {
+    for drag in drag_events.read() {
         if drag.button() != MouseButton::Left {
             continue;
         }
@@ -196,7 +196,7 @@ fn send_units_system(
     mut press_events: EventReader<MinimapPressEvent>,
     mut send_events: EventWriter<SendSelectedEvent>,
 ) {
-    for press in press_events.iter() {
+    for press in press_events.read() {
         if press.button() != MouseButton::Right {
             continue;
         }
@@ -208,7 +208,7 @@ fn delivery_location_system(
     mut press_events: EventReader<MinimapPressEvent>,
     mut location_events: EventWriter<DeliveryLocationSelectedEvent>,
 ) {
-    for press in press_events.iter() {
+    for press in press_events.read() {
         if press.button() != MouseButton::Right {
             continue;
         }

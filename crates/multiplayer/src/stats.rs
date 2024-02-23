@@ -243,7 +243,7 @@ fn pong<const R: bool>(
     mut tracker: ResMut<PingTracker<R>>,
     mut messages: EventReader<FromGameServerEvent>,
 ) {
-    for event in messages.iter() {
+    for event in messages.read() {
         if let FromGame::Pong(id) = event.message() {
             if let Some(send_time) = tracker.resolve(*id) {
                 let time = Instant::now();

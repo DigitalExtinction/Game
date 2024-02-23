@@ -99,7 +99,7 @@ fn new_drafts(
     mut events: EventReader<NewDraftEvent>,
     drafts: Query<Entity, With<DraftAllowed>>,
 ) {
-    let event = match events.iter().last() {
+    let event = match events.read().last() {
         Some(event) => event,
         None => return,
     };

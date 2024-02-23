@@ -78,8 +78,8 @@ fn load(server: Res<AssetServer>, sounds: Res<Sounds>) -> Progress {
             .0
             .values()
             .map(|handle| match server.get_load_state(handle) {
-                LoadState::Loaded => 1,
-                LoadState::NotLoaded | LoadState::Loading => 0,
+                Some(LoadState::Loaded) => 1,
+                Some(LoadState::NotLoaded) | Some(LoadState::Loading) => 0,
                 _ => panic!("Unexpected loading state."),
             })
             .sum(),
@@ -146,7 +146,7 @@ fn play(
     let camera = camera.single();
     let sound_volume = config.audio().sound_volume() as f64;
 
-    for PlaySpatialAudioEvent { sound, position } in &mut play_events {
+    for PlaySpatialAudioEvent { sound, position } in play_events.read() {
         let (volume, pan) = calculate_volume_and_pan(camera, &focus, *position);
         let handle = audio
             .play(sounds.0[*sound].clone())

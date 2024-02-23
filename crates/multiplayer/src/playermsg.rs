@@ -362,7 +362,7 @@ fn recv_messages(
     mut health_events: EventWriter<NetRecvHealthEvent>,
     mut projectile_events: EventWriter<NetRecvProjectileEvent>,
 ) {
-    for input in inputs.iter() {
+    for input in inputs.read() {
         match input.message() {
             ToPlayers::Spawn {
                 entity,

@@ -149,7 +149,7 @@ impl<'w, 's> Selector<'w, 's> {
 
 fn update_selection(mut events: EventReader<SelectEvent>, selector_builder: SelectorBuilder) {
     let mut selector = selector_builder.build();
-    for event in events.iter() {
+    for event in events.read() {
         selector.update(event.entities(), event.mode());
     }
     selector.execute();
@@ -162,7 +162,7 @@ fn selected_system(
     mut poles: EventWriter<UpdatePoleVisibilityEvent>,
     mut lines: EventWriter<UpdateLineVisibilityEvent>,
 ) {
-    for event in events.iter() {
+    for event in events.read() {
         if let Ok(mut visibility) = markers.get_mut(event.0) {
             visibility.0.update_visible(SELECTION_BAR_ID, true);
         }
@@ -185,7 +185,7 @@ fn deselected_system(
     mut poles: EventWriter<UpdatePoleVisibilityEvent>,
     mut lines: EventWriter<UpdateLineVisibilityEvent>,
 ) {
-    for event in events.iter() {
+    for event in events.read() {
         if let Ok(mut visibility) = markers.get_mut(event.0) {
             visibility.0.update_visible(SELECTION_BAR_ID, false);
         }

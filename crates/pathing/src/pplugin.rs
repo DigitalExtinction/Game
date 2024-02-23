@@ -1,6 +1,5 @@
 use ahash::AHashMap;
 use bevy::{
-    ecs::query::Has,
     prelude::*,
     tasks::{AsyncComputeTaskPool, Task},
 };
@@ -217,7 +216,7 @@ fn update_requested_paths(
     mut events: EventReader<UpdateEntityPathEvent>,
     entities: Query<&Transform, With<MovableSolid>>,
 ) {
-    for event in events.iter() {
+    for event in events.read() {
         if let Ok(transform) = entities.get(event.entity()) {
             commands.entity(event.entity()).insert(event.target());
             state.spawn_new(
@@ -244,7 +243,7 @@ fn update_path_components(
     targets: Query<&PathTarget>,
     mut events: EventReader<PathFoundEvent>,
 ) {
-    for event in events.iter() {
+    for event in events.read() {
         let mut entity_commands = commands.entity(event.entity());
         match event.path() {
             Some(path) => {
@@ -271,7 +270,7 @@ fn remove_path_targets(
     targets: Query<&PathTarget>,
     mut removed: RemovedComponents<ScheduledPath>,
 ) {
-    for entity in removed.iter() {
+    for entity in removed.read() {
         if let Ok(target) = targets.get(entity) {
             if !target.permanent() {
                 commands.entity(entity).remove::<PathTarget>();

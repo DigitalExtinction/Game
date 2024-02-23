@@ -73,7 +73,7 @@ fn select_in_area(
     mut in_events: EventReader<SelectInRectEvent>,
     mut out_events: EventWriter<SelectEvent>,
 ) {
-    for in_event in in_events.iter() {
+    for in_event in in_events.read() {
         let event_frustum = screen_frustum.rect(in_event.rect());
         let entities: Vec<Entity> = candidates
             .iter()

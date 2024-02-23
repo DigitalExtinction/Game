@@ -75,7 +75,7 @@ fn handle_joined_event(
     mut events: EventReader<GameJoinedEvent>,
     mut sender: Sender<JoinGameRequest>,
 ) {
-    let Some(event) = events.iter().last() else {
+    let Some(event) = events.read().last() else {
         return;
     };
 

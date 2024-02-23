@@ -1,4 +1,5 @@
 use bevy::{
+    pbr::ExtendedMaterial,
     prelude::*,
     render::{
         primitives::{Aabb as BevyAabb, Frustum},
@@ -114,13 +115,16 @@ impl Marker for RectangleMarker {
 }
 
 fn update_markers<M>(
-    mut materials: ResMut<Assets<TerrainMaterial>>,
+    mut materials: ResMut<Assets<ExtendedMaterial<StandardMaterial, TerrainMaterial>>>,
     solids: SolidObjects,
     camera: Query<(&Transform, &Frustum), With<Camera3d>>,
-    terrains: Query<(&ComputedVisibility, &Handle<TerrainMaterial>)>,
+    terrains: Query<(
+        &ViewVisibility,
+        &Handle<ExtendedMaterial<StandardMaterial, TerrainMaterial>>,
+    )>,
     markers: Query<(
         &ObjectTypeComponent,
-        &ComputedVisibility,
+        &ViewVisibility,
         &GlobalTransform,
         &M,
         &MarkerVisibility,
@@ -140,7 +144,7 @@ fn update_markers<M>(
 
     let mut candidates = Vec::new();
     for (&object_type, circle_visibility, transform, marker, marker_visibility) in markers.iter() {
-        if !circle_visibility.is_visible_in_hierarchy() {
+        if !circle_visibility.get() {
             continue;
         }
 
@@ -171,11 +175,11 @@ fn update_markers<M>(
         .collect();
 
     for (terrain_visibility, material) in terrains.iter() {
-        if !terrain_visibility.is_visible_in_hierarchy() {
+        if !terrain_visibility.get() {
             continue;
         }
 
         let material = materials.get_mut(material).unwrap();
-        M::apply_to_material(material, shapes.clone());
+        M::apply_to_material(&mut material.extension, shapes.clone());
     }
 }

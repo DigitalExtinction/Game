@@ -46,7 +46,7 @@ fn set_token<T>(mut events: EventReader<ResponseEvent<T>>, mut auth: ResMut<Auth
 where
     T: LobbyRequest<Response = Token>,
 {
-    let Some(event) = events.iter().last() else {
+    let Some(event) = events.read().last() else {
         return;
     };
     let Ok(token) = event.result() else { return };

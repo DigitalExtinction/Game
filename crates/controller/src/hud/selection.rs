@@ -35,7 +35,7 @@ fn process_events(
     mut boxes: Query<(Entity, &mut Style), With<SelectionBox>>,
     mut events: EventReader<UpdateSelectionBoxEvent>,
 ) {
-    if let Some(event) = events.iter().last() {
+    if let Some(event) = events.read().last() {
         match event.0 {
             Some(rect) => {
                 let size = rect.size();

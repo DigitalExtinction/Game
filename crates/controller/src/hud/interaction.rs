@@ -2,7 +2,6 @@ use bevy::{
     ecs::{query::ReadOnlyWorldQuery, system::SystemParam},
     prelude::*,
 };
-use glam::Vec3Swizzles;
 
 /// Top-level non-transparent or otherwise interaction blocking Node. All such
 /// nodes are marked with this component and no descendants have it attached.
@@ -23,7 +22,7 @@ where
         's,
         (
             &'static GlobalTransform,
-            &'static ComputedVisibility,
+            &'static ViewVisibility,
             &'static Node,
         ),
         F,
@@ -34,6 +33,7 @@ impl<'w, 's, F> HudNodes<'w, 's, F>
 where
     F: ReadOnlyWorldQuery + Sync + Send + 'static,
 {
+    /// See [`Self::relative_position`].
     pub(crate) fn contains_point(&self, point: Vec2) -> bool {
         self.relative_position(point).is_some()
     }
@@ -43,11 +43,16 @@ where
     ///
     /// The returned point is between (0, 0) (top-left corner) and (1, 1)
     /// (bottom-right corner).
+    ///
+    /// The method relies on [`ViewVisibility`], therefore the results are
+    /// accurate with respect to the last rendered frame only iff called before
+    /// [`bevy::render::view::VisibilitySystems::VisibilityPropagate`] (during
+    /// `PostUpdate` schedule).
     pub(crate) fn relative_position(&self, point: Vec2) -> Option<Vec2> {
         self.hud
             .iter()
             .filter_map(|(box_transform, visibility, node)| {
-                if !visibility.is_visible() {
+                if !visibility.get() {
                     return None;
                 }
 

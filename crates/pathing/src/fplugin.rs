@@ -177,7 +177,7 @@ fn check_removed(
     mut state: ResMut<UpdateFinderState>,
     mut removed: RemovedComponents<StaticSolid>,
 ) {
-    if removed.iter().next().is_some() {
+    if removed.read().next().is_some() {
         state.invalidate();
     }
 }

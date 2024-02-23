@@ -91,7 +91,7 @@ impl CurrentToast {
 }
 
 fn process_events(mut events: EventReader<ToastEvent>, mut queue: ResMut<ToastQueue>) {
-    for event in events.iter() {
+    for event in events.read() {
         info!("Enqueuing a toast: {}", event.text());
         queue.push(event.text().to_owned())
     }
