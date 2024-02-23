@@ -54,8 +54,8 @@ pub(super) struct HandlersPlugin;
 impl HandlersPlugin {
     fn add_place_draft_systems(app: &mut App) {
         let key_map = enum_map! {
-            BuildingType::Base => KeyCode::B,
-            BuildingType::PowerHub => KeyCode::P,
+            BuildingType::Base => KeyCode::KeyB,
+            BuildingType::PowerHub => KeyCode::KeyP,
         };
 
         for (building_type, &key) in key_map.iter() {
@@ -108,11 +108,11 @@ impl Plugin for HandlersPlugin {
                     .before(GameMenuSet::Toggle)
                     .before(DraftSet::Discard),
                 select_all
-                    .run_if(KeyCondition::single(KeyCode::A).with_ctrl().build())
+                    .run_if(KeyCondition::single(KeyCode::KeyA).with_ctrl().build())
                     .before(SelectionSet::Update),
                 select_all_visible
                     .run_if(
-                        KeyCondition::single(KeyCode::A)
+                        KeyCondition::single(KeyCode::KeyA)
                             .with_ctrl()
                             .with_shift()
                             .build(),
@@ -216,13 +216,13 @@ fn move_camera_arrows_system(
         };
 
         let mut direction = Vec2::ZERO;
-        if key_code == KeyCode::Left {
+        if key_code == KeyCode::ArrowLeft {
             direction = Vec2::new(-1., 0.);
-        } else if key_code == KeyCode::Right {
+        } else if key_code == KeyCode::ArrowRight {
             direction = Vec2::new(1., 0.);
-        } else if key_code == KeyCode::Down {
+        } else if key_code == KeyCode::ArrowDown {
             direction = Vec2::new(0., -1.);
-        } else if key_code == KeyCode::Up {
+        } else if key_code == KeyCode::ArrowUp {
             direction = Vec2::new(0., 1.);
         }
 

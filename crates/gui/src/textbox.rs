@@ -150,8 +150,10 @@ fn input_system(
     // FIXME: Fix ordering of multiple event streams once
     // https://github.com/bevyengine/bevy/issues/5984 is fixed.
     for event in characters.read() {
-        if !event.char.is_control() {
-            text_box.push(event.char);
+        if let Some(character) = event.char.chars().last() {
+            if !character.is_control() {
+                text_box.push(character);
+            }
         }
     }
 
@@ -161,7 +163,7 @@ fn input_system(
         }
 
         match event.key_code {
-            Some(KeyCode::Back) => text_box.backspace(),
+            KeyCode::Backspace => text_box.backspace(),
             _ => continue,
         }
     }
