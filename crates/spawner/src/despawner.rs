@@ -1,6 +1,6 @@
 use std::marker::PhantomData;
 
-use bevy::ecs::query::{QueryData, QueryFilter};
+use bevy::ecs::query::QueryFilter;
 use bevy::prelude::*;
 use de_audio::spatial::{PlaySpatialAudioEvent, Sound};
 use de_core::gconfig::GameConfig;
@@ -141,15 +141,18 @@ fn despawn(mut commands: Commands, mut despawning: EventReader<DespawnEvent>) {
     }
 }
 
-/// This plugin sends events with data of type `T` when entities with `Q` and
-/// matching `F` are despawned. The events are send from systems in set
-/// [`DespawnerSet::Events`].
+type DespData<T> = <T as ToOwned>::Owned;
+
+/// This plugin sends events with data of type `DespData<T>` when entities with
+/// component `T` matching query `F` are despawned. The events are send from
+/// systems in set [`DespawnerSet::Events`].
 ///
 /// # Type Parameters
 ///
-/// * `Q` - query for entities to watch for despawning. e.g `&Foo`.
-/// * `T` - type of data to send (must be a single component contained in `Q`). e.g. `Foo`.
-/// * `F` - filter for entities to watch for despawning. (optional, defaults to `()`). e.g. `With<Bar>`.
+/// * `T` - a component implementing ToOwned to be send as part of the despawn
+///   events.
+/// * `F` - filter for entities to watch for despawning. (optional, defaults to
+///   `()`). e.g. `With<Bar>`.
 ///
 /// # Usage
 ///
@@ -163,24 +166,24 @@ fn despawn(mut commands: Commands, mut despawning: EventReader<DespawnEvent>) {
 /// let mut app = App::new();
 ///
 /// // watch for despawning of entities with `Bar` component
-/// app.add_plugins(DespawnEventsPlugin::<&Bar, Bar>::default());
+/// app.add_plugins(DespawnEventsPlugin::<Bar>::default());
 /// ```
 ///
 #[derive(Debug)]
-pub struct DespawnEventsPlugin<Q, T, F = ()>
+pub struct DespawnEventsPlugin<T, F = ()>
 where
+    T: Component + ToOwned,
+    DespData<T>: Send + Sync,
     F: QueryFilter + Send + Sync + 'static,
-    T: Send + Sync + 'static + Clone + Component,
-    Q: QueryData + Send + Sync + 'static,
 {
-    _marker: PhantomData<(Q, F, T)>,
+    _marker: PhantomData<(T, F)>,
 }
 
-impl<
-        Q: QueryData + Send + Sync + 'static,
-        T: Send + Sync + 'static + Clone + Component,
-        F: QueryFilter + Send + Sync + 'static,
-    > Default for DespawnEventsPlugin<Q, T, F>
+impl<T, F> Default for DespawnEventsPlugin<T, F>
+where
+    T: Component + ToOwned,
+    DespData<T>: Send + Sync,
+    F: QueryFilter + Send + Sync + 'static,
 {
     fn default() -> Self {
         Self {
@@ -189,53 +192,51 @@ impl<
     }
 }
 
-impl<
-        Q: QueryData + Send + Sync + 'static,
-        T: Send + Sync + Clone + Component + 'static,
-        F: QueryFilter + Send + Sync + 'static,
-    > Plugin for DespawnEventsPlugin<Q, T, F>
+impl<T, F> Plugin for DespawnEventsPlugin<T, F>
+where
+    T: Component + ToOwned,
+    DespData<T>: Send + Sync,
+    F: QueryFilter + Send + Sync + 'static,
 {
     fn build(&self, app: &mut App) {
-        app.add_event::<DespawnedComponentsEvent<T, F>>()
+        app.add_event::<DespawnedComponentsEvent<DespData<T>>>()
             .add_systems(
                 Update,
-                send_data::<Q, T, F>
+                send_data::<T, F>
                     .after(DespawnerSet::Despawn)
                     .in_set(DespawnerSet::Events),
             );
     }
 }
 
-/// This event is sent by [`DespawnEventsPlugin`] when a matching entity is being despawned.
-#[derive(Debug, Event)]
-pub struct DespawnedComponentsEvent<T, F = ()>
+/// This event is sent by [`DespawnEventsPlugin`] when a matching entity is
+/// being despawned.
+#[derive(Event)]
+pub struct DespawnedComponentsEvent<D>
 where
-    T: Send + Sync + Component + 'static,
-    F: QueryFilter + 'static,
+    D: Send + Sync,
 {
     pub entity: Entity,
-    pub data: T,
-    _filter_marker: PhantomData<F>,
+    pub data: D,
 }
 
-/// Send events with data of type `T` when entities with `Q` and matching `F` are despawned.
+/// Sends events with data of type `DespData<T>` when entities with component
+/// `T` and matching query `F` are despawned.
 #[allow(unused)]
-fn send_data<'w, Q, T, F>(
+fn send_data<T, F>(
     mut despawning: EventReader<DespawnEvent>,
-    mut events: EventWriter<DespawnedComponentsEvent<T, F>>,
-    data: Query<Q, F>,
+    mut events: EventWriter<DespawnedComponentsEvent<DespData<T>>>,
+    data: Query<&T, F>,
 ) where
-    T: Clone + Component + Send + Sync + 'w,
-    Q: QueryData + Send + Sync + 'w,
-    F: QueryFilter + Send + Sync + 'w,
+    T: Component + ToOwned,
+    DespData<T>: Send + Sync,
+    F: QueryFilter + Send + Sync,
 {
     for DespawnEvent(entity) in despawning.read() {
-        // TODO do not use this deprecated
-        if let Ok(data) = data.get_component::<T>(*entity) {
+        if let Ok(data) = data.get(*entity) {
             events.send(DespawnedComponentsEvent {
                 entity: *entity,
-                data: data.clone(),
-                _filter_marker: PhantomData,
+                data: data.to_owned(),
             });
         }
     }
@@ -286,12 +287,8 @@ mod tests {
         let simple_entity = app.world.spawn((TestComponent { value: 1 },)).id();
         trace!("Simple entity spawned -> {:?}", simple_entity);
 
-        app.add_plugins(DespawnEventsPlugin::<&TestComponent, TestComponent>::default())
-            .add_plugins(DespawnEventsPlugin::<
-                &ComplexComponent,
-                ComplexComponent,
-                With<TestComponent>,
-            >::default())
+        app.add_plugins(DespawnEventsPlugin::<TestComponent>::default())
+            .add_plugins(DespawnEventsPlugin::<ComplexComponent, With<TestComponent>>::default())
             .add_systems(
                 Update,
                 (despawn_all_test_system.before(DespawnerSet::Despawn),),
@@ -304,7 +301,7 @@ mod tests {
                 &mut app.world,
             );
         let mut complex_events = SystemState::<
-            EventReader<DespawnedComponentsEvent<ComplexComponent, With<TestComponent>>>,
+            EventReader<DespawnedComponentsEvent<ComplexComponent>>,
         >::new(&mut app.world);
 
         trace!("---------- App update #1 ----------");
