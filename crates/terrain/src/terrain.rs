@@ -1,7 +1,7 @@
 use ahash::AHashMap;
 use bevy::{
     prelude::{Bundle, Component, Mesh, Transform},
-    render::{mesh::Indices, render_resource::PrimitiveTopology},
+    render::{mesh::Indices, render_asset::RenderAssetUsages, render_resource::PrimitiveTopology},
     utils::FloatOrd,
 };
 use de_map::size::MapBounds;
@@ -87,7 +87,10 @@ impl Terrain {
             }
         }
 
-        let mut mesh = Mesh::new(PrimitiveTopology::TriangleList);
+        let mut mesh = Mesh::new(
+            PrimitiveTopology::TriangleList,
+            RenderAssetUsages::RENDER_WORLD,
+        );
         mesh.insert_indices(Indices::U32(indices));
         mesh.insert_attribute(Mesh::ATTRIBUTE_POSITION, positions);
         mesh.insert_attribute(Mesh::ATTRIBUTE_NORMAL, normals);
