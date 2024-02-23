@@ -230,6 +230,7 @@ fn send_data<'w, Q, T, F>(
     F: QueryFilter + Send + Sync + 'w,
 {
     for DespawnEvent(entity) in despawning.read() {
+        // TODO do not use this deprecated
         if let Ok(data) = data.get_component::<T>(*entity) {
             events.send(DespawnedComponentsEvent {
                 entity: *entity,
