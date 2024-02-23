@@ -7,7 +7,7 @@ pub trait LabelCommands<'w, 's> {
         &'a mut self,
         size: OuterStyle,
         caption: impl Into<String>,
-    ) -> EntityCommands<'w, 's, 'a>;
+    ) -> EntityCommands<'a>;
 }
 
 impl<'w, 's> LabelCommands<'w, 's> for GuiCommands<'w, 's> {
@@ -15,7 +15,7 @@ impl<'w, 's> LabelCommands<'w, 's> for GuiCommands<'w, 's> {
         &'a mut self,
         style: OuterStyle,
         caption: impl Into<String>,
-    ) -> EntityCommands<'w, 's, 'a> {
+    ) -> EntityCommands<'a> {
         let text_style = self.text_props().label_text_style();
 
         let mut commands = self.spawn(NodeBundle {

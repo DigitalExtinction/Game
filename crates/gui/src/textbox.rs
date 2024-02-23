@@ -28,19 +28,11 @@ impl Plugin for TextBoxPlugin {
 }
 
 pub trait TextBoxCommands<'w, 's> {
-    fn spawn_text_box<'a>(
-        &'a mut self,
-        size: OuterStyle,
-        secret: bool,
-    ) -> EntityCommands<'w, 's, 'a>;
+    fn spawn_text_box<'a>(&'a mut self, size: OuterStyle, secret: bool) -> EntityCommands<'a>;
 }
 
 impl<'w, 's> TextBoxCommands<'w, 's> for GuiCommands<'w, 's> {
-    fn spawn_text_box<'a>(
-        &'a mut self,
-        style: OuterStyle,
-        secret: bool,
-    ) -> EntityCommands<'w, 's, 'a> {
+    fn spawn_text_box<'a>(&'a mut self, style: OuterStyle, secret: bool) -> EntityCommands<'a> {
         let text_style = self.text_props().input_text_style();
 
         let mut commands = self.spawn(NodeBundle {
