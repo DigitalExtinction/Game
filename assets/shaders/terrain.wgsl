@@ -34,11 +34,11 @@ struct Rectangles {
     count: u32,
 };
 
-@group(1) @binding(100)
+@group(2) @binding(100)
 var<uniform> uv_scale: f32;
-@group(1) @binding(101)
+@group(2) @binding(101)
 var<uniform> circles: KdTree;
-@group(1) @binding(102)
+@group(2) @binding(102)
 var<uniform> rectangles: Rectangles;
 fn mix_colors(base: vec4<f32>, cover: vec4<f32>) -> vec4<f32> {
     let alpha = base.a * cover.a;

@@ -5,7 +5,7 @@
 
 const COLOR = vec4<f32>(1., 0.85, 0.1, 0.7);
 
-@group(1) @binding(0)
+@group(2) @binding(0)
 var<uniform> start_time: f32;
 
 @fragment
