@@ -18,7 +18,7 @@ pub(crate) struct MapSelectionPlugin;
 
 impl Plugin for MapSelectionPlugin {
     fn build(&self, app: &mut App) {
-        app.add_state::<MapState>()
+        app.init_state::<MapState>()
             .add_event::<SelectMapEvent>()
             .add_event::<MapSelectedEvent>()
             .add_systems(OnEnter(MapState::On), setup)
