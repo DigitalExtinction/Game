@@ -313,6 +313,6 @@ fn bar_mesh(width: f32, height: f32) -> Mesh {
         vec![[0., 0.], [0., 1.], [1., 1.], [1., 0.]],
     );
 
-    mesh.set_indices(Some(Indices::U16(vec![0, 1, 2, 0, 2, 3])));
+    mesh.insert_indices(Indices::U16(vec![0, 1, 2, 0, 2, 3]));
     mesh
 }
