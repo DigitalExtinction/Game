@@ -1,6 +1,6 @@
 use std::marker::PhantomData;
 
-use bevy::ecs::query::{ReadOnlyWorldQuery, WorldQuery};
+use bevy::ecs::query::{QueryData, QueryFilter};
 use bevy::prelude::*;
 use de_audio::spatial::{PlaySpatialAudioEvent, Sound};
 use de_core::gconfig::GameConfig;
@@ -169,17 +169,17 @@ fn despawn(mut commands: Commands, mut despawning: EventReader<DespawnEvent>) {
 #[derive(Debug)]
 pub struct DespawnEventsPlugin<Q, T, F = ()>
 where
-    F: ReadOnlyWorldQuery + Send + Sync + 'static,
+    F: QueryFilter + Send + Sync + 'static,
     T: Send + Sync + 'static + Clone + Component,
-    Q: WorldQuery + Send + Sync + 'static,
+    Q: QueryData + Send + Sync + 'static,
 {
     _marker: PhantomData<(Q, F, T)>,
 }
 
 impl<
-        Q: WorldQuery + Send + Sync + 'static,
+        Q: QueryData + Send + Sync + 'static,
         T: Send + Sync + 'static + Clone + Component,
-        F: ReadOnlyWorldQuery + Send + Sync + 'static,
+        F: QueryFilter + Send + Sync + 'static,
     > Default for DespawnEventsPlugin<Q, T, F>
 {
     fn default() -> Self {
@@ -190,9 +190,9 @@ impl<
 }
 
 impl<
-        Q: WorldQuery + Send + Sync + 'static,
+        Q: QueryData + Send + Sync + 'static,
         T: Send + Sync + Clone + Component + 'static,
-        F: ReadOnlyWorldQuery + Send + Sync + 'static,
+        F: QueryFilter + Send + Sync + 'static,
     > Plugin for DespawnEventsPlugin<Q, T, F>
 {
     fn build(&self, app: &mut App) {
@@ -211,7 +211,7 @@ impl<
 pub struct DespawnedComponentsEvent<T, F = ()>
 where
     T: Send + Sync + Component + 'static,
-    F: ReadOnlyWorldQuery + 'static,
+    F: QueryFilter + 'static,
 {
     pub entity: Entity,
     pub data: T,
@@ -226,8 +226,8 @@ fn send_data<'w, Q, T, F>(
     data: Query<Q, F>,
 ) where
     T: Clone + Component + Send + Sync + 'w,
-    Q: WorldQuery + Send + Sync + 'w,
-    F: ReadOnlyWorldQuery + Send + Sync + 'w,
+    Q: QueryData + Send + Sync + 'w,
+    F: QueryFilter + Send + Sync + 'w,
 {
     for DespawnEvent(entity) in despawning.read() {
         if let Ok(data) = data.get_component::<T>(*entity) {

@@ -1,5 +1,5 @@
 use bevy::{
-    ecs::{query::ReadOnlyWorldQuery, system::SystemParam},
+    ecs::{query::QueryFilter, system::SystemParam},
     prelude::*,
 };
 
@@ -15,7 +15,7 @@ pub(crate) struct InteractionBlocker;
 #[derive(SystemParam)]
 pub(crate) struct HudNodes<'w, 's, F = With<InteractionBlocker>>
 where
-    F: ReadOnlyWorldQuery + Sync + Send + 'static,
+    F: QueryFilter + Sync + Send + 'static,
 {
     hud: Query<
         'w,
@@ -31,7 +31,7 @@ where
 
 impl<'w, 's, F> HudNodes<'w, 's, F>
 where
-    F: ReadOnlyWorldQuery + Sync + Send + 'static,
+    F: QueryFilter + Sync + Send + 'static,
 {
     /// See [`Self::relative_position`].
     pub(crate) fn contains_point(&self, point: Vec2) -> bool {
