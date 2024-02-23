@@ -119,7 +119,7 @@ assert_cmd = "2.0.10"
 async-compat = "0.2.1"
 async-std = "1.11"
 async-tar = "0.4.2"
-bevy_kira_audio = { version = "0.18", features = ["mp3"] }
+bevy_kira_audio = { version = "0.19", features = ["mp3"] }
 bincode = "2.0.0-rc.3"
 chrono = "0.4.24"
 clap = { version = "4.0", features = ["derive"] }
@@ -131,13 +131,13 @@ fastrand = "1.9.0"
 fern = "0.6.2"
 flate2 = "1.0.26"
 futures = "0.3.28"
-futures-lite = "1.13.0"
-glam = "0.24"
+futures-lite = "2.2.0"
+glam = "0.25"
 gltf = "1.0"
 itertools = "0.11.0"
-iyes_progress = "0.10.0"
+iyes_progress = "0.11.0"
 log = "0.4.17"
-nalgebra = { version = "0.32.3", features = ["convert-glam024"] }
+nalgebra = { version = "0.32.4", features = ["convert-glam025"] }
 nix = "0.26.2"
 ntest = "0.9.0"
 parry2d = "0.13.1"
@@ -164,15 +164,17 @@ url = { version = "2.3.1", features = ["serde"] }
 urlencoding = "2.1.2"
 
 [workspace.dependencies.bevy]
-version = "0.12"
+version = "0.13"
 default-features = false
 features = [
     "animation",
+    "bevy_animation",
     "bevy_asset",
     "bevy_gilrs",
     "bevy_scene",
     "bevy_winit",
     "bevy_core_pipeline",
+    "bevy_debug_stepping",
     "bevy_pbr",
     "bevy_gltf",
     "bevy_render",
