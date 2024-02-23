@@ -10,19 +10,19 @@ use crate::{GuiCommands, OuterStyle};
 struct BodyText;
 
 pub trait BodyTextCommands<'w, 's> {
-    fn spawn_body_text<'a>(
-        &'a mut self,
+    fn spawn_body_text(
+        &mut self,
         size: OuterStyle,
         caption: impl Into<String>,
-    ) -> EntityCommands<'a>;
+    ) -> EntityCommands<'_>;
 }
 
 impl<'w, 's> BodyTextCommands<'w, 's> for GuiCommands<'w, 's> {
-    fn spawn_body_text<'a>(
-        &'a mut self,
+    fn spawn_body_text(
+        &mut self,
         style: OuterStyle,
         caption: impl Into<String>,
-    ) -> EntityCommands<'a> {
+    ) -> EntityCommands<'_> {
         let text_style = self.text_props().body_text_style();
 
         let mut commands = self.spawn((

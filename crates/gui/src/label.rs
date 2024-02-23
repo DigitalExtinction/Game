@@ -3,19 +3,11 @@ use bevy::{ecs::system::EntityCommands, prelude::*};
 use crate::{GuiCommands, OuterStyle};
 
 pub trait LabelCommands<'w, 's> {
-    fn spawn_label<'a>(
-        &'a mut self,
-        size: OuterStyle,
-        caption: impl Into<String>,
-    ) -> EntityCommands<'a>;
+    fn spawn_label(&mut self, size: OuterStyle, caption: impl Into<String>) -> EntityCommands<'_>;
 }
 
 impl<'w, 's> LabelCommands<'w, 's> for GuiCommands<'w, 's> {
-    fn spawn_label<'a>(
-        &'a mut self,
-        style: OuterStyle,
-        caption: impl Into<String>,
-    ) -> EntityCommands<'a> {
+    fn spawn_label(&mut self, style: OuterStyle, caption: impl Into<String>) -> EntityCommands<'_> {
         let text_style = self.text_props().label_text_style();
 
         let mut commands = self.spawn(NodeBundle {
