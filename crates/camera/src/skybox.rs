@@ -74,7 +74,8 @@ fn setup_camera(
     if configured {
         return;
     }
-    commands
-        .entity(entity)
-        .insert(Skybox(skybox.handle.clone()));
+    commands.entity(entity).insert(Skybox {
+        image: skybox.handle.clone(),
+        brightness: 300.,
+    });
 }

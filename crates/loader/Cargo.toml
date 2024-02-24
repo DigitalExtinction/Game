@@ -25,6 +25,5 @@ de_types.workspace = true
 
 # Other
 bevy.workspace = true
-futures-lite.workspace = true
 iyes_progress.workspace = true
 tracing.workspace = true

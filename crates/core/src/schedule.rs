@@ -1,20 +1,37 @@
 //! This module extends default Bevy schedules.
 
-use bevy::{app::MainScheduleOrder, ecs::schedule::ScheduleLabel, prelude::*};
+use bevy::{
+    app::MainScheduleOrder,
+    ecs::schedule::{ScheduleBuildSettings, ScheduleLabel},
+    prelude::*,
+};
 
 pub struct GameSchedulesPlugin;
 
-impl Plugin for GameSchedulesPlugin {
-    fn build(&self, app: &mut App) {
-        app.add_systems(Startup, setup);
+impl GameSchedulesPlugin {
+    fn insert_schedule(
+        app: &mut App,
+        after: impl ScheduleLabel,
+        schedule_label: impl ScheduleLabel + Clone,
+    ) {
+        let mut schedule = Schedule::new(schedule_label.clone());
+        schedule.set_build_settings(ScheduleBuildSettings {
+            auto_insert_apply_deferred: false,
+            ..default()
+        });
+        app.add_schedule(schedule);
+        let mut main_schedule_order = app.world.resource_mut::<MainScheduleOrder>();
+        main_schedule_order.insert_after(after, schedule_label);
     }
 }
 
-fn setup(mut main: ResMut<MainScheduleOrder>) {
-    main.insert_after(First, InputSchedule);
-    main.insert_after(InputSchedule, PreMovement);
-    main.insert_after(PreMovement, Movement);
-    main.insert_after(Movement, PostMovement);
+impl Plugin for GameSchedulesPlugin {
+    fn build(&self, app: &mut App) {
+        Self::insert_schedule(app, First, InputSchedule);
+        Self::insert_schedule(app, InputSchedule, PreMovement);
+        Self::insert_schedule(app, PreMovement, Movement);
+        Self::insert_schedule(app, Movement, PostMovement);
+    }
 }
 
 /// All user input is handled during this schedule.

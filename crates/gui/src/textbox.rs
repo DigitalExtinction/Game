@@ -28,19 +28,11 @@ impl Plugin for TextBoxPlugin {
 }
 
 pub trait TextBoxCommands<'w, 's> {
-    fn spawn_text_box<'a>(
-        &'a mut self,
-        size: OuterStyle,
-        secret: bool,
-    ) -> EntityCommands<'w, 's, 'a>;
+    fn spawn_text_box(&mut self, size: OuterStyle, secret: bool) -> EntityCommands<'_>;
 }
 
 impl<'w, 's> TextBoxCommands<'w, 's> for GuiCommands<'w, 's> {
-    fn spawn_text_box<'a>(
-        &'a mut self,
-        style: OuterStyle,
-        secret: bool,
-    ) -> EntityCommands<'w, 's, 'a> {
+    fn spawn_text_box(&mut self, style: OuterStyle, secret: bool) -> EntityCommands<'_> {
         let text_style = self.text_props().input_text_style();
 
         let mut commands = self.spawn(NodeBundle {
@@ -63,8 +55,7 @@ impl<'w, 's> TextBoxCommands<'w, 's> for GuiCommands<'w, 's> {
             .insert(TextBox::new(secret))
             .with_children(|builder| {
                 builder.spawn(
-                    TextBundle::from_section("", text_style)
-                        .with_text_alignment(TextAlignment::Left),
+                    TextBundle::from_section("", text_style).with_text_justify(JustifyText::Left),
                 );
             });
 
@@ -159,8 +150,10 @@ fn input_system(
     // FIXME: Fix ordering of multiple event streams once
     // https://github.com/bevyengine/bevy/issues/5984 is fixed.
     for event in characters.read() {
-        if !event.char.is_control() {
-            text_box.push(event.char);
+        if let Some(character) = event.char.chars().last() {
+            if !character.is_control() {
+                text_box.push(character);
+            }
         }
     }
 
@@ -170,7 +163,7 @@ fn input_system(
         }
 
         match event.key_code {
-            Some(KeyCode::Back) => text_box.backspace(),
+            KeyCode::Backspace => text_box.backspace(),
             _ => continue,
         }
     }

@@ -6,7 +6,7 @@ use std::cmp::Ordering;
 use ahash::AHashMap;
 use bevy::{
     ecs::{
-        query::{ReadOnlyWorldQuery, WorldQuery},
+        query::{QueryData, QueryFilter, ROQueryItem},
         system::SystemParam,
     },
     prelude::*,
@@ -113,8 +113,8 @@ impl Default for EntityIndex {
 #[derive(SystemParam)]
 pub struct SpatialQuery<'w, 's, Q, F = ()>
 where
-    Q: WorldQuery + Sync + Send + 'static,
-    F: ReadOnlyWorldQuery + Sync + Send + 'static,
+    Q: QueryData + Sync + Send + 'static,
+    F: QueryFilter + Sync + Send + 'static,
 {
     index: Res<'w, EntityIndex>,
     entities: Query<'w, 's, Q, F>,
@@ -122,8 +122,8 @@ where
 
 impl<'w, 's, Q, F> SpatialQuery<'w, 's, Q, F>
 where
-    Q: WorldQuery + Sync + Send + 'static,
-    F: ReadOnlyWorldQuery + Sync + Send + 'static,
+    Q: QueryData + Sync + Send + 'static,
+    F: QueryFilter + Sync + Send + 'static,
 {
     /// Returns closest entity whose shape, as indexed by systems registered by
     /// [`super::PreciseIndexPlugin`], intersects a given ray.
@@ -143,7 +143,7 @@ where
         ray: &Ray,
         max_toi: f32,
         ignore: Option<Entity>,
-    ) -> Option<RayEntityIntersection<<<Q as WorldQuery>::ReadOnly as WorldQuery>::Item<'_>>> {
+    ) -> Option<RayEntityIntersection<ROQueryItem<'_, Q>>> {
         let candidate_sets = match self.index.cast_ray(ray, max_toi) {
             Some(candidates) => candidates,
             None => return None,
@@ -250,8 +250,8 @@ impl<T> Eq for RayEntityIntersection<T> {}
 
 pub struct AabbQueryResults<'w, 's, 'a, 'b, Q, F = ()>
 where
-    Q: WorldQuery + Sync + Send + 'static,
-    F: ReadOnlyWorldQuery + Sync + Send + 'static,
+    Q: QueryData + Sync + Send + 'static,
+    F: QueryFilter + Sync + Send + 'static,
 {
     entities: &'a Query<'w, 's, Q, F>,
     index: &'a EntityIndex,
@@ -264,8 +264,8 @@ where
 
 impl<'w, 's, 'a, 'b, Q, F> AabbQueryResults<'w, 's, 'a, 'b, Q, F>
 where
-    Q: WorldQuery + Sync + Send + 'static,
-    F: ReadOnlyWorldQuery + Sync + Send + 'static,
+    Q: QueryData + Sync + Send + 'static,
+    F: QueryFilter + Sync + Send + 'static,
 {
     fn new(
         entities: &'a Query<'w, 's, Q, F>,
@@ -289,11 +289,11 @@ where
 
 impl<'w, 's, 'a, 'b, Q, F> Iterator for AabbQueryResults<'w, 's, 'a, 'b, Q, F>
 where
-    Q: WorldQuery + Sync + Send + 'static,
-    F: ReadOnlyWorldQuery + Sync + Send + 'static,
+    Q: QueryData + Sync + Send + 'static,
+    F: QueryFilter + Sync + Send + 'static,
     'a: 'w,
 {
-    type Item = <<Q as WorldQuery>::ReadOnly as WorldQuery>::Item<'a>;
+    type Item = ROQueryItem<'a, Q>;
 
     fn next(&mut self) -> Option<Self::Item> {
         'outer: loop {

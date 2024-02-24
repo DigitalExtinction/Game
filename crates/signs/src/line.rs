@@ -77,17 +77,20 @@ impl LineLocation {
         Self { start, end }
     }
 
-    /// A transform matrix from a plane with points at `(-0.5, 0. -0.5), (0.5, 0. -0.5),
-    /// (0.5, 0., 0.5), (-0.5, 0., -0.5)` to the line start and end with the `LINE_WIDTH`.
+    /// A transform matrix from a plane with points at `(-1, 0, -1), (1, 0,
+    /// -1), (1, 0, 1), (1, 0, -1)` to the line start and end with the
+    /// `LINE_WIDTH`.
     fn transform(&self) -> Transform {
-        let line_direction = self.end - self.start;
-        let perpendicular_direction =
-            Vec3::new(-line_direction.z, line_direction.y, line_direction.x).normalize()
-                * LINE_WIDTH;
-        let x_axis = line_direction.extend(0.);
-        let z_axis = perpendicular_direction.extend(0.);
-        let w_axis = (self.start + line_direction / 2. + LINE_OFFSET).extend(1.);
-        Transform::from_matrix(Mat4::from_cols(x_axis, Vec4::Y, z_axis, w_axis))
+        let half_dir = 0.5 * (self.end - self.start);
+        let norm_perp_dir = Vec3::new(-half_dir.z, half_dir.y, half_dir.x).normalize();
+        let half_perp_dir = 0.5 * LINE_WIDTH * norm_perp_dir;
+
+        let x_axis = half_dir.extend(0.);
+        let y_axis = Vec4::Y;
+        let z_axis = half_perp_dir.extend(0.);
+        let w_axis = (self.start + half_dir + LINE_OFFSET).extend(1.);
+
+        Transform::from_matrix(Mat4::from_cols(x_axis, y_axis, z_axis, w_axis))
     }
 }
 
@@ -143,7 +146,7 @@ fn setup(
 ) {
     commands.init_resource::<LineEntities>();
     commands.init_resource::<LineLocations>();
-    let line_mesh = meshes.add(shape::Plane::from_size(1.0).into());
+    let line_mesh = meshes.add(Plane3d::default());
     let line_material = materials.add(LineMaterial {});
     commands.insert_resource(LineMesh(line_mesh, line_material));
 }

@@ -54,8 +54,8 @@ pub(super) struct HandlersPlugin;
 impl HandlersPlugin {
     fn add_place_draft_systems(app: &mut App) {
         let key_map = enum_map! {
-            BuildingType::Base => KeyCode::B,
-            BuildingType::PowerHub => KeyCode::P,
+            BuildingType::Base => KeyCode::KeyB,
+            BuildingType::PowerHub => KeyCode::KeyP,
         };
 
         for (building_type, &key) in key_map.iter() {
@@ -108,11 +108,11 @@ impl Plugin for HandlersPlugin {
                     .before(GameMenuSet::Toggle)
                     .before(DraftSet::Discard),
                 select_all
-                    .run_if(KeyCondition::single(KeyCode::A).with_ctrl().build())
+                    .run_if(KeyCondition::single(KeyCode::KeyA).with_ctrl().build())
                     .before(SelectionSet::Update),
                 select_all_visible
                     .run_if(
-                        KeyCondition::single(KeyCode::A)
+                        KeyCondition::single(KeyCode::KeyA)
                             .with_ctrl()
                             .with_shift()
                             .build(),
@@ -164,7 +164,9 @@ fn right_click_handler(
             .map(|&player| !config.locals().is_playable(*player))
             .unwrap_or(false)
     }) {
-        Some(enemy) => attack_events.send(GroupAttackEvent::new(enemy)),
+        Some(enemy) => {
+            attack_events.send(GroupAttackEvent::new(enemy));
+        }
         None => {
             let Some(target) = pointer.terrain_point().map(|p| p.to_flat()) else {
                 return;
@@ -176,7 +178,7 @@ fn right_click_handler(
 }
 
 fn double_click_handler(
-    keys: Res<Input<KeyCode>>,
+    keys: Res<ButtonInput<KeyCode>>,
     pointer: Res<Pointer>,
     playable: Query<&ObjectTypeComponent, With<Playable>>,
     drafts: Query<(), With<DraftAllowed>>,
@@ -211,18 +213,14 @@ fn move_camera_arrows_system(
     mut move_events: EventWriter<MoveCameraHorizontallyEvent>,
 ) {
     for key_event in key_events.read() {
-        let Some(key_code) = key_event.key_code else {
-            continue;
-        };
-
         let mut direction = Vec2::ZERO;
-        if key_code == KeyCode::Left {
+        if key_event.key_code == KeyCode::ArrowLeft {
             direction = Vec2::new(-1., 0.);
-        } else if key_code == KeyCode::Right {
+        } else if key_event.key_code == KeyCode::ArrowRight {
             direction = Vec2::new(1., 0.);
-        } else if key_code == KeyCode::Down {
+        } else if key_event.key_code == KeyCode::ArrowDown {
             direction = Vec2::new(0., -1.);
-        } else if key_code == KeyCode::Up {
+        } else if key_event.key_code == KeyCode::ArrowUp {
             direction = Vec2::new(0., 1.);
         }
 
@@ -287,8 +285,8 @@ fn zoom_camera(
 
 fn pivot_camera(
     conf: Res<Configuration>,
-    buttons: Res<Input<MouseButton>>,
-    keys: Res<Input<KeyCode>>,
+    buttons: Res<ButtonInput<MouseButton>>,
+    keys: Res<ButtonInput<KeyCode>>,
     mut mouse_event: EventReader<MouseMotion>,
     mut rotate_event: EventWriter<RotateCameraEvent>,
     mut tilt_event: EventWriter<TiltCameraEvent>,
@@ -310,7 +308,7 @@ fn pivot_camera(
 fn left_click_handler(
     mut select_events: EventWriter<SelectEvent>,
     mut draft_events: EventWriter<SpawnDraftsEvent>,
-    keys: Res<Input<KeyCode>>,
+    keys: Res<ButtonInput<KeyCode>>,
     pointer: Res<Pointer>,
     playable: Query<(), With<Playable>>,
     drafts: Query<(), With<DraftAllowed>>,
@@ -385,7 +383,7 @@ fn select_all_visible(mut events: EventWriter<SelectInRectEvent>) {
 }
 
 fn update_drags(
-    keys: Res<Input<KeyCode>>,
+    keys: Res<ButtonInput<KeyCode>>,
     mut drag_events: EventReader<MouseDraggedEvent>,
     mut ui_events: EventWriter<UpdateSelectionBoxEvent>,
     mut select_events: EventWriter<SelectInRectEvent>,
@@ -416,6 +414,6 @@ fn update_drags(
             }
         };
 
-        ui_events.send(ui_event)
+        ui_events.send(ui_event);
     }
 }

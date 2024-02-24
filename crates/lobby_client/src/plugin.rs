@@ -3,8 +3,7 @@ use std::marker::PhantomData;
 use ahash::AHashMap;
 pub use anyhow::Result;
 use bevy::prelude::*;
-use bevy::tasks::Task;
-use futures_lite::future;
+use bevy::tasks::{futures_lite::future, Task};
 
 use crate::{
     client::AuthenticatedClient,
@@ -119,7 +118,9 @@ fn fire<T: LobbyRequestCreator>(
 
         match result {
             Ok(task) => pending.register(event.id().to_owned(), task),
-            Err(error) => responses.send(ResponseEvent::new(event.id().to_owned(), Err(error))),
+            Err(error) => {
+                responses.send(ResponseEvent::new(event.id().to_owned(), Err(error)));
+            }
         }
     }
 }

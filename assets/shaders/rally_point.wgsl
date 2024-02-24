@@ -13,7 +13,7 @@ struct CustomMaterial {
     fade: f32,
 };
 
-@group(1) @binding(0)
+@group(2) @binding(0)
 var<uniform> material: CustomMaterial;
 
 const COLOR: vec4<f32> = vec4<f32>(0.0, 0.5, 0.0, 0.8);

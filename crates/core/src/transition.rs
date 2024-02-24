@@ -2,12 +2,14 @@ use bevy::{ecs::schedule::run_enter_schedule, prelude::*};
 pub use paste;
 
 pub trait DeStateTransition {
-    /// This method is almost equal to Bevy's [`App::add_state`]. The only
+    /// This method is almost equal to Bevy's [`App::init_state`]. The only
     /// difference is that the state transition is added to an associated
     /// state. See [`StateWithSet`].
-    fn add_state_with_set<S: States + StateWithSet>(&mut self) -> &mut Self;
+    fn add_state_with_set<S: States + FromWorld + StateWithSet>(&mut self) -> &mut Self;
 
-    fn add_child_state<P: StateWithSet, S: States + StateWithSet>(&mut self) -> &mut Self;
+    fn add_child_state<P: StateWithSet, S: States + FromWorld + StateWithSet>(
+        &mut self,
+    ) -> &mut Self;
 }
 
 pub trait StateWithSet {
@@ -17,9 +19,10 @@ pub trait StateWithSet {
 }
 
 impl DeStateTransition for App {
-    fn add_state_with_set<S: States + StateWithSet>(&mut self) -> &mut Self {
+    fn add_state_with_set<S: States + FromWorld + StateWithSet>(&mut self) -> &mut Self {
         self.init_resource::<State<S>>()
             .init_resource::<NextState<S>>()
+            .add_event::<StateTransitionEvent<S>>()
             .add_systems(
                 StateTransition,
                 (
@@ -32,7 +35,9 @@ impl DeStateTransition for App {
         self
     }
 
-    fn add_child_state<P: StateWithSet, S: States + StateWithSet>(&mut self) -> &mut Self {
+    fn add_child_state<P: StateWithSet, S: States + FromWorld + StateWithSet>(
+        &mut self,
+    ) -> &mut Self {
         self.add_state_with_set::<S>();
         self.configure_sets(StateTransition, (P::state_set(), S::state_set()).chain());
         self

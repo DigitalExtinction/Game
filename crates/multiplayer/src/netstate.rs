@@ -5,7 +5,7 @@ pub(super) struct NetStatePlugin;
 
 impl Plugin for NetStatePlugin {
     fn build(&self, app: &mut App) {
-        app.add_state::<NetState>().add_plugins((
+        app.init_state::<NetState>().add_plugins((
             ProgressPlugin::new(NetState::Connecting).continue_to(NetState::Connected),
             ProgressPlugin::new(NetState::ShuttingDown).continue_to(NetState::None),
         ));

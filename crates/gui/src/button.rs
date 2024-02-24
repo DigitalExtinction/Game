@@ -17,19 +17,15 @@ impl Plugin for ButtonPlugin {
 }
 
 pub trait ButtonCommands<'w, 's> {
-    fn spawn_button<'a>(
-        &'a mut self,
-        size: OuterStyle,
-        caption: impl Into<String>,
-    ) -> EntityCommands<'w, 's, 'a>;
+    fn spawn_button(&mut self, size: OuterStyle, caption: impl Into<String>) -> EntityCommands<'_>;
 }
 
 impl<'w, 's> ButtonCommands<'w, 's> for GuiCommands<'w, 's> {
-    fn spawn_button<'a>(
-        &'a mut self,
+    fn spawn_button(
+        &mut self,
         style: OuterStyle,
         caption: impl Into<String>,
-    ) -> EntityCommands<'w, 's, 'a> {
+    ) -> EntityCommands<'_> {
         let text_style = self.text_props().button_text_style();
 
         let mut commands = self.spawn(ButtonBundle {

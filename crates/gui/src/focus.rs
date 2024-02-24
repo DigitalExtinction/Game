@@ -3,7 +3,7 @@
 
 use bevy::{
     ecs::{
-        query::{ReadOnlyWorldQuery, WorldQuery},
+        query::{QueryData, QueryFilter, QueryItem},
         system::SystemParam,
     },
     prelude::*,
@@ -42,8 +42,8 @@ impl SetFocusEvent {
 #[derive(SystemParam)]
 pub(super) struct FocusedQuery<'w, 's, Q, F = ()>
 where
-    Q: WorldQuery + Sync + Send + 'static,
-    F: ReadOnlyWorldQuery + Sync + Send + 'static,
+    Q: QueryData + Sync + Send + 'static,
+    F: QueryFilter + Sync + Send + 'static,
 {
     focus: Res<'w, UiFocus>,
     query: Query<'w, 's, Q, F>,
@@ -51,8 +51,8 @@ where
 
 impl<'w, 's, Q, F> FocusedQuery<'w, 's, Q, F>
 where
-    Q: WorldQuery + Sync + Send + 'static,
-    F: ReadOnlyWorldQuery + Sync + Send + 'static,
+    Q: QueryData + Sync + Send + 'static,
+    F: QueryFilter + Sync + Send + 'static,
 {
     pub(super) fn is_changed(&self) -> bool {
         self.focus.is_changed()
@@ -60,16 +60,16 @@ where
 
     /// Returns the query item for previously selected entity, id est the
     /// entity selected before the current one.
-    pub(super) fn get_previous_mut(&mut self) -> Option<<Q as WorldQuery>::Item<'_>> {
+    pub(super) fn get_previous_mut(&mut self) -> Option<QueryItem<'_, Q>> {
         self.get_mut(self.focus.previous)
     }
 
     /// Returns the query item for currently selected entity.
-    pub(super) fn get_current_mut(&mut self) -> Option<<Q as WorldQuery>::Item<'_>> {
+    pub(super) fn get_current_mut(&mut self) -> Option<QueryItem<'_, Q>> {
         self.get_mut(self.focus.current)
     }
 
-    fn get_mut(&mut self, entity: Option<Entity>) -> Option<<Q as WorldQuery>::Item<'_>> {
+    fn get_mut(&mut self, entity: Option<Entity>) -> Option<QueryItem<'_, Q>> {
         match entity {
             Some(entity) => match self.query.get_mut(entity) {
                 Ok(item) => Some(item),
@@ -89,7 +89,7 @@ pub(super) struct UiFocus {
 fn focus_system(
     mut focus: ResMut<UiFocus>,
     mut removals: RemovedComponents<Interaction>,
-    mouse: Res<Input<MouseButton>>,
+    mouse: Res<ButtonInput<MouseButton>>,
     touch: Res<Touches>,
     interactions: Query<(Entity, &Interaction), Changed<Interaction>>,
     mut events: EventReader<SetFocusEvent>,

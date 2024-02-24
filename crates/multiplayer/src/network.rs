@@ -3,13 +3,12 @@ use std::ops::Deref;
 use async_std::channel::{TryRecvError, TrySendError};
 use bevy::{
     prelude::*,
-    tasks::{IoTaskPool, Task},
+    tasks::{futures_lite::future, IoTaskPool, Task},
 };
 use de_core::schedule::PreMovement;
 use de_net::{
     startup, ConnErrorReceiver, InPackage, OutPackage, PackageReceiver, PackageSender, Socket,
 };
-use futures_lite::future;
 use iyes_progress::prelude::*;
 
 use crate::{lifecycle::FatalErrorEvent, netstate::NetState};
@@ -28,24 +27,24 @@ impl Plugin for NetworkPlugin {
                 Update,
                 wait_for_network
                     .track_progress()
-                    .run_if(resource_exists::<NetworkStartup>()),
+                    .run_if(resource_exists::<NetworkStartup>),
             )
             .add_systems(
                 PostUpdate,
                 (
                     send_packages
-                        .run_if(resource_exists::<Sender>())
+                        .run_if(resource_exists::<Sender>)
                         .run_if(on_event::<SendPackageEvent>())
                         .in_set(NetworkSet::SendPackages),
                     recv_errors
-                        .run_if(resource_exists::<Errors>())
+                        .run_if(resource_exists::<Errors>)
                         .in_set(NetworkSet::RecvErrors),
                 ),
             )
             .add_systems(
                 PreMovement,
                 recv_packages
-                    .run_if(resource_exists::<Receiver>())
+                    .run_if(resource_exists::<Receiver>)
                     .in_set(NetworkSet::RecvPackages),
             );
     }
@@ -177,7 +176,9 @@ fn recv_packages(
 ) {
     for _ in 0..MAX_RECV_PER_UPDATE {
         match receiver.try_recv() {
-            Ok(package) => events.send(PackageReceivedEvent(package)),
+            Ok(package) => {
+                events.send(PackageReceivedEvent(package));
+            }
             Err(TryRecvError::Empty) => return,
             Err(TryRecvError::Closed) => {
                 fatals.send(FatalErrorEvent::new(

@@ -6,6 +6,7 @@ use bevy::{
     reflect::TypePath,
     render::{
         mesh::{Indices, MeshVertexAttribute, MeshVertexBufferLayout},
+        render_asset::RenderAssetUsages,
         render_resource::{
             AsBindGroup, PrimitiveTopology, RenderPipelineDescriptor, ShaderRef,
             SpecializedMeshPipelineError, VertexFormat,
@@ -298,7 +299,10 @@ fn update_visibility_timer(
 }
 
 fn bar_mesh(width: f32, height: f32) -> Mesh {
-    let mut mesh = Mesh::new(PrimitiveTopology::TriangleList);
+    let mut mesh = Mesh::new(
+        PrimitiveTopology::TriangleList,
+        RenderAssetUsages::RENDER_WORLD,
+    );
     mesh.insert_attribute(
         ATTRIBUTE_POSITION,
         vec![
@@ -313,6 +317,6 @@ fn bar_mesh(width: f32, height: f32) -> Mesh {
         vec![[0., 0.], [0., 1.], [1., 1.], [1., 0.]],
     );
 
-    mesh.set_indices(Some(Indices::U16(vec![0, 1, 2, 0, 2, 3])));
+    mesh.insert_indices(Indices::U16(vec![0, 1, 2, 0, 2, 3]));
     mesh
 }

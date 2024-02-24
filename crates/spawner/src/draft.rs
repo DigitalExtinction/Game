@@ -142,8 +142,8 @@ fn cleanup(mut commands: Commands) {
 
 fn insert_materials(mut commands: Commands, mut materials: ResMut<Assets<StandardMaterial>>) {
     commands.insert_resource(DraftMaterials {
-        valid_placement: materials.add(VALID_PLACEMENT.into()),
-        invalid_placement: materials.add(INVALID_PLACEMENT.into()),
+        valid_placement: materials.add(VALID_PLACEMENT),
+        invalid_placement: materials.add(INVALID_PLACEMENT),
     });
 }
 

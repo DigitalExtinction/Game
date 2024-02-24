@@ -24,7 +24,6 @@ de_types.workspace = true
 ahash.workspace = true
 approx.workspace = true
 bevy.workspace = true
-futures-lite.workspace = true
 glam.workspace = true
 nalgebra.workspace = true
 parry2d.workspace = true

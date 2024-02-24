@@ -1,11 +1,10 @@
 use bevy::{
     prelude::*,
-    tasks::{IoTaskPool, Task},
+    tasks::{futures_lite::future, IoTaskPool, Task},
 };
 use de_core::fs::conf_dir;
 use de_core::state::AppState;
 use de_gui::ToastEvent;
-use futures_lite::future;
 use iyes_progress::prelude::*;
 use tracing::error;
 

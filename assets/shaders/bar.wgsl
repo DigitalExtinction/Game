@@ -6,7 +6,7 @@
 const BACKGROUND_COLOR = vec4<f32>(0., 0., 0., 0.75);
 const FOREGROUND_COLOR = vec4<f32>(0.6, 1., 0.6, 0.75);
 
-@group(1) @binding(0)
+@group(2) @binding(0)
 var<uniform> value: f32;
 
 struct Vertex {

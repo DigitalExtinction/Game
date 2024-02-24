@@ -1,6 +1,9 @@
 use bevy::{
     prelude::*,
-    render::render_resource::{Extent3d, TextureDimension, TextureFormat},
+    render::{
+        render_asset::RenderAssetUsages,
+        render_resource::{Extent3d, TextureDimension, TextureFormat},
+    },
 };
 use de_core::{cleanup::DespawnOnGameExit, gamestate::GameState, schedule::PreMovement};
 use de_map::size::MapBounds;
@@ -101,5 +104,6 @@ fn new_image(resolution: UVec2) -> Image {
         TextureDimension::D2,
         data,
         format,
+        RenderAssetUsages::RENDER_WORLD | RenderAssetUsages::MAIN_WORLD,
     )
 }

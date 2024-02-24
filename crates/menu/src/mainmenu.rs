@@ -79,7 +79,9 @@ fn button_system(
         if let Interaction::Pressed = interaction {
             match action {
                 ButtonAction::SwithState(state) => next_state.set(state),
-                ButtonAction::Quit => exit.send(AppExit),
+                ButtonAction::Quit => {
+                    exit.send(AppExit);
+                }
             };
         }
     }

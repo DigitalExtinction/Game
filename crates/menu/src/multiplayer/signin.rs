@@ -21,7 +21,7 @@ impl Plugin for SignInPlugin {
             .add_systems(
                 Update,
                 (
-                    button_system.run_if(resource_exists::<Inputs>()),
+                    button_system.run_if(resource_exists::<Inputs>),
                     response_system::<SignInRequest>,
                     response_system::<SignUpRequest>,
                     auth_system,
