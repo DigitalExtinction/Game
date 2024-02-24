@@ -244,8 +244,10 @@ fn send_data<T, F>(
 
 #[cfg(test)]
 mod tests {
-    use bevy::ecs::system::SystemState;
-    use bevy::log::{Level, LogPlugin};
+    use bevy::{
+        ecs::{schedule::ScheduleBuildSettings, system::SystemState},
+        log::{Level, LogPlugin},
+    };
 
     use super::*;
 
@@ -287,14 +289,20 @@ mod tests {
         let simple_entity = app.world.spawn((TestComponent { value: 1 },)).id();
         trace!("Simple entity spawned -> {:?}", simple_entity);
 
-        app.add_plugins(DespawnEventsPlugin::<TestComponent>::default())
-            .add_plugins(DespawnEventsPlugin::<ComplexComponent, With<TestComponent>>::default())
-            .add_systems(
-                Update,
-                (despawn_all_test_system.before(DespawnerSet::Despawn),),
-            )
-            .add_systems(Update, despawn.in_set(DespawnerSet::Despawn))
-            .add_event::<DespawnEvent>();
+        app.edit_schedule(Update, |schedule| {
+            schedule.set_build_settings(ScheduleBuildSettings {
+                auto_insert_apply_deferred: false,
+                ..default()
+            });
+        })
+        .add_plugins(DespawnEventsPlugin::<TestComponent>::default())
+        .add_plugins(DespawnEventsPlugin::<ComplexComponent, With<TestComponent>>::default())
+        .add_systems(
+            Update,
+            (despawn_all_test_system.before(DespawnerSet::Despawn),),
+        )
+        .add_systems(Update, despawn.in_set(DespawnerSet::Despawn))
+        .add_event::<DespawnEvent>();
 
         let mut simple_events =
             SystemState::<EventReader<DespawnedComponentsEvent<TestComponent>>>::new(
