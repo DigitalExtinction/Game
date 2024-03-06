@@ -2819,6 +2819,10 @@ dependencies = [
 ]
 
 [[package]]
+name = "de_quadtree"
+version = "0.1.0-dev"
+
+[[package]]
 name = "de_signs"
 version = "0.1.0-dev"
 dependencies = [
