@@ -10,7 +10,7 @@ where
 
 impl<T> Tree<T>
 where
-    T: Default,
+    T: Sized + Default,
 {
     fn insert(&mut self, pos: [f32; 2], item: T) {
         // TODO locate target leaf
@@ -30,23 +30,30 @@ where
     }
 
     fn merge(&mut self, index: usize) {
-        // TODO update index of child
+        if index == 0 {
+            panic!("Cannot merge root node.");
+        }
 
-        // let Some(parent) = self.parent else {
-        //     panic!("Cannot merge root node.");
-        // };
+        let parent = self.inner[index].parent.unwrap();
+        let mut leaf = Leaf::new(parent);
 
-        // let mut merged = Leaf::new(parent);
-        // for i in 0..4 {
-        //     match self.children[i] {
-        //         Slot::Inner(_) => panic!("Cannot merge node with non-leaf children."),
-        //         Slot::Leaf(index) => {
-        //             // TODO
-        //         }
-        //         Slot::Empty => (),
-        //     }
-        // }
-        // merged
+        for slot in self.inner[index].children {
+            match slot {
+                Slot::Inner(_) => panic!("Cannot merge node with non-leaf children."),
+                Slot::Leaf(index) => {
+                    let child = self.remove_leaf(index);
+                    for item in child.items {
+                        leaf.items[leaf.len] = item;
+                        leaf.len += 1;
+                    }
+                }
+                Slot::Empty => (),
+            }
+        }
+
+        self.remove_inner(index);
+        self.inner[parent].replace_child(Slot::Inner(index), Slot::Leaf(self.leafs.len()));
+        self.leafs.push(leaf);
     }
 
     fn remove_inner(&mut self, index: usize) -> Inner {
@@ -55,6 +62,13 @@ where
         }
 
         let removed = self.inner.swap_remove(index);
+
+        // TODO: only in debug mode
+        for i in 0..4 {
+            if !matches!(removed.children[0], Slot::Empty) {
+                panic!("Cannot remove non-empty inner node.");
+            }
+        }
 
         let old_index = self.inner.len();
         if index != old_index {
@@ -68,6 +82,8 @@ where
 
     fn remove_leaf(&mut self, index: usize) -> Leaf<T> {
         let removed = self.leafs.swap_remove(index);
+
+        self.inner[removed.parent].replace_child(Slot::Leaf(index), Slot::Empty);
 
         let old_index = self.leafs.len();
         if index != old_index {
@@ -118,7 +134,7 @@ enum Slot {
 
 struct Leaf<T>
 where
-    T: Default,
+    T: Sized + Default,
 {
     // TODO consider using something smaller than usize
     parent: usize,
@@ -130,7 +146,7 @@ where
 
 impl<T> Leaf<T>
 where
-    T: Default,
+    T: Sized + Default,
 {
     fn new(parent: usize) -> Self {
         Self {
@@ -186,7 +202,7 @@ where
 #[derive(Default)]
 struct Item<T>
 where
-    T: Default,
+    T: Sized + Default,
 {
     pos: [f32; 2],
     item: T,
