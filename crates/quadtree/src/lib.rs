@@ -18,6 +18,25 @@ where
         // TODO if it is full: recursively split
         // TODO insert the item
         // TODO check for collision
+
+        let (min, max) = (self.min, self.max);
+        let mut current = Slot::Inner(0);
+
+        let target = loop {
+            match current {
+                Slot::Inner(index) => {
+                    // TODO set current to proper child
+                }
+                Slot::Leaf(index) => {
+                    if self.leafs[index].is_full() {
+                        let innder_index = self.split(index, min, max);
+                        current = Slot::Inner(innder_index);
+                    } else {
+                        break index;
+                    }
+                }
+            }
+        };
     }
 
     fn remove(&mut self, pos: [f32; 2]) {
@@ -29,6 +48,35 @@ where
         //  * parent has only leafs or empty children slots
     }
 
+    fn split(&mut self, index: usize, min: [f32; 2], max: [f32; 2]) -> usize {
+        let mid = [0.5 * (min[0] + max[0]), 0.5 * (min[1] + max[1])];
+
+        let inner_index = self.inner.len();
+        let removed = self.remove_leaf(index, Some(Slot::Inner(inner_index)));
+
+        let mut new_inner = Inner::new(Some(removed.parent));
+        let mut leafs = [
+            Leaf::new(inner_index),
+            Leaf::new(inner_index),
+            Leaf::new(inner_index),
+            Leaf::new(inner_index),
+        ];
+
+        for item in removed.items.into_iter().take(removed.len) {
+            let child = if item.pos[0] <= mid[0] { 0 } else { 1 }
+                + if item.pos[1] <= mid[1] { 0 } else { 2 };
+            leafs[child].insert(item.pos, item.item);
+        }
+
+        for (i, leaf) in leafs.into_iter().enumerate() {
+            new_inner.children[i] = Some(Slot::Leaf(self.leafs.len()));
+            self.leafs.push(leaf);
+        }
+
+        self.inner.push(new_inner);
+        inner_index
+    }
+
     fn merge(&mut self, index: usize) {
         if index == 0 {
             panic!("Cannot merge root node.");
@@ -38,21 +86,22 @@ where
         let mut leaf = Leaf::new(parent);
 
         for slot in self.inner[index].children {
-            match slot {
-                Slot::Inner(_) => panic!("Cannot merge node with non-leaf children."),
-                Slot::Leaf(index) => {
-                    let child = self.remove_leaf(index);
-                    for item in child.items {
-                        leaf.items[leaf.len] = item;
-                        leaf.len += 1;
+            if let Some(child) = slot {
+                match child {
+                    Slot::Inner(_) => panic!("Cannot merge node with non-leaf children."),
+                    Slot::Leaf(index) => {
+                        let child = self.remove_leaf(index, None);
+                        for item in child.items {
+                            leaf.items[leaf.len] = item;
+                            leaf.len += 1;
+                        }
                     }
                 }
-                Slot::Empty => (),
             }
         }
 
         self.remove_inner(index);
-        self.inner[parent].replace_child(Slot::Inner(index), Slot::Leaf(self.leafs.len()));
+        self.inner[parent].replace_child(Slot::Inner(index), Some(Slot::Leaf(self.leafs.len())));
         self.leafs.push(leaf);
     }
 
@@ -65,7 +114,7 @@ where
 
         // TODO: only in debug mode
         for i in 0..4 {
-            if !matches!(removed.children[0], Slot::Empty) {
+            if !matches!(removed.children[0], None) {
                 panic!("Cannot remove non-empty inner node.");
             }
         }
@@ -73,22 +122,22 @@ where
         let old_index = self.inner.len();
         if index != old_index {
             if let Some(parent) = self.inner[index].parent {
-                self.inner[parent].replace_child(Slot::Inner(old_index), Slot::Inner(index));
+                self.inner[parent].replace_child(Slot::Inner(old_index), Some(Slot::Inner(index)));
             }
         }
 
         removed
     }
 
-    fn remove_leaf(&mut self, index: usize) -> Leaf<T> {
+    fn remove_leaf(&mut self, index: usize, replacement: Option<Slot>) -> Leaf<T> {
         let removed = self.leafs.swap_remove(index);
 
-        self.inner[removed.parent].replace_child(Slot::Leaf(index), Slot::Empty);
+        self.inner[removed.parent].replace_child(Slot::Leaf(index), replacement);
 
         let old_index = self.leafs.len();
         if index != old_index {
             let parent = self.leafs[index].parent;
-            self.inner[parent].replace_child(Slot::Leaf(old_index), Slot::Leaf(index));
+            self.inner[parent].replace_child(Slot::Leaf(old_index), Some(Slot::Leaf(index)));
         }
 
         removed
@@ -99,21 +148,20 @@ struct Inner {
     // TODO consider using MAX value for no parent
     // TODO consider using something smaller than usize
     parent: Option<usize>,
-    children: [Slot; 4],
+    children: [Option<Slot>; 4],
 }
 
 impl Inner {
     fn new(parent: Option<usize>) -> Self {
         Self {
             parent,
-            children: [Slot::Empty, Slot::Empty, Slot::Empty, Slot::Empty],
+            children: [None; 4],
         }
     }
 
-    fn replace_child(&mut self, old: Slot, new: Slot) {
-        for i in 0..4 {
-            let target = &mut self.children[i];
-            if *target == old {
+    fn replace_child(&mut self, old: Slot, new: Option<Slot>) {
+        for target in &mut self.children {
+            if target.map_or(false, |t| t == old) {
                 *target = new;
                 return;
             }
@@ -123,13 +171,13 @@ impl Inner {
     }
 }
 
+// TODO rename to Node
 #[derive(Clone, Copy, PartialEq, Eq)]
 enum Slot {
     // TODO consider compressing usize to something smaller & saving the extra
     // byte for enum
     Inner(usize),
     Leaf(usize),
-    Empty,
 }
 
 struct Leaf<T>
@@ -163,6 +211,10 @@ where
             ],
             len: 0,
         }
+    }
+
+    fn is_full(&self) -> bool {
+        self.len >= self.items.len()
     }
 
     fn insert(&mut self, pos: [f32; 2], item: T) {
