@@ -73,10 +73,14 @@ where
             }
         };
 
-        let mut leaf = &mut self.leafs[target];
+        let leaf = &mut self.leafs[target];
+        let mut parent = leaf.parent;
         leaf.remove(pos);
 
-        let mut parent = leaf.parent;
+        if leaf.len == 0 {
+            self.remove_leaf(target, None);
+        }
+
         while self.mergable(parent) {
             let leaf_index = self.merge(parent);
             parent = self.leafs[leaf_index].parent;
