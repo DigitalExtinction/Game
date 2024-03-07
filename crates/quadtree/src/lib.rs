@@ -49,13 +49,38 @@ where
         self.leafs[target].insert(pos, item);
     }
 
-    fn remove(&mut self, pos: [f32; 2]) {
-        // TODO locate target leaf
-        // TODO remove the item from the leaf
-        // TODO merge to parent if:
-        //  * parent has a parent (i.e. parent is not root)
-        //  * all children fit into a single leaf
-        //  * parent has only leafs or empty children slots
+    fn remove(&mut self, pos: Vec2) {
+        let mut rect = self.rect.clone();
+        let mut current = Slot::Inner(0);
+
+        let target = loop {
+            match current {
+                Slot::Inner(index) => {
+                    let quadrant = rect.quadrant(pos);
+                    match self.inner[index].children[quadrant] {
+                        Some(slot) => {
+                            rect = rect.child(quadrant);
+                            current = slot;
+                        }
+                        None => {
+                            // TODO point does not exist
+                        }
+                    }
+                }
+                Slot::Leaf(index) => {
+                    break index;
+                }
+            }
+        };
+
+        let mut leaf = &mut self.leafs[target];
+        leaf.remove(pos);
+
+        let mut parent = leaf.parent;
+        while self.mergable(parent) {
+            let leaf_index = self.merge(parent);
+            parent = self.leafs[leaf_index].parent;
+        }
     }
 
     fn split(&mut self, index: usize, rect: &Rect) -> usize {
@@ -83,7 +108,30 @@ where
         inner_index
     }
 
-    fn merge(&mut self, index: usize) {
+    fn mergable(&self, index: usize) -> bool {
+        if index == 0 {
+            return false;
+        }
+
+        let mut len = 0;
+        for child in self.inner[index].children {
+            if let Some(slot) = child {
+                match slot {
+                    Slot::Inner(_) => {
+                        return false;
+                    }
+                    Slot::Leaf(child_index) => {
+                        len += self.leafs[child_index].len;
+                    }
+                }
+            }
+        }
+
+        // TODO use a constant
+        len <= 8
+    }
+
+    fn merge(&mut self, index: usize) -> usize {
         if index == 0 {
             panic!("Cannot merge root node.");
         }
@@ -108,7 +156,10 @@ where
 
         self.remove_inner(index);
         self.inner[parent].replace_child(Slot::Inner(index), Some(Slot::Leaf(self.leafs.len())));
+
+        let leaf_index = self.leafs.len();
         self.leafs.push(leaf);
+        leaf_index
     }
 
     fn remove_inner(&mut self, index: usize) -> Inner {
