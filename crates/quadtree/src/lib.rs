@@ -16,31 +16,37 @@ impl<T> Tree<T>
 where
     T: Sized + Default,
 {
-    fn insert(&mut self, pos: [f32; 2], item: T) {
-        // TODO locate target leaf
-        // TODO if it doesn't exist: create it
-        // TODO if it is full: recursively split
-        // TODO insert the item
-        // TODO check for collision
-
-        let rect = self.rect.clone();
+    fn insert(&mut self, pos: Vec2, item: T) {
+        let mut rect = self.rect.clone();
         let mut current = Slot::Inner(0);
 
         let target = loop {
             match current {
                 Slot::Inner(index) => {
-                    // TODO set current to proper child
+                    let quadrant = rect.quadrant(pos);
+                    match self.inner[index].children[quadrant] {
+                        Some(slot) => {
+                            rect = rect.child(quadrant);
+                            current = slot;
+                        }
+                        None => {
+                            current = Slot::Leaf(self.leafs.len());
+                            self.leafs.push(Leaf::new(index));
+                            self.inner[index].children[quadrant] = Some(current);
+                        }
+                    }
                 }
                 Slot::Leaf(index) => {
                     if self.leafs[index].is_full() {
-                        let innder_index = self.split(index, &rect);
-                        current = Slot::Inner(innder_index);
+                        current = Slot::Inner(self.split(index, &rect));
                     } else {
                         break index;
                     }
                 }
             }
         };
+
+        self.leafs[target].insert(pos, item);
     }
 
     fn remove(&mut self, pos: [f32; 2]) {
@@ -221,6 +227,8 @@ where
         if self.len >= self.items.len() {
             panic!("Leaf is full.");
         }
+
+        // TODO check for collision?
 
         self.items[self.len] = Item { pos, item };
         self.len += 1;
