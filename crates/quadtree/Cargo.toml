@@ -12,3 +12,4 @@ license.workspace = true
 categories.workspace = true
 
 [dependencies]
+glam.workspace = true

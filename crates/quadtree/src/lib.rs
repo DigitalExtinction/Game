@@ -1,9 +1,13 @@
+use glam::Vec2;
+use quadrants::Rect;
+
+mod quadrants;
+
 struct Tree<T>
 where
     T: Default,
 {
-    min: [f32; 2],
-    max: [f32; 2],
+    rect: Rect,
     inner: Vec<Inner>,
     leafs: Vec<Leaf<T>>,
 }
@@ -19,7 +23,7 @@ where
         // TODO insert the item
         // TODO check for collision
 
-        let (min, max) = (self.min, self.max);
+        let rect = self.rect.clone();
         let mut current = Slot::Inner(0);
 
         let target = loop {
@@ -29,7 +33,7 @@ where
                 }
                 Slot::Leaf(index) => {
                     if self.leafs[index].is_full() {
-                        let innder_index = self.split(index, min, max);
+                        let innder_index = self.split(index, &rect);
                         current = Slot::Inner(innder_index);
                     } else {
                         break index;
@@ -48,9 +52,7 @@ where
         //  * parent has only leafs or empty children slots
     }
 
-    fn split(&mut self, index: usize, min: [f32; 2], max: [f32; 2]) -> usize {
-        let mid = [0.5 * (min[0] + max[0]), 0.5 * (min[1] + max[1])];
-
+    fn split(&mut self, index: usize, rect: &Rect) -> usize {
         let inner_index = self.inner.len();
         let removed = self.remove_leaf(index, Some(Slot::Inner(inner_index)));
 
@@ -63,9 +65,7 @@ where
         ];
 
         for item in removed.items.into_iter().take(removed.len) {
-            let child = if item.pos[0] <= mid[0] { 0 } else { 1 }
-                + if item.pos[1] <= mid[1] { 0 } else { 2 };
-            leafs[child].insert(item.pos, item.item);
+            leafs[rect.quadrant(item.pos)].insert(item.pos, item.item);
         }
 
         for (i, leaf) in leafs.into_iter().enumerate() {
@@ -217,7 +217,7 @@ where
         self.len >= self.items.len()
     }
 
-    fn insert(&mut self, pos: [f32; 2], item: T) {
+    fn insert(&mut self, pos: Vec2, item: T) {
         if self.len >= self.items.len() {
             panic!("Leaf is full.");
         }
@@ -226,7 +226,7 @@ where
         self.len += 1;
     }
 
-    fn remove(&mut self, pos: [f32; 2]) -> Option<T> {
+    fn remove(&mut self, pos: Vec2) -> Option<T> {
         for i in 0..self.len {
             if pos == self.items[i].pos {
                 self.len -= 1;
@@ -256,6 +256,6 @@ struct Item<T>
 where
     T: Sized + Default,
 {
-    pos: [f32; 2],
+    pos: Vec2,
     item: T,
 }
