@@ -5,7 +5,7 @@ mod quadrants;
 
 struct Tree<T>
 where
-    T: Default,
+    T: Copy + Clone + Default + PartialEq,
 {
     rect: Rect,
     inner: Vec<Inner>,
@@ -14,7 +14,7 @@ where
 
 impl<T> Tree<T>
 where
-    T: Sized + Default,
+    T: Copy + Clone + Default + PartialEq,
 {
     fn insert(&mut self, pos: Vec2, item: T) {
         let mut rect = self.rect.clone();
@@ -49,14 +49,14 @@ where
         self.leafs[target].insert(pos, item);
     }
 
-    fn remove(&mut self, pos: Vec2) {
+    fn remove(&mut self, item: Item<T>) {
         let mut rect = self.rect.clone();
         let mut current = Slot::Inner(0);
 
         let target = loop {
             match current {
                 Slot::Inner(index) => {
-                    let quadrant = rect.quadrant(pos);
+                    let quadrant = rect.quadrant(item.pos);
                     match self.inner[index].children[quadrant] {
                         Some(slot) => {
                             rect = rect.child(quadrant);
@@ -75,7 +75,7 @@ where
 
         let leaf = &mut self.leafs[target];
         let mut parent = leaf.parent;
-        leaf.remove(pos);
+        leaf.remove(item);
 
         if leaf.len == 0 {
             self.remove_leaf(target, None);
@@ -243,7 +243,7 @@ enum Slot {
 
 struct Leaf<T>
 where
-    T: Sized + Default,
+    T: Copy + Clone + Default + PartialEq,
 {
     // TODO consider using something smaller than usize
     parent: usize,
@@ -255,21 +255,12 @@ where
 
 impl<T> Leaf<T>
 where
-    T: Sized + Default,
+    T: Copy + Clone + Default + PartialEq,
 {
     fn new(parent: usize) -> Self {
         Self {
             parent,
-            items: [
-                Item::default(),
-                Item::default(),
-                Item::default(),
-                Item::default(),
-                Item::default(),
-                Item::default(),
-                Item::default(),
-                Item::default(),
-            ],
+            items: [Item::default(); 8],
             len: 0,
         }
     }
@@ -289,36 +280,38 @@ where
         self.len += 1;
     }
 
-    fn remove(&mut self, pos: Vec2) -> Option<T> {
+    fn remove(&mut self, item: Item<T>) -> bool {
         for i in 0..self.len {
-            if pos == self.items[i].pos {
+            if self.items[i] == item {
                 self.len -= 1;
-
-                // First move the item to the position of the last occupied
-                // slot as part of the swap remove.
+                // Move the item to the position of the first non-occupied slot
+                // (swap remove).
                 if i < self.len {
-                    unsafe {
-                        std::ptr::swap(&mut self.items[self.len], &mut self.items[i]);
-                    }
+                    self.items[i] = self.items[self.len];
                 }
 
-                // Then move it out (replace it but a placeholder).
-                let mut item = Item::default();
-                std::mem::swap(&mut self.items[self.len], &mut item);
-
-                return Some(item.item);
+                return true;
             }
         }
 
-        None
+        false
     }
 }
 
-#[derive(Default)]
+#[derive(Clone, Copy, Default, PartialEq)]
 struct Item<T>
 where
-    T: Sized + Default,
+    T: Clone + Copy + PartialEq,
 {
     pos: Vec2,
     item: T,
+}
+
+impl<T> Item<T>
+where
+    T: Clone + Copy + PartialEq,
+{
+    fn new(pos: Vec2, item: T) -> Self {
+        Self { pos, item }
+    }
 }
