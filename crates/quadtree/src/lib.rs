@@ -1,5 +1,5 @@
 use glam::Vec2;
-use quadrants::Rect;
+use quadrants::{Quadrants, Rect};
 
 mod quadrants;
 
@@ -16,23 +16,23 @@ impl<T> Tree<T>
 where
     T: Copy + Clone + Default + PartialEq,
 {
-    fn insert(&mut self, pos: Vec2, item: T) {
+    fn insert(&mut self, item: Item<T>) {
         let mut rect = self.rect.clone();
         let mut current = Slot::Inner(0);
 
         let target = loop {
             match current {
                 Slot::Inner(index) => {
-                    let quadrant = rect.quadrant(pos);
-                    match self.inner[index].children[quadrant] {
+                    let quadrant = rect.quadrant(item.pos);
+                    match self.inner[index].children.get(quadrant) {
                         Some(slot) => {
                             rect = rect.child(quadrant);
-                            current = slot;
+                            current = *slot;
                         }
                         None => {
                             current = Slot::Leaf(self.leafs.len());
                             self.leafs.push(Leaf::new(index));
-                            self.inner[index].children[quadrant] = Some(current);
+                            self.inner[index].children.set(quadrant, Some(current));
                         }
                     }
                 }
@@ -46,7 +46,7 @@ where
             }
         };
 
-        self.leafs[target].insert(pos, item);
+        self.leafs[target].insert(item);
     }
 
     fn remove(&mut self, item: Item<T>) {
@@ -57,10 +57,10 @@ where
             match current {
                 Slot::Inner(index) => {
                     let quadrant = rect.quadrant(item.pos);
-                    match self.inner[index].children[quadrant] {
+                    match self.inner[index].children.get(quadrant) {
                         Some(slot) => {
                             rect = rect.child(quadrant);
-                            current = slot;
+                            current = *slot;
                         }
                         None => {
                             // TODO point does not exist
@@ -75,6 +75,8 @@ where
 
         let leaf = &mut self.leafs[target];
         let mut parent = leaf.parent;
+
+        // TODO return the bool
         leaf.remove(item);
 
         if leaf.len == 0 {
@@ -92,15 +94,15 @@ where
         let removed = self.remove_leaf(index, Some(Slot::Inner(inner_index)));
 
         let mut new_inner = Inner::new(Some(removed.parent));
-        let mut leafs = [
-            Leaf::new(inner_index),
-            Leaf::new(inner_index),
-            Leaf::new(inner_index),
-            Leaf::new(inner_index),
-        ];
+        let mut leafs = Quadrants::new(
+            Some(Leaf::new(inner_index)),
+            Some(Leaf::new(inner_index)),
+            Some(Leaf::new(inner_index)),
+            Some(Leaf::new(inner_index)),
+        );
 
         for item in removed.items.into_iter().take(removed.len) {
-            leafs[rect.quadrant(item.pos)].insert(item.pos, item.item);
+            leafs.get_mut(rect.quadrant(item.pos)).unwrap().insert(item);
         }
 
         for (i, leaf) in leafs.into_iter().enumerate() {
@@ -209,26 +211,19 @@ struct Inner {
     // TODO consider using MAX value for no parent
     // TODO consider using something smaller than usize
     parent: Option<usize>,
-    children: [Option<Slot>; 4],
+    children: Quadrants<Slot>,
 }
 
 impl Inner {
     fn new(parent: Option<usize>) -> Self {
         Self {
             parent,
-            children: [None; 4],
+            children: Quadrants::default(),
         }
     }
 
     fn replace_child(&mut self, old: Slot, new: Option<Slot>) {
-        for target in &mut self.children {
-            if target.map_or(false, |t| t == old) {
-                *target = new;
-                return;
-            }
-        }
-
-        panic!("No child moved.");
+        self.children.replace(&old, new);
     }
 }
 
@@ -269,14 +264,14 @@ where
         self.len >= self.items.len()
     }
 
-    fn insert(&mut self, pos: Vec2, item: T) {
+    fn insert(&mut self, item: Item<T>) {
         if self.len >= self.items.len() {
             panic!("Leaf is full.");
         }
 
         // TODO check for collision?
 
-        self.items[self.len] = Item { pos, item };
+        self.items[self.len] = item;
         self.len += 1;
     }
 
