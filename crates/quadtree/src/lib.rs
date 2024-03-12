@@ -168,8 +168,8 @@ where
             }
         }
 
-        for i in 0..num_indices {
-            let child = self.remove_leaf(indices[i], None);
+        for index in indices.iter().take(num_indices) {
+            let child = self.remove_leaf(*index, None);
             for item in child.items {
                 leaf.items[leaf.len] = item;
                 leaf.len += 1;

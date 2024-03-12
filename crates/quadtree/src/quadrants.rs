@@ -82,6 +82,9 @@ impl<T> Quadrants<T> {
     where
         F: FnMut(T) -> U,
     {
+        // Disregard invalid clippy warning
+        // (https://github.com/rust-lang/rust-clippy/issues/10178)
+        #[allow(clippy::manual_map)]
         Quadrants(self.0.map(|l| match l {
             Some(l) => Some(f(l)),
             None => None,
