@@ -61,7 +61,7 @@ impl<T> Quadrants<T> {
         self.0[self.index(quadrant)].as_mut()
     }
 
-    pub(super) fn set(&self, quadrant: Quadrant, mut value: Option<T>) -> Option<T> {
+    pub(super) fn set(&mut self, quadrant: Quadrant, mut value: Option<T>) -> Option<T> {
         std::mem::swap(&mut self.0[self.index(quadrant)], &mut value);
         value
     }
@@ -70,12 +70,22 @@ impl<T> Quadrants<T> {
     where
         T: PartialEq,
     {
-        for value in &mut self.0 {
-            if value.map_or(false, |value| value.eq(old)) {
+        for value in self.0.iter_mut() {
+            if value.as_ref().map_or(false, |value| value.eq(old)) {
                 *value = new;
                 return;
             }
         }
+    }
+
+    pub(super) fn map<F, U>(self, mut f: F) -> Quadrants<U>
+    where
+        F: FnMut(T) -> U,
+    {
+        Quadrants(self.0.map(|l| match l {
+            Some(l) => Some(f(l)),
+            None => None,
+        }))
     }
 
     fn index(&self, quadrant: Quadrant) -> usize {
@@ -88,36 +98,33 @@ impl<T> Quadrants<T> {
     }
 }
 
-impl<T> IntoIterator for Quadrants<T> {
-    type Item = T;
-    type IntoIter = QuadrantsIter<T>;
+impl<'a, T> IntoIterator for &'a Quadrants<T> {
+    type Item = &'a T;
+    type IntoIter = QuadrantsIter<'a, T>;
 
     fn into_iter(self) -> Self::IntoIter {
         QuadrantsIter {
             index: 0,
-            items: self.0,
+            items: &self.0,
         }
     }
 }
 
-pub(super) struct QuadrantsIter<T> {
+pub(super) struct QuadrantsIter<'a, T> {
     index: usize,
-    items: [Option<T>; 4],
+    items: &'a [Option<T>; 4],
 }
 
-impl<T> Iterator for QuadrantsIter<T> {
-    type Item = T;
+impl<'a, T> Iterator for QuadrantsIter<'a, T> {
+    type Item = &'a T;
 
     fn next(&mut self) -> Option<Self::Item> {
         while self.index < self.items.len() {
-            let index = self.index;
+            let item = &self.items[self.index];
             self.index += 1;
 
-            let mut out = None;
-            std::mem::swap(&mut self.items[index], &mut out);
-
-            if out.is_some() {
-                return out;
+            if item.is_some() {
+                return item.as_ref();
             }
         }
 

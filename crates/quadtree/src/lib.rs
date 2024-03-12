@@ -3,7 +3,7 @@ use quadrants::{Quadrants, Rect};
 
 mod quadrants;
 
-struct Tree<T>
+pub struct Tree<T>
 where
     T: Copy + Clone + Default + PartialEq,
 {
@@ -16,7 +16,9 @@ impl<T> Tree<T>
 where
     T: Copy + Clone + Default + PartialEq,
 {
-    fn insert(&mut self, item: Item<T>) {
+    pub fn insert(&mut self, pos: Vec2, item: T) {
+        let item = Item { pos, item };
+
         let mut rect = self.rect.clone();
         let mut current = Slot::Inner(0);
 
@@ -49,7 +51,9 @@ where
         self.leafs[target].insert(item);
     }
 
-    fn remove(&mut self, item: Item<T>) {
+    pub fn remove(&mut self, pos: Vec2, item: T) {
+        let item = Item { pos, item };
+
         let mut rect = self.rect.clone();
         let mut current = Slot::Inner(0);
 
@@ -93,7 +97,6 @@ where
         let inner_index = self.inner.len();
         let removed = self.remove_leaf(index, Some(Slot::Inner(inner_index)));
 
-        let mut new_inner = Inner::new(Some(removed.parent));
         let mut leafs = Quadrants::new(
             Some(Leaf::new(inner_index)),
             Some(Leaf::new(inner_index)),
@@ -105,10 +108,15 @@ where
             leafs.get_mut(rect.quadrant(item.pos)).unwrap().insert(item);
         }
 
-        for (i, leaf) in leafs.into_iter().enumerate() {
-            new_inner.children[i] = Some(Slot::Leaf(self.leafs.len()));
-            self.leafs.push(leaf);
-        }
+        let all_leafs = &mut self.leafs;
+        let new_inner = Inner::new(
+            Some(removed.parent),
+            leafs.map(move |leaf| {
+                let slot = Slot::Leaf(all_leafs.len());
+                all_leafs.push(leaf);
+                slot
+            }),
+        );
 
         self.inner.push(new_inner);
         inner_index
@@ -119,22 +127,24 @@ where
             return false;
         }
 
+        // TODO use a constant
+        self.num_children(index).map_or(false, |num| num <= 8)
+    }
+
+    fn num_children(&self, index: usize) -> Option<usize> {
         let mut len = 0;
-        for child in self.inner[index].children {
-            if let Some(slot) = child {
-                match slot {
-                    Slot::Inner(_) => {
-                        return false;
-                    }
-                    Slot::Leaf(child_index) => {
-                        len += self.leafs[child_index].len;
-                    }
+        for slot in &self.inner[index].children {
+            match slot {
+                Slot::Inner(_) => {
+                    return None;
+                }
+                Slot::Leaf(child_index) => {
+                    len += self.leafs[*child_index].len;
                 }
             }
         }
 
-        // TODO use a constant
-        len <= 8
+        Some(len)
     }
 
     fn merge(&mut self, index: usize) -> usize {
@@ -145,18 +155,24 @@ where
         let parent = self.inner[index].parent.unwrap();
         let mut leaf = Leaf::new(parent);
 
-        for slot in self.inner[index].children {
-            if let Some(child) = slot {
-                match child {
-                    Slot::Inner(_) => panic!("Cannot merge node with non-leaf children."),
-                    Slot::Leaf(index) => {
-                        let child = self.remove_leaf(index, None);
-                        for item in child.items {
-                            leaf.items[leaf.len] = item;
-                            leaf.len += 1;
-                        }
-                    }
+        let mut num_indices = 0;
+        let mut indices = [0; 4];
+
+        for slot in &self.inner[index].children {
+            match slot {
+                Slot::Inner(_) => panic!("Cannot merge node with non-leaf children."),
+                Slot::Leaf(index) => {
+                    indices[num_indices] = *index;
+                    num_indices += 1;
                 }
+            }
+        }
+
+        for i in 0..num_indices {
+            let child = self.remove_leaf(indices[i], None);
+            for item in child.items {
+                leaf.items[leaf.len] = item;
+                leaf.len += 1;
             }
         }
 
@@ -174,13 +190,6 @@ where
         }
 
         let removed = self.inner.swap_remove(index);
-
-        // TODO: only in debug mode
-        for i in 0..4 {
-            if !matches!(removed.children[0], None) {
-                panic!("Cannot remove non-empty inner node.");
-            }
-        }
 
         let old_index = self.inner.len();
         if index != old_index {
@@ -215,11 +224,8 @@ struct Inner {
 }
 
 impl Inner {
-    fn new(parent: Option<usize>) -> Self {
-        Self {
-            parent,
-            children: Quadrants::default(),
-        }
+    fn new(parent: Option<usize>, children: Quadrants<Slot>) -> Self {
+        Self { parent, children }
     }
 
     fn replace_child(&mut self, old: Slot, new: Option<Slot>) {
@@ -300,13 +306,4 @@ where
 {
     pos: Vec2,
     item: T,
-}
-
-impl<T> Item<T>
-where
-    T: Clone + Copy + PartialEq,
-{
-    fn new(pos: Vec2, item: T) -> Self {
-        Self { pos, item }
-    }
 }
