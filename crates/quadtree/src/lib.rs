@@ -1,7 +1,10 @@
 use glam::Vec2;
 use quadrants::{Quadrants, Rect};
+use tree::Tree;
 
+mod packed;
 mod quadrants;
+mod tree;
 
 pub struct Tree<T>
 where
