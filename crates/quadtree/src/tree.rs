@@ -1,4 +1,7 @@
-use crate::{packed::Packed, quadrants::Quadrants};
+use crate::{
+    packed::Packed,
+    quadrants::{Quadrant, Quadrants},
+};
 
 pub(super) struct Tree<S>
 where
@@ -15,21 +18,80 @@ where
     pub(super) fn new() -> Self {
         let mut inner = Packed::new();
         // Add empty root.
-        inner.push(Inner::new(usize::MAX, Quadrants::default()));
+        inner.push(Inner::new(usize::MAX));
         Self {
             inner,
             leafs: Packed::new(),
         }
     }
 
-    pub(super) fn get_leaf_mut(&self, index: usize) -> Option<&mut S> {
+    pub(super) fn get_leaf(&self, index: usize) -> Option<&S> {
+        self.leafs.get(index).map(|l| &l.item)
+    }
+
+    pub(super) fn get_leaf_mut(&mut self, index: usize) -> Option<&mut S> {
         self.leafs.get_mut(index).map(|l| &mut l.item)
     }
 
-    // TODO remove
-    // TODO replace (auto crate the replacement)
+    pub(super) fn children(&self, index: usize) -> &Quadrants<Node> {
+        &self.inner.get(index).unwrap().children
+    }
 
-    fn replace(&mut self, node: Node, replacement: Option<Node>) -> Option<S> {
+    pub(super) fn remove_children(&mut self, index: usize) -> Quadrants<S> {
+        let mut removed = Quadrants::empty();
+
+        for quadrant in [
+            Quadrant::TopLeft,
+            Quadrant::TopRight,
+            Quadrant::BottomLeft,
+            Quadrant::BottomRight,
+        ] {
+            if let Some(&child) = self.inner.get(index).unwrap().children.get(quadrant) {
+                match child {
+                    Node::Inner(_) => {
+                        panic!("Cannot remove non-leaf children from a node.");
+                    }
+                    Node::Leaf(child_index) => {
+                        removed.set(quadrant, Some(self.remove_leaf(child_index)));
+                    }
+                }
+            }
+        }
+
+        removed
+    }
+
+    pub(super) fn remove_inner(&mut self, index: usize) {
+        self.replace_internal(Node::Inner(index), None);
+    }
+
+    pub(super) fn remove_leaf(&mut self, index: usize) -> S {
+        self.replace_internal(Node::Leaf(index), None).unwrap()
+    }
+
+    pub(super) fn replace_inner(&mut self, index: usize) -> usize {
+        let parent = self.inner.get(index).unwrap().parent;
+        let new_leaf_index = self.leafs.len();
+
+        self.leafs.push(Leaf::new(parent));
+        self.replace_internal(Node::Inner(index), Some(Node::Leaf(new_leaf_index)));
+
+        new_leaf_index
+    }
+
+    pub(super) fn replace_leaf(&mut self, index: usize) -> (usize, S) {
+        let parent = self.leafs.get(index).unwrap().parent;
+        let new_inner_index = self.inner.len();
+
+        self.inner.push(Inner::new(parent));
+        let item = self
+            .replace_internal(Node::Leaf(index), Some(Node::Inner(new_inner_index)))
+            .unwrap();
+
+        (new_inner_index, item)
+    }
+
+    fn replace_internal(&mut self, node: Node, replacement: Option<Node>) -> Option<S> {
         let (removed_parent, moved, item) = match node {
             Node::Inner(index) => {
                 if index == 0 {
@@ -72,7 +134,7 @@ where
 
 // TODO rename to Node
 #[derive(Clone, Copy, PartialEq, Eq)]
-enum Node {
+pub(super) enum Node {
     // TODO consider compressing usize to something smaller & saving the extra
     // byte for enum
     Inner(usize),
@@ -87,8 +149,11 @@ struct Inner {
 }
 
 impl Inner {
-    fn new(parent: usize, children: Quadrants<Node>) -> Self {
-        Self { parent, children }
+    fn new(parent: usize) -> Self {
+        Self {
+            parent,
+            children: Quadrants::empty(),
+        }
     }
 
     fn replace_child(&mut self, old: Node, new: Option<Node>) {

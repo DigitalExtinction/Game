@@ -40,10 +40,13 @@ impl Rect {
     }
 }
 
-#[derive(Default)]
 pub(super) struct Quadrants<T>([Option<T>; 4]);
 
 impl<T> Quadrants<T> {
+    pub(super) fn empty() -> Self {
+        Self([None, None, None, None])
+    }
+
     pub(super) fn new(
         top_left: Option<T>,
         top_right: Option<T>,
