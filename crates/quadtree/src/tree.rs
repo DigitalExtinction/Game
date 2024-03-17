@@ -15,6 +15,8 @@ impl<S> Tree<S>
 where
     S: Default,
 {
+    pub(super) const ROOT: Node = Node::Inner(0);
+
     pub(super) fn new() -> Self {
         let mut inner = Packed::new();
         // Add empty root.
@@ -33,8 +35,29 @@ where
         self.leafs.get_mut(index).map(|l| &mut l.item)
     }
 
+    pub(super) fn leaf_parent(&self, index: usize) -> usize {
+        self.leafs.get(index).unwrap().parent
+    }
+
     pub(super) fn children(&self, index: usize) -> &Quadrants<Node> {
         &self.inner.get(index).unwrap().children
+    }
+
+    pub(super) fn init_child<F>(&mut self, index: usize, quadrant: Quadrant, init: F) -> Node
+    where
+        F: Fn() -> S,
+    {
+        let inner = self.inner.get_mut(index).unwrap();
+
+        match inner.children.get(quadrant) {
+            Some(node) => *node,
+            None => {
+                let node = Node::Leaf(self.leafs.len());
+                inner.children.set(quadrant, Some(node));
+                self.leafs.push(Leaf::new(index, init()));
+                node
+            }
+        }
     }
 
     pub(super) fn remove_children(&mut self, index: usize) -> Quadrants<S> {
@@ -69,11 +92,11 @@ where
         self.replace_internal(Node::Leaf(index), None).unwrap()
     }
 
-    pub(super) fn replace_inner(&mut self, index: usize) -> usize {
+    pub(super) fn replace_inner(&mut self, index: usize, item: S) -> usize {
         let parent = self.inner.get(index).unwrap().parent;
         let new_leaf_index = self.leafs.len();
 
-        self.leafs.push(Leaf::new(parent));
+        self.leafs.push(Leaf::new(parent, item));
         self.replace_internal(Node::Inner(index), Some(Node::Leaf(new_leaf_index)));
 
         new_leaf_index
@@ -172,10 +195,7 @@ impl<S> Leaf<S>
 where
     S: Default,
 {
-    fn new(parent: usize) -> Self {
-        Self {
-            parent,
-            item: S::default(),
-        }
+    fn new(parent: usize, item: S) -> Self {
+        Self { parent, item }
     }
 }

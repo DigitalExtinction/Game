@@ -53,83 +53,73 @@ where
     //     self.leafs[target].insert(item);
     // }
 
-    // pub fn remove(&mut self, pos: Vec2, item: T) {
-    //     let item = Item { pos, item };
+    pub fn remove(&mut self, pos: Vec2, item: T) {
+        let item = Item { pos, item };
 
-    //     let mut rect = self.rect.clone();
-    //     let mut current = Slot::Inner(0);
+        let mut rect = self.rect.clone();
+        let mut current = Tree::<Items<T>>::ROOT;
 
-    //     let target = loop {
-    //         match current {
-    //             Slot::Inner(index) => {
-    //                 let quadrant = rect.quadrant(item.pos);
-    //                 match self.inner[index].children.get(quadrant) {
-    //                     Some(slot) => {
-    //                         rect = rect.child(quadrant);
-    //                         current = *slot;
-    //                     }
-    //                     None => {
-    //                         // TODO point does not exist
-    //                     }
-    //                 }
-    //             }
-    //             Slot::Leaf(index) => {
-    //                 break index;
-    //             }
-    //         }
-    //     };
+        let target = loop {
+            match current {
+                Node::Inner(index) => {
+                    let quadrant = rect.quadrant(item.pos);
+                    match self.tree.children(index).get(quadrant) {
+                        Some(slot) => {
+                            rect = rect.child(quadrant);
+                            current = *slot;
+                        }
+                        None => {
+                            // TODO point does not exist
+                        }
+                    }
+                }
+                Node::Leaf(index) => {
+                    break index;
+                }
+            }
+        };
 
-    //     let leaf = &mut self.leafs[target];
-    //     let mut parent = leaf.parent;
+        let items = self.tree.get_leaf_mut(target).unwrap();
+        if !items.remove(item) {
+            // TODO point does not exist
+        }
+        let is_empty = items.len == 0;
 
-    //     // TODO return the bool
-    //     leaf.remove(item);
+        let mut parent = self.tree.leaf_parent(target);
+        if is_empty {
+            self.tree.remove_leaf(target);
+        }
 
-    //     if leaf.len == 0 {
-    //         self.remove_leaf(target, None);
-    //     }
+        while self.mergable(parent) {
+            let leaf_index = self.merge(parent);
+            parent = self.tree.leaf_parent(leaf_index);
+        }
+    }
 
-    //     while self.mergable(parent) {
-    //         let leaf_index = self.merge(parent);
-    //         parent = self.leafs[leaf_index].parent;
-    //     }
-    // }
+    fn split(&mut self, index: usize, rect: &Rect) -> usize {
+        let (new_inner_index, items) = self.tree.replace_leaf(index);
+        for item in items.items.into_iter().take(items.len) {
+            self.insert(new_inner_index, rect, item);
+        }
+        new_inner_index
+    }
 
-    // fn split(&mut self, index: usize, rect: &Rect) -> usize {
-    //     let inner_index = self.inner.len();
-    //     let removed = self.remove_leaf(index, Some(Slot::Inner(inner_index)));
-
-    //     let mut leafs = Quadrants::new(
-    //         Some(Leaf::new(inner_index)),
-    //         Some(Leaf::new(inner_index)),
-    //         Some(Leaf::new(inner_index)),
-    //         Some(Leaf::new(inner_index)),
-    //     );
-
-    //     for item in removed.items.into_iter().take(removed.len) {
-    //         leafs.get_mut(rect.quadrant(item.pos)).unwrap().insert(item);
-    //     }
-
-    //     let all_leafs = &mut self.leafs;
-    //     let new_inner = Inner::new(
-    //         Some(removed.parent),
-    //         leafs.map(move |leaf| {
-    //             let slot = Slot::Leaf(all_leafs.len());
-    //             all_leafs.push(leaf);
-    //             slot
-    //         }),
-    //     );
-
-    //     self.inner.push(new_inner);
-    //     inner_index
-    // }
+    fn insert(&mut self, index: usize, rect: &Rect, item: Item<T>) {
+        let quadrant = rect.quadrant(item.pos);
+        let node = self.tree.init_child(index, quadrant, Items::new);
+        let items = match node {
+            Node::Inner(_) => panic!("Cannot insert item to an inner node."),
+            Node::Leaf(index) => self.tree.get_leaf_mut(index).unwrap(),
+        };
+        items.insert(item);
+    }
 
     fn mergable(&self, index: usize) -> bool {
         if index == 0 {
             return false;
         }
 
-        // TODO use a constant
+        // TODO use a constant (half of max size)
         self.num_children(index).map_or(false, |num| num <= 8)
     }
 
@@ -156,12 +146,12 @@ where
         }
 
         let removed = self.tree.remove_children(index);
-        let new_leaf_index = self.tree.replace_inner(index);
+        let new_leaf_index = self.tree.replace_inner(index, Items::new());
 
         let leaf = self.tree.get_leaf_mut(new_leaf_index).unwrap();
 
         for items in &removed {
-            for &item in items.items.iter().take(items.len) {
+            for item in items.items.into_iter().take(items.len) {
                 leaf.items[leaf.len] = item;
                 leaf.len += 1;
             }
