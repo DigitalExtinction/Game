@@ -1,3 +1,6 @@
+use super::draw::DrawingParam;
+use crate::ray::ScreenRay;
+use ahash::AHashMap;
 use bevy::{ecs::system::SystemParam, prelude::*};
 use de_core::{
     gamestate::GameState, gconfig::GameConfig, objects::ObjectTypeComponent,
@@ -6,21 +9,55 @@ use de_core::{
 use de_map::size::MapBounds;
 use de_objects::SolidObjects;
 use de_terrain::TerrainCollider;
-use de_types::projection::ToFlat;
+use de_types::{objects::*, projection::ToFlat};
 use parry2d::{
     bounding_volume::Aabb,
     math::Point,
     query::{Ray, RayCast},
 };
 
-use super::draw::DrawingParam;
-use crate::ray::ScreenRay;
-
 const TERRAIN_COLOR: Color = Color::rgb(0.61, 0.46, 0.32);
 const PLAYER_COLOR: Color = Color::rgb(0.1, 0.1, 0.9);
-const ENEMY_COLOR: Color = Color::rgb(0.9, 0.1, 0.1);
+const ENEMY_COLORS: [Color; 4] = [
+    Color::rgb(0.1, 0.9, 0.1),
+    Color::rgb(0.9, 0.1, 0.1),
+    Color::rgb(0.9, 0.9, 0.1),
+    Color::rgb(0.1, 0.9, 0.9),
+];
 const MIN_ENTITY_SIZE: Vec2 = Vec2::splat(0.02);
 const CAMERA_COLOR: Color = Color::rgb(0.9, 0.9, 0.9);
+
+#[derive(Resource, Debug)]
+struct PlayerColors {
+    player: (Color, AHashMap<ObjectType, Color>),
+    enemies: [(Color, AHashMap<ObjectType, Color>); 4],
+}
+
+impl Default for PlayerColors {
+    fn default() -> Self {
+        Self {
+            player: derive_colors(PLAYER_COLOR),
+            enemies: [
+                derive_colors(ENEMY_COLORS[0]),
+                derive_colors(ENEMY_COLORS[1]),
+                derive_colors(ENEMY_COLORS[2]),
+                derive_colors(ENEMY_COLORS[3]),
+            ],
+        }
+    }
+}
+
+fn derive_colors(base_color: Color) -> (Color, AHashMap<ObjectType, Color>) {
+    let mut unit_color = base_color.clone();
+    unit_color.set_s(base_color.s() - 0.3);
+    let mut object_colors = AHashMap::new();
+    object_colors.insert(
+        ObjectType::Active(ActiveObjectType::Unit(UnitType::Attacker)),
+        unit_color,
+    );
+
+    (base_color, object_colors)
+}
 
 pub(super) struct FillPlugin;
 
@@ -75,21 +112,23 @@ fn draw_entities_system(
     ui_coords: UiCoords,
     solids: SolidObjects,
     game: Res<GameConfig>,
+    colors: Local<PlayerColors>,
     entities: Query<(&Transform, &PlayerComponent, &ObjectTypeComponent)>,
 ) {
     let mut drawing = drawing.drawing();
 
     for (transform, &player, &object_type) in entities.iter() {
         let minimap_position = ui_coords.flat_to_rel(transform.translation.to_flat());
-        let color = if game.locals().is_playable(*player) {
-            PLAYER_COLOR
+        let (player_color, object_colors) = if game.locals().is_playable(*player) {
+            &colors.player
         } else {
-            ENEMY_COLOR
+            &colors.enemies[(player.to_num() - 1) as usize]
         };
+        let color = object_colors.get(&*object_type).unwrap_or(&player_color);
 
         let radius = solids.get(*object_type).ichnography().radius();
         let rect_size = MIN_ENTITY_SIZE.max(ui_coords.size_to_rel(Vec2::splat(radius)));
-        drawing.rect(minimap_position, rect_size, color);
+        drawing.rect(minimap_position, rect_size, *color);
     }
 }
 
