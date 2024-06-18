@@ -3,13 +3,13 @@ use crate::ray::ScreenRay;
 use ahash::AHashMap;
 use bevy::{ecs::system::SystemParam, prelude::*};
 use de_core::{
-    gamestate::GameState, gconfig::GameConfig, objects::ObjectTypeComponent,
-    player::PlayerComponent, schedule::PostMovement,
+    gamestate::GameState, objects::ObjectTypeComponent, player::PlayerComponent,
+    schedule::PostMovement,
 };
 use de_map::size::MapBounds;
 use de_objects::SolidObjects;
 use de_terrain::TerrainCollider;
-use de_types::{objects::*, projection::ToFlat};
+use de_types::{objects::*, player::Player, projection::ToFlat};
 use parry2d::{
     bounding_volume::Aabb,
     math::Point,
@@ -17,37 +17,48 @@ use parry2d::{
 };
 
 const TERRAIN_COLOR: Color = Color::rgb(0.61, 0.46, 0.32);
-const PLAYER_COLOR: Color = Color::rgb(0.1, 0.1, 0.9);
-const ENEMY_COLORS: [Color; 4] = [
+const PLAYER_COLORS: [Color; Player::MAX_PLAYERS] = [
+    Color::rgb(0.1, 0.1, 0.9),
     Color::rgb(0.1, 0.9, 0.1),
     Color::rgb(0.9, 0.1, 0.1),
     Color::rgb(0.9, 0.9, 0.1),
-    Color::rgb(0.1, 0.9, 0.9),
 ];
 const MIN_ENTITY_SIZE: Vec2 = Vec2::splat(0.02);
 const CAMERA_COLOR: Color = Color::rgb(0.9, 0.9, 0.9);
 
 #[derive(Resource, Debug)]
 struct PlayerColors {
-    player: (Color, AHashMap<ObjectType, Color>),
-    enemies: [(Color, AHashMap<ObjectType, Color>); 4],
+    player_colors: [Color; Player::MAX_PLAYERS],
+    object_colors: [AHashMap<ObjectType, Color>; Player::MAX_PLAYERS],
 }
-
-impl Default for PlayerColors {
-    fn default() -> Self {
+impl PlayerColors {
+    fn new(colors: [Color; Player::MAX_PLAYERS]) -> Self {
         Self {
-            player: derive_colors(PLAYER_COLOR),
-            enemies: [
-                derive_colors(ENEMY_COLORS[0]),
-                derive_colors(ENEMY_COLORS[1]),
-                derive_colors(ENEMY_COLORS[2]),
-                derive_colors(ENEMY_COLORS[3]),
+            player_colors: colors,
+            object_colors: [
+                derive_colors(colors[0]),
+                derive_colors(colors[1]),
+                derive_colors(colors[2]),
+                derive_colors(colors[3]),
             ],
         }
     }
+
+    fn get_color(&self, player: Player, object_type: ObjectType) -> Color {
+        let player_idx: usize = (player.to_num() - 1) as usize;
+        let default_color: Color = self.player_colors[player_idx];
+        let object_color = self.object_colors[player_idx].get(&object_type);
+
+        *object_color.unwrap_or(&default_color)
+    }
+}
+impl Default for PlayerColors {
+    fn default() -> Self {
+        Self::new(PLAYER_COLORS)
+    }
 }
 
-fn derive_colors(base_color: Color) -> (Color, AHashMap<ObjectType, Color>) {
+fn derive_colors(base_color: Color) -> AHashMap<ObjectType, Color> {
     let mut unit_color = base_color.clone();
     unit_color.set_s(base_color.s() - 0.3);
     let mut object_colors = AHashMap::new();
@@ -56,7 +67,7 @@ fn derive_colors(base_color: Color) -> (Color, AHashMap<ObjectType, Color>) {
         unit_color,
     );
 
-    (base_color, object_colors)
+    object_colors
 }
 
 pub(super) struct FillPlugin;
@@ -111,7 +122,6 @@ fn draw_entities_system(
     mut drawing: DrawingParam,
     ui_coords: UiCoords,
     solids: SolidObjects,
-    game: Res<GameConfig>,
     colors: Local<PlayerColors>,
     entities: Query<(&Transform, &PlayerComponent, &ObjectTypeComponent)>,
 ) {
@@ -119,16 +129,11 @@ fn draw_entities_system(
 
     for (transform, &player, &object_type) in entities.iter() {
         let minimap_position = ui_coords.flat_to_rel(transform.translation.to_flat());
-        let (player_color, object_colors) = if game.locals().is_playable(*player) {
-            &colors.player
-        } else {
-            &colors.enemies[(player.to_num() - 1) as usize]
-        };
-        let color = object_colors.get(&*object_type).unwrap_or(&player_color);
+        let color = colors.get_color(*player, *object_type);
 
         let radius = solids.get(*object_type).ichnography().radius();
         let rect_size = MIN_ENTITY_SIZE.max(ui_coords.size_to_rel(Vec2::splat(radius)));
-        drawing.rect(minimap_position, rect_size, *color);
+        drawing.rect(minimap_position, rect_size, color);
     }
 }
 
