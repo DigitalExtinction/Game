@@ -71,9 +71,7 @@ impl DataBuf {
     ///
     /// Panics if `buf` len is smaller than length of found data.
     pub(super) fn get(&self, id: PackageId, buf: &mut [u8]) -> Option<usize> {
-        let Some(slot_index) = self.slot_index(id) else {
-            return None;
-        };
+        let slot_index = self.slot_index(id)?;
 
         let front = self.slots.front().unwrap();
         let slot = self.slots.get(slot_index).unwrap();
@@ -111,9 +109,8 @@ impl DataBuf {
 
     /// Get index (withing slots deque) of the slot with ID `id`.
     fn slot_index(&self, id: PackageId) -> Option<usize> {
-        let Some(&ordinal) = self.ordinals.get(&id) else {
-            return None;
-        };
+        let ordinal = self.ordinals.get(&id)?;
+
         // Slots can't be empty since the ordinal was found.
         let front = self.slots.front().unwrap();
         Some(ordinal.wrapping_sub(front.ordinal))
