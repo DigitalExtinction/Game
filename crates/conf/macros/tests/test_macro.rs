@@ -99,7 +99,7 @@ fn test_derive_config_default_camera_fail() {
         rotation_sensitivity: 0.,
     };
     assert_eq!(&config.check().unwrap_err()[0].0,
-                "rotation_sensitivity failed check. value 0.0 did not pass closure (| rotation_sensitivity : & f32 |\n{\n    ensure!\n    (* rotation_sensitivity > 0.,\n    \"`rotation_sensitivity` must be greater than 0.0.\") ; Ok(())\n}), Error: `rotation_sensitivity` must be greater than 0.0.",);
+                "rotation_sensitivity failed check. value 0.0 did not pass closure (| rotation_sensitivity : & f32 |\n{\n    ensure!\n    (* rotation_sensitivity > 0.,\n    \"`rotation_sensitivity` must be greater than 0.0.\"); Ok(())\n}), Error: `rotation_sensitivity` must be greater than 0.0.",);
 }
 
 #[test]
