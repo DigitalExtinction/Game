@@ -43,9 +43,7 @@ pub(crate) fn find_path(
         ));
     }
 
-    let Some(mut best) = open_set.peek().cloned() else {
-        return None;
-    };
+    let mut best = open_set.peek().cloned()?;
 
     let mut counter = 0;
     while let Some(node) = open_set.pop() {

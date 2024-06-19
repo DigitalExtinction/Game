@@ -298,10 +298,7 @@ impl EntityIdMapRes {
     /// This should not be called unless the player leaves the multiplayer
     /// game.
     fn remove_player(&mut self, player: Player) -> Option<PlayerNetToLocal> {
-        let Some(map) = self.remote_to_local.remove(&player) else {
-            return None;
-        };
-
+        let map = self.remote_to_local.remove(&player)?;
         for local in map.locals() {
             self.local_to_remote.remove(&local).unwrap();
         }

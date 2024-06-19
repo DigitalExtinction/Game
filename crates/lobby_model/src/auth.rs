@@ -140,10 +140,10 @@ mod tests {
             "Password must have at least 6 characters."
         );
 
-        user.password = "Long-enough-pwd".to_owned();
+        user.password = "Long-enough-pwd".to_string();
         assert!(user.validate().is_ok());
 
-        user.user.username = "Indy ".to_owned();
+        user.user.username = "Indy ".to_string();
         assert_eq!(
             user.validate().err().unwrap().to_string(),
             "Username starting or ending with whitespace is not allowed."
