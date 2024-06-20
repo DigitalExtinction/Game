@@ -1,5 +1,3 @@
-use super::draw::DrawingParam;
-use crate::ray::ScreenRay;
 use bevy::{ecs::system::SystemParam, prelude::*};
 use de_core::{
     gamestate::GameState, objects::ObjectTypeComponent, player::PlayerComponent,
@@ -15,6 +13,9 @@ use parry2d::{
     query::{Ray, RayCast},
 };
 
+use super::draw::DrawingParam;
+use crate::ray::ScreenRay;
+
 const TERRAIN_COLOR: Color = Color::rgb(0.61, 0.46, 0.32);
 const PLAYER_COLORS: [Color; Player::MAX_PLAYERS] = [
     Color::rgb(0.1, 0.1, 0.9),
@@ -27,6 +28,7 @@ const CAMERA_COLOR: Color = Color::rgb(0.9, 0.9, 0.9);
 
 #[derive(Resource, Debug)]
 struct PlayerColors([Color; Player::MAX_PLAYERS]);
+
 impl PlayerColors {
     fn get_color(&self, player: Player, object_type: ActiveObjectType) -> Color {
         let player_idx: usize = (player.to_num() - 1) as usize;
@@ -37,6 +39,7 @@ impl PlayerColors {
         }
     }
 }
+
 impl Default for PlayerColors {
     fn default() -> Self {
         Self(PLAYER_COLORS)
