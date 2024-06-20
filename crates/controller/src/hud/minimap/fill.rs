@@ -6,7 +6,11 @@ use de_core::{
 use de_map::size::MapBounds;
 use de_objects::SolidObjects;
 use de_terrain::TerrainCollider;
-use de_types::{objects::*, player::Player, projection::ToFlat};
+use de_types::{
+    objects::{ActiveObjectType, ObjectType},
+    player::Player,
+    projection::ToFlat,
+};
 use parry2d::{
     bounding_volume::Aabb,
     math::Point,
