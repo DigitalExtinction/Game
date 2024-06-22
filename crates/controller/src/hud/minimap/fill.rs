@@ -1,12 +1,16 @@
 use bevy::{ecs::system::SystemParam, prelude::*};
 use de_core::{
-    gamestate::GameState, gconfig::GameConfig, objects::ObjectTypeComponent,
-    player::PlayerComponent, schedule::PostMovement,
+    gamestate::GameState, objects::ObjectTypeComponent, player::PlayerComponent,
+    schedule::PostMovement,
 };
 use de_map::size::MapBounds;
 use de_objects::SolidObjects;
 use de_terrain::TerrainCollider;
-use de_types::projection::ToFlat;
+use de_types::{
+    objects::{ActiveObjectType, ObjectType},
+    player::Player,
+    projection::ToFlat,
+};
 use parry2d::{
     bounding_volume::Aabb,
     math::Point,
@@ -17,10 +21,34 @@ use super::draw::DrawingParam;
 use crate::ray::ScreenRay;
 
 const TERRAIN_COLOR: Color = Color::rgb(0.61, 0.46, 0.32);
-const PLAYER_COLOR: Color = Color::rgb(0.1, 0.1, 0.9);
-const ENEMY_COLOR: Color = Color::rgb(0.9, 0.1, 0.1);
+const PLAYER_COLORS: [Color; Player::MAX_PLAYERS] = [
+    Color::rgb(0.1, 0.1, 0.9),
+    Color::rgb(0.1, 0.9, 0.1),
+    Color::rgb(0.9, 0.1, 0.1),
+    Color::rgb(0.9, 0.9, 0.1),
+];
 const MIN_ENTITY_SIZE: Vec2 = Vec2::splat(0.02);
 const CAMERA_COLOR: Color = Color::rgb(0.9, 0.9, 0.9);
+
+#[derive(Resource, Debug)]
+struct PlayerColors([Color; Player::MAX_PLAYERS]);
+
+impl PlayerColors {
+    fn get_color(&self, player: Player, object_type: ActiveObjectType) -> Color {
+        let player_idx: usize = (player.to_num() - 1) as usize;
+        let player_color = self.0[player_idx].as_hsla();
+        match object_type {
+            ActiveObjectType::Building(_) => player_color,
+            ActiveObjectType::Unit(_) => player_color.with_s(0.7 * player_color.s()),
+        }
+    }
+}
+
+impl Default for PlayerColors {
+    fn default() -> Self {
+        Self(PLAYER_COLORS)
+    }
+}
 
 pub(super) struct FillPlugin;
 
@@ -74,22 +102,19 @@ fn draw_entities_system(
     mut drawing: DrawingParam,
     ui_coords: UiCoords,
     solids: SolidObjects,
-    game: Res<GameConfig>,
+    colors: Local<PlayerColors>,
     entities: Query<(&Transform, &PlayerComponent, &ObjectTypeComponent)>,
 ) {
     let mut drawing = drawing.drawing();
 
     for (transform, &player, &object_type) in entities.iter() {
         let minimap_position = ui_coords.flat_to_rel(transform.translation.to_flat());
-        let color = if game.locals().is_playable(*player) {
-            PLAYER_COLOR
-        } else {
-            ENEMY_COLOR
-        };
-
-        let radius = solids.get(*object_type).ichnography().radius();
-        let rect_size = MIN_ENTITY_SIZE.max(ui_coords.size_to_rel(Vec2::splat(radius)));
-        drawing.rect(minimap_position, rect_size, color);
+        if let ObjectType::Active(active_object) = *object_type {
+            let color = colors.get_color(*player, active_object);
+            let radius = solids.get(*object_type).ichnography().radius();
+            let rect_size = MIN_ENTITY_SIZE.max(ui_coords.size_to_rel(Vec2::splat(radius)));
+            drawing.rect(minimap_position, rect_size, color);
+        }
     }
 }
 
