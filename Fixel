@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <title>Pixel Aventure</title>
+  <style>
+    * { margin: 0; padding: 0; }
+    canvas { background: #222; display: block; margin: 0 auto; }
+  </style>
+</head>
+<body>
+  <canvas id="game" width="800" height="400"></canvas>
+  <script>
+    const canvas = document.getElementById("game");
+    const ctx = canvas.getContext("2d");
+
+    let player = { x: 50, y: 300, width: 30, height: 30, color: "#4af", dy: 0, gravity: 0.8, jumpPower: -12, grounded: true };
+    let obstacles = [];
+    let frames = 0;
+    let score = 0;
+    let gameOver = false;
+
+    function drawPlayer() {
+      ctx.fillStyle = player.color;
+      ctx.fillRect(player.x, player.y, player.width, player.height);
+    }
+
+    function updatePlayer() {
+      player.dy += player.gravity;
+      player.y += player.dy;
+
+      if (player.y + player.height >= canvas.height - 50) {
+        player.y = canvas.height - 50 - player.height;
+        player.dy = 0;
+        player.grounded = true;
+      } else {
+        player.grounded = false;
+      }
+    }
+
+    function spawnObstacle() {
+      if (frames % 90 === 0) {
+        obstacles.push({ x: canvas.width, y: canvas.height - 80, width: 30, height: 30, color: "#f44" });
+      }
+    }
+
+    function drawObstacles() {
+      for (let obs of obstacles) {
+        ctx.fillStyle = obs.color;
+        ctx.fillRect(obs.x, obs.y, obs.width, obs.height);
+      }
+    }
+
+    function updateObstacles() {
+      for (let obs of obstacles) {
+        obs.x -= 5;
+
+        if (obs.x + obs.width < 0) {
+          obstacles.shift();
+          score++;
+        }
+
+        // Collision
+        if (
+          player.x < obs.x + obs.width &&
+          player.x + player.width > obs.x &&
+          player.y < obs.y + obs.height &&
+          player.y + player.height > obs.y
+        ) {
+          gameOver = true;
+        }
+      }
+    }
+
+    function jump() {
+      if (player.grounded) {
+        player.dy = player.jumpPower;
+      }
+    }
+
+    document.addEventListener("keydown", (e) => {
+      if (e.code === "Space" || e.code === "ArrowUp") jump();
+    });
+
+    canvas.addEventListener("click", jump); // mobile tap
+
+    function drawGround() {
+      ctx.fillStyle = "#444";
+      ctx.fillRect(0, canvas.height - 50, canvas.width, 50);
+    }
+
+    function drawScore() {
+      ctx.fillStyle = "#fff";
+      ctx.font = "20px Arial";
+      ctx.fillText("Score: " + score, 20, 30);
+    }
+
+    function loop() {
+      if (gameOver) {
+        ctx.fillStyle = "#fff";
+        ctx.font = "40px Arial";
+        ctx.fillText("Game Over!", canvas.width / 2 - 100, canvas.height / 2);
+        ctx.font = "20px Arial";
+        ctx.fillText("Score final: " + score, canvas.width / 2 - 60, canvas.height / 2 + 40);
+        return;
+      }
+
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      drawGround();
+      drawPlayer();
+      drawObstacles();
+      drawScore();
+
+      updatePlayer();
+      spawnObstacle();
+      updateObstacles();
+
+      frames++;
+      requestAnimationFrame(loop);
+    }
+
+    loop();
+  </script>
+</body>
+</html>
